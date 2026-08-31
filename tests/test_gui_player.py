@@ -9,7 +9,7 @@ from gui import (
     App, TimelineBar,
     _clamp_frame, _decode_plan, _first_image, _format_duration, _format_timecode,
     _is_image_path, _is_video_path, _play_target_frame, _read_image_bgr,
-    _write_image_bgr, effective_slider,
+    _write_image_bgr, compose_preview_frame, effective_slider,
 )
 from preview_audio import frame_to_ms, ms_to_frame
 from video_export import compose_output_frame
@@ -181,6 +181,18 @@ class OutputViewTests(unittest.TestCase):
         out = compose_output_frame(orig, proc, view=2, mix=1.0)
         np.testing.assert_array_equal(out[:, :3], orig[:, :3])
         np.testing.assert_array_equal(out[:, 5:], proc[:, 5:])
+
+    def test_preview_applies_output_mix_for_processed_view(self):
+        orig = np.zeros((4, 8, 3), np.uint8)
+        proc = np.full((4, 8, 3), 200, np.uint8)
+        out = compose_preview_frame(orig, proc, output_view=0, output_mix=0.25)
+        np.testing.assert_array_equal(out, np.full_like(proc, 50))
+
+    def test_preview_ignores_mix_for_export_only_views(self):
+        orig = np.zeros((4, 8, 3), np.uint8)
+        proc = np.full((4, 8, 3), 200, np.uint8)
+        out = compose_preview_frame(orig, proc, output_view=1, output_mix=0.25)
+        np.testing.assert_array_equal(out, proc)
 
 
 class WidgetSmokeTests(unittest.TestCase):

@@ -219,6 +219,14 @@ def effective_slider(enabled, value):
     return value if enabled else 0.0
 
 
+def compose_preview_frame(original, processed, output_view=0, output_mix=1.0):
+    """Apply the export mix to preview without previewing export-only view layouts."""
+    if original is None or processed is None:
+        return processed
+    mix = float(output_mix) if int(output_view) == 0 else 1.0
+    return compose_output_frame(original, processed, view=0, mix=mix)
+
+
 class Tooltip:
     def __init__(self, widget, text):
         self.widget = widget
@@ -393,6 +401,7 @@ class App:
         self._live_cache = None
         self._last_dlss_frame = -1
         self._live_debounce = None
+        self._output_preview_after = None
         self._scrub_after = None
         self._resize_after = None
         self._play_after = None
@@ -699,13 +708,13 @@ class App:
         outview_cb.pack(side="left", padx=(6, 0))
         Tooltip(
             outview_cb,
-            "只影响导出的视频，不影响上方预览。\n"
-            "处理：导出 DLSS 结果；可用输出混合和原图按比例融合。\n"
-            "差异×10：把 DLSS 与原图的差值放大 10 倍，灰色=几乎没改，亮/暗=改动大，用来检查改了哪里。\n"
-            "左右对比：导出片左半原图、右半 DLSS，中间一条白线，方便分享对比。",
+            "导出视图只影响导出构图；上方预览始终使用「处理」构图。\n"
+            "处理：DLSS/对比预览和导出都会按输出混合与原图融合。\n"
+            "差异×10：仅导出，把 DLSS 与原图的差值放大 10 倍，灰色=几乎没改，亮/暗=改动大。\n"
+            "左右对比：仅导出，左半原图、右半 DLSS，中间用白线分隔。",
         )
         style_cb.bind("<<ComboboxSelected>>", lambda e: self.on_settings_change())
-        outview_cb.bind("<<ComboboxSelected>>", lambda e: self.on_settings_change())
+        outview_cb.bind("<<ComboboxSelected>>", lambda e: self.on_output_settings_change())
 
         ttk.Separator(body, orient="horizontal").pack(fill="x", padx=8, pady=(2, 2))
 
@@ -719,7 +728,9 @@ class App:
         )
         d['w_use_output_mix'], d['w_outmix'], d['w_outmix_value'] = self._add_toggle_slider(
             grid, 0, 1, "输出混合", d['v_outmix'], d['v_use_output_mix'],
-            "仅「处理」有效。关闭时按 0（原图）导出，开启后使用记忆的混合比例。",
+            "仅「处理」有效。0=原图，1=完整 DLSS；DLSS/对比预览与导出同步生效。\n"
+            "关闭时按 0（原图），开启后使用记忆的混合比例。",
+            on_change=self.on_output_settings_change,
         )
         _, d['w_local_tone'], d['w_local_tone_value'] = self._add_toggle_slider(
             grid, 1, 0, "本地色调", d['v_local_tone'], d['v_use_local_tone'],
@@ -737,14 +748,18 @@ class App:
         self._update_dlss_control_states()
         return d
 
-    def _add_toggle_slider(self, parent, row, column, text, value_var, enabled_var, tooltip=None):
+    def _add_toggle_slider(
+        self, parent, row, column, text, value_var, enabled_var,
+        tooltip=None, on_change=None,
+    ):
+        on_change = on_change or self.on_settings_change
         cell = ttk.Frame(parent)
         cell.grid(row=row, column=column, sticky="nsew", padx=16, pady=(4, 8))
         header = ttk.Frame(cell)
         header.pack(fill="x")
         checkbox = ttk.Checkbutton(
             header, text=text, variable=enabled_var,
-            command=self.on_settings_change,
+            command=on_change,
         )
         checkbox.pack(side="left")
         value_label = ttk.Label(header, width=4, anchor="e", foreground=SCALE_VALUE_OFF)
@@ -764,7 +779,7 @@ class App:
             sliderlength=16, highlightthickness=0, **SCALE_DISABLED,
         )
         scale.pack(fill="x")
-        scale.config(command=lambda e: self.on_settings_change())
+        scale.config(command=lambda e: on_change())
         if tooltip:
             Tooltip(checkbox, tooltip)
             Tooltip(scale, tooltip)
@@ -1200,6 +1215,7 @@ class App:
             return
         self._cancel_after("_settings_save_after")
         self._cancel_after("_live_debounce")
+        self._cancel_after("_output_preview_after")
         self._cancel_after("_scrub_after")
         self._cancel_after("_resize_after")
         self._cancel_after("_prefetch_start_after")
@@ -1297,7 +1313,15 @@ class App:
         if view == "原图":
             return self._read_frame(frame)
         if view == "DLSS":
-            return self._live_dlss_image(frame)
+            original = self._read_frame(frame)
+            if original is None:
+                return None
+            processed = self._live_dlss_image(frame, source_bgr=original)
+            settings = self._collect_settings()
+            return compose_preview_frame(
+                original, processed,
+                settings['output_view'], settings['output_mix'],
+            )
         return None
 
     def _cached_dlss(self, frame):
@@ -1471,12 +1495,23 @@ class App:
                     self._split_dlss = None
                     self._draw_fit(orig, cw, ch, badge="DLSS 生成失败")
                     return
+                settings = self._collect_settings()
+                dlss = compose_preview_frame(
+                    orig, dlss,
+                    settings['output_view'], settings['output_mix'],
+                )
                 self._split_dlss = cv2.resize(dlss, (nw, nh))
         elif not fast and self._split_dlss is None:
-            dlss = self._live_dlss_image(frame)
+            orig = self._read_frame(frame)
+            dlss = self._live_dlss_image(frame, source_bgr=orig) if orig is not None else None
             if dlss is None:
                 self._draw_fit(self._split_orig, cw, ch, badge="DLSS 生成失败")
                 return
+            settings = self._collect_settings()
+            dlss = compose_preview_frame(
+                orig, dlss,
+                settings['output_view'], settings['output_mix'],
+            )
             self._split_dlss = cv2.resize(dlss, (self._split_nw, self._split_nh))
         self._blit_split(cw, ch)
 
@@ -1842,6 +1877,24 @@ class App:
         self._cancel_after("_live_debounce")
         self._live_debounce = self.root.after(60, self._refresh_dlss)
 
+    def on_output_settings_change(self, event=None):
+        """Refresh the composed preview while keeping the expensive DLSS cache intact."""
+        self._update_dlss_control_states()
+        self._schedule_settings_save()
+        self._cancel_after("_output_preview_after")
+        self._output_preview_after = self.root.after(16, self._refresh_output_preview)
+
+    def _refresh_output_preview(self):
+        self._output_preview_after = None
+        self._split_frame = -1
+        self._split_dlss = None
+        if not self.video or self.view_var.get() not in ("DLSS", "对比"):
+            return
+        if self.playing:
+            self._present_play_frame(self._frame)
+        else:
+            self.display_view(quality="full")
+
     def _refresh_dlss(self):
         self._live_debounce = None
         if self._live:
@@ -2113,10 +2166,15 @@ class App:
         cached = _first_image(self._cached_dlss(frame), self._nearest_cached_dlss(frame))
         if cached is None and self.playing and self._photo is not None:
             return
+        settings = self._collect_settings()
+        preview = compose_preview_frame(
+            orig, cached,
+            settings['output_view'], settings['output_mix'],
+        )
         if view == "对比":
-            self._blit_play_split(orig, cached, cw, ch)
+            self._blit_play_split(orig, preview, cw, ch)
             return
-        img = cached if cached is not None else orig
+        img = preview if preview is not None else orig
         self._dlss_pending = cached is None
         badge = "DLSS…" if cached is None else None
         self._draw_fit(img, cw, ch, badge=badge)
