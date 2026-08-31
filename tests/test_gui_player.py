@@ -1,5 +1,7 @@
 import os
+import queue
 import tempfile
+import threading
 import unittest
 
 import numpy as np
@@ -7,7 +9,9 @@ import numpy as np
 import app_settings
 from gui import (
     App, TimelineBar,
+    _ExportCancelled,
     _clamp_frame, _decode_plan, _first_image, _format_duration, _format_timecode,
+    _fit_preview_size, _frame_ranges, _realtime_preview_size,
     _is_image_path, _is_video_path, _play_target_frame, _read_image_bgr,
     _write_image_bgr, compose_preview_frame, effective_slider,
 )
@@ -41,6 +45,18 @@ class PlayerHelperTests(unittest.TestCase):
         self.assertEqual(_decode_plan(12, 15), ("skip", 3))
         self.assertEqual(_decode_plan(12, 40), ("seek", 0))
         self.assertEqual(_decode_plan(12, 5), ("seek", 0))
+
+    def test_realtime_preview_size_downscales_4k_but_preserves_smaller_sources(self):
+        self.assertEqual(_fit_preview_size(3840, 2160, 1920), (1920, 1080))
+        self.assertEqual(_fit_preview_size(2160, 3840, 1920), (1080, 1920))
+        self.assertEqual(_realtime_preview_size(3840, 2160, "auto"), (1920, 1080))
+        self.assertEqual(_realtime_preview_size(2560, 1440, "auto"), (2560, 1440))
+        self.assertEqual(_realtime_preview_size(3840, 2160, "1440p"), (2560, 1440))
+        self.assertEqual(_realtime_preview_size(3840, 2160, "original"), (3840, 2160))
+
+    def test_frame_ranges_compacts_non_contiguous_cache(self):
+        self.assertEqual(_frame_ranges([]), [])
+        self.assertEqual(_frame_ranges([5, 2, 3, 3, 8]), [(2, 3), (5, 5), (8, 8)])
 
     def test_first_image_does_not_evaluate_numpy_truth(self):
         arr = np.zeros((2, 2, 3), np.uint8)
@@ -113,14 +129,25 @@ class SettingsPanelPersistenceTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             path = os.path.join(tmp, "dlss5_settings.json")
             saved = app_settings.save(
-                {"preview_prefetch": 48, "preview_cache": 160, "preview_scrub_ms": 20},
+                {
+                    "preview_quality": "1440p",
+                    "preview_prefetch": 48,
+                    "preview_cache": 160,
+                    "preview_cache_mb": 4096,
+                    "preview_scrub_ms": 20,
+                },
                 path=path,
             )
+            self.assertEqual(saved["preview_quality"], "1440p")
             self.assertEqual(saved["preview_prefetch"], 48)
             self.assertEqual(saved["preview_cache"], 160)
+            self.assertEqual(saved["preview_cache_mb"], 4096)
             self.assertEqual(saved["preview_scrub_ms"], 20)
             loaded = app_settings.load(path)
             self.assertEqual(loaded["preview_prefetch"], 48)
+            self.assertEqual(loaded["preview_quality"], "1440p")
+            self.assertEqual(loaded["preview_cache_mb"], 4096)
+            self.assertEqual(app_settings.validate({"preview_quality": "bad"})["preview_quality"], "auto")
 
     def test_slider_toggles_default_off_and_roundtrip(self):
         loaded = app_settings.validate({"intensity": 0.9, "skin_struct": 0.8})
@@ -194,6 +221,160 @@ class OutputViewTests(unittest.TestCase):
         out = compose_preview_frame(orig, proc, output_view=1, output_mix=0.25)
         np.testing.assert_array_equal(out, proc)
 
+    def test_preview_resizes_original_to_proxy_before_mixing(self):
+        orig = np.zeros((8, 16, 3), np.uint8)
+        proc = np.full((4, 8, 3), 200, np.uint8)
+        out = compose_preview_frame(orig, proc, output_view=0, output_mix=0.25)
+        self.assertEqual(out.shape, proc.shape)
+        np.testing.assert_array_equal(out, np.full_like(proc, 50))
+
+
+class PreviewCacheTests(unittest.TestCase):
+    def _app(self):
+        app = App.__new__(App)
+        app._dlss_frame_cache = {}
+        app._source_frame_cache = {}
+        app._queued_preview_frames = set()
+        app._cache_lock = threading.RLock()
+        app._dlss_cache_bytes = 0
+        app._source_cache_bytes = 0
+        app._live_cache = None
+        app._last_shown_dlss = None
+        app._preview_processed_frames = 0
+        app._preview_process_t0 = None
+        app._frame = 10
+        app._media_w, app._media_h = 8, 4
+        app._active_preview_size = (4, 2)
+        app.fps = 24
+        app._preview_prefetch = lambda: 24
+        app._preview_cache_max = lambda: 96
+        app._preview_cache_bytes = lambda: 1024 * 1024
+        app._settings_hash = lambda: ("settings",)
+        return app
+
+    def test_cache_separates_proxy_and_exact_frames(self):
+        app = self._app()
+        sk = app._settings_hash()
+        proxy = np.zeros((2, 4, 3), np.uint8)
+        exact = np.ones((4, 8, 3), np.uint8)
+        app._cache_store(10, sk, proxy)
+        app._cache_store(10, sk, exact)
+        self.assertIs(app._cached_dlss_sk(10, sk, (4, 2)), proxy)
+        self.assertIs(app._cached_dlss_sk(10, sk, (8, 4)), exact)
+
+    def test_live_preview_processes_the_requested_proxy_size(self):
+        app = self._app()
+        app._live_lock = threading.RLock()
+        app._last_dlss_frame = -1
+        app._collect_settings = lambda: {}
+        app._hash_settings_dict = lambda settings: app._settings_hash()
+        seen = []
+
+        class FakeLive:
+            def process(self, rgba, reset=False):
+                seen.append((rgba.shape, reset))
+                return rgba.copy()
+
+        app._ensure_live = lambda width, height, settings: FakeLive()
+        source = np.zeros((4, 8, 3), np.uint8)
+        result = app._live_dlss_image(10, source_bgr=source, target_size=(4, 2))
+        self.assertEqual(result.shape, (2, 4, 3))
+        self.assertEqual(seen, [((2, 4, 4), 1)])
+
+    def test_combined_source_and_dlss_cache_respects_ram_budget(self):
+        app = self._app()
+        app._preview_cache_bytes = lambda: 150
+        source = np.zeros((4, 8, 3), np.uint8)
+        proxy = np.zeros((2, 4, 3), np.uint8)
+        app._source_cache_store(10, source)
+        app._cache_store(10, app._settings_hash(), proxy)
+        app._source_cache_store(11, source)
+        self.assertLessEqual(app._source_cache_bytes + app._dlss_cache_bytes, 150)
+
+    def test_pending_preview_is_visibly_not_the_original(self):
+        original = np.full((4, 8, 3), (40, 120, 220), np.uint8)
+        pending = App._pending_preview_image(original)
+        self.assertEqual(pending.shape, original.shape)
+        self.assertFalse(np.array_equal(pending, original))
+        self.assertLess(float(pending.mean()), float(original.mean()) * 0.4)
+
+
+class PreviewQueueTests(unittest.TestCase):
+    def test_preview_worker_consumes_frames_without_a_second_decoder(self):
+        app = App.__new__(App)
+        app._prefetch_gen = 7
+        app._play_dlss_busy = True
+        app._frame = 10
+        app._live_lock = threading.RLock()
+        app._last_dlss_frame = -1
+        app._live_error = None
+        app._cache_lock = threading.RLock()
+        app._queued_preview_frames = {10}
+        app._hash_settings_dict = lambda settings: ("settings",)
+        app._cached_dlss_sk = lambda frame, settings, size: None
+        stop = threading.Event()
+        processed = []
+
+        class FakeLive:
+            supports_async = False
+            max_in_flight = 1
+
+            def process(self, rgba, reset=False):
+                stop.set()
+                return rgba.copy()
+
+        app._ensure_live = lambda width, height, settings: FakeLive()
+        app._cache_store = lambda frame, settings, bgr: processed.append((frame, bgr.shape))
+        frames = queue.Queue(maxsize=3)
+        source = np.zeros((4, 8, 3), np.uint8)
+        frames.put_nowait((10, source))
+        app._prefetch_job({}, (8, 4), frames, stop, 7)
+        self.assertEqual(len(processed), 1)
+        self.assertEqual(processed[0], (10, (4, 8, 3)))
+        self.assertFalse(app._play_dlss_busy)
+
+    def test_preview_worker_uses_async_in_flight_order(self):
+        app = App.__new__(App)
+        app._prefetch_gen = 3
+        app._play_dlss_busy = True
+        app._frame = 20
+        app._live_lock = threading.RLock()
+        app._last_dlss_frame = -1
+        app._live_error = None
+        app._cache_lock = threading.RLock()
+        app._queued_preview_frames = {20, 21, 22}
+        app._hash_settings_dict = lambda settings: ("settings",)
+        app._cached_dlss_sk = lambda frame, settings, size: None
+        stop = threading.Event()
+        submitted = []
+        outputs = queue.Queue()
+        stored = []
+
+        class FakeAsyncLive:
+            supports_async = True
+            max_in_flight = 2
+
+            def enqueue(self, rgba, reset=False):
+                submitted.append(reset)
+                outputs.put(rgba.copy())
+                if len(submitted) == 3:
+                    stop.set()
+                return True
+
+            def dequeue(self):
+                return outputs.get_nowait()
+
+        live = FakeAsyncLive()
+        app._ensure_live = lambda width, height, settings: live
+        app._cache_store = lambda frame, settings, bgr: stored.append(frame)
+        frames = queue.Queue(maxsize=3)
+        source = np.zeros((4, 8, 3), np.uint8)
+        for frame in (20, 21, 22):
+            frames.put_nowait((frame, source))
+        app._prefetch_job({}, (8, 4), frames, stop, 3)
+        self.assertEqual(stored, [20, 21, 22])
+        self.assertEqual(submitted, [True, False, False])
+
 
 class WidgetSmokeTests(unittest.TestCase):
     def test_app_and_timeline_construct(self):
@@ -212,6 +393,9 @@ class WidgetSmokeTests(unittest.TestCase):
                 self.assertEqual(str(app.fs_btn.cget("text")), "全屏")
                 self.assertTrue(hasattr(app, "import_btn"))
                 self.assertTrue(hasattr(app, "clear_btn"))
+                self.assertTrue(hasattr(app, "cancel_export_btn"))
+                self.assertEqual(str(app.cancel_export_btn.cget("text")), "取消导出")
+                self.assertTrue(app.cancel_export_btn.instate(["disabled"]))
                 self.assertTrue(hasattr(app, "eta_label"))
                 self.assertEqual(str(app.eta_label.cget("text")), "")
                 self.assertFalse(hasattr(app, "status") and app.status is not app.eta_label)
@@ -225,10 +409,55 @@ class WidgetSmokeTests(unittest.TestCase):
                 app.video = "dummy.mp4"
                 app._update_action_labels()
                 self.assertTrue(app.clear_btn.instate(["!disabled"]))
+                self.assertTrue(app.cancel_export_btn.instate(["disabled"]))
+                app._exporting = True
+                app._update_action_labels()
+                self.assertTrue(app.export_btn.instate(["disabled"]))
+                self.assertTrue(app.cancel_export_btn.instate(["!disabled"]))
+                app.cancel_export()
+                self.assertTrue(app._export_cancel_event.is_set())
+                self.assertEqual(str(app.cancel_export_btn.cget("text")), "取消中…")
+                self.assertTrue(app.cancel_export_btn.instate(["disabled"]))
+                self.assertEqual(str(app.eta_label.cget("text")), "正在取消导出…")
+                with self.assertRaises(_ExportCancelled):
+                    app._raise_if_export_cancelled()
+                partial = os.path.join(tmp, "partial.mp4")
+                open(partial, "wb").close()
+                app._end_export_ui(False, partial, cancelled=True)
+                self.assertFalse(os.path.exists(partial))
+                self.assertFalse(app._export_cancel_event.is_set())
+                self.assertEqual(
+                    str(app.eta_label.cget("text")),
+                    "导出已取消，未完成文件已清理",
+                )
+                app.view_var.set("对比")
+                app._hold_original = False
+                app._split_nw, app._split_nh = 100, 50
+                app._split_orig = np.zeros((50, 100, 3), np.uint8)
+                app._split_dlss = None
+                app._dlss_pending = True
+                app._blit_split(120, 70)
+                self.assertTrue(app.canvas.find_withtag("split"))
+
+                updates = []
+                app._update_split_from_event = lambda event: updates.append((event.x, event.y))
+                event = type("Event", (), {"x": 10, "y": 20, "state": 0})()
+                app.on_canvas_press(event)
+                self.assertFalse(app._drag_split)
+                drag = type("Event", (), {"x": 30, "y": 21, "state": 0})()
+                app.on_canvas_drag(drag)
+                self.assertTrue(app._drag_split)
+                self.assertEqual(updates, [(30, 21)])
+                app.on_canvas_release(drag)
+                click = type("Event", (), {"x": 15, "y": 20, "state": 0})()
+                app.on_canvas_press(click)
+                app.on_canvas_release(click)
+                self.assertEqual(updates[-1], (15, 20))
                 app.clear_media()
                 self.assertIsNone(app.video)
                 self.assertTrue(app.clear_btn.instate(["disabled"]))
                 self.assertTrue(app._preview_section.collapsed)
+                self.assertEqual(app._preview_settings["v_quality"].get(), "自动（推荐）")
                 self.assertTrue(app._export_section.collapsed)
                 self.assertTrue(app._host_section.collapsed)
                 packed = list(app.root.pack_slaves())

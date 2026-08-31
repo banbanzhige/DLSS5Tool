@@ -35,8 +35,10 @@ DEFAULTS = {
     "ui_export_open": False,
     "ui_host_open": False,
     "ui_preview_open": False,
+    "preview_quality": "auto",
     "preview_prefetch": 24,
     "preview_cache": 96,
+    "preview_cache_mb": 2048,
     "preview_scrub_ms": 40,
 }
 
@@ -115,11 +117,16 @@ def validate(values):
     result["host_in_flight"] = _clamp_int(
         source.get("host_in_flight", result["host_in_flight"]), 1, 3
     )
+    if source.get("preview_quality") in {"auto", "1080p", "1440p", "original"}:
+        result["preview_quality"] = source["preview_quality"]
     result["preview_prefetch"] = _clamp_int(
         source.get("preview_prefetch", result["preview_prefetch"]), 4, 120
     )
     result["preview_cache"] = _clamp_int(
         source.get("preview_cache", result["preview_cache"]), 16, 400
+    )
+    result["preview_cache_mb"] = _clamp_int(
+        source.get("preview_cache_mb", result["preview_cache_mb"]), 256, 32768
     )
     result["preview_scrub_ms"] = _clamp_int(
         source.get("preview_scrub_ms", result["preview_scrub_ms"]), 0, 400
