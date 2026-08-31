@@ -1,0 +1,65 @@
+name: Bug report
+description: Report a reproducible DLSS5Tool problem
+title: "[Bug]: "
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for the report. Do not upload proprietary DLLs, private media, or sensitive logs.
+
+  - type: input
+    id: version
+    attributes:
+      label: Version or commit
+      description: Commit hash or release tag where the problem occurs.
+    validations:
+      required: true
+
+  - type: input
+    id: environment
+    attributes:
+      label: Environment
+      description: Windows version, Python version, GPU, and NVIDIA driver version.
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Reproduction steps
+      description: Provide the smallest reliable sequence that triggers the issue.
+      placeholder: |
+        1. Start the app...
+        2. Import an authorized test file...
+        3. Select...
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior and sanitized logs
+      description: Remove personal paths, pointer values, media details, and other sensitive data.
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Checklist
+      options:
+        - label: I reproduced this on the latest default branch or release.
+          required: true
+        - label: I did not attach proprietary binaries or media I cannot redistribute.
+          required: true
+        - label: This is not a security vulnerability requiring private disclosure.
+          required: true
+
