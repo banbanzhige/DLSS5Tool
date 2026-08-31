@@ -1,5 +1,7 @@
 # DLSS5Tool
 
+当前版本：**v1.0.0**
+
 给任意视频或图片做 **DLSS 5 Neural Rendering** 的本地小工具：导入即实时预览，调参即时生效，再按同样参数导出。
 
 游戏里的 Feature 18 通常要引擎提供完整 G-Buffer。本工具走 **零引导、仅颜色** 路径，因此不依赖材质、法线、运动矢量或深度，就能把神经渲染当成后处理接到成片上——补真实感、压掉生成图常见的 AI 感与油腻感，同时比重渲或再跑一遍生成模型快得多。
@@ -88,6 +90,16 @@
 - 从合法来源取得并有权使用的 NVIDIA DLSS Neural Rendering 运行时。
 
 ## 快速开始
+
+### 免安装版（推荐普通用户）
+
+下载 `DLSS5Tool-v1.0.0-win64.zip` 并完整解压，然后双击
+`DLSS5Tool.exe`。免安装版已包含 Python 依赖和基础 FFmpeg，无需另装 Python；仍需
+Windows 10/11 x64、兼容的 NVIDIA GPU/驱动和 Microsoft Visual C++ 2015–2022
+Redistributable。不要只把 EXE 单独移出解压目录，旁边的 `_internal` 目录是运行所必需的。
+
+开发者可以在项目根目录运行 `./build_release.ps1` 重建同一版本。构建脚本会创建 `.venv`、
+安装依赖、运行测试，并在 `dist` 下生成免安装目录和 ZIP。
 
 ### 1. 安装 Python 依赖
 

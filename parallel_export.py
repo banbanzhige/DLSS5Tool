@@ -93,8 +93,11 @@ def export_parallel(
             progress_path = os.path.join(temp_dir, f"progress_{worker_id:02d}.json")
             result_path = os.path.join(temp_dir, f"result_{worker_id:02d}.json")
             stderr_path = os.path.join(temp_dir, f"stderr_{worker_id:02d}.txt")
-            cmd = [
-                sys.executable, "-B", script,
+            if getattr(sys, "frozen", False):
+                cmd = [sys.executable, "--parallel-worker"]
+            else:
+                cmd = [sys.executable, "-B", script]
+            cmd += [
                 "--input", source,
                 "--output", segment,
                 "--start", str(start),

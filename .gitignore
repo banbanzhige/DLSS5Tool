@@ -34,6 +34,8 @@ Desktop.ini
 *.lib
 *.obj
 *.pdb
+/build/
+/dist/
 
 # Locally cloned SDK/reference repositories. Their own licenses and history
 # must not be folded into this repository.
@@ -51,4 +53,3 @@ Desktop.ini
 /exports/
 /output/
 /tmp/
-

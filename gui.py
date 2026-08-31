@@ -26,6 +26,7 @@ import cv2
 import numpy as np
 
 import app_settings
+from app_version import APP_VERSION
 import dlss_engine
 from dlss_host_process import ProcessLive
 from parallel_export import export_parallel
@@ -78,6 +79,7 @@ SCALE_ENABLED = {
     "activebackground": "#ffffff",
     "highlightbackground": "#c8c8c8",
 }
+APP_TITLE = f"DLSS5Tool {APP_VERSION}"
 SCALE_DISABLED = {
     "troughcolor": "#e6e6e6",
     "background": "#d0d0d0",
@@ -380,7 +382,7 @@ class TimelineBar(tk.Canvas):
 class App:
     def __init__(self, root):
         self.root = root
-        root.title("DLSS5 简约工具 — 实时预览 + 导出")
+        root.title(f"{APP_TITLE} — 实时预览 + 导出")
         root.geometry("1000x820")
         try:
             ttk.Style().configure("Toolbutton", padding=(8, 2))
@@ -2398,7 +2400,7 @@ class App:
             self.eta_label.config(text="")
         except Exception:
             pass
-        self.root.title("DLSS5 简约工具 — 实时预览 + 导出")
+        self.root.title(f"{APP_TITLE} — 实时预览 + 导出")
         self._update_action_labels()
         self._draw_empty()
         self.set_status("就绪")
@@ -2441,7 +2443,7 @@ class App:
         self._source_kind = "image"
         self.nframes, self.fps = 1, 1.0
         self._frame = 0
-        self.root.title(f"DLSS5 简约工具 — {os.path.basename(path)}")
+        self.root.title(f"{APP_TITLE} — {os.path.basename(path)}")
         self.timeline.set_range(0, 0)
         self.timeline.set(0)
         self._sync_transport_labels()
@@ -2498,7 +2500,7 @@ class App:
         self.nframes, self.fps = n, fps
         last = max(n - 1, 0)
         self._frame = 0
-        self.root.title(f"DLSS5 简约工具 — {os.path.basename(self.video)}")
+        self.root.title(f"{APP_TITLE} — {os.path.basename(self.video)}")
         self.timeline.set_range(0, last)
         self.timeline.set(0)
         self._sync_transport_labels()
@@ -2865,4 +2867,9 @@ def main():
 if __name__ == "__main__":
     # Required for ProcessLive's spawn worker in a PyInstaller build.
     multiprocessing.freeze_support()
-    main()
+    if "--parallel-worker" in sys.argv:
+        sys.argv.remove("--parallel-worker")
+        from parallel_export_worker import main as parallel_worker_main
+        parallel_worker_main()
+    else:
+        main()
