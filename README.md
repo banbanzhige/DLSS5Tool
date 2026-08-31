@@ -6,11 +6,24 @@
 
 游戏里的 Feature 18 通常要引擎提供完整 G-Buffer。本工具走 **零引导、仅颜色** 路径，因此不依赖材质、法线、运动矢量或深度，就能把神经渲染当成后处理接到成片上——补真实感、压掉生成图常见的 AI 感与油腻感，同时比重渲或再跑一遍生成模型快得多。
 
-> [!WARNING]
-> 本项目处于实验阶段，不是 NVIDIA 官方产品，也未获得 NVIDIA 的赞助或背书。
-> NVIDIA、GeForce RTX、DLSS 和 NGX 是其各自权利人的商标或技术。请在公开分发
-> 构建产物前自行核对 NVIDIA RTX SDK、神经渲染运行时、FFmpeg/编解码器及相关
-> 模型的许可证；本项目许可证不授予这些第三方组件的权利。
+## 效果对比
+
+下面两张图使用同一张 AI 生成素材：图 1 是未经处理的原图，图 2 是本工具的神经渲染结果。不同素材、运行时版本和参数可能产生不同效果；点击图片可查看 1000 × 1000 原图。
+
+<table>
+  <tr>
+    <th width="50%">图 1 · 原图</th>
+    <th width="50%">图 2 · 神经渲染后</th>
+  </tr>
+  <tr>
+    <td align="center">
+      <a href="img/1.png"><img src="img/1.png" alt="未经处理的 AI 生成原图" width="100%"></a>
+    </td>
+    <td align="center">
+      <a href="img/2.png"><img src="img/2.png" alt="经过 DLSS5Tool 神经渲染后的图片" width="100%"></a>
+    </td>
+  </tr>
+</table>
 
 ## 能做什么
 
@@ -100,6 +113,17 @@
 `DLSS5Tool.exe`。免安装版已包含 Python 依赖和基础 FFmpeg，无需另装 Python；仍需
 Windows 10/11 x64、兼容的 NVIDIA GPU/驱动和 Microsoft Visual C++ 2015–2022
 Redistributable。不要只把 EXE 单独移出解压目录，旁边的 `_internal` 目录是运行所必需的。
+
+免安装版默认附带的是面向 **RTX 40 系** 的 `nvngx_dlssnr.dll`。RTX 30 系或 RTX 50 系
+用户请从同一版本的 Release 下载对应的 `30系.zip` 或 `50系.zip`，关闭程序后解压，并用
+其中的 `nvngx_dlssnr.dll` 覆盖免安装版中的：
+
+```text
+_internal\nvngx_dlssnr.dll
+```
+
+替换时只覆盖这个 DLL，不要删除、移动 `_internal` 中的其它文件。上述路径只适用于
+免安装版；从源码运行时，`nvngx_dlssnr.dll` 应放在项目根目录。
 
 开发者可以在项目根目录运行 `./build_release.ps1` 重建同一版本。构建脚本会创建 `.venv`、
 安装依赖、运行测试，并在 `dist` 下生成免安装目录和 ZIP。
@@ -192,5 +216,7 @@ git clone --depth 1 https://github.com/NVIDIA/DLSS.git third_party/NVIDIA-DLSS
 
 ## 第三方组件与许可证
 
-项目自有源码按 [MIT License](LICENSE) 发布。该许可证不覆盖 NVIDIA SDK/运行时、
-FFmpeg、Python 依赖或参考项目；详情见 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)。
+本项目定位为研究与实验工具，项目自有源码按 [MIT License](LICENSE) 发布。免安装版默认
+使用的 `nvngx_dlssnr.dll` 由社区项目提供，30 / 40 / 50 系替换版本继续受其各自上游许可
+约束，不属于本仓库 MIT 许可证的授权范围。MIT 许可证同样不覆盖 NVIDIA SDK、FFmpeg、
+Python 依赖或参考项目；详情见 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)。
