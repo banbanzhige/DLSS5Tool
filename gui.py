@@ -541,13 +541,13 @@ class App:
         self._preview_decode_next = None
         self._buffering = False
         self._buffer_started_at = None
+        self._pre_rendering = False
         self._preview_processed_frames = 0
         self._preview_process_t0 = None
         self._preview_status_at = 0.0
         self._prefetch_stop = threading.Event()
         self._prefetch_stop.set()
         self._prefetch_gen = 0
-        self._prefetch_start_after = None
         self._export_t0 = None
         self._export_ema_fps = None
         self._audio = PreviewAudio()
@@ -992,6 +992,7 @@ class App:
         ttk.Label(parent, text="拖动后生成:").grid(row=0, column=7, sticky="e", padx=(4, 2))
         scrub = ttk.Spinbox(parent, from_=0, to=400, textvariable=d['v_scrub_ms'], width=6)
         scrub.grid(row=0, column=8, sticky="w")
+        Tooltip(scrub, "停止拖动或跳转后等待这段时间，再生成精确预览并从当前帧向后预渲染。")
         ttk.Label(parent, text="ms").grid(row=0, column=9, sticky="w", padx=(2, 8))
         d.update({
             'w_quality': quality, 'w_cache_mb': cache_mb, 'w_scrub_ms': scrub,
@@ -1056,11 +1057,12 @@ class App:
             pass
         self._schedule_settings_save()
         if self.video and not self._exporting and not self._is_image:
-            self._prefetch_stop.set()
-            self._preview_frame_queue = None
+            self._stop_paused_prerender()
             if self.playing and self.view_var.get() in ("DLSS", "对比"):
                 self._start_strict_preview_buffering()
                 self._present_play_frame(self._frame)
+            elif self.view_var.get() in ("DLSS", "对比"):
+                self._schedule_full_preview()
 
     def _update_preview_memory_hint(self):
         settings = getattr(self, "_preview_runtime_settings", None) or self._collect_preview_settings()
@@ -1076,7 +1078,8 @@ class App:
             frames = max(int(budget_mib * 1024 * 1024 // pair_bytes), 1)
             seconds = frames / max(float(self.fps), 1.0)
             text = (
-                f"预计约 {frames} 个原图+DLSS帧（{seconds:.1f} 秒）；"
+                f"后台最多约 {frames} 个原图+DLSS帧（{seconds:.1f} 秒）；"
+                f"播放启动仍按 {PREVIEW_BUFFER_SECONDS:.1f} 秒；"
                 f"当前处理尺寸 {preview_w}×{preview_h}"
             )
         label = (getattr(self, "_preview_settings", None) or {}).get('w_cache_hint')
@@ -1443,7 +1446,6 @@ class App:
         self._cancel_after("_output_preview_after")
         self._cancel_after("_scrub_after")
         self._cancel_after("_resize_after")
-        self._cancel_after("_prefetch_start_after")
         self._save_settings_now()
         self.pause()
         self._wait_play_dlss()
@@ -1652,17 +1654,25 @@ class App:
             return self._source_frame_cache.get(int(frame))
 
     def _buffer_target_frames(self):
+        capacity = self._cache_capacity_frames()
+        desired = max(int(round(max(float(self.fps), 1.0) * PREVIEW_BUFFER_SECONDS)), 1)
+        return max(1, min(desired, capacity))
+
+    def _cache_capacity_frames(self):
         source_w, source_h = self._source_size()
         preview_w, preview_h = self._active_preview_size or self._playback_preview_size()
         pair_bytes = max((source_w * source_h + preview_w * preview_h) * 3, 1)
-        capacity = max(self._preview_cache_bytes() // pair_bytes, 1)
-        desired = max(int(round(max(float(self.fps), 1.0) * PREVIEW_BUFFER_SECONDS)), 1)
-        return max(1, min(desired, int(capacity)))
+        return max(int(self._preview_cache_bytes() // pair_bytes), 1)
+
+    def _prerender_target_frames(self):
+        capacity = self._cache_capacity_frames()
+        reserve = PREVIEW_QUEUE_SIZE if capacity > PREVIEW_QUEUE_SIZE else 0
+        return max(self._buffer_target_frames(), capacity - reserve)
 
     def _evict_preview_cache_locked(self):
         budget = max(self._preview_cache_bytes(), 1)
         playhead = int(self._frame)
-        protected_end = playhead + self._buffer_target_frames()
+        protected_end = playhead + self._prerender_target_frames() - 1
 
         def total_bytes():
             return self._dlss_cache_bytes + self._source_cache_bytes
@@ -1753,6 +1763,14 @@ class App:
             return
         self._draw_fit(img, cw, ch, badge=badge)
 
+    def _canvas_shadow_text(self, x, y, text, fill=HUD_FILL, shadow="#000000", **kwargs):
+        self.canvas.create_text(
+            x + 1, y + 1, text=text, fill=shadow, **kwargs,
+        )
+        return self.canvas.create_text(
+            x, y, text=text, fill=fill, **kwargs,
+        )
+
     def _draw_fit(self, img, cw, ch, badge=None):
         ih, iw = img.shape[:2]
         scale = min(cw / iw, ch / ih)
@@ -1766,8 +1784,8 @@ class App:
         self.canvas.delete("all")
         self.canvas.create_image(ox, oy, anchor="nw", image=self._photo)
         if badge:
-            self.canvas.create_text(
-                ox + 10, oy + 14, text=badge, fill=HUD_FILL, anchor="w",
+            self._canvas_shadow_text(
+                ox + 10, oy + 14, badge, fill=HUD_FILL, anchor="w",
                 font=("Microsoft YaHei", 9),
             )
         if self._dlss_pending:
@@ -1855,19 +1873,19 @@ class App:
                 sx_abs - 5, handle_y - 5, sx_abs + 5, handle_y + 5,
                 fill=SPLIT_LINE, outline=CANVAS_BG, width=1, tags=("split",),
             )
-            self.canvas.create_text(
-                ox + 10, oy + 14, text="原图", fill=HUD_FILL, anchor="w",
+            self._canvas_shadow_text(
+                ox + 10, oy + 14, "原图", fill=HUD_FILL, anchor="w",
                 font=("Microsoft YaHei", 9),
             )
-            self.canvas.create_text(
+            self._canvas_shadow_text(
                 ox + nw - 10, oy + 14,
-                text="DLSS 生成中…" if self._dlss_pending else "DLSS",
+                "DLSS 生成中…" if self._dlss_pending else "DLSS",
                 fill=HUD_FILL, anchor="e",
                 font=("Microsoft YaHei", 9),
             )
         elif self._hold_original:
-            self.canvas.create_text(
-                ox + 10, oy + 14, text="原图（按住 Alt）", fill=HUD_FILL, anchor="w",
+            self._canvas_shadow_text(
+                ox + 10, oy + 14, "原图（按住 Alt）", fill=HUD_FILL, anchor="w",
                 font=("Microsoft YaHei", 9),
             )
         if self._dlss_pending:
@@ -2119,6 +2137,8 @@ class App:
         if self.playing or not self.video or self._exporting:
             return
         self._display_precise_preview()
+        if self._start_paused_prerender():
+            self._update_preview_timeline_and_status(force=True)
 
     def _display_precise_preview(self):
         source_size = self._source_size()
@@ -2145,11 +2165,10 @@ class App:
         if self.playing:
             self.pause()
         if phase in ("start", "move"):
-            self._prefetch_stop.set()
+            self._stop_paused_prerender()
             self._goto_frame(frame, quality="fast")
             return
-        self._goto_frame(frame, quality="full")
-        self._schedule_prefetch()
+        self._goto_frame(frame, quality="fast")
 
     def _on_wheel_step(self, event):
         if not self.video or self._exporting:
@@ -2163,7 +2182,7 @@ class App:
             return
         self.pause()
         self._goto_frame(self._frame + int(delta), quality="full")
-        self._schedule_prefetch()
+        self._schedule_full_preview()
         try:
             self.root.focus_set()
         except Exception:
@@ -2175,7 +2194,7 @@ class App:
         self.pause()
         frames = int(round(float(seconds) * max(self.fps, 1.0)))
         self._goto_frame(self._frame + frames, quality="full")
-        self._schedule_prefetch()
+        self._schedule_full_preview()
 
     def jump_frame(self, frame):
         if not self.video or self._exporting:
@@ -2184,7 +2203,7 @@ class App:
         if frame < 0:
             frame = self._last_frame_index()
         self._goto_frame(frame, quality="full")
-        self._schedule_prefetch()
+        self._schedule_full_preview()
 
     def on_frame_entry(self, event=None):
         txt = self.fentry.get().strip()
@@ -2195,7 +2214,7 @@ class App:
             return
         self.pause()
         self._goto_frame(f, quality="full")
-        self._schedule_prefetch()
+        self._schedule_full_preview()
 
     def sync_frame_entry(self):
         try:
@@ -2214,9 +2233,7 @@ class App:
             self._draw_empty()
             return
         if self.view_var.get() == "原图":
-            self._prefetch_stop.set()
-            self._preview_frame_queue = None
-            self._cancel_after("_preview_decode_after")
+            self._stop_paused_prerender()
             self._active_preview_size = None
             self.set_status("")
             if self.playing and self._buffering:
@@ -2226,6 +2243,8 @@ class App:
                 self._start_strict_preview_buffering()
         self._split_size = None
         self.display_view(quality="full")
+        if not self.playing and self.view_var.get() in ("DLSS", "对比"):
+            self._schedule_full_preview()
 
     def on_settings_change(self, event=None):
         self._update_dlss_control_states()
@@ -2271,14 +2290,14 @@ class App:
         self._split_frame = -1
         self._split_dlss = None
         if self.video and not self._is_image:
-            self._prefetch_stop.set()
-            self._preview_frame_queue = None
+            self._stop_paused_prerender()
             if self.playing and self.view_var.get() in ("DLSS", "对比"):
                 self._start_strict_preview_buffering()
         if self.playing:
             return
         if self.view_var.get() in ("DLSS", "对比"):
             self.display_view(quality="full")
+            self._schedule_full_preview()
 
     def _input_widget_focused(self, extra=()):
         w = self.root.focus_get()
@@ -2477,6 +2496,7 @@ class App:
         self._audio.play(frame, self.fps)
 
     def _start_strict_preview_buffering(self):
+        self._pre_rendering = False
         self._active_preview_size = self._playback_preview_size()
         source = self._source_cache_get(self._frame)
         if source is None:
@@ -2488,6 +2508,41 @@ class App:
         self._start_prefetch()
         self._queue_preview_frame(self._frame, source)
         self._enter_preview_buffering(self._frame)
+        self._schedule_preview_decode(0)
+        return True
+
+    def _preview_session_active(self):
+        return bool(
+            (self.playing or self._pre_rendering)
+            and self.video and not self._exporting and not self._is_image
+            and self.view_var.get() in ("DLSS", "对比")
+        )
+
+    def _stop_paused_prerender(self):
+        self._pre_rendering = False
+        self._cancel_after("_preview_decode_after")
+        self._prefetch_stop.set()
+        self._preview_frame_queue = None
+        with self._cache_lock:
+            self._queued_preview_frames.clear()
+
+    def _start_paused_prerender(self):
+        if self.playing or not self.video or self._exporting or self._is_image:
+            return False
+        if self.view_var.get() not in ("DLSS", "对比") or self._hold_original:
+            return False
+        self._stop_paused_prerender()
+        self._pre_rendering = True
+        self._active_preview_size = self._playback_preview_size()
+        source = self._source_cache_get(self._frame)
+        if source is None:
+            source = self._read_frame(self._frame)
+        if source is None:
+            self._pre_rendering = False
+            return False
+        self._source_cache_store(self._frame, source)
+        self._start_prefetch()
+        self._queue_preview_frame(self._frame, source)
         self._schedule_preview_decode(0)
         return True
 
@@ -2514,19 +2569,20 @@ class App:
 
     def _schedule_preview_decode(self, delay=1):
         self._cancel_after("_preview_decode_after")
-        if self.playing and self.view_var.get() in ("DLSS", "对比"):
+        if self._preview_session_active():
             self._preview_decode_after = self.root.after(delay, self._preview_decode_tick)
 
     def _preview_decode_tick(self):
         self._preview_decode_after = None
-        if not self.playing or self.view_var.get() not in ("DLSS", "对比"):
+        if not self._preview_session_active():
             return
         target_end = min(
             self._last_frame_index(),
-            self._frame + self._buffer_target_frames() + PREVIEW_QUEUE_SIZE,
+            self._frame + self._prerender_target_frames() - 1,
         )
         target_size = self._active_preview_size or self._playback_preview_size()
         sk = self._settings_hash()
+        waiting_on_worker = False
         for next_frame in range(self._frame, target_end + 1):
             processed_ready = self._cached_dlss_sk(next_frame, sk, target_size) is not None
             source = self._source_cache_get(next_frame)
@@ -2534,6 +2590,7 @@ class App:
                 continue
             with self._cache_lock:
                 if not processed_ready and next_frame in self._queued_preview_frames:
+                    waiting_on_worker = True
                     continue
             if source is None:
                 source = self._read_frame(next_frame)
@@ -2547,7 +2604,18 @@ class App:
             self._queue_preview_frame(next_frame, source)
             self._schedule_preview_decode(1)
             return
-        self._schedule_preview_decode(10)
+        if waiting_on_worker:
+            self._update_preview_timeline_and_status()
+            self._schedule_preview_decode(20)
+            return
+        if self._pre_rendering and not self.playing:
+            self._pre_rendering = False
+            self._prefetch_stop.set()
+            self._preview_frame_queue = None
+            self._update_preview_timeline_and_status(force=True)
+            return
+        self._update_preview_timeline_and_status(force=True)
+        self._schedule_preview_decode(20)
 
     def _update_preview_timeline_and_status(self, force=False):
         if not self.video or self.view_var.get() not in ("DLSS", "对比"):
@@ -2574,9 +2642,21 @@ class App:
         )
         rate = self._preview_processed_frames / elapsed if elapsed > 0.05 else 0.0
         used_mib = used_bytes / (1024 * 1024)
+        target_end = min(
+            self._last_frame_index(),
+            self._frame + self._prerender_target_frames() - 1,
+        )
+        target_total = max(target_end - self._frame + 1, 1)
+        rendered_ahead = sum(
+            1 for frame in rendered_frames if self._frame <= frame <= target_end
+        )
         if self._buffering:
             _ready, available, required = self._buffer_is_ready()
             text = f"正在渲染第 {self._frame} 帧 · 启动缓冲 {available}/{required} 帧"
+        elif self._pre_rendering and not self.playing:
+            text = f"后台预渲染 · 前向缓存 {rendered_ahead}/{target_total} 帧"
+        elif not self.playing:
+            text = f"预渲染就绪 · 前向缓存 {rendered_ahead}/{target_total} 帧"
         else:
             text = f"严格同步预览 · 已渲染 {len(rendered_frames)} 帧"
         if rate > 0:
@@ -2727,15 +2807,8 @@ class App:
         self._dlss_pending = bool(pending or self._split_dlss is None)
         self._blit_split(cw, ch)
 
-    def _schedule_prefetch(self):
-        if not self.playing or not self.video or self._exporting or self._is_image:
-            return
-        self._cancel_after("_prefetch_start_after")
-        self._prefetch_start_after = self.root.after(40, self._start_prefetch)
-
     def _start_prefetch(self):
-        self._prefetch_start_after = None
-        if not self.playing or not self.video or self._exporting or self._is_image:
+        if not self._preview_session_active():
             return
         if self.view_var.get() == "原图":
             return
@@ -2765,8 +2838,7 @@ class App:
 
     def _queue_preview_frame(self, frame, bgr):
         if (
-            not self.playing or bgr is None or self.view_var.get() == "原图"
-            or self._exporting or self._is_image
+            not self._preview_session_active() or bgr is None
         ):
             return False
         frame_queue = self._preview_frame_queue
@@ -2866,9 +2938,9 @@ class App:
                 self._play_dlss_busy = False
 
     def _wait_play_dlss(self, timeout=5.0):
-        self._cancel_after("_prefetch_start_after")
         self._cancel_after("_preview_decode_after")
         self._prefetch_stop.set()
+        self._pre_rendering = False
         self._preview_frame_queue = None
         with self._cache_lock:
             self._queued_preview_frames.clear()
@@ -2883,6 +2955,7 @@ class App:
         self.playing = False
         self._buffering = False
         self._buffer_started_at = None
+        self._pre_rendering = False
         self._active_preview_size = None
         self._set_play_btn(False)
         self._cancel_after("_play_after")
@@ -3112,7 +3185,7 @@ class App:
         self.logln(f"已导入: {self.video}  ({n} 帧)")
         duration = n / max(float(fps) or 30.0, 1.0)
         self._audio.prepare(path, duration, callback=self._audio_ready_cb)
-        self._schedule_prefetch()
+        self._schedule_full_preview()
         if not self._hinted_keys:
             self.set_status("空格播放/暂停 · ← → 逐帧 · Alt 对照原图 · F11 全屏")
             self._hinted_keys = True

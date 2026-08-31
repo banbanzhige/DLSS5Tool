@@ -291,6 +291,37 @@ class PreviewCacheTests(unittest.TestCase):
         app._source_cache_store(11, source)
         self.assertLessEqual(app._source_cache_bytes + app._dlss_cache_bytes, 150)
 
+    def test_large_ram_budget_extends_prerender_beyond_startup_buffer(self):
+        app = self._app()
+        app._media_w, app._media_h = 3840, 2160
+        app._active_preview_size = (1920, 1080)
+        app._preview_cache_bytes = lambda: 8 * 1024**3
+        startup_frames = app._buffer_target_frames()
+        capacity = app._cache_capacity_frames()
+        self.assertEqual(startup_frames, 24)
+        self.assertGreater(capacity, startup_frames)
+        self.assertEqual(app._prerender_target_frames(), capacity - 3)
+
+    def test_shadow_text_draws_offset_shadow_then_foreground(self):
+        app = App.__new__(App)
+        calls = []
+
+        class FakeCanvas:
+            def create_text(self, x, y, **kwargs):
+                calls.append((x, y, kwargs))
+                return len(calls)
+
+        app.canvas = FakeCanvas()
+        result = app._canvas_shadow_text(
+            20, 30, "DLSS", fill="#ffffff", anchor="w",
+        )
+        self.assertEqual(result, 2)
+        self.assertEqual(calls[0][:2], (21, 31))
+        self.assertEqual(calls[0][2]["fill"], "#000000")
+        self.assertEqual(calls[1][:2], (20, 30))
+        self.assertEqual(calls[1][2]["fill"], "#ffffff")
+        self.assertEqual([call[2]["text"] for call in calls], ["DLSS", "DLSS"])
+
     def test_pending_preview_is_visibly_not_the_original(self):
         original = np.full((4, 8, 3), (40, 120, 220), np.uint8)
         pending = App._pending_preview_image(original)
@@ -300,6 +331,76 @@ class PreviewCacheTests(unittest.TestCase):
 
 
 class PreviewQueueTests(unittest.TestCase):
+    def test_scrub_delay_triggers_precise_preview_and_paused_prerender(self):
+        app = App.__new__(App)
+        callbacks = []
+        events = []
+
+        class FakeRoot:
+            def after(self, delay, callback):
+                callbacks.append((delay, callback))
+                return "after-id"
+
+        app.root = FakeRoot()
+        app._scrub_after = None
+        app._preview_scrub_ms = lambda: 75
+        app._cancel_after = lambda name: events.append(("cancel", name))
+        app.playing = False
+        app.video = "video.mp4"
+        app._exporting = False
+        app._display_precise_preview = lambda: events.append(("precise", None))
+        app._start_paused_prerender = lambda: events.append(("prerender", None)) or True
+        app._update_preview_timeline_and_status = (
+            lambda force=False: events.append(("status", force))
+        )
+
+        app._schedule_full_preview()
+        self.assertEqual(callbacks[0][0], 75)
+        self.assertIs(callbacks[0][1].__self__, app)
+        callbacks[0][1]()
+        self.assertEqual(
+            events,
+            [
+                ("cancel", "_scrub_after"),
+                ("precise", None),
+                ("prerender", None),
+                ("status", True),
+            ],
+        )
+
+    def test_paused_prerender_can_start_without_playback(self):
+        app = App.__new__(App)
+        calls = []
+        source = np.zeros((4, 8, 3), np.uint8)
+
+        class FakeVar:
+            def get(self):
+                return "DLSS"
+
+        app.playing = False
+        app.video = "video.mp4"
+        app._exporting = False
+        app._source_kind = "video"
+        app.view_var = FakeVar()
+        app._hold_original = False
+        app._frame = 12
+        app._pre_rendering = False
+        app._stop_paused_prerender = lambda: calls.append("stop")
+        app._playback_preview_size = lambda: (4, 2)
+        app._source_cache_get = lambda frame: source
+        app._source_cache_store = lambda frame, bgr: calls.append(("store", frame))
+        app._start_prefetch = lambda: calls.append("worker")
+        app._queue_preview_frame = lambda frame, bgr: calls.append(("queue", frame))
+        app._schedule_preview_decode = lambda delay=1: calls.append(("decode", delay))
+
+        self.assertTrue(app._start_paused_prerender())
+        self.assertTrue(app._pre_rendering)
+        self.assertEqual(app._active_preview_size, (4, 2))
+        self.assertEqual(
+            calls,
+            ["stop", ("store", 12), "worker", ("queue", 12), ("decode", 0)],
+        )
+
     def test_preview_worker_consumes_frames_without_a_second_decoder(self):
         app = App.__new__(App)
         app._prefetch_gen = 7
