@@ -13,7 +13,8 @@ from gui import (
     _clamp_frame, _decode_plan, _first_image, _format_duration, _format_timecode,
     _fit_preview_size, _frame_ranges, _realtime_preview_size,
     _is_image_path, _is_video_path, _play_target_frame, _read_image_bgr,
-    _write_image_bgr, compose_preview_frame, effective_slider,
+    _normalize_slider_input, _write_image_bgr, compose_preview_frame,
+    effective_skin_settings, effective_slider,
 )
 from preview_audio import frame_to_ms, ms_to_frame
 from video_export import compose_output_frame
@@ -188,6 +189,35 @@ class EffectiveSliderTests(unittest.TestCase):
         self.assertEqual(effective_slider(True, 0.85), 0.85)
         self.assertEqual(effective_slider(False, "nope"), 0.0)
         self.assertEqual(effective_slider(True, "0.4"), 0.4)
+
+    def test_zero_skin_strength_does_not_enable_auto_mask(self):
+        self.assertEqual(effective_skin_settings(False, 0.8), (0, 0.0))
+        self.assertEqual(effective_skin_settings(False, 0.0), (0, 0.0))
+        self.assertEqual(effective_skin_settings(True, 0.0), (0, 0.0))
+        self.assertEqual(effective_skin_settings(True, 0.8), (1, 0.8))
+
+    def test_slider_input_supports_one_percent_steps_and_one_hundred_percent(self):
+        self.assertEqual(_normalize_slider_input("0.73"), 0.73)
+        self.assertEqual(_normalize_slider_input("75%"), 0.75)
+        self.assertEqual(_normalize_slider_input("0.734"), 0.73)
+        self.assertEqual(_normalize_slider_input("150%"), 1.0)
+        self.assertEqual(_normalize_slider_input("bad", fallback=0.8), 0.8)
+
+    def test_persisted_slider_values_are_clamped_to_one(self):
+        values = app_settings.validate(
+            {
+                "intensity": 0.75,
+                "local_tone": 1.0,
+                "local_struct": 1.25,
+                "skin_struct": 2.0,
+                "output_mix": 2.5,
+            }
+        )
+        self.assertEqual(values["intensity"], 0.75)
+        self.assertEqual(values["local_tone"], 1.0)
+        self.assertEqual(values["local_struct"], 1.0)
+        self.assertEqual(values["skin_struct"], 1.0)
+        self.assertEqual(values["output_mix"], 1.0)
 
 
 class OutputViewTests(unittest.TestCase):
@@ -633,6 +663,9 @@ class WidgetSmokeTests(unittest.TestCase):
                 self.assertEqual(str(app._settings["w_intensity"].cget("state")), "disabled")
                 self.assertEqual(str(app._settings["w_local_tone"].cget("state")), "normal")
                 self.assertEqual(str(app._settings["w_skin_struct"].cget("state")), "disabled")
+                self.assertEqual(float(app._settings["w_intensity"].cget("to")), 1.0)
+                self.assertEqual(float(app._settings["w_intensity"].cget("resolution")), 0.01)
+                self.assertTrue(app._settings["w_intensity_value"].instate(["disabled"]))
                 self.assertEqual(
                     str(app._settings["w_intensity"].cget("troughcolor")).lower(),
                     "#e6e6e6",
@@ -640,10 +673,6 @@ class WidgetSmokeTests(unittest.TestCase):
                 self.assertEqual(
                     str(app._settings["w_local_tone"].cget("troughcolor")).lower(),
                     "#5b8fad",
-                )
-                self.assertEqual(
-                    str(app._settings["w_intensity_value"].cget("foreground")).lower(),
-                    "#9a9a9a",
                 )
                 root.update_idletasks()
                 intensity_w = app._settings["w_intensity"].master.winfo_width()
@@ -660,16 +689,31 @@ class WidgetSmokeTests(unittest.TestCase):
                 self.assertAlmostEqual(live["intensity"], 0.9)
                 self.assertAlmostEqual(live["skin_struct"], 0.8)
                 self.assertEqual(live["use_auto_mask"], 1)
+
+                app._settings["v_skin_struct"].set(0.0)
+                skin_zero_on = app._collect_settings()
+                app._settings["v_auto_mask"].set(False)
+                skin_zero_off = app._collect_settings()
+                self.assertEqual(skin_zero_on["use_auto_mask"], 0)
+                self.assertEqual(skin_zero_on["skin_struct"], 0.0)
+                self.assertEqual(
+                    app._hash_settings_dict(skin_zero_on),
+                    app._hash_settings_dict(skin_zero_off),
+                )
+
+                app._settings["v_auto_mask"].set(True)
+                app._settings["v_skin_struct"].set(0.8)
                 self.assertEqual(str(app._settings["w_intensity"].cget("state")), "normal")
                 self.assertEqual(str(app._settings["w_skin_struct"].cget("state")), "normal")
+                self.assertTrue(app._settings["w_intensity_value"].instate(["!disabled"]))
                 self.assertEqual(
                     str(app._settings["w_intensity"].cget("troughcolor")).lower(),
                     "#5b8fad",
                 )
-                self.assertEqual(
-                    str(app._settings["w_intensity_value"].cget("foreground")).lower(),
-                    "#222222",
-                )
+                app._settings["w_intensity_value"].set("75%")
+                live = app._collect_settings()
+                self.assertAlmostEqual(live["intensity"], 0.75)
+                self.assertEqual(app._settings["w_intensity_value"].get(), "0.75")
 
                 app._settings["v_outview"].set("差异×10")
                 app._update_dlss_control_states()

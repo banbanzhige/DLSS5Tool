@@ -10,6 +10,7 @@ gui.py — 简约 DLSS5 实时预览 + 导出 (test4)
 运行： python gui.py
 """
 import ctypes
+import math
 import os
 import multiprocessing
 import queue
@@ -289,6 +290,40 @@ def effective_slider(enabled, value):
     return value if enabled else 0.0
 
 
+def effective_skin_settings(enabled, value):
+    """A zero skin strength is a true no-op, including the auto-mask flag."""
+    strength = effective_slider(enabled, value)
+    return (1 if strength > 0.0 else 0), strength
+
+
+def _normalize_slider_input(value, fallback=0.0):
+    """Parse decimal or percentage input and snap it to the supported slider range."""
+    try:
+        text = str(value).strip()
+        if text.endswith("%"):
+            parsed = float(text[:-1].strip()) / 100.0
+        else:
+            parsed = float(text)
+        if not math.isfinite(parsed):
+            raise ValueError
+    except (TypeError, ValueError):
+        try:
+            parsed = float(fallback)
+        except (TypeError, ValueError):
+            parsed = app_settings.DLSS_SLIDER_MIN
+    parsed = max(
+        app_settings.DLSS_SLIDER_MIN,
+        min(app_settings.DLSS_SLIDER_MAX, parsed),
+    )
+    steps = round(
+        (parsed - app_settings.DLSS_SLIDER_MIN) / app_settings.DLSS_SLIDER_STEP
+    )
+    return round(
+        app_settings.DLSS_SLIDER_MIN + steps * app_settings.DLSS_SLIDER_STEP,
+        2,
+    )
+
+
 def compose_preview_frame(original, processed, output_view=0, output_mix=1.0):
     """Apply the export mix to preview without previewing export-only view layouts."""
     if original is None or processed is None:
@@ -490,7 +525,16 @@ class App:
         root.title(f"{APP_TITLE} — 实时预览 + 导出")
         root.geometry("1000x820")
         try:
-            ttk.Style().configure("Toolbutton", padding=(8, 2))
+            style = ttk.Style()
+            style.configure("Toolbutton", padding=(8, 2))
+            style.configure("SliderValue.TSpinbox", padding=(2, 1))
+            style.map(
+                "SliderValue.TSpinbox",
+                foreground=[
+                    ("disabled", SCALE_VALUE_OFF),
+                    ("!disabled", SCALE_VALUE_ON),
+                ],
+            )
         except Exception:
             pass
         self._saved_settings = app_settings.load()
@@ -632,7 +676,7 @@ class App:
         Tooltip(
             sf,
             "每个滑条的开关关闭时按 0 处理，开启后使用记忆的数值。\n"
-            "皮肤蒙版关闭时皮肤结构按 0；开启后使用记忆的皮肤结构，并用自动蒙版。",
+            "皮肤蒙版数值为 0 时等同关闭；大于 0 时才启用自动蒙版。",
         )
 
         self._preview_section = CollapsibleSection(
@@ -821,6 +865,7 @@ class App:
     # ---------- preview ----------
     def _build_settings(self, parent):
         d = {}
+        self._slider_committers = []
         saved = self._saved_settings
         d['v_style'] = tk.StringVar(value=STYLE_NAMES.get(saved['style'], "默认"))
         d['v_intensity'] = tk.DoubleVar(value=saved['intensity'])
@@ -887,7 +932,8 @@ class App:
         )
         _, d['w_skin_struct'], d['w_skin_struct_value'] = self._add_toggle_slider(
             grid, 1, 2, "皮肤蒙版", d['v_skin_struct'], d['v_auto_mask'],
-            "关闭时皮肤结构按 0 处理。开启后使用记忆的皮肤结构，并用自动蒙版保护皮肤纹理。",
+            "关闭时皮肤结构按 0 处理。开启且数值大于 0 时使用自动蒙版保护皮肤纹理；"
+            "数值为 0 时等同关闭。",
         )
         self._settings = d
         self._update_dlss_control_states()
@@ -907,19 +953,52 @@ class App:
             command=on_change,
         )
         checkbox.pack(side="left")
-        value_label = ttk.Label(header, width=4, anchor="e", foreground=SCALE_VALUE_OFF)
-        value_label.pack(side="right")
+        value_text = tk.StringVar()
 
-        def refresh_label(*_args):
+        def refresh_input(*_args):
             try:
-                value_label.config(text=f"{float(value_var.get()):.2f}")
+                value_text.set(f"{float(value_var.get()):.2f}")
             except (TypeError, ValueError, tk.TclError):
                 pass
 
-        refresh_label()
-        value_var.trace_add("write", refresh_label)
+        refresh_input()
+        value_var.trace_add("write", refresh_input)
+
+        def commit_input(_event=None, notify=True):
+            try:
+                fallback = float(value_var.get())
+            except (TypeError, ValueError, tk.TclError):
+                fallback = app_settings.DLSS_SLIDER_MIN
+            value = _normalize_slider_input(value_text.get(), fallback)
+            value_var.set(value)
+            value_text.set(f"{value:.2f}")
+            if notify:
+                on_change()
+
+        value_input = ttk.Spinbox(
+            header,
+            from_=app_settings.DLSS_SLIDER_MIN,
+            to=app_settings.DLSS_SLIDER_MAX,
+            increment=app_settings.DLSS_SLIDER_STEP,
+            format="%.2f",
+            textvariable=value_text,
+            width=6,
+            justify="right",
+            command=commit_input,
+            style="SliderValue.TSpinbox",
+        )
+        value_input.pack(side="right")
+        value_input.bind("<Return>", commit_input)
+        value_input.bind("<KP_Enter>", commit_input)
+        value_input.bind("<FocusOut>", commit_input)
+        self._slider_committers.append(lambda: commit_input(notify=False))
+
         scale = tk.Scale(
-            cell, from_=0, to=1, resolution=0.05, orient="horizontal",
+            cell,
+            from_=app_settings.DLSS_SLIDER_MIN,
+            to=app_settings.DLSS_SLIDER_MAX,
+            resolution=app_settings.DLSS_SLIDER_STEP,
+            orient="horizontal",
             showvalue=False, variable=value_var, length=160,
             sliderlength=16, highlightthickness=0, **SCALE_DISABLED,
         )
@@ -927,15 +1006,19 @@ class App:
         scale.config(command=lambda e: on_change())
         if tooltip:
             Tooltip(checkbox, tooltip)
-            Tooltip(scale, tooltip)
-            Tooltip(value_label, tooltip)
-        return checkbox, scale, value_label
+            value_help = (
+                tooltip
+                + "\n可拖动或直接输入 0.00～1.00（1.00=100%），也支持输入如 75%。"
+            )
+            Tooltip(scale, value_help)
+            Tooltip(value_input, value_help)
+        return checkbox, scale, value_input
 
-    def _set_slider_enabled(self, scale, value_label, enabled):
+    def _set_slider_enabled(self, scale, value_input, enabled):
         colors = SCALE_ENABLED if enabled else SCALE_DISABLED
         scale.config(state="normal" if enabled else "disabled", **colors)
-        if value_label is not None:
-            value_label.config(foreground=SCALE_VALUE_ON if enabled else SCALE_VALUE_OFF)
+        if value_input is not None:
+            value_input.config(state="normal" if enabled else "disabled")
 
     def _update_dlss_control_states(self):
         if not hasattr(self, "_settings"):
@@ -1313,6 +1396,8 @@ class App:
         self._schedule_settings_save()
 
     def _remembered_dlss(self):
+        for commit in getattr(self, "_slider_committers", ()):
+            commit()
         d = self._settings
         return {
             'intensity': float(d['v_intensity'].get()),
@@ -1330,6 +1415,9 @@ class App:
     def _collect_settings(self):
         d = self._settings
         remembered = self._remembered_dlss()
+        use_auto_mask, skin_struct = effective_skin_settings(
+            remembered['use_auto_mask'], remembered['skin_struct']
+        )
         result = {
             'style': STYLE_CHOICES.get(d['v_style'].get(), 0),
             'intensity': effective_slider(
@@ -1341,10 +1429,8 @@ class App:
             'local_struct': effective_slider(
                 remembered['use_local_struct'], remembered['local_struct']
             ),
-            'use_auto_mask': 1 if remembered['use_auto_mask'] else 0,
-            'skin_struct': effective_slider(
-                remembered['use_auto_mask'], remembered['skin_struct']
-            ),
+            'use_auto_mask': use_auto_mask,
+            'skin_struct': skin_struct,
             'output_view': OUTVIEW_CHOICES.get(d['v_outview'].get(), 0),
             'output_mix': effective_slider(
                 remembered['use_output_mix'], remembered['output_mix']

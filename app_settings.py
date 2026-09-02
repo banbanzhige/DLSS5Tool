@@ -7,6 +7,11 @@ import os
 import sys
 
 
+DLSS_SLIDER_MIN = 0.0
+DLSS_SLIDER_MAX = 1.0
+DLSS_SLIDER_STEP = 0.01
+
+
 DEFAULTS = {
     "preview_view": "对比",
     "style": 0,
@@ -55,7 +60,7 @@ def settings_path():
     return os.path.join(base, "dlss5_settings.json")
 
 
-def _clamp_float(value, low=0.0, high=1.0):
+def _clamp_float(value, low=DLSS_SLIDER_MIN, high=DLSS_SLIDER_MAX):
     try:
         return max(low, min(high, float(value)))
     except (TypeError, ValueError):
