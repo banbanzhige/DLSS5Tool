@@ -25,10 +25,10 @@
   </tr>
   <tr>
     <td align="center">
-      <a href="img/1.png"><img src="img/1.png" alt="未经处理的 AI 生成原图" width="100%"></a>
+      <a href="img/01.png"><img src="img/01.png" alt="未经处理的 AI 生成原图" width="100%"></a>
     </td>
     <td align="center">
-      <a href="img/2.png"><img src="img/2.png" alt="经过 DLSS5Tool 神经渲染后的图片" width="100%"></a>
+      <a href="img/02.png"><img src="img/02.png" alt="经过 DLSS5Tool 神经渲染后的图片" width="100%"></a>
     </td>
   </tr>
 </table>
