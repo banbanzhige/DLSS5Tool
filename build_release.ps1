@@ -50,6 +50,7 @@ try {
     }
 
     Copy-Item -LiteralPath (Join-Path $projectRoot "README.md") -Destination $releaseDir -Force
+    Copy-Item -LiteralPath (Join-Path $projectRoot "CHANGELOG.md") -Destination $releaseDir -Force
     Copy-Item -LiteralPath (Join-Path $projectRoot "LICENSE") -Destination $releaseDir -Force
     Copy-Item -LiteralPath (Join-Path $projectRoot "THIRD_PARTY_NOTICES.md") -Destination $releaseDir -Force
 
