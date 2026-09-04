@@ -1,20 +1,21 @@
 @echo off
-setlocal
+setlocal EnableExtensions EnableDelayedExpansion
 
 where cl >nul 2>nul
 if errorlevel 1 (
   set "VSWHERE=%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe"
-  if not exist "%VSWHERE%" (
+  if not exist "!VSWHERE!" set "VSWHERE=C:\Program Files (x86)\Microsoft Visual Studio\Installer\vswhere.exe"
+  if not exist "!VSWHERE!" (
     echo [error] Visual Studio Build Tools or vswhere.exe was not found.
     echo Install Visual Studio 2022 Build Tools with Desktop development with C++.
     exit /b 1
   )
-  for /f "usebackq tokens=*" %%i in (`"%VSWHERE%" -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -find VC\Auxiliary\Build\vcvars64.bat`) do set "VCVARS=%%i"
+  for /f "usebackq tokens=*" %%i in (`"!VSWHERE!" -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -find VC\Auxiliary\Build\vcvars64.bat`) do set "VCVARS=%%i"
   if not defined VCVARS (
     echo [error] The Visual C++ x64 build environment was not found.
     exit /b 1
   )
-  call "%VCVARS%" >nul
+  call "!VCVARS!" >nul
   if errorlevel 1 exit /b 1
 )
 

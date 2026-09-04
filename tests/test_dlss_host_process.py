@@ -29,6 +29,8 @@ class FakeLive:
 
     def _render(self, rgba):
         increment = 2 if self.backend == "v2" else 1
+        if rgba.dtype == np.float16:
+            return (rgba.astype(np.float32) + increment / 100.0).astype(np.float16)
         return np.clip(rgba.astype(np.uint16) + increment, 0, 255).astype(np.uint8)
 
     def process(self, rgba, reset=False):
@@ -112,6 +114,18 @@ class ProcessLiveTests(unittest.TestCase):
             live.resize(5, 4)
             resized = np.full((4, 5, 4), 7, np.uint8)
             np.testing.assert_array_equal(live.process(resized), resized + 2)
+        finally:
+            live.close()
+
+    def test_rgba16f_contract_uses_float_shared_memory(self):
+        live = self.make_live(
+            "v2", frame_format="rgba16f", color_profile="hdr10_pq",
+        )
+        try:
+            frame = np.full((6, 8, 4), 0.25, np.float16)
+            output = live.process(frame, reset=True)
+            self.assertEqual(output.dtype, np.float16)
+            np.testing.assert_allclose(output, 0.27, atol=0.001)
         finally:
             live.close()
 

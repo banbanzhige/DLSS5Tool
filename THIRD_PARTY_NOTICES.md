@@ -27,6 +27,14 @@ NVIDIA SDK 许可证包含专有权利、分发、商标、通知和使用范围
   Copyright (c) 2026 Jean-Laurent ROUZIES。
 - [NIGos/dlss5-dx11-bridge](https://github.com/NIGos/dlss5-dx11-bridge) — MIT，
   Copyright (c) 2026 NIGos。
+- [kibblerz/DLSS5-Reshade-AIO](https://github.com/kibblerz/DLSS5-Reshade-AIO) —
+  用于核对 Feature 18 的 SDR、scRGB、HDR10/PQ、HLG 资源与色彩合同。
+- [SAOG0721/Magpie](https://github.com/SAOG0721/Magpie) — 用于核对捕获帧 DLSSNR
+  集成、运行时身份和 RTX 40/50 社区 DLL。
+- [faisalkindi/DLSS5oneclick](https://github.com/faisalkindi/DLSS5oneclick)、
+  [kayle2203/dlssnr-signature-repair](https://github.com/kayle2203/dlssnr-signature-repair) 与
+  [Dagherbou/OptiScaler_DLSSNR](https://github.com/Dagherbou/OptiScaler_DLSSNR) —
+  用于运行时兼容性、签名修复和显卡代际适配调研。
 
 若未来复制或修改了这些项目的实质性代码，必须在相关文件和发行物中保留其完整 MIT
 版权与许可声明。
@@ -38,4 +46,3 @@ imageio-ffmpeg 和 tkinterdnd2。它们不受本项目 MIT 许可证重新许可
 
 `imageio-ffmpeg` 或系统 FFmpeg 可能包含受 LGPL、GPL 及编解码器专利条款约束的组件，
 具体取决于使用的构建。二进制发行者有责任审查实际随包提供的 FFmpeg 构建及目标地区要求。
-

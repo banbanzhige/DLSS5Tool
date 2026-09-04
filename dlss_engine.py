@@ -25,6 +25,26 @@ LOG_PATH = os.path.join(BASE, "dlss_run.log")
 
 _libraries = {}
 
+FRAME_FORMAT_RGBA8 = "rgba8"
+FRAME_FORMAT_RGBA16F = "rgba16f"
+COLOR_PROFILES = {"srgb": 0, "scrgb": 1, "hdr10_pq": 2, "hdr10_hlg": 3}
+
+
+def frame_dtype(settings=None):
+    return np.float16 if (settings or {}).get("frame_format") == FRAME_FORMAT_RGBA16F else np.uint8
+
+
+def frame_format_id(settings=None):
+    return 1 if frame_dtype(settings) == np.float16 else 0
+
+
+def color_profile_id(settings=None):
+    return COLOR_PROFILES.get(str((settings or {}).get("color_profile", "srgb")), 0)
+
+
+def frame_contract(settings=None):
+    return frame_format_id(settings), color_profile_id(settings)
+
 
 def _bind_library(lib):
     if getattr(lib, "_dlss5tool_bound", False):
@@ -64,6 +84,9 @@ def _bind_library(lib):
         lib.dlssnr_dequeue.restype = ctypes.c_int
         lib.dlssnr_pending.argtypes = []
         lib.dlssnr_pending.restype = ctypes.c_int
+    if hasattr(lib, "dlssnr_configure_format"):
+        lib.dlssnr_configure_format.argtypes = [ctypes.c_int, ctypes.c_int]
+        lib.dlssnr_configure_format.restype = None
     lib._dlss5tool_bound = True
     return lib
 
@@ -82,6 +105,8 @@ def _load(settings=None, forced=None):
     preference = forced or str((settings or {}).get("host_backend", "auto"))
     if preference == "auto":
         preference = "v2" if os.path.exists(HOST_DLL_V2) else "legacy"
+    if frame_format_id(settings) == 1 and preference != "v2":
+        raise RuntimeError("HDR/scRGB RGBA16F 处理需要 v2 主机")
     if preference not in {"v2", "legacy"}:
         preference = "legacy"
     return _load_backend(preference)
@@ -105,6 +130,13 @@ def _configure_host(lib, settings):
             int(zero_fast), int(persistent), int(merged),
             in_flight, int(fallback),
         )
+    format_id, profile_id = frame_contract(settings)
+    if format_id == 1:
+        if not hasattr(lib, "dlssnr_configure_format"):
+            raise RuntimeError("当前主机不支持 RGBA16F/HDR，请重新编译 v2 主机")
+        lib.dlssnr_configure_format(format_id, profile_id)
+    elif hasattr(lib, "dlssnr_configure_format"):
+        lib.dlssnr_configure_format(format_id, profile_id)
 
 
 # settings dict keys that actually change the output on this Feature 18 config:
@@ -162,7 +194,9 @@ class Live:
         """Allocate the large zero-guidance/output buffers once per resolution."""
         self._mv = np.zeros((self._h, self._w, 2), np.float32)
         self._dp = np.zeros((self._h, self._w), np.float32)
-        self._output = np.empty((self._h, self._w, 4), np.uint8)
+        self._output = np.empty(
+            (self._h, self._w, 4), frame_dtype(self.settings),
+        )
 
     def _open(self):
         s = self.settings
@@ -206,6 +240,7 @@ class Live:
     def update(self, settings):
         old_preset = self.settings.get('preset')
         old_config = getattr(self, "_config", _host_config(self.settings))
+        old_contract = frame_contract(self.settings)
         self.settings.update(settings)
         requested_backend = str(self.settings.get("host_backend", self._preference))
         if requested_backend not in {"auto", self.backend}:
@@ -214,7 +249,9 @@ class Live:
             )
         new_config = _host_config(self.settings)
         _configure_host(self._lib, self.settings)
-        if self.settings.get('preset') != old_preset:
+        if frame_contract(self.settings) != old_contract:
+            self.resize(self._w, self._h, int(self.settings.get('preset', 1)))
+        elif self.settings.get('preset') != old_preset:
             self.resize(self._w, self._h, int(self.settings.get('preset', 1)))
         elif new_config != old_config and self.backend == "v2":
             self.resize(self._w, self._h, int(self.settings.get('preset', 1)))
@@ -239,10 +276,11 @@ class Live:
     def process(self, rgba, reset=False):
         _set_options(self._lib, self.settings)
         h, w = rgba.shape[:2]
-        if rgba.dtype != np.uint8 or rgba.shape != (self._h, self._w, 4):
+        expected_dtype = frame_dtype(self.settings)
+        if rgba.dtype != expected_dtype or rgba.shape != (self._h, self._w, 4):
             raise ValueError(
-                "RGBA frame must be uint8 with shape (%d, %d, 4), got %s/%s"
-                % (self._h, self._w, rgba.shape, rgba.dtype))
+                "RGBA frame must be %s with shape (%d, %d, 4), got %s/%s"
+                % (np.dtype(expected_dtype).name, self._h, self._w, rgba.shape, rgba.dtype))
         if not rgba.flags.c_contiguous:
             rgba = np.ascontiguousarray(rgba)
         ok = self._lib.dlssnr_process(
@@ -258,7 +296,7 @@ class Live:
         if not self.supports_async:
             raise RuntimeError("当前主机设置不支持异步帧队列")
         _set_options(self._lib, self.settings)
-        if rgba.dtype != np.uint8 or rgba.shape != (self._h, self._w, 4):
+        if rgba.dtype != frame_dtype(self.settings) or rgba.shape != (self._h, self._w, 4):
             raise ValueError("RGBA frame shape/dtype mismatch")
         if not rgba.flags.c_contiguous:
             rgba = np.ascontiguousarray(rgba)

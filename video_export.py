@@ -3,7 +3,10 @@
 """FFmpeg-backed video export with NVENC and source-audio preservation."""
 
 from collections import deque
+from fractions import Fraction
+import json
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -17,6 +20,7 @@ import numpy as np
 _NVENC_CACHE = {}
 _CREATE_NO_WINDOW = getattr(subprocess, "CREATE_NO_WINDOW", 0)
 _MP4_COPY_AUDIO_CODECS = {"aac", "mp3", "ac3", "eac3", "alac"}
+_HDR_TRANSFERS = {"smpte2084": "hdr10_pq", "arib-std-b67": "hdr10_hlg"}
 
 
 def find_ffmpeg():
@@ -49,6 +53,112 @@ def find_ffmpeg():
     )
 
 
+def find_ffprobe(ffmpeg=None):
+    """Return ffprobe when available; HDR probing has an FFmpeg-only fallback."""
+    configured = os.environ.get("FFPROBE_EXE")
+    suffix = ".exe" if os.name == "nt" else ""
+    sibling = os.path.join(os.path.dirname(ffmpeg), "ffprobe" + suffix) if ffmpeg else None
+    for candidate in (configured, sibling, shutil.which("ffprobe")):
+        if candidate and os.path.isfile(candidate):
+            return os.path.abspath(candidate)
+    return None
+
+
+def _rate_value(value, default=30.0):
+    try:
+        rate = float(Fraction(str(value)))
+        return rate if rate > 0 else float(default)
+    except (TypeError, ValueError, ZeroDivisionError):
+        return float(default)
+
+
+def classify_color_info(values=None):
+    """Normalize ffprobe fields and name the NGX input color contract."""
+    source = dict(values or {})
+    transfer = str(source.get("color_transfer") or "unknown").lower()
+    profile = _HDR_TRANSFERS.get(transfer, "srgb")
+    is_hdr = profile != "srgb"
+    unspecified = {"", "unknown", "unspecified", "reserved", "none", "n/a"}
+    primaries = str(source.get("color_primaries") or "").lower()
+    matrix = str(source.get("color_space") or "").lower()
+    if is_hdr:
+        source["color_primaries"] = "bt2020" if primaries in unspecified else primaries
+        source["color_space"] = "bt2020nc" if matrix in unspecified else matrix
+    else:
+        source["color_primaries"] = "bt709" if primaries in unspecified else primaries
+        source["color_space"] = "bt709" if matrix in unspecified else matrix
+    source["color_transfer"] = transfer
+    source["color_range"] = str(source.get("color_range") or "tv").lower()
+    source["pixel_format"] = str(source.get("pix_fmt") or source.get("pixel_format") or "unknown")
+    source["profile"] = profile
+    source["is_hdr"] = is_hdr
+    source["label"] = (
+        "HDR10 / PQ" if profile == "hdr10_pq" else
+        "HDR / HLG" if profile == "hdr10_hlg" else "SDR / sRGB"
+    )
+    return source
+
+
+def probe_video_stream(ffmpeg, source):
+    """Read dimensions, timing, and color metadata without decoding a frame."""
+    source = os.path.abspath(source)
+    ffprobe = find_ffprobe(ffmpeg)
+    if ffprobe:
+        try:
+            result = subprocess.run(
+                [
+                    ffprobe, "-v", "error", "-select_streams", "v:0",
+                    "-show_entries",
+                    "stream=width,height,avg_frame_rate,r_frame_rate,nb_frames,duration,pix_fmt,color_space,color_primaries,color_transfer,color_range",
+                    "-of", "json", source,
+                ],
+                stdin=subprocess.DEVNULL, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                timeout=20, creationflags=_CREATE_NO_WINDOW,
+            )
+            payload = json.loads(result.stdout.decode("utf-8", errors="replace"))
+            streams = payload.get("streams") or []
+            if result.returncode == 0 and streams:
+                stream = dict(streams[0])
+                stream["fps"] = _rate_value(
+                    stream.get("avg_frame_rate") or stream.get("r_frame_rate")
+                )
+                try:
+                    stream["frames"] = int(stream.get("nb_frames") or 0)
+                except (TypeError, ValueError):
+                    stream["frames"] = 0
+                return classify_color_info(stream)
+        except (OSError, subprocess.SubprocessError, ValueError, TypeError):
+            pass
+
+    # imageio-ffmpeg bundles ffmpeg but not ffprobe. Its input banner still
+    # carries the transfer/primaries/matrix tuple needed to select HDR safely.
+    try:
+        result = subprocess.run(
+            [ffmpeg, "-hide_banner", "-i", source],
+            stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE,
+            timeout=20, creationflags=_CREATE_NO_WINDOW,
+        )
+        banner = result.stderr.decode("utf-8", errors="replace").lower()
+    except (OSError, subprocess.SubprocessError):
+        banner = ""
+    transfer = next((name for name in _HDR_TRANSFERS if name in banner), "unknown")
+    primaries = "bt2020" if "bt2020" in banner else "bt709" if "bt709" in banner else "unknown"
+    matrix = "bt2020nc" if "bt2020nc" in banner else "bt709" if "bt709" in banner else "unknown"
+    pix_fmt = "unknown"
+    match = re.search(
+        r"video:.*?\b(p010[a-z0-9_]*|(?:yuv|gbr)[a-z0-9_]*10[a-z0-9_]*)\b",
+        banner,
+    )
+    if match:
+        pix_fmt = match.group(1)
+    return classify_color_info({
+        "color_transfer": transfer,
+        "color_primaries": primaries,
+        "color_space": matrix,
+        "pix_fmt": pix_fmt,
+    })
+
+
 def has_h264_nvenc(ffmpeg):
     """Probe the actual NVENC device, not merely whether the encoder is listed."""
     key = os.path.normcase(os.path.abspath(ffmpeg))
@@ -71,6 +181,201 @@ def has_h264_nvenc(ffmpeg):
         available = False
     _NVENC_CACHE[key] = available
     return available
+
+
+def has_hevc_main10_nvenc(ffmpeg):
+    """Probe the real 10-bit HEVC path used by HDR export."""
+    key = (os.path.normcase(os.path.abspath(ffmpeg)), "hevc-main10")
+    if key in _NVENC_CACHE:
+        return _NVENC_CACHE[key]
+    cmd = [
+        ffmpeg, "-hide_banner", "-loglevel", "error", "-f", "lavfi",
+        "-i", "color=c=black:s=256x256:r=1", "-frames:v", "1", "-an",
+        "-vf", "format=p010le", "-c:v", "hevc_nvenc", "-profile:v", "main10",
+        "-f", "null", "-",
+    ]
+    try:
+        result = subprocess.run(
+            cmd, stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL, timeout=20, creationflags=_CREATE_NO_WINDOW,
+        )
+        available = result.returncode == 0
+    except (OSError, subprocess.SubprocessError):
+        available = False
+    _NVENC_CACHE[key] = available
+    return available
+
+
+def _pq_eotf(encoded):
+    m1 = 2610.0 / 16384.0
+    m2 = 2523.0 / 32.0
+    c1 = 3424.0 / 4096.0
+    c2 = 2413.0 / 128.0
+    c3 = 2392.0 / 128.0
+    value = np.maximum(np.asarray(encoded, dtype=np.float32), 0.0) ** (1.0 / m2)
+    return (np.maximum(value - c1, 0.0) / np.maximum(c2 - c3 * value, 1e-7)) ** (1.0 / m1)
+
+
+def _pq_oetf(linear):
+    m1 = 2610.0 / 16384.0
+    m2 = 2523.0 / 32.0
+    c1 = 3424.0 / 4096.0
+    c2 = 2413.0 / 128.0
+    c3 = 2392.0 / 128.0
+    value = np.maximum(np.asarray(linear, dtype=np.float32), 0.0) ** m1
+    return ((c1 + c2 * value) / np.maximum(1.0 + c3 * value, 1e-7)) ** m2
+
+
+def _hlg_eotf(encoded):
+    a = 0.17883277
+    b = 1.0 - 4.0 * a
+    c = 0.5 - a * np.log(4.0 * a)
+    value = np.maximum(np.asarray(encoded, dtype=np.float32), 0.0)
+    return np.where(value <= 0.5, value * value / 3.0, (np.exp((value - c) / a) + b) / 12.0)
+
+
+def _hlg_oetf(linear):
+    a = 0.17883277
+    b = 1.0 - 4.0 * a
+    c = 0.5 - a * np.log(4.0 * a)
+    value = np.maximum(np.asarray(linear, dtype=np.float32), 0.0)
+    return np.where(
+        value <= (1.0 / 12.0), np.sqrt(3.0 * value),
+        a * np.log(np.maximum(12.0 * value - b, 1e-7)) + c,
+    )
+
+
+def compose_hdr_frame(original, processed, view=0, mix=1.0, profile="hdr10_pq"):
+    """Compose RGBA16F while blending PQ/HLG in linear-light space."""
+    original_f = np.asarray(original, dtype=np.float32)
+    processed_f = np.asarray(processed, dtype=np.float32)
+    width = original_f.shape[1]
+    if int(view) == 1:
+        result = np.clip(0.5 + (processed_f - original_f) * 10.0, 0.0, 1.0)
+        result[..., 3] = 1.0
+        return result.astype(np.float16)
+    if int(view) == 2:
+        result = processed_f.copy()
+        result[:, :width // 2] = original_f[:, :width // 2]
+        if width > 1:
+            result[:, max(width // 2 - 1, 0), :3] = 1.0
+        return result.astype(np.float16)
+    mix = max(0.0, min(1.0, float(mix)))
+    if mix <= 0.0:
+        return np.ascontiguousarray(original, dtype=np.float16)
+    if mix >= 1.0:
+        return np.ascontiguousarray(processed, dtype=np.float16)
+    decode = _pq_eotf if profile == "hdr10_pq" else _hlg_eotf
+    encode = _pq_oetf if profile == "hdr10_pq" else _hlg_oetf
+    linear = decode(original_f[..., :3]) * (1.0 - mix) + decode(processed_f[..., :3]) * mix
+    result = np.empty_like(original_f)
+    result[..., :3] = np.clip(encode(linear), 0.0, 1.0)
+    result[..., 3] = original_f[..., 3] * (1.0 - mix) + processed_f[..., 3] * mix
+    return result.astype(np.float16)
+
+
+def tone_map_hdr_preview(frame_bgr, color_info):
+    """Create an SDR preview only; the export path retains the HDR signal."""
+    if frame_bgr is None or not (color_info or {}).get("is_hdr"):
+        return frame_bgr
+    rgb = frame_bgr[..., ::-1].astype(np.float32) / 255.0
+    linear = _pq_eotf(rgb) * 100.0 if color_info.get("profile") == "hdr10_pq" else _hlg_eotf(rgb) * 12.0
+    if str(color_info.get("color_primaries", "")).startswith("bt2020"):
+        matrix = np.array([
+            [1.660491, -0.587641, -0.072850],
+            [-0.124550, 1.132900, -0.008349],
+            [-0.018151, -0.100579, 1.118730],
+        ], dtype=np.float32)
+        linear = np.einsum("...c,dc->...d", linear, matrix)
+    linear = np.maximum(linear, 0.0)
+    mapped = np.clip((linear * (2.51 * linear + 0.03)) /
+                     np.maximum(linear * (2.43 * linear + 0.59) + 0.14, 1e-7), 0.0, 1.0)
+    srgb = np.where(mapped <= 0.0031308, mapped * 12.92,
+                    1.055 * np.power(mapped, 1.0 / 2.4) - 0.055)
+    return np.ascontiguousarray((np.clip(srgb, 0.0, 1.0)[..., ::-1] * 255.0 + 0.5).astype(np.uint8))
+
+
+def _zscale_decode_filter(color_info):
+    transfer = color_info.get("color_transfer") or "smpte2084"
+    primaries = color_info.get("color_primaries") or "bt2020"
+    matrix = color_info.get("color_space") or "bt2020nc"
+    source_range = "full" if color_info.get("color_range") in {"pc", "jpeg", "full"} else "limited"
+    return (
+        f"zscale=matrixin={matrix}:matrix={matrix}:transferin={transfer}:transfer={transfer}:"
+        f"primariesin={primaries}:primaries={primaries}:rangein={source_range}:range=full,"
+        # Let swscale perform the YUV-to-RGB matrix conversion.  zscale rejects
+        # RGB matrix coefficients on YUV output negotiation in FFmpeg 7.x.
+        "format=gbrp16le,format=rgba64le"
+    )
+
+
+class FFmpegHDRVideoReader:
+    """Decode PQ/HLG frames as normalized transfer-coded RGBA16F."""
+
+    def __init__(self, source, width, height, color_info, ffmpeg=None):
+        self.source = os.path.abspath(source)
+        self.width = int(width)
+        self.height = int(height)
+        self.color_info = classify_color_info(color_info)
+        if not self.color_info["is_hdr"]:
+            raise ValueError("HDR reader requires a PQ or HLG source")
+        self.ffmpeg = ffmpeg or find_ffmpeg()
+        self._frame_bytes = self.width * self.height * 8
+        self._stderr = deque(maxlen=100)
+        self._proc = subprocess.Popen(
+            [
+                self.ffmpeg, "-hide_banner", "-loglevel", "warning", "-i", self.source,
+                "-map", "0:v:0", "-an", "-sn", "-dn", "-fps_mode", "passthrough",
+                "-vf", _zscale_decode_filter(self.color_info),
+                "-f", "rawvideo", "-pix_fmt", "rgba64le", "pipe:1",
+            ],
+            stdin=subprocess.DEVNULL, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+            bufsize=0, creationflags=_CREATE_NO_WINDOW,
+        )
+        self._stderr_thread = threading.Thread(target=self._drain_stderr, daemon=True)
+        self._stderr_thread.start()
+
+    def _drain_stderr(self):
+        try:
+            for raw in iter(self._proc.stderr.readline, b""):
+                self._stderr.append(raw.decode("utf-8", errors="replace"))
+        except Exception:
+            pass
+
+    def read(self):
+        data = bytearray(self._frame_bytes)
+        view = memoryview(data)
+        received = 0
+        while received < self._frame_bytes:
+            count = self._proc.stdout.readinto(view[received:])
+            if not count:
+                break
+            received += count
+        if received == 0:
+            code = self._proc.wait()
+            self._stderr_thread.join(timeout=2)
+            if code != 0:
+                raise RuntimeError("FFmpeg HDR 解码失败：\n" + _tail_text(self._stderr))
+            return None
+        if received != self._frame_bytes:
+            raise RuntimeError(f"HDR 视频帧被截断：收到 {received}/{self._frame_bytes} 字节")
+        rgba16 = np.frombuffer(data, dtype="<u2").reshape(self.height, self.width, 4)
+        return (rgba16.astype(np.float32) / 65535.0).astype(np.float16)
+
+    def close(self):
+        if getattr(self, "_proc", None) is None:
+            return
+        if self._proc.poll() is None:
+            try:
+                self._proc.terminate()
+                self._proc.wait(timeout=5)
+            except (OSError, subprocess.SubprocessError):
+                try:
+                    self._proc.kill()
+                except OSError:
+                    pass
+        self._stderr_thread.join(timeout=2)
+        self._proc = None
 
 
 def probe_audio_codecs(ffmpeg, source):
@@ -213,11 +518,11 @@ def _tail_text(lines):
 
 
 class FFmpegVideoWriter:
-    """Stream BGR24 frames to FFmpeg, then attach audio from the source file."""
+    """Stream SDR BGR8 or HDR RGBA16F frames to FFmpeg, then attach audio."""
 
     def __init__(
         self, output_path, width, height, fps, audio_source=None,
-        use_nvenc=None, nvenc_preset="p5",
+        use_nvenc=None, nvenc_preset="p5", hdr_metadata=None,
     ):
         self.output_path = os.path.abspath(output_path)
         self.width = int(width)
@@ -225,9 +530,21 @@ class FFmpegVideoWriter:
         self.fps = float(fps)
         self.audio_source = os.path.abspath(audio_source) if audio_source else None
         self.ffmpeg = find_ffmpeg()
-        self.uses_nvenc = has_h264_nvenc(self.ffmpeg) if use_nvenc is None else bool(use_nvenc)
+        self.hdr_metadata = classify_color_info(hdr_metadata) if hdr_metadata else None
+        self.is_hdr = bool(self.hdr_metadata and self.hdr_metadata["is_hdr"])
+        if use_nvenc is None:
+            self.uses_nvenc = (
+                has_hevc_main10_nvenc(self.ffmpeg) if self.is_hdr
+                else has_h264_nvenc(self.ffmpeg)
+            )
+        else:
+            self.uses_nvenc = bool(use_nvenc)
         self.nvenc_preset = nvenc_preset if nvenc_preset in {f"p{i}" for i in range(1, 8)} else "p5"
-        self.encoder_name = "NVIDIA NVENC (GPU)" if self.uses_nvenc else "libx264 (CPU 回退)"
+        self.encoder_name = (
+            "HEVC Main10 NVENC（HDR）" if self.is_hdr and self.uses_nvenc else
+            "libx265 Main10（HDR CPU 回退）" if self.is_hdr else
+            "NVIDIA NVENC (GPU)" if self.uses_nvenc else "libx264 (CPU 回退)"
+        )
         self._stderr = deque(maxlen=100)
         self._frames = 0
         self._finished = False
@@ -240,21 +557,53 @@ class FFmpegVideoWriter:
         self._temp_path = temp.name
         temp.close()
 
-        cmd = [
-            self.ffmpeg, "-hide_banner", "-loglevel", "warning", "-y",
-            "-f", "rawvideo", "-pixel_format", "bgr24",
-            "-video_size", f"{self.width}x{self.height}",
-            "-framerate", f"{self.fps:.12g}", "-i", "pipe:0", "-an",
-            # H.264 4:2:0 needs even dimensions; padding affects only unusual odd-sized input.
-            "-vf", "pad=ceil(iw/2)*2:ceil(ih/2)*2,format=yuv420p",
-        ]
-        if self.uses_nvenc:
+        cmd = [self.ffmpeg, "-hide_banner", "-loglevel", "warning", "-y"]
+        if self.is_hdr:
+            transfer = self.hdr_metadata["color_transfer"]
+            primaries = self.hdr_metadata["color_primaries"]
+            matrix = self.hdr_metadata["color_space"]
             cmd.extend([
-                "-c:v", "h264_nvenc", "-preset", self.nvenc_preset, "-tune", "hq",
-                "-rc", "vbr", "-cq", "19", "-b:v", "0",
+                "-f", "rawvideo", "-pixel_format", "rgba64le",
+                "-video_size", f"{self.width}x{self.height}",
+                "-framerate", f"{self.fps:.12g}",
+                "-color_range", "pc", "-color_primaries", primaries,
+                "-color_trc", transfer, "-i", "pipe:0", "-an",
+                "-vf",
+                f"pad=ceil(iw/2)*2:ceil(ih/2)*2,zscale=matrixin=gbr:matrix={matrix}:"
+                f"transferin={transfer}:transfer={transfer}:primariesin={primaries}:"
+                f"primaries={primaries}:rangein=full:range=limited,format=p010le",
+            ])
+            if self.uses_nvenc:
+                cmd.extend([
+                    "-c:v", "hevc_nvenc", "-profile:v", "main10",
+                    "-preset", self.nvenc_preset, "-tune", "hq",
+                    "-rc", "vbr", "-cq", "19", "-b:v", "0",
+                ])
+            else:
+                cmd.extend([
+                    "-c:v", "libx265", "-profile:v", "main10",
+                    "-preset", "fast", "-crf", "18",
+                ])
+            cmd.extend([
+                "-color_range", "tv", "-color_primaries", primaries,
+                "-color_trc", transfer, "-colorspace", matrix,
+                "-tag:v", "hvc1",
             ])
         else:
-            cmd.extend(["-c:v", "libx264", "-preset", "fast", "-crf", "18"])
+            cmd.extend([
+                "-f", "rawvideo", "-pixel_format", "bgr24",
+                "-video_size", f"{self.width}x{self.height}",
+                "-framerate", f"{self.fps:.12g}", "-i", "pipe:0", "-an",
+                # H.264 4:2:0 needs even dimensions; padding affects only unusual odd-sized input.
+                "-vf", "pad=ceil(iw/2)*2:ceil(ih/2)*2,format=yuv420p",
+            ])
+            if self.uses_nvenc:
+                cmd.extend([
+                    "-c:v", "h264_nvenc", "-preset", self.nvenc_preset, "-tune", "hq",
+                    "-rc", "vbr", "-cq", "19", "-b:v", "0",
+                ])
+            else:
+                cmd.extend(["-c:v", "libx264", "-preset", "fast", "-crf", "18"])
         cmd.extend(["-movflags", "+faststart", self._temp_path])
 
         try:
@@ -278,7 +627,15 @@ class FFmpegVideoWriter:
     def write(self, frame):
         if self._finished:
             raise RuntimeError("不能向已经结束的导出任务写入帧")
-        if frame.shape != (self.height, self.width, 3) or frame.dtype != np.uint8:
+        if self.is_hdr:
+            if frame.shape != (self.height, self.width, 4) or frame.dtype not in (np.float16, np.float32):
+                raise ValueError(
+                    f"HDR 帧应为 {self.width}x{self.height} RGBA float16/32，实际为 {frame.shape}/{frame.dtype}"
+                )
+            frame = np.rint(
+                np.clip(np.asarray(frame, dtype=np.float32), 0.0, 1.0) * 65535.0
+            ).astype("<u2")
+        elif frame.shape != (self.height, self.width, 3) or frame.dtype != np.uint8:
             raise ValueError(
                 f"帧格式应为 {self.width}x{self.height} BGR uint8，实际为 {frame.shape}/{frame.dtype}"
             )

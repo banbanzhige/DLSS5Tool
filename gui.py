@@ -32,7 +32,10 @@ import dlss_engine
 from dlss_host_process import ProcessLive
 from parallel_export import export_parallel
 from preview_audio import PreviewAudio, ms_to_frame
-from video_export import FFmpegVideoWriter, compose_output_frame
+from video_export import (
+    FFmpegHDRVideoReader, FFmpegVideoWriter, compose_hdr_frame,
+    compose_output_frame, find_ffmpeg, probe_video_stream, tone_map_hdr_preview,
+)
 
 try:
     from tkinterdnd2 import DND_FILES, TkinterDnD
@@ -597,6 +600,7 @@ class App:
         self._audio = PreviewAudio()
         self._image_bgr = None
         self._source_kind = None
+        self._video_color_info = None
         self._media_w = 0
         self._media_h = 0
         self._active_preview_size = None
@@ -860,7 +864,9 @@ class App:
             self._cap_next = frame
         ok, image = cap.read()
         self._cap_next = frame + 1 if ok else None
-        return image if ok else None
+        if not ok:
+            return None
+        return tone_map_hdr_preview(image, self._video_color_info)
 
     # ---------- preview ----------
     def _build_settings(self, parent):
@@ -1182,6 +1188,7 @@ class App:
             'v_nvenc_preset': tk.StringVar(
                 value=NVENC_PRESET_NAMES.get(saved['nvenc_preset'], "p5 高质量")
             ),
+            'v_hdr': tk.BooleanVar(value=saved.get('hdr_mode', True)),
         }
         ttk.Label(parent, text="模式:").grid(row=0, column=0, sticky="e", padx=(6, 2), pady=4)
         mode = ttk.Combobox(
@@ -1204,10 +1211,24 @@ class App:
             state="readonly", width=12,
         )
         preset.grid(row=1, column=1, sticky="w", padx=(0, 10))
+        hdr = ttk.Checkbutton(
+            parent, text="HDR10 / HLG 高精度处理", variable=d['v_hdr'],
+            command=self._on_export_settings_change,
+        )
+        hdr.grid(row=1, column=2, columnspan=3, sticky="w", padx=(4, 10), pady=4)
+        hint = ttk.Label(
+            parent,
+            text="导入 PQ/HLG 视频后自动使用 RGBA16F 与 HEVC Main10。",
+            foreground="#555555", wraplength=760, justify="left",
+        )
+        hint.grid(row=2, column=0, columnspan=8, sticky="w", padx=8, pady=(0, 4))
         d.update({
+            'w_mode': mode,
             'w_workers': workers,
             'w_warmup': warmup,
             'w_decode_buffer': decode,
+            'w_hdr': hdr,
+            'w_hdr_hint': hint,
         })
         mode.bind("<<ComboboxSelected>>", lambda e: self._on_export_settings_change())
         preset.bind("<<ComboboxSelected>>", lambda e: self._schedule_settings_save())
@@ -1453,15 +1474,39 @@ class App:
             'warmup': max(0, min(120, integer(d['v_warmup'], 8))),
             'decode_buffer': max(1, min(8, integer(d['v_decode_buffer'], 4))),
             'nvenc_preset': NVENC_PRESET_CHOICES.get(d['v_nvenc_preset'].get(), 'p5'),
+            'hdr_mode': bool(d['v_hdr'].get()),
         }
 
     def _update_export_control_states(self):
         if not hasattr(self, "_export_settings"):
             return
-        state = "normal" if self._collect_export_settings()['mode'] == 'parallel' else "disabled"
+        export = self._collect_export_settings()
+        color = getattr(self, "_video_color_info", None) or {}
+        effective_hdr = bool(export['hdr_mode'] and color.get('is_hdr'))
+        if effective_hdr and export['mode'] == 'parallel':
+            self._export_settings['v_mode'].set(EXPORT_MODE_NAMES['single'])
+            export['mode'] = 'single'
+        state = "normal" if export['mode'] == 'parallel' and not effective_hdr else "disabled"
         self._export_settings['w_workers'].config(state=state)
         self._export_settings['w_warmup'].config(state=state)
         self._export_settings['w_decode_buffer'].config(state="normal")
+        self._export_settings['w_mode'].config(state="disabled" if effective_hdr else "readonly")
+        self._set_ttk_enabled(self._export_settings['w_hdr'], not self._is_image)
+        if self._is_image:
+            text = "HDR 高精度路径当前用于视频；图片继续按现有 SDR 流程导出。"
+        elif color.get('is_hdr'):
+            if export['hdr_mode']:
+                text = (
+                    f"检测到 {color.get('label', 'HDR')}：RGBA16F 神经渲染 → HEVC Main10；"
+                    "预览仅作 SDR 映射，HDR 导出固定使用严格单会话。"
+                )
+            else:
+                text = "检测到 HDR 源，但高精度处理已关闭；导出将走 SDR 8-bit 兼容路径。"
+        elif self.video:
+            text = "当前源为 SDR；保持现有 RGBA8 / H.264 导出路径。"
+        else:
+            text = "导入 PQ/HLG 视频后自动使用 RGBA16F 与 HEVC Main10。"
+        self._export_settings['w_hdr_hint'].config(text=text)
 
     def _on_export_settings_change(self):
         self._update_export_control_states()
@@ -1480,6 +1525,7 @@ class App:
             "warmup_frames": export['warmup'],
             "decode_buffer": export['decode_buffer'],
             "nvenc_preset": export['nvenc_preset'],
+            "hdr_mode": export['hdr_mode'],
             "ui_export_open": bool(
                 getattr(self, "_export_section", None) and not self._export_section.collapsed
             ),
@@ -1540,6 +1586,7 @@ class App:
             self._cap.release()
         self._image_bgr = None
         self._source_kind = None
+        self._video_color_info = None
         self._close_live()
         self.root.destroy()
 
@@ -3122,6 +3169,7 @@ class App:
         self._cap_next = None
         self._image_bgr = None
         self._source_kind = None
+        self._video_color_info = None
         self._media_w = 0
         self._media_h = 0
         self._active_preview_size = None
@@ -3158,6 +3206,7 @@ class App:
             pass
         self.root.title(f"{APP_TITLE} — 实时预览 + 导出")
         self._update_action_labels()
+        self._update_export_control_states()
         self._draw_empty()
         self.set_status("就绪")
         self.logln("已清空导入，解码/音轨/DLSS 主机已释放")
@@ -3205,6 +3254,7 @@ class App:
         self.timeline.set(0)
         self._sync_transport_labels()
         self._update_action_labels()
+        self._update_export_control_states()
         try:
             self.display_view(quality="full")
         except Exception as ex:
@@ -3247,6 +3297,12 @@ class App:
             self.set_status("导入失败：无法读取视频")
             return False
 
+        try:
+            color_info = probe_video_stream(find_ffmpeg(), path)
+        except Exception as ex:
+            color_info = {"is_hdr": False, "profile": "srgb", "label": "SDR / sRGB"}
+            self.logln("[色彩检测] 无法读取视频色彩元数据，按 SDR 处理：" + str(ex))
+
         # Keep a same-size worker for temporal continuity.  A resolution change is
         # handled by replacing only the isolated NGX process in _ensure_live().
         self._begin_source_load()
@@ -3254,6 +3310,7 @@ class App:
         self._cap = new_cap
         self._cap_next = 0
         self._source_kind = "video"
+        self._video_color_info = color_info
         self._media_w, self._media_h = w, h
         self.nframes, self.fps = n, fps
         self._update_preview_memory_hint()
@@ -3264,11 +3321,17 @@ class App:
         self.timeline.set(0)
         self._sync_transport_labels()
         self._update_action_labels()
+        self._update_export_control_states()
         try:
             self.display_view(quality="full")
         except Exception as ex:
             self.logln(f"[preview] {ex}")
-        self.logln(f"已导入: {self.video}  ({n} 帧)")
+        self.logln(
+            f"已导入: {self.video}  ({n} 帧)；色彩 {color_info.get('label', '未知')} "
+            f"[{color_info.get('pixel_format', 'unknown')}, "
+            f"{color_info.get('color_primaries', 'unknown')}/"
+            f"{color_info.get('color_transfer', 'unknown')}]"
+        )
         duration = n / max(float(fps) or 30.0, 1.0)
         self._audio.prepare(path, duration, callback=self._audio_ready_cb)
         self._schedule_full_preview()
@@ -3427,6 +3490,110 @@ class App:
         )
 
     # ---------- export ----------
+    def _export_hdr_video(
+        self, out_path, total_frames, fps, width, height,
+        settings, export_settings, view, mix,
+    ):
+        """Run the strict PQ/HLG RGBA16F path in its own disposable host."""
+        color_info = dict(self._video_color_info or {})
+        if not color_info.get("is_hdr"):
+            raise RuntimeError("HDR 导出请求与源视频色彩元数据不一致")
+        hdr_settings = {
+            **settings,
+            "frame_format": "rgba16f",
+            "color_profile": color_info["profile"],
+            "host_backend": "v2",
+            "host_auto_fallback": False,
+        }
+        reader = None
+        writer = None
+        live = None
+        completed = False
+        dlss_seconds = 0.0
+        written = 0
+        try:
+            ffmpeg = find_ffmpeg()
+            reader = FFmpegHDRVideoReader(
+                self.video, width, height, color_info, ffmpeg=ffmpeg,
+            )
+            writer = FFmpegVideoWriter(
+                out_path, width, height, fps, audio_source=self.video,
+                nvenc_preset=export_settings['nvenc_preset'], hdr_metadata=color_info,
+            )
+            live = ProcessLive(width, height, hdr_settings)
+            self.logln(
+                f"[HDR] {color_info.get('label')} → RGBA16F Feature 18 → "
+                f"{writer.encoder_name}"
+            )
+            self.logln(
+                f"[DLSS 主机] {live.backend}；HDR GPU 队列 {live.max_in_flight} 帧"
+            )
+            pending = deque()
+            index = 0
+
+            def consume_one():
+                nonlocal dlss_seconds, written
+                frame_index, original = pending.popleft()
+                wait_started = time.perf_counter()
+                processed = live.dequeue()
+                dlss_seconds += time.perf_counter() - wait_started
+                if processed is None:
+                    raise RuntimeError(f"HDR DLSS 异步回读第 {frame_index} 帧失败")
+                writer.write(compose_hdr_frame(
+                    original, processed, view=view, mix=mix,
+                    profile=color_info["profile"],
+                ))
+                written += 1
+                if written == 1 or written % 4 == 0 or written >= total_frames:
+                    self.set_progress(written, max(total_frames, written), "HDR 严格导出")
+                    self.root.update()
+                    self._raise_if_export_cancelled()
+
+            while True:
+                self._raise_if_export_cancelled()
+                frame = reader.read()
+                if frame is None:
+                    break
+                started = time.perf_counter()
+                if live.supports_async:
+                    if not live.enqueue(frame, reset=(index == 0)):
+                        raise RuntimeError(f"HDR DLSS 异步提交第 {index} 帧失败")
+                    dlss_seconds += time.perf_counter() - started
+                    pending.append((index, frame))
+                    if len(pending) >= live.max_in_flight:
+                        consume_one()
+                else:
+                    processed = live.process(frame, reset=(index == 0))
+                    dlss_seconds += time.perf_counter() - started
+                    if processed is None:
+                        raise RuntimeError(f"HDR DLSS 处理第 {index} 帧失败")
+                    writer.write(compose_hdr_frame(
+                        frame, processed, view=view, mix=mix,
+                        profile=color_info["profile"],
+                    ))
+                    written += 1
+                index += 1
+            while pending:
+                consume_one()
+            self._raise_if_export_cancelled()
+            writer.finish()
+            completed = True
+            return {
+                "frames": written,
+                "dlss_seconds": dlss_seconds,
+                "encoder": writer.encoder_name,
+                "audio_mode": writer.audio_mode,
+                "host_backend": live.backend,
+                "in_flight": live.max_in_flight,
+            }
+        finally:
+            if reader is not None:
+                reader.close()
+            if live is not None:
+                live.close()
+            if writer is not None and not completed:
+                writer.abort()
+
     def export_dlss(self):
         if not self.video:
             messagebox.showwarning("提示", "请先导入视频或图片")
@@ -3453,8 +3620,29 @@ class App:
         started_at = self._export_t0
         dlss_seconds = 0.0
         exported_frames = 0
+        color_info = self._video_color_info or {}
+        hdr_active = bool(export_settings['hdr_mode'] and color_info.get('is_hdr'))
         try:
-            if export_settings['mode'] == 'parallel':
+            if hdr_active:
+                result = self._export_hdr_video(
+                    out_path, n, fps, w, h, settings, export_settings, view, mix,
+                )
+                exported_frames = result['frames']
+                dlss_seconds = result['dlss_seconds']
+                success = True
+                self.logln(f"[导出] 编码器: {result['encoder']}")
+                self.logln(
+                    f"[DLSS 主机] {result['host_backend']}；"
+                    f"HDR 队列 {result['in_flight']} 帧"
+                )
+                self.logln(f"[导出] 音频: {result['audio_mode']}")
+                elapsed = time.perf_counter() - started_at
+                throughput = exported_frames / elapsed if elapsed > 0 else 0.0
+                self.logln(
+                    f"[性能] HDR {exported_frames} 帧 / {elapsed:.1f} 秒 = "
+                    f"{throughput:.2f} fps；DLSS {dlss_seconds:.1f} 秒"
+                )
+            elif export_settings['mode'] == 'parallel':
                 self.logln(
                     f"[导出] 视觉无损并行模式: {export_settings['workers']} 进程，"
                     f"预热 {export_settings['warmup']} 帧"
@@ -3515,7 +3703,9 @@ class App:
                             self._raise_if_export_cancelled()
                             last_ui_update = now
 
-                    for i, fr in self._iter_frames(decode_buffer):
+                    for i, fr in self._iter_frames(
+                        decode_buffer, tone_map_hdr=bool(color_info.get('is_hdr')),
+                    ):
                         self._raise_if_export_cancelled()
                         hh, ww = fr.shape[:2]
                         rgba = cv2.cvtColor(fr, cv2.COLOR_BGR2RGBA)
@@ -3580,7 +3770,7 @@ class App:
             completed_items=exported_frames,
         )
 
-    def _iter_frames(self, buffer_size=4):
+    def _iter_frames(self, buffer_size=4, tone_map_hdr=False):
         """Decode ahead on a worker so CPU decode overlaps the ordered DLSS stage."""
         frame_queue = queue.Queue(maxsize=max(int(buffer_size), 1))
         stop_event = threading.Event()
@@ -3606,6 +3796,8 @@ class App:
                     ok, frame = cap.read()
                     if not ok:
                         break
+                    if tone_map_hdr:
+                        frame = tone_map_hdr_preview(frame, self._video_color_info)
                     if not put_with_stop((index, frame)):
                         return
                     index += 1

@@ -78,11 +78,12 @@ def _host_worker_main(
         # buffers when this deliberately short-lived worker exits.
         input_memory = _open_shared_memory(name=input_name, track=False)
         output_memory = _open_shared_memory(name=output_name, track=False)
+        dtype = dlss_engine.frame_dtype(settings)
         input_frame = np.ndarray(
-            (height, width, 4), dtype=np.uint8, buffer=input_memory.buf,
+            (height, width, 4), dtype=dtype, buffer=input_memory.buf,
         )
         output_frame = np.ndarray(
-            (height, width, 4), dtype=np.uint8, buffer=output_memory.buf,
+            (height, width, 4), dtype=dtype, buffer=output_memory.buf,
         )
         dlss_engine.LOG_PATH = log_path
         factory = live_factory or dlss_engine.Live
@@ -179,11 +180,12 @@ class _HostSession:
         self.backend = "unknown"
         self.max_in_flight = 1
         self.supports_async = False
+        self.dtype = dlss_engine.frame_dtype(settings)
         self.log_path = os.path.join(
             tempfile.gettempdir(), "dlss5tool-host-%s.log" % uuid.uuid4().hex,
         )
 
-        frame_bytes = self.width * self.height * 4
+        frame_bytes = self.width * self.height * 4 * np.dtype(self.dtype).itemsize
         if frame_bytes <= 0:
             raise ValueError("DLSS 帧尺寸必须大于零")
         try:
@@ -194,11 +196,11 @@ class _HostSession:
                 create=True, size=frame_bytes, track=True,
             )
             self._input_frame = np.ndarray(
-                (self.height, self.width, 4), dtype=np.uint8,
+                (self.height, self.width, 4), dtype=self.dtype,
                 buffer=self._input_memory.buf,
             )
             self._output_frame = np.ndarray(
-                (self.height, self.width, 4), dtype=np.uint8,
+                (self.height, self.width, 4), dtype=self.dtype,
                 buffer=self._output_memory.buf,
             )
             context = multiprocessing.get_context("spawn")
@@ -284,10 +286,10 @@ class _HostSession:
         return response
 
     def copy_input(self, rgba):
-        if rgba.dtype != np.uint8 or rgba.shape != self._input_frame.shape:
+        if rgba.dtype != self.dtype or rgba.shape != self._input_frame.shape:
             raise ValueError(
-                "RGBA frame must be uint8 with shape %s, got %s/%s"
-                % (self._input_frame.shape, rgba.shape, rgba.dtype)
+                "RGBA frame must be %s with shape %s, got %s/%s"
+                % (np.dtype(self.dtype).name, self._input_frame.shape, rgba.shape, rgba.dtype)
             )
         np.copyto(self._input_frame, rgba)
 
@@ -363,6 +365,8 @@ class ProcessLive:
     def _auto_candidates(settings):
         if not os.path.isfile(dlss_engine.HOST_DLL_V2):
             return ["legacy"]
+        if dlss_engine.frame_format_id(settings) == 1:
+            return ["v2"]
         candidates = ["v2"]
         if bool(settings.get("host_auto_fallback", True)):
             candidates.append("legacy")
@@ -418,7 +422,10 @@ class ProcessLive:
         updated = dict(self.settings)
         updated.update(settings or {})
         new_preference = str(updated.get("host_backend", self.preference))
-        if self._requires_replacement(new_preference):
+        if (
+            self._requires_replacement(new_preference)
+            or dlss_engine.frame_contract(updated) != dlss_engine.frame_contract(self.settings)
+        ):
             self._replace(self._w, self._h, updated)
             return
         worker_settings = dict(updated)

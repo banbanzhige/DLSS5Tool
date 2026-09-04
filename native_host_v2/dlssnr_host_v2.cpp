@@ -77,6 +77,20 @@ struct Options
     float motion_scale_y = 1.0f;
 };
 
+enum class FrameFormat : int
+{
+    Rgba8 = 0,
+    Rgba16Float = 1,
+};
+
+enum class ColorProfile : int
+{
+    Srgb = 0,
+    ScRgb = 1,
+    Hdr10Pq = 2,
+    Hdr10Hlg = 3,
+};
+
 struct Staging
 {
     ID3D12Resource *resource = nullptr;
@@ -118,6 +132,8 @@ bool g_ready = false;
 UINT g_width = 0;
 UINT g_height = 0;
 int g_slot_count = 1;
+FrameFormat g_frame_format = FrameFormat::Rgba8;
+ColorProfile g_color_profile = ColorProfile::Srgb;
 
 ID3D12Device *g_device = nullptr;
 ID3D12CommandQueue *g_queue = nullptr;
@@ -349,6 +365,24 @@ ID3D12Resource *CreateTexture(DXGI_FORMAT format, D3D12_RESOURCE_FLAGS flags)
     return resource;
 }
 
+DXGI_FORMAT FrameDxgiFormat()
+{
+    return g_frame_format == FrameFormat::Rgba16Float
+        ? DXGI_FORMAT_R16G16B16A16_FLOAT
+        : DXGI_FORMAT_R8G8B8A8_UNORM;
+}
+
+size_t FrameRowPitch()
+{
+    return static_cast<size_t>(g_width) *
+        (g_frame_format == FrameFormat::Rgba16Float ? 8u : 4u);
+}
+
+bool IsHdrProfile()
+{
+    return g_color_profile != ColorProfile::Srgb;
+}
+
 void ReleaseStaging(Staging &staging)
 {
     if (staging.resource != nullptr && staging.mapped != nullptr)
@@ -567,6 +601,9 @@ void SetCreateParameters()
     g_params->Set("PerfQualityValue", 2u);
     g_params->Set("CreationNodeMask", 1);
     g_params->Set("VisibilityNodeMask", 1);
+    g_params->Set(
+        "DLSS.Feature.Create.Flags",
+        IsHdrProfile() ? static_cast<int>(NVSDK_NGX_DLSS_Feature_Flags_IsHDR) : 0);
 }
 
 void SetEvaluationParameters(Slot &slot, bool reset)
@@ -613,6 +650,8 @@ void SetEvaluationParameters(Slot &slot, bool reset)
     g_params->Set("DLSSNR.SkinStructureStrength", g_options.skin_struct);
     g_params->Set("DLSSNR.UseAutoMask", g_options.use_auto_mask);
     g_params->Set("DLSSNR.UICorrection", g_options.ui_correction);
+    g_params->Set("DLSS.Pre.Exposure", 1.0f);
+    g_params->Set("DLSS.Exposure.Scale", 1.0f);
 }
 
 void ReleaseSlotResources(Slot &slot)
@@ -682,8 +721,8 @@ bool CreateFrameResources()
     for (int index = 0; index < g_slot_count; ++index)
     {
         Slot &slot = g_slots[index];
-        slot.color = CreateTexture(DXGI_FORMAT_R8G8B8A8_UNORM, D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS);
-        slot.output = CreateTexture(DXGI_FORMAT_R8G8B8A8_UNORM, D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS);
+        slot.color = CreateTexture(FrameDxgiFormat(), D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS);
+        slot.output = CreateTexture(FrameDxgiFormat(), D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS);
         if (slot.color == nullptr || slot.output == nullptr)
             return false;
         if (!g_config.zero_guidance_fast_path)
@@ -793,7 +832,7 @@ bool SubmitReadbackImmediate(Slot &slot, void *output)
         RecordReadback(slot.list, slot.output, *staging);
     const bool ok = recorded && SubmitCommands(slot, true);
     if (ok)
-        CopyRowsFromStaging(*staging, output, static_cast<size_t>(g_width) * 4);
+        CopyRowsFromStaging(*staging, output, FrameRowPitch());
     ReleaseStaging(temporary);
     return ok;
 }
@@ -804,7 +843,7 @@ bool ProcessCompatibility(
     Slot &slot = g_slots[0];
     if (!SubmitUploadImmediate(
             slot, slot.color, g_config.persistent_buffers ? &slot.color_upload : nullptr,
-            color, static_cast<size_t>(g_width) * 4))
+            color, FrameRowPitch()))
         return false;
     if (!g_config.zero_guidance_fast_path)
     {
@@ -842,7 +881,7 @@ bool ProcessMergedTransient(
     if (!ok)
         goto cleanup;
 
-    CopyRowsToStaging(color_upload, color, static_cast<size_t>(g_width) * 4);
+    CopyRowsToStaging(color_upload, color, FrameRowPitch());
     if (!g_config.zero_guidance_fast_path)
     {
         PrepareMotion(motion_upload, motion);
@@ -873,7 +912,7 @@ bool ProcessMergedTransient(
     RecordReadback(slot.list, slot.output, readback);
     ok = SubmitCommands(slot, true);
     if (ok)
-        CopyRowsFromStaging(readback, output, static_cast<size_t>(g_width) * 4);
+        CopyRowsFromStaging(readback, output, FrameRowPitch());
 
 cleanup:
     ReleaseStaging(color_upload);
@@ -893,7 +932,7 @@ bool EnqueueFrame(const void *color, const float *motion, const float *depth, bo
     if (slot.pending || !WaitFence(slot.fence_value))
         return false;
 
-    CopyRowsToStaging(slot.color_upload, color, static_cast<size_t>(g_width) * 4);
+    CopyRowsToStaging(slot.color_upload, color, FrameRowPitch());
     if (!g_config.zero_guidance_fast_path)
     {
         PrepareMotion(slot.motion_upload, motion);
@@ -935,7 +974,7 @@ bool DequeueFrame(void *output)
     Slot &slot = g_slots[index];
     if (!slot.pending || !WaitFence(slot.fence_value))
         return false;
-    CopyRowsFromStaging(slot.output_readback, output, static_cast<size_t>(g_width) * 4);
+    CopyRowsFromStaging(slot.output_readback, output, FrameRowPitch());
     slot.pending = false;
     g_pending_head = (g_pending_head + 1) % kMaxSlots;
     --g_pending_count;
@@ -1118,6 +1157,21 @@ extern "C" __declspec(dllexport) void dlssnr_configure(
     g_config = next;
 }
 
+extern "C" __declspec(dllexport) void dlssnr_configure_format(
+    int frame_format, int color_profile)
+{
+    const FrameFormat next_format = frame_format == static_cast<int>(FrameFormat::Rgba16Float)
+        ? FrameFormat::Rgba16Float
+        : FrameFormat::Rgba8;
+    const ColorProfile next_profile = static_cast<ColorProfile>(
+        std::clamp(color_profile, static_cast<int>(ColorProfile::Srgb),
+            static_cast<int>(ColorProfile::Hdr10Hlg)));
+    if ((next_format != g_frame_format || next_profile != g_color_profile) && g_ready)
+        g_needs_recreate = true;
+    g_frame_format = next_format;
+    g_color_profile = next_profile;
+}
+
 extern "C" __declspec(dllexport) int dlssnr_capabilities()
 {
     int result = 1; // v2 host
@@ -1153,6 +1207,9 @@ extern "C" __declspec(dllexport) int dlssnr_init(
     if (log_path != nullptr)
         _wfopen_s(&g_log, log_path, L"w");
     Log("=== dlssnr_host_v2 init w=%d h=%d preset=%d ===", width, height, preset);
+    Log("frame contract: format=%s profile=%d hdr=%d",
+        g_frame_format == FrameFormat::Rgba16Float ? "RGBA16F" : "RGBA8",
+        static_cast<int>(g_color_profile), IsHdrProfile());
     if (!SetupD3D12())
     {
         Log("D3D12 setup failed");

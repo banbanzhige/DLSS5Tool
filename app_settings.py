@@ -31,6 +31,7 @@ DEFAULTS = {
     "warmup_frames": 8,
     "decode_buffer": 4,
     "nvenc_preset": "p5",
+    "hdr_mode": True,
     "host_backend": "auto",
     "host_zero_fast_path": True,
     "host_persistent_buffers": True,
@@ -115,6 +116,7 @@ def validate(values):
     for name in (
         "use_intensity", "use_local_tone", "use_local_struct",
         "use_output_mix", "use_auto_mask",
+        "hdr_mode",
         "host_zero_fast_path", "host_persistent_buffers", "host_auto_fallback",
         "ui_export_open", "ui_host_open", "ui_preview_open",
     ):
