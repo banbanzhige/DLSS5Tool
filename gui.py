@@ -29,6 +29,7 @@ import numpy as np
 import app_settings
 from app_version import APP_VERSION
 import dlss_engine
+import export_queue as export_queue_state
 from dlss_host_process import ProcessLive
 from parallel_export import export_parallel
 from preview_audio import PreviewAudio, ms_to_frame
@@ -104,6 +105,18 @@ VIDEO_FILETYPES = [
     ("图片", "*.png *.jpg *.jpeg *.webp *.bmp *.tif *.tiff"),
     ("所有文件", "*.*"),
 ]
+VIDEO_ONLY_FILETYPES = [
+    ("视频", "*.mp4 *.avi *.mov *.mkv *.m4v *.webm"),
+    ("所有文件", "*.*"),
+]
+QUEUE_STATE_NAMES = {
+    "pending": "等待",
+    "running": "处理中",
+    "completed": "完成",
+    "failed": "失败",
+    "cancelled": "已取消",
+    "interrupted": "被中断",
+}
 IMAGE_ENCODE_EXTS = {".png", ".jpg", ".jpeg", ".bmp", ".webp", ".tif", ".tiff"}
 CANVAS_BG = "#161616"
 CANVAS_DROP_BG = "#24405C"
@@ -135,7 +148,7 @@ VK_MENU = 0x12
 SPLIT_HIT_PX = 18
 _INPUT_WIDGETS = {
     "Entry", "TEntry", "Text", "Combobox", "TCombobox",
-    "Spinbox", "TSpinbox",
+    "Spinbox", "TSpinbox", "Treeview",
 }
 _SPACE_PASSTHROUGH = _INPUT_WIDGETS | {
     "Button", "TButton", "Checkbutton", "TCheckbutton",
@@ -697,6 +710,11 @@ class App:
         self._fullscreen = False
         self._fs_hidden = []
         self._fs_geom = None
+        self._queue_jobs = export_queue_state.load()
+        self._queue_running = False
+        self._queue_pause_requested = False
+        self._queue_active_job_id = None
+        self._queue_last_summary = None
         self.view_var = tk.StringVar(value=self._saved_settings["preview_view"])
 
         # ---- preview canvas ----
@@ -762,10 +780,18 @@ class App:
             "1 原图  ·  2 DLSS  ·  3 对比。对比模式可单击定位或横向拖动分界线；按住 Alt 查看纯原图。",
         )
 
+        # ---- preview/settings and batch queue tabs ----
+        self.workspace_tabs = ttk.Notebook(root)
+        self.workspace_tabs.pack(fill="x", padx=8, pady=(0, 2))
+        self.preview_tab = ttk.Frame(self.workspace_tabs)
+        self.queue_tab = ttk.Frame(self.workspace_tabs)
+        self.workspace_tabs.add(self.preview_tab, text="预览与调参")
+        self.workspace_tabs.add(self.queue_tab, text="导出队列")
+
         # ---- DLSS settings ----
-        sf = ttk.LabelFrame(root, text="DLSS 设置")
+        sf = ttk.LabelFrame(self.preview_tab, text="DLSS 设置")
         self._settings_frame = sf
-        sf.pack(fill="x", padx=8, pady=4)
+        sf.pack(fill="x", padx=4, pady=4)
         self._settings = self._build_settings(sf)
         Tooltip(
             sf,
@@ -774,7 +800,7 @@ class App:
         )
 
         self._preview_section = CollapsibleSection(
-            root, "预览性能",
+            self.preview_tab, "预览性能",
             collapsed=not self._saved_settings.get("ui_preview_open", False),
             on_toggle=self._on_panels_toggle,
             tooltip=(
@@ -782,13 +808,13 @@ class App:
                 "缓存窗口越大越占内存。"
             ),
         )
-        self._preview_section.pack(fill="x", padx=8, pady=2)
+        self._preview_section.pack(fill="x", padx=4, pady=2)
         self._preview_settings = self._build_preview_settings(self._preview_section.body)
         self._preview_runtime_settings = self._collect_preview_settings()
         self.root.after_idle(self._update_preview_memory_hint)
 
         self._export_section = CollapsibleSection(
-            root, "导出设置",
+            self.preview_tab, "导出设置",
             collapsed=not self._saved_settings.get("ui_export_open", False),
             on_toggle=self._on_panels_toggle,
             tooltip=(
@@ -796,21 +822,21 @@ class App:
                 "并行模式保持视觉质量，但不保证逐像素时序一致。"
             ),
         )
-        self._export_section.pack(fill="x", padx=8, pady=2)
+        self._export_section.pack(fill="x", padx=4, pady=2)
         self._export_settings = self._build_export_settings(self._export_section.body)
 
         self._host_section = CollapsibleSection(
-            root, "高级主机优化",
+            self.preview_tab, "高级主机优化",
             collapsed=not self._saved_settings.get("ui_host_open", False),
             on_toggle=self._on_panels_toggle,
             tooltip="后端在隔离进程中热切换，无需重启 GUI。导出期间为保持时序会锁定这些选项。",
         )
-        self._host_section.pack(fill="x", padx=8, pady=2)
+        self._host_section.pack(fill="x", padx=4, pady=2)
         self._host_settings = self._build_host_settings(self._host_section.body)
 
         # ---- import / export action, just above the log ----
-        e = ttk.Frame(root)
-        e.pack(fill="x", padx=8, pady=(6, 2))
+        e = ttk.Frame(self.preview_tab)
+        e.pack(fill="x", padx=4, pady=(6, 4))
         self._export_row = e
         actions = ttk.Frame(e)
         actions.pack(fill="x")
@@ -821,6 +847,11 @@ class App:
         Tooltip(self.clear_btn, "卸下当前视频/图片，释放解码、音轨和 DLSS 主机占用。")
         self.export_btn = ttk.Button(actions, text="导出 DLSS", command=self.export_dlss)
         self.export_btn.pack(side="left", padx=(6, 0))
+        self.add_queue_btn = ttk.Button(
+            actions, text="加入队列", command=self.add_current_to_queue,
+        )
+        self.add_queue_btn.pack(side="left", padx=(6, 0))
+        Tooltip(self.add_queue_btn, "使用当前处理与导出参数，把当前视频加入导出队列。")
         self.cancel_export_btn = ttk.Button(
             actions, text="取消导出", command=self.cancel_export,
         )
@@ -831,6 +862,8 @@ class App:
         self.eta_label = ttk.Label(e, text="", anchor="w")
         self.eta_label.pack(fill="x", pady=(2, 0))
 
+        self._build_queue_tab(self.queue_tab)
+
         self.log = scrolledtext.ScrolledText(root, height=4, state="disabled", font=("Consolas", 9))
         self.log.pack(fill="both", expand=False, padx=8, pady=4)
 
@@ -838,8 +871,697 @@ class App:
         self.root.protocol("WM_DELETE_WINDOW", self._on_close)
         self._setup_drag_and_drop()
         self._update_action_labels()
+        self._refresh_queue_tree()
+        self._save_queue_state()
         self.root.after_idle(self._draw_empty)
         root.minsize(880, 680)
+
+    # ---------- batch export queue ----------
+    def _build_queue_tab(self, parent):
+        toolbar = ttk.Frame(parent)
+        toolbar.pack(fill="x", padx=4, pady=(6, 4))
+        self.queue_add_files_btn = ttk.Button(
+            toolbar, text="添加文件", command=self.add_queue_files,
+        )
+        self.queue_add_files_btn.pack(side="left")
+        self.queue_add_folder_btn = ttk.Button(
+            toolbar, text="添加文件夹", command=self.add_queue_folder,
+        )
+        self.queue_add_folder_btn.pack(side="left", padx=(6, 0))
+        self.queue_remove_btn = ttk.Button(
+            toolbar, text="移除", command=self.remove_selected_queue_jobs,
+        )
+        self.queue_remove_btn.pack(side="left", padx=(12, 0))
+        self.queue_retry_btn = ttk.Button(
+            toolbar, text="重试", command=self.retry_selected_queue_jobs,
+        )
+        self.queue_retry_btn.pack(side="left", padx=(6, 0))
+        self.queue_clear_done_btn = ttk.Button(
+            toolbar, text="清理已完成", command=self.clear_completed_queue_jobs,
+        )
+        self.queue_clear_done_btn.pack(side="left", padx=(6, 0))
+        self.queue_move_down_btn = ttk.Button(
+            toolbar, text="下移", width=5, command=lambda: self.move_selected_queue_job(1),
+        )
+        self.queue_move_down_btn.pack(side="right")
+        self.queue_move_up_btn = ttk.Button(
+            toolbar, text="上移", width=5, command=lambda: self.move_selected_queue_job(-1),
+        )
+        self.queue_move_up_btn.pack(side="right", padx=(0, 6))
+
+        output_row = ttk.Frame(parent)
+        output_row.pack(fill="x", padx=4, pady=(0, 4))
+        ttk.Label(output_row, text="输出目录:").pack(side="left")
+        self.queue_output_dir_var = tk.StringVar(
+            value=self._saved_settings.get("queue_output_dir", "")
+        )
+        self.queue_output_entry = ttk.Entry(
+            output_row, textvariable=self.queue_output_dir_var,
+        )
+        self.queue_output_entry.pack(side="left", fill="x", expand=True, padx=(6, 6))
+        self.queue_output_entry.bind("<FocusOut>", self._on_queue_output_dir_change)
+        self.queue_output_entry.bind("<Return>", self._on_queue_output_dir_change)
+        self.queue_output_browse_btn = ttk.Button(
+            output_row, text="浏览…", command=self.choose_queue_output_dir,
+        )
+        self.queue_output_browse_btn.pack(side="left")
+        Tooltip(
+            self.queue_output_entry,
+            "仅影响之后添加的任务。留空时输出到各源视频所在目录；队列会自动避免覆盖已有文件。",
+        )
+
+        tree_frame = ttk.Frame(parent)
+        tree_frame.pack(fill="both", expand=True, padx=4, pady=(0, 4))
+        columns = ("state", "source", "info", "settings", "output", "progress")
+        self.queue_tree = ttk.Treeview(
+            tree_frame, columns=columns, show="headings", height=8, selectmode="extended",
+        )
+        headings = {
+            "state": "状态", "source": "文件", "info": "素材信息",
+            "settings": "参数", "output": "输出", "progress": "进度",
+        }
+        widths = {
+            "state": 76, "source": 220, "info": 155,
+            "settings": 160, "output": 180, "progress": 120,
+        }
+        for name in columns:
+            self.queue_tree.heading(name, text=headings[name])
+            self.queue_tree.column(
+                name, width=widths[name], minwidth=60,
+                stretch=name in {"source", "output"}, anchor="w",
+            )
+        queue_y = ttk.Scrollbar(tree_frame, orient="vertical", command=self.queue_tree.yview)
+        queue_x = ttk.Scrollbar(tree_frame, orient="horizontal", command=self.queue_tree.xview)
+        self.queue_tree.configure(yscrollcommand=queue_y.set, xscrollcommand=queue_x.set)
+        self.queue_tree.grid(row=0, column=0, sticky="nsew")
+        queue_y.grid(row=0, column=1, sticky="ns")
+        queue_x.grid(row=1, column=0, sticky="ew")
+        tree_frame.rowconfigure(0, weight=1)
+        tree_frame.columnconfigure(0, weight=1)
+        self.queue_tree.tag_configure("failed", foreground="#a12622")
+        self.queue_tree.tag_configure("interrupted", foreground="#8a5a00")
+        self.queue_tree.tag_configure("completed", foreground="#226b32")
+        self.queue_tree.bind("<<TreeviewSelect>>", self._on_queue_tree_select)
+        self.queue_tree.bind("<Double-Button-1>", lambda event: self.load_selected_queue_job())
+
+        details_row = ttk.Frame(parent)
+        details_row.pack(fill="x", padx=4, pady=(0, 4))
+        self.queue_details = ttk.Label(
+            details_row, text="选择任务可查看完整输入、输出和错误信息。",
+            anchor="w", justify="left", wraplength=690,
+        )
+        self.queue_details.pack(side="left", fill="x", expand=True)
+        self.queue_apply_settings_btn = ttk.Button(
+            details_row, text="应用当前参数", command=self.apply_current_settings_to_queue,
+        )
+        self.queue_apply_settings_btn.pack(side="right", padx=(6, 0))
+        self.queue_load_btn = ttk.Button(
+            details_row, text="载入预览", command=self.load_selected_queue_job,
+        )
+        self.queue_load_btn.pack(side="right")
+        details_row.bind(
+            "<Configure>",
+            lambda event: self.queue_details.config(wraplength=max(event.width - 250, 260)),
+        )
+
+        footer = ttk.Frame(parent)
+        footer.pack(fill="x", padx=4, pady=(0, 6))
+        actions = ttk.Frame(footer)
+        actions.pack(fill="x")
+        self.queue_start_btn = ttk.Button(
+            actions, text="开始队列", command=self.start_export_queue,
+        )
+        self.queue_start_btn.pack(side="left")
+        self.queue_pause_btn = ttk.Button(
+            actions, text="当前项后暂停", command=self.pause_export_queue_after_current,
+        )
+        self.queue_pause_btn.pack(side="left", padx=(6, 0))
+        self.queue_cancel_btn = ttk.Button(
+            actions, text="取消当前项", command=self.cancel_current_queue_job,
+        )
+        self.queue_cancel_btn.pack(side="left", padx=(6, 0))
+        self.queue_status_label = ttk.Label(actions, text="", anchor="e")
+        self.queue_status_label.pack(side="right", fill="x", expand=True, padx=(12, 0))
+        self.queue_progress = ttk.Progressbar(footer, maximum=100)
+        self.queue_progress.pack(fill="x", pady=(4, 0))
+
+    def _save_queue_state(self):
+        try:
+            export_queue_state.save(self._queue_jobs)
+        except Exception as ex:
+            if hasattr(self, "log"):
+                self.logln("[队列] 保存失败: " + str(ex))
+
+    def _queue_job(self, job_id):
+        return next((job for job in self._queue_jobs if job.job_id == job_id), None)
+
+    def _selected_queue_jobs(self):
+        if not hasattr(self, "queue_tree"):
+            return []
+        selected = set(self.queue_tree.selection())
+        return [job for job in self._queue_jobs if job.job_id in selected]
+
+    @staticmethod
+    def _queue_info_text(job):
+        meta = job.metadata or {}
+        try:
+            width = int(meta.get("width", 0) or 0)
+            height = int(meta.get("height", 0) or 0)
+            fps = float(meta.get("fps", 0.0) or 0.0)
+        except (TypeError, ValueError, OverflowError):
+            width, height, fps = 0, 0, 0.0
+        color = (job.color_info or {}).get("label", "待检测")
+        size = f"{width}×{height}" if width and height else "尺寸未知"
+        return f"{size} · {fps:g} fps · {color}" if fps else f"{size} · {color}"
+
+    @staticmethod
+    def _queue_settings_text(job):
+        settings = job.settings or {}
+        export = job.export_settings or {}
+        style = STYLE_NAMES.get(settings.get("style"), "默认")
+        if export.get("rate_control") == "bitrate":
+            try:
+                bitrate = float(export.get("video_bitrate_mbps", 20))
+            except (TypeError, ValueError, OverflowError):
+                bitrate = 20.0
+            quality = f"{bitrate:g} Mbps"
+        else:
+            quality = QUALITY_PROFILE_NAMES.get(export.get("quality_profile"), "高质量（推荐）")
+        mode = "严格" if export.get("mode", "single") == "single" else "并行"
+        return f"{style} · {quality} · {mode}"
+
+    @staticmethod
+    def _queue_progress_text(job):
+        if job.state == "completed":
+            return "100%"
+        if job.state in {"failed", "cancelled", "interrupted"}:
+            if job.progress_total > 0:
+                pct = 100.0 * min(job.progress_done, job.progress_total) / job.progress_total
+                return f"{pct:.0f}% · 可重试"
+            return "可重试"
+        if job.progress_total > 0:
+            pct = 100.0 * min(job.progress_done, job.progress_total) / job.progress_total
+            return f"{pct:.0f}% · {job.progress_done}/{job.progress_total}"
+        return "—"
+
+    def _queue_row_values(self, job):
+        return (
+            QUEUE_STATE_NAMES.get(job.state, job.state),
+            os.path.basename(job.source_path),
+            self._queue_info_text(job),
+            self._queue_settings_text(job),
+            os.path.basename(job.output_path),
+            self._queue_progress_text(job),
+        )
+
+    def _update_queue_job_row(self, job):
+        if not hasattr(self, "queue_tree"):
+            return
+        values = self._queue_row_values(job)
+        tags = (job.state,) if job.state in {"failed", "interrupted", "completed"} else ()
+        if self.queue_tree.exists(job.job_id):
+            self.queue_tree.item(job.job_id, values=values, tags=tags)
+        else:
+            self.queue_tree.insert("", "end", iid=job.job_id, values=values, tags=tags)
+
+    def _refresh_queue_tree(self, keep_selection=True):
+        if not hasattr(self, "queue_tree"):
+            return
+        selected = set(self.queue_tree.selection()) if keep_selection else set()
+        current_ids = set(self.queue_tree.get_children(""))
+        job_ids = {job.job_id for job in self._queue_jobs}
+        for removed in current_ids - job_ids:
+            self.queue_tree.delete(removed)
+        for index, job in enumerate(self._queue_jobs):
+            self._update_queue_job_row(job)
+            self.queue_tree.move(job.job_id, "", index)
+        restored = [job.job_id for job in self._queue_jobs if job.job_id in selected]
+        if restored:
+            self.queue_tree.selection_set(restored)
+        failed = sum(job.state in {"failed", "interrupted"} for job in self._queue_jobs)
+        suffix = f" ({len(self._queue_jobs)})" if self._queue_jobs else ""
+        if failed:
+            suffix = f" ({len(self._queue_jobs)} / {failed} 失败)"
+        try:
+            self.workspace_tabs.tab(self.queue_tab, text="导出队列" + suffix)
+        except Exception:
+            pass
+        self._refresh_queue_overall_progress()
+        self._update_queue_action_states()
+        self._on_queue_tree_select()
+
+    def _refresh_queue_overall_progress(self):
+        if not hasattr(self, "queue_progress"):
+            return
+        total = len(self._queue_jobs)
+        terminal = sum(
+            job.state in {"completed", "failed", "cancelled", "interrupted"}
+            for job in self._queue_jobs
+        )
+        partial = 0.0
+        active = self._queue_job(self._queue_active_job_id)
+        if active is not None and active.progress_total > 0:
+            partial = min(active.progress_done / active.progress_total, 1.0)
+        self.queue_progress["maximum"] = max(total, 1)
+        self.queue_progress["value"] = min(terminal + partial, max(total, 1))
+        pending = sum(job.state == "pending" for job in self._queue_jobs)
+        completed = sum(job.state == "completed" for job in self._queue_jobs)
+        failed = sum(job.state in {"failed", "interrupted"} for job in self._queue_jobs)
+        if total:
+            text = f"完成 {completed}/{total} · 等待 {pending}"
+            if failed:
+                text += f" · 失败 {failed}"
+        else:
+            text = "队列为空"
+        if self._queue_pause_requested and self._queue_running:
+            text += " · 将在当前项后暂停"
+        self.queue_status_label.config(text=text)
+
+    def _update_queue_action_states(self):
+        if not hasattr(self, "queue_start_btn"):
+            return
+        selected = self._selected_queue_jobs()
+        editable = not self._queue_running and not self._exporting
+        pending = any(job.state == "pending" for job in self._queue_jobs)
+        retryable = any(
+            job.state in {"failed", "cancelled", "interrupted"} for job in selected
+        )
+        completed = any(job.state == "completed" for job in self._queue_jobs)
+        for widget in (
+            self.queue_add_files_btn, self.queue_add_folder_btn,
+            self.queue_output_entry, self.queue_output_browse_btn,
+        ):
+            self._set_ttk_enabled(widget, editable)
+        self._set_ttk_enabled(self.queue_remove_btn, editable and bool(selected))
+        self._set_ttk_enabled(self.queue_retry_btn, editable and retryable)
+        self._set_ttk_enabled(self.queue_clear_done_btn, editable and completed)
+        self._set_ttk_enabled(self.queue_move_up_btn, editable and len(selected) == 1)
+        self._set_ttk_enabled(self.queue_move_down_btn, editable and len(selected) == 1)
+        self._set_ttk_enabled(self.queue_load_btn, editable and len(selected) == 1)
+        self._set_ttk_enabled(
+            self.queue_apply_settings_btn,
+            editable and bool(selected) and all(job.state != "completed" for job in selected),
+        )
+        self._set_ttk_enabled(self.queue_start_btn, editable and pending)
+        self._set_ttk_enabled(self.queue_pause_btn, self._queue_running)
+        self._set_ttk_enabled(
+            self.queue_cancel_btn,
+            self._queue_running and self._queue_active_job_id is not None and self._exporting,
+        )
+        self.queue_start_btn.config(text="继续队列" if pending and self._queue_last_summary == "paused" else "开始队列")
+        self.queue_pause_btn.config(
+            text="将在当前项后暂停" if self._queue_pause_requested else "当前项后暂停"
+        )
+
+    def _on_queue_tree_select(self, event=None):
+        selected = self._selected_queue_jobs()
+        if not selected:
+            text = (
+                "队列为空，可添加文件、文件夹或拖入多个视频。"
+                if not self._queue_jobs else
+                "选择任务可查看完整输入、输出和错误信息。"
+            )
+        elif len(selected) > 1:
+            text = f"已选择 {len(selected)} 个任务。"
+        else:
+            job = selected[0]
+            text = f"输入：{job.source_path}\n输出：{job.output_path}"
+            if job.error:
+                text += "\n错误：" + job.error
+        if hasattr(self, "queue_details"):
+            self.queue_details.config(text=text)
+        self._update_queue_action_states()
+
+    def _on_queue_output_dir_change(self, event=None):
+        value = self.queue_output_dir_var.get().strip()
+        if value:
+            value = os.path.abspath(os.path.normpath(value))
+            self.queue_output_dir_var.set(value)
+        self._schedule_settings_save()
+        return "break" if event is not None and getattr(event, "keysym", "") == "Return" else None
+
+    def choose_queue_output_dir(self):
+        initial = self.queue_output_dir_var.get().strip() or os.getcwd()
+        path = filedialog.askdirectory(initialdir=initial)
+        if path:
+            self.queue_output_dir_var.set(os.path.abspath(os.path.normpath(path)))
+            self._schedule_settings_save()
+
+    @staticmethod
+    def _unique_target_path(candidate, reserved=()):
+        candidate = os.path.abspath(candidate)
+        reserved = {os.path.normcase(os.path.abspath(path)) for path in reserved}
+        stem, ext = os.path.splitext(candidate)
+        index = 1
+        result = candidate
+        while os.path.exists(result) or os.path.normcase(result) in reserved:
+            index += 1
+            result = f"{stem}_{index}{ext}"
+        return result
+
+    def _new_queue_output_path(self, source_path):
+        output_dir = self.queue_output_dir_var.get().strip()
+        if not output_dir:
+            output_dir = os.path.dirname(source_path)
+        output_dir = os.path.abspath(os.path.normpath(output_dir))
+        stem = os.path.splitext(os.path.basename(source_path))[0] + "_dlss"
+        candidate = os.path.join(output_dir, stem + ".mp4")
+        reserved = [
+            job.output_path for job in self._queue_jobs
+        ]
+        return self._unique_target_path(candidate, reserved)
+
+    def _probe_queue_video(self, path):
+        cap = cv2.VideoCapture(path)
+        try:
+            if not cap.isOpened():
+                raise RuntimeError("无法打开视频，请检查文件是否损坏或编码是否受支持。")
+            frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT)) or 0
+            fps = float(cap.get(cv2.CAP_PROP_FPS)) or 30.0
+            width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+            height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+            if width <= 0 or height <= 0:
+                raise RuntimeError("无法读取视频尺寸。")
+        finally:
+            cap.release()
+        try:
+            color_info = probe_video_stream(find_ffmpeg(), path)
+        except Exception as ex:
+            color_info = {"is_hdr": False, "profile": "srgb", "label": "SDR / sRGB"}
+            self.logln(f"[队列色彩检测] {os.path.basename(path)} 按 SDR 处理: {ex}")
+        metadata = {
+            "frames": frames, "fps": fps, "width": width, "height": height,
+            "duration": frames / max(fps, 1.0),
+        }
+        return metadata, color_info
+
+    def add_queue_files(self):
+        if self._queue_running or self._exporting:
+            return
+        paths = filedialog.askopenfilenames(filetypes=VIDEO_ONLY_FILETYPES)
+        if paths:
+            self._add_paths_to_queue(paths)
+
+    def add_queue_folder(self):
+        if self._queue_running or self._exporting:
+            return
+        folder = filedialog.askdirectory()
+        if not folder:
+            return
+        paths = []
+        for current, _dirs, files in os.walk(folder):
+            for name in sorted(files):
+                path = os.path.join(current, name)
+                if _is_video_path(path):
+                    paths.append(path)
+        self._add_paths_to_queue(paths)
+
+    def add_current_to_queue(self):
+        if not self.video:
+            messagebox.showwarning("加入队列", "请先导入一个视频。")
+            return
+        if self._is_image:
+            messagebox.showinfo("加入队列", "当前批量队列仅处理视频素材。")
+            return
+        self._add_paths_to_queue([self.video])
+
+    def _add_paths_to_queue(self, paths, switch_tab=True):
+        if self._queue_running or self._exporting:
+            messagebox.showinfo("队列忙", "请先暂停或完成当前队列。")
+            return 0
+        normalized = []
+        for raw in paths:
+            path = os.path.abspath(os.path.normpath(str(raw)))
+            if os.path.isfile(path) and _is_video_path(path):
+                normalized.append(path)
+        if not normalized:
+            messagebox.showwarning("添加到队列", "没有找到受支持的视频文件。")
+            return 0
+        existing = {os.path.normcase(job.source_path) for job in self._queue_jobs}
+        settings = self._collect_settings()
+        export_settings = self._collect_export_settings()
+        added = 0
+        duplicates = 0
+        invalid = 0
+        for path in normalized:
+            key = os.path.normcase(path)
+            if key in existing:
+                duplicates += 1
+                continue
+            output = self._new_queue_output_path(path)
+            try:
+                if os.path.normcase(path) == os.path.normcase(self.video or "") and not self._is_image:
+                    metadata = {
+                        "frames": self.nframes, "fps": self.fps,
+                        "width": self._media_w, "height": self._media_h,
+                        "duration": self.nframes / max(float(self.fps), 1.0),
+                    }
+                    color_info = dict(self._video_color_info or {})
+                else:
+                    metadata, color_info = self._probe_queue_video(path)
+                effective_export = dict(export_settings)
+                if effective_export.get("hdr_mode") and color_info.get("is_hdr"):
+                    effective_export["mode"] = "single"
+                job = export_queue_state.ExportJob.create(
+                    path, output, settings, effective_export, metadata, color_info,
+                )
+            except Exception as ex:
+                job = export_queue_state.ExportJob.create(
+                    path, output, settings, export_settings,
+                )
+                job.state = "failed"
+                job.error = str(ex)
+                invalid += 1
+            self._queue_jobs.append(job)
+            existing.add(key)
+            added += 1
+            self.root.update_idletasks()
+        self._save_queue_state()
+        self._refresh_queue_tree(keep_selection=False)
+        if self._queue_jobs:
+            last = self._queue_jobs[-1]
+            self.queue_tree.selection_set(last.job_id)
+            self.queue_tree.see(last.job_id)
+        if switch_tab:
+            self.workspace_tabs.select(self.queue_tab)
+        note = f"已添加 {added} 个视频"
+        if duplicates:
+            note += f"，跳过 {duplicates} 个重复项"
+        if invalid:
+            note += f"，{invalid} 个需要修复或重试"
+        self.queue_status_label.config(text=note)
+        self.logln("[队列] " + note)
+        return added
+
+    def remove_selected_queue_jobs(self):
+        if self._queue_running or self._exporting:
+            return
+        selected = {job.job_id for job in self._selected_queue_jobs()}
+        if not selected:
+            return
+        self._queue_jobs = [job for job in self._queue_jobs if job.job_id not in selected]
+        self._save_queue_state()
+        self._refresh_queue_tree(keep_selection=False)
+
+    def clear_completed_queue_jobs(self):
+        if self._queue_running or self._exporting:
+            return
+        self._queue_jobs = [job for job in self._queue_jobs if job.state != "completed"]
+        self._save_queue_state()
+        self._refresh_queue_tree(keep_selection=False)
+
+    def retry_selected_queue_jobs(self):
+        if self._queue_running or self._exporting:
+            return
+        changed = False
+        for job in self._selected_queue_jobs():
+            if job.state in {"failed", "cancelled", "interrupted"}:
+                job.reset_for_retry()
+                changed = True
+        if changed:
+            self._queue_last_summary = None
+            self._save_queue_state()
+            self._refresh_queue_tree()
+
+    def move_selected_queue_job(self, direction):
+        if self._queue_running or self._exporting:
+            return
+        selected = self._selected_queue_jobs()
+        if len(selected) != 1:
+            return
+        job = selected[0]
+        index = self._queue_jobs.index(job)
+        target = max(0, min(index + int(direction), len(self._queue_jobs) - 1))
+        if target == index:
+            return
+        self._queue_jobs.pop(index)
+        self._queue_jobs.insert(target, job)
+        self._save_queue_state()
+        self._refresh_queue_tree()
+        self.queue_tree.see(job.job_id)
+
+    def apply_current_settings_to_queue(self):
+        if self._queue_running or self._exporting:
+            return
+        settings = self._collect_settings()
+        export_settings = self._collect_export_settings()
+        changed = False
+        for job in self._selected_queue_jobs():
+            if job.state == "completed":
+                continue
+            job.settings = dict(settings)
+            job.export_settings = dict(export_settings)
+            if job.export_settings.get("hdr_mode") and (job.color_info or {}).get("is_hdr"):
+                job.export_settings["mode"] = "single"
+            changed = True
+        if changed:
+            self._save_queue_state()
+            self._refresh_queue_tree()
+
+    def load_selected_queue_job(self):
+        selected = self._selected_queue_jobs()
+        if len(selected) != 1 or self._queue_running or self._exporting:
+            return
+        job = selected[0]
+        if self._load_media(job.source_path):
+            self.workspace_tabs.select(self.preview_tab)
+
+    def start_export_queue(self):
+        if self._queue_running or self._exporting:
+            return
+        if not any(job.state == "pending" for job in self._queue_jobs):
+            self.queue_status_label.config(text="没有等待处理的任务")
+            return
+        self.pause()
+        self._queue_running = True
+        self._queue_pause_requested = False
+        self._queue_last_summary = None
+        self.workspace_tabs.select(self.queue_tab)
+        self.logln("[队列] 开始串行处理视频任务")
+        self._update_action_labels()
+        self._update_host_control_states()
+        self._update_queue_action_states()
+        self.root.after_idle(self._run_next_queue_job)
+
+    def _run_next_queue_job(self):
+        if not self._queue_running:
+            return
+        if self._queue_pause_requested:
+            self._finish_queue_run(paused=True)
+            return
+        job = next((item for item in self._queue_jobs if item.state == "pending"), None)
+        if job is None:
+            self._finish_queue_run(paused=False)
+            return
+        self._queue_active_job_id = job.job_id
+        job.state = "running"
+        job.error = ""
+        job.progress_done = 0
+        try:
+            job.progress_total = max(int(job.metadata.get("frames", 0) or 0), 0)
+        except (TypeError, ValueError, OverflowError):
+            job.progress_total = 0
+        job.progress_label = "准备导出"
+        job.started_at = time.time()
+        job.finished_at = 0.0
+        try:
+            output_dir = os.path.dirname(job.output_path) or os.getcwd()
+            os.makedirs(output_dir, exist_ok=True)
+            if os.path.exists(job.output_path):
+                job.output_path = self._unique_target_path(
+                    job.output_path,
+                    reserved=[
+                        item.output_path for item in self._queue_jobs
+                        if item.job_id != job.job_id
+                    ],
+                )
+            self._save_queue_state()
+            self._refresh_queue_tree()
+            self.queue_tree.selection_set(job.job_id)
+            self.queue_tree.see(job.job_id)
+            self.queue_status_label.config(
+                text=f"正在准备 {os.path.basename(job.source_path)}"
+            )
+            self.logln(f"[队列] 开始: {job.source_path}")
+            result = self._export_video_source(
+                job.source_path,
+                settings=dict(job.settings),
+                export_settings=dict(job.export_settings),
+                color_info=dict(job.color_info),
+                out_path=job.output_path,
+                notify=False,
+            )
+            job.output_path = result.get("output_path") or job.output_path
+            if result["success"]:
+                job.state = "completed"
+                job.progress_done = max(job.progress_total, int(result.get("frames", 0)))
+                job.progress_total = max(job.progress_done, job.progress_total)
+                job.progress_label = "完成"
+            elif result["cancelled"]:
+                job.state = "cancelled"
+                job.error = "用户取消了当前任务。"
+            else:
+                job.state = "failed"
+                job.error = result.get("error") or "导出未完成，请查看日志。"
+        except Exception as ex:
+            traceback.print_exc()
+            job.state = "failed"
+            job.error = str(ex)
+            self.logln(f"[队列] {os.path.basename(job.source_path)} 失败: {ex}")
+        job.finished_at = time.time()
+        self._queue_active_job_id = None
+        self._save_queue_state()
+        self._refresh_queue_tree()
+        if self._queue_pause_requested:
+            self._finish_queue_run(paused=True)
+        else:
+            self.root.after(20, self._run_next_queue_job)
+
+    def _finish_queue_run(self, paused=False):
+        self._queue_running = False
+        self._queue_active_job_id = None
+        self._queue_pause_requested = False
+        self._queue_last_summary = "paused" if paused else "complete"
+        self._update_action_labels()
+        self._update_host_control_states()
+        self._refresh_queue_tree()
+        completed = sum(job.state == "completed" for job in self._queue_jobs)
+        failed = sum(job.state in {"failed", "interrupted"} for job in self._queue_jobs)
+        cancelled = sum(job.state == "cancelled" for job in self._queue_jobs)
+        if paused:
+            message = "队列已暂停，可稍后继续。"
+        else:
+            message = f"队列处理结束：完成 {completed}，失败 {failed}，取消 {cancelled}。"
+        self.queue_status_label.config(text=message)
+        self.logln("[队列] " + message)
+        if not paused:
+            messagebox.showinfo("导出队列", message)
+
+    def pause_export_queue_after_current(self):
+        if not self._queue_running:
+            return
+        self._queue_pause_requested = True
+        self._refresh_queue_overall_progress()
+        self._update_queue_action_states()
+
+    def cancel_current_queue_job(self):
+        if self._queue_running and self._queue_active_job_id is not None:
+            self.cancel_export()
+
+    def _update_active_queue_progress(self, done, total, label="", status_text=""):
+        job = self._queue_job(self._queue_active_job_id)
+        if job is None:
+            return
+        job.progress_done = max(int(done), 0)
+        job.progress_total = max(int(total), 0)
+        job.progress_label = str(label or "")
+        self._update_queue_job_row(job)
+        self._refresh_queue_overall_progress()
+        if status_text:
+            pause_note = " · 将在当前项后暂停" if self._queue_pause_requested else ""
+            self.queue_status_label.config(
+                text=f"{os.path.basename(job.source_path)} · {status_text}{pause_note}"
+            )
 
     # ---------- helpers ----------
     def set_status(self, msg):
@@ -891,6 +1613,7 @@ class App:
                     if stats else
                     f"{label}  {i}/{total} ({pct:.0f}%)"
                 )
+            self._update_active_queue_progress(i, total, label, stats)
             try:
                 self.eta_label.config(text=stats)
             except Exception:
@@ -915,14 +1638,19 @@ class App:
     def _update_action_labels(self):
         try:
             has = bool(self.video)
-            busy = bool(self._exporting)
+            busy = bool(self._exporting or self._queue_running)
             cancel_requested = self._export_cancel_event.is_set()
             self._set_ttk_enabled(self.import_btn, not busy)
             self._set_ttk_enabled(self.clear_btn, has and not busy)
             self._set_ttk_enabled(self.export_btn, has and not busy)
             self._set_ttk_enabled(
+                self.add_queue_btn, has and not self._is_image and not busy,
+            )
+            self._set_ttk_enabled(
                 self.cancel_export_btn,
-                busy and not self._is_image and not cancel_requested,
+                self._exporting
+                and (self._queue_active_job_id is not None or not self._is_image)
+                and not cancel_requested,
             )
             self.cancel_export_btn.config(text="取消中…" if cancel_requested else "取消导出")
             if self._is_image:
@@ -1561,7 +2289,7 @@ class App:
     def _update_host_control_states(self):
         if not hasattr(self, "_host_settings"):
             return
-        if self._exporting or self._switching_backend:
+        if self._exporting or self._queue_running or self._switching_backend:
             for name in (
                 'w_backend', 'w_submission', 'w_zero_fast', 'w_persistent',
                 'w_in_flight', 'w_fallback',
@@ -1589,8 +2317,8 @@ class App:
     def _on_host_settings_change(self):
         if self._switching_backend:
             return
-        if self._exporting:
-            self.set_status("正在导出，完成后才能切换主机后端")
+        if self._exporting or self._queue_running:
+            self.set_status("正在处理队列，完成或暂停后才能切换主机后端")
             return
         self._update_host_control_states()
         self._cache_clear()
@@ -1847,6 +2575,10 @@ class App:
             "ui_preview_open": bool(
                 getattr(self, "_preview_section", None) and not self._preview_section.collapsed
             ),
+            "queue_output_dir": (
+                self.queue_output_dir_var.get().strip()
+                if hasattr(self, "queue_output_dir_var") else ""
+            ),
             **self._collect_preview_settings(),
             **self._collect_host_settings(),
         }
@@ -1880,9 +2612,10 @@ class App:
             setattr(self, name, None)
 
     def _on_close(self):
-        if self._exporting:
+        if self._exporting or self._queue_running:
             messagebox.showinfo(
-                "正在导出", "请先点击“取消导出”，待取消完成后再关闭程序。",
+                "正在导出",
+                "请先点击“当前项后暂停”；如需立即停止，再点击“取消当前项”，待任务结束后关闭程序。",
             )
             return
         self._cancel_after("_settings_save_after")
@@ -1891,6 +2624,7 @@ class App:
         self._cancel_after("_scrub_after")
         self._cancel_after("_resize_after")
         self._save_settings_now()
+        self._save_queue_state()
         self.pause()
         self._wait_play_dlss()
         self._audio.close()
@@ -2448,7 +3182,7 @@ class App:
         if self._fullscreen:
             self._exit_fullscreen()
             return
-        if self._exporting:
+        if self._exporting or self._queue_running:
             return
         self._enter_fullscreen()
 
@@ -2465,9 +3199,7 @@ class App:
         self._fs_geom = self.root.geometry()
         self._fs_hidden = []
         for widget in (
-            self._settings_frame, self._preview_section,
-            self._export_section, self._host_section,
-            self._export_row, self.log,
+            self.workspace_tabs, self.log,
         ):
             try:
                 info = widget.pack_info()
@@ -2754,6 +3486,12 @@ class App:
             return False
         return cls in _INPUT_WIDGETS or cls in extra
 
+    def _preview_tab_selected(self):
+        try:
+            return self.workspace_tabs.select() == str(self.preview_tab)
+        except Exception:
+            return True
+
     def _bind_player_keys(self):
         self.root.bind_all("<space>", self.on_space)
         self.root.bind_all("<Left>", lambda e: self._on_step_key(-1))
@@ -2772,25 +3510,25 @@ class App:
         self.root.bind("<FocusOut>", self._on_root_focus_out)
 
     def _on_step_key(self, delta):
-        if self._input_widget_focused() or self._exporting:
+        if not self._preview_tab_selected() or self._input_widget_focused() or self._exporting:
             return None
         self.step_frame(delta)
         return "break"
 
     def _on_skip_key(self, sign):
-        if self._input_widget_focused() or self._exporting:
+        if not self._preview_tab_selected() or self._input_widget_focused() or self._exporting:
             return None
         self.skip_seconds(sign)
         return "break"
 
     def _on_jump_key(self, frame):
-        if self._input_widget_focused() or self._exporting:
+        if not self._preview_tab_selected() or self._input_widget_focused() or self._exporting:
             return None
         self.jump_frame(frame)
         return "break"
 
     def _on_view_hotkey(self, view):
-        if self._input_widget_focused() or self._exporting:
+        if not self._preview_tab_selected() or self._input_widget_focused() or self._exporting:
             return None
         if self.view_var.get() != view:
             self.view_var.set(view)
@@ -2798,7 +3536,7 @@ class App:
         return "break"
 
     def _on_fullscreen_key(self, event=None):
-        if self._input_widget_focused():
+        if not self._preview_tab_selected() or self._input_widget_focused():
             return None
         self.toggle_fullscreen()
         return "break"
@@ -2812,6 +3550,7 @@ class App:
     def _set_hold_original(self, down):
         down = bool(
             down
+            and self._preview_tab_selected()
             and self.video
             and not self._exporting
             and not self._input_widget_focused()
@@ -2865,6 +3604,8 @@ class App:
             self.play()
 
     def on_space(self, event=None):
+        if not self._preview_tab_selected():
+            return None
         if self._input_widget_focused(extra=_SPACE_PASSTHROUGH):
             return None
         self.toggle_play()
@@ -3429,7 +4170,10 @@ class App:
             self.logln("[拖拽] tkinterdnd2 未安装；仍可点击“导入”。运行 setup.bat 可启用拖拽。")
             return
         try:
-            for widget in (self.root, self.import_btn, self.canvas):
+            for widget in (
+                self.root, self.import_btn, self.canvas,
+                self.queue_tab, self.queue_tree,
+            ):
                 widget.drop_target_register(DND_FILES)
                 widget.dnd_bind("<<DropEnter>>", self._on_drop_enter)
                 widget.dnd_bind("<<DropLeave>>", self._on_drop_leave)
@@ -3438,28 +4182,41 @@ class App:
             self.logln("[拖拽] 初始化失败，仍可点击导入: " + str(ex))
 
     def _on_drop_enter(self, event):
-        if not self._exporting:
+        if not self._exporting and not self._queue_running:
             self.canvas.config(bg=CANVAS_DROP_BG)
-            self.set_status("松开鼠标以导入")
+            self.set_status("松开鼠标以导入；多个视频会加入队列")
         return getattr(event, "action", None)
 
     def _on_drop_leave(self, event):
         self.canvas.config(bg=CANVAS_BG)
-        if not self._exporting:
+        if not self._exporting and not self._queue_running:
             self.set_status("就绪")
         return getattr(event, "action", None)
 
     def _on_drop(self, event):
         self.canvas.config(bg=CANVAS_BG)
-        if self._exporting:
-            messagebox.showinfo("忙", "正在导出，请结束后再导入。")
+        if self._exporting or self._queue_running:
+            messagebox.showinfo("忙", "正在处理队列，请暂停或结束后再导入。")
             return getattr(event, "action", None)
         try:
             paths = list(self.root.tk.splitlist(event.data))
         except Exception:
             paths = [str(getattr(event, "data", "")).strip("{} \"")]
-        if len(paths) != 1:
-            messagebox.showwarning("拖拽导入", "一次只能导入一个文件。")
+        queue_target = getattr(event, "widget", None) in {self.queue_tab, self.queue_tree}
+        contains_folder = any(os.path.isdir(path) for path in paths)
+        if queue_target or len(paths) != 1 or contains_folder:
+            expanded = []
+            for path in paths:
+                if os.path.isdir(path):
+                    for current, _dirs, files in os.walk(path):
+                        expanded.extend(
+                            os.path.join(current, name)
+                            for name in sorted(files)
+                            if _is_video_path(name)
+                        )
+                elif path:
+                    expanded.append(path)
+            self._add_paths_to_queue(expanded)
         elif paths[0]:
             self._load_media(paths[0])
         return getattr(event, "action", None)
@@ -3498,8 +4255,8 @@ class App:
             pass
 
     def clear_media(self):
-        if self._exporting:
-            messagebox.showinfo("忙", "正在导出，请结束后再清空。")
+        if self._exporting or self._queue_running:
+            messagebox.showinfo("忙", "正在处理队列，请暂停或结束后再清空。")
             return
         if not self.video and self._live is None:
             return
@@ -3524,8 +4281,8 @@ class App:
         self.logln("已清空导入，解码/音轨/DLSS 主机已释放")
 
     def _load_media(self, path):
-        if self._exporting:
-            messagebox.showinfo("忙", "正在导出，请稍候。")
+        if self._exporting or self._queue_running:
+            messagebox.showinfo("忙", "正在处理队列，请暂停或结束后再导入。")
             return False
         path = os.path.abspath(os.path.normpath(path))
         if not os.path.isfile(path):
@@ -3577,8 +4334,8 @@ class App:
 
     def _load_video(self, path):
         """Validate and load a video from either the file dialog or drag-and-drop."""
-        if self._exporting:
-            messagebox.showinfo("忙", "正在导出，请稍候。")
+        if self._exporting or self._queue_running:
+            messagebox.showinfo("忙", "正在处理队列，请暂停或结束后再导入。")
             return False
         path = os.path.abspath(os.path.normpath(path))
         if not os.path.isfile(path):
@@ -3707,18 +4464,20 @@ class App:
         self._exporting = True
         self._update_action_labels()
         self._update_host_control_states()
+        self._update_queue_action_states()
         self._export_t0 = time.perf_counter()
         self._export_ema_fps = None
         self.set_status(status_text)
 
     def _end_export_ui(
         self, success, out_path, done_label="完成", done_message=None, cancelled=False,
-        completed_items=1,
+        completed_items=1, notify=True,
     ):
         self._exporting = False
         self._export_cancel_event.clear()
         self._update_action_labels()
         self._update_host_control_states()
+        self._update_queue_action_states()
         if cancelled:
             removed = self._remove_partial_export(out_path)
             self.pbar["value"] = 0
@@ -3733,7 +4492,8 @@ class App:
             completed_items = max(int(completed_items), 1)
             self.set_progress(completed_items, completed_items, done_label)
             self.logln("已导出: " + out_path)
-            messagebox.showinfo("导出", done_message or ("已导出:\n" + out_path))
+            if notify:
+                messagebox.showinfo("导出", done_message or ("已导出:\n" + out_path))
         else:
             self.pbar["value"] = 0
             try:
@@ -3741,7 +4501,8 @@ class App:
             except Exception:
                 pass
             self.set_status("导出失败，请查看日志")
-            messagebox.showerror("导出失败", "导出未完成，请查看下方日志。")
+            if notify:
+                messagebox.showerror("导出失败", "导出未完成，请查看下方日志。")
 
     @staticmethod
     def _remove_partial_export(out_path):
@@ -3754,11 +4515,18 @@ class App:
             return False
 
     def cancel_export(self):
-        if not self._exporting or self._is_image or self._export_cancel_event.is_set():
+        if (
+            not self._exporting
+            or (self._queue_active_job_id is None and self._is_image)
+            or self._export_cancel_event.is_set()
+        ):
             return
         self._export_cancel_event.set()
         self._update_action_labels()
+        self._update_queue_action_states()
         self.set_status("正在取消导出…")
+        if self._queue_active_job_id is not None:
+            self.queue_status_label.config(text="正在取消当前队列任务…")
         self.logln("[导出] 用户请求取消，正在停止导出流水线…")
 
     def _raise_if_export_cancelled(self):
@@ -3803,11 +4571,11 @@ class App:
 
     # ---------- export ----------
     def _export_hdr_video(
-        self, out_path, total_frames, fps, width, height,
+        self, source_path, color_info, out_path, total_frames, fps, width, height,
         settings, export_settings, view, mix,
     ):
         """Run the strict PQ/HLG RGBA16F path in its own disposable host."""
-        color_info = dict(self._video_color_info or {})
+        color_info = dict(color_info or {})
         if not color_info.get("is_hdr"):
             raise RuntimeError("HDR 导出请求与源视频色彩元数据不一致")
         hdr_settings = {
@@ -3826,10 +4594,10 @@ class App:
         try:
             ffmpeg = find_ffmpeg()
             reader = FFmpegHDRVideoReader(
-                self.video, width, height, color_info, ffmpeg=ffmpeg,
+                source_path, width, height, color_info, ffmpeg=ffmpeg,
             )
             writer = FFmpegVideoWriter(
-                out_path, width, height, fps, audio_source=self.video,
+                out_path, width, height, fps, audio_source=source_path,
                 nvenc_preset=export_settings['nvenc_preset'], hdr_metadata=color_info,
                 rate_control=export_settings['rate_control'],
                 quality_profile=export_settings['quality_profile'],
@@ -3914,7 +4682,7 @@ class App:
         if not self.video:
             messagebox.showwarning("提示", "请先导入视频或图片")
             return
-        if self._exporting or (self.thread and self.thread.is_alive()):
+        if self._queue_running or self._exporting or (self.thread and self.thread.is_alive()):
             messagebox.showinfo("忙", "上一个任务还没结束")
             return
         if self._is_image:
@@ -3923,7 +4691,32 @@ class App:
         settings = self._collect_settings()
         export_settings = self._collect_export_settings()
         self._save_settings_now()
-        n, fps, w, h = self._video_info(self.video)
+        return self._export_video_source(
+            self.video, settings, export_settings,
+            dict(self._video_color_info or {}), notify=True,
+        )
+
+    def _export_video_source(
+        self, source_path, settings, export_settings, color_info,
+        out_path=None, notify=True,
+    ):
+        """Export one immutable video request for either the preview UI or queue."""
+        source_path = os.path.abspath(os.path.normpath(source_path))
+        settings = {**self._collect_settings(), **dict(settings or {})}
+        export_settings = {
+            **self._collect_export_settings(), **dict(export_settings or {}),
+        }
+        color_info = dict(color_info or {})
+        n, fps, w, h = self._video_info(source_path)
+        if w <= 0 or h <= 0:
+            error = "无法读取视频尺寸，请检查输入文件。"
+            self.logln("导出错误: " + error)
+            if notify:
+                messagebox.showerror("导出失败", error)
+            return {
+                "success": False, "cancelled": False, "error": error,
+                "output_path": out_path or "", "frames": 0,
+            }
         output_width, output_height = _resolve_output_size(
             w, h, export_settings['output_resolution'],
             export_settings['custom_output_width'], export_settings['custom_output_height'],
@@ -3936,9 +4729,11 @@ class App:
         )
         view = settings['output_view']; mix = float(settings['output_mix'])
         live = None; writer = None
-        default_out_path = os.path.splitext(self.video)[0] + "_dlss.mp4"
-        out_path = self._unique_output_path(self.video)
-        if out_path != default_out_path:
+        default_out_path = os.path.splitext(source_path)[0] + "_dlss.mp4"
+        out_path = out_path or self._unique_output_path(source_path)
+        if not notify and os.path.exists(out_path):
+            out_path = self._unique_target_path(out_path)
+        if out_path != default_out_path and notify:
             self.logln("[导出] 目标文件已存在，自动改名为: " + os.path.basename(out_path))
         self._begin_export_ui("正在流水线导出（CPU 解码 + GPU DLSS/NVENC）...")
         success = False
@@ -3946,8 +4741,10 @@ class App:
         started_at = self._export_t0
         dlss_seconds = 0.0
         exported_frames = 0
-        color_info = self._video_color_info or {}
         hdr_active = bool(export_settings['hdr_mode'] and color_info.get('is_hdr'))
+        if hdr_active:
+            export_settings['mode'] = 'single'
+        error_message = ""
         try:
             if export_settings['rate_control'] == 'quality':
                 encoding_note = QUALITY_PROFILE_NAMES.get(
@@ -3964,7 +4761,8 @@ class App:
             )
             if hdr_active:
                 result = self._export_hdr_video(
-                    out_path, n, fps, w, h, settings, export_settings, view, mix,
+                    source_path, color_info, out_path, n, fps, w, h,
+                    settings, export_settings, view, mix,
                 )
                 exported_frames = result['frames']
                 dlss_seconds = result['dlss_seconds']
@@ -3987,7 +4785,7 @@ class App:
                     f"预热 {export_settings['warmup']} 帧"
                 )
                 result = export_parallel(
-                    self.video, out_path, settings,
+                    source_path, out_path, settings,
                     workers=export_settings['workers'],
                     warmup=export_settings['warmup'],
                     nvenc_preset=export_settings['nvenc_preset'],
@@ -4011,7 +4809,7 @@ class App:
                 )
             else:
                 writer = FFmpegVideoWriter(
-                    out_path, w, h, fps, audio_source=self.video,
+                    out_path, w, h, fps, audio_source=source_path,
                     nvenc_preset=export_settings['nvenc_preset'],
                     rate_control=export_settings['rate_control'],
                     quality_profile=export_settings['quality_profile'],
@@ -4052,12 +4850,13 @@ class App:
 
                     for i, fr in self._iter_frames(
                         decode_buffer, tone_map_hdr=bool(color_info.get('is_hdr')),
+                        source_path=source_path, color_info=color_info,
                     ):
                         self._raise_if_export_cancelled()
                         hh, ww = fr.shape[:2]
                         rgba = cv2.cvtColor(fr, cv2.COLOR_BGR2RGBA)
                         if live is None:
-                            live = self._ensure_live(ww, hh)
+                            live = self._ensure_live(ww, hh, settings)
                             if live is None:
                                 raise RuntimeError("DLSS 引擎初始化失败")
                             live.update(settings)
@@ -4102,7 +4901,8 @@ class App:
             cancelled = True
         except Exception as ex:
             traceback.print_exc()
-            self.logln("导出错误: " + str(ex))
+            error_message = str(ex)
+            self.logln("导出错误: " + error_message)
         finally:
             if writer and not success:
                 writer.abort()
@@ -4115,14 +4915,25 @@ class App:
             "已导出（含原音轨）:\n" + out_path if success else None,
             cancelled=cancelled,
             completed_items=exported_frames,
+            notify=notify,
         )
+        return {
+            "success": success,
+            "cancelled": cancelled,
+            "error": error_message,
+            "output_path": out_path,
+            "frames": exported_frames,
+        }
 
-    def _iter_frames(self, buffer_size=4, tone_map_hdr=False):
+    def _iter_frames(
+        self, buffer_size=4, tone_map_hdr=False, source_path=None, color_info=None,
+    ):
         """Decode ahead on a worker so CPU decode overlaps the ordered DLSS stage."""
         frame_queue = queue.Queue(maxsize=max(int(buffer_size), 1))
         stop_event = threading.Event()
         decode_errors = []
-        video_path = self.video
+        video_path = source_path or self.video
+        color_info = color_info if color_info is not None else self._video_color_info
 
         def put_with_stop(item):
             while not stop_event.is_set():
@@ -4144,7 +4955,7 @@ class App:
                     if not ok:
                         break
                     if tone_map_hdr:
-                        frame = tone_map_hdr_preview(frame, self._video_color_info)
+                        frame = tone_map_hdr_preview(frame, color_info)
                     if not put_with_stop((index, frame)):
                         return
                     index += 1

@@ -3,6 +3,7 @@ import queue
 import tempfile
 import threading
 import unittest
+from tkinter import messagebox
 
 import numpy as np
 
@@ -25,6 +26,16 @@ class PlayerHelperTests(unittest.TestCase):
         self.assertEqual(_clamp_frame(-3, 10), 0)
         self.assertEqual(_clamp_frame(3.9, 10), 3)
         self.assertEqual(_clamp_frame(99, 10), 10)
+
+    def test_queue_output_name_avoids_reserved_and_existing_targets(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            candidate = os.path.join(temp_dir, "clip_dlss.mp4")
+            reserved = [candidate]
+            second = App._unique_target_path(candidate, reserved)
+            self.assertEqual(second, os.path.join(temp_dir, "clip_dlss_2.mp4"))
+            open(second, "wb").close()
+            third = App._unique_target_path(candidate, reserved)
+            self.assertEqual(third, os.path.join(temp_dir, "clip_dlss_3.mp4"))
         self.assertEqual(_clamp_frame("nope", 10), 0)
         self.assertEqual(_clamp_frame(0, 0), 0)
 
@@ -535,8 +546,11 @@ class WidgetSmokeTests(unittest.TestCase):
 
         with tempfile.TemporaryDirectory() as tmp:
             path = os.path.join(tmp, "dlss5_settings.json")
+            queue_path = os.path.join(tmp, "dlss5_queue.json")
             old = os.environ.get("DLSS5TOOL_SETTINGS_PATH")
+            old_queue = os.environ.get("DLSS5TOOL_QUEUE_PATH")
             os.environ["DLSS5TOOL_SETTINGS_PATH"] = path
+            os.environ["DLSS5TOOL_QUEUE_PATH"] = queue_path
             root = tk.Tk()
             root.withdraw()
             try:
@@ -547,6 +561,9 @@ class WidgetSmokeTests(unittest.TestCase):
                 self.assertTrue(hasattr(app, "import_btn"))
                 self.assertTrue(hasattr(app, "clear_btn"))
                 self.assertTrue(hasattr(app, "cancel_export_btn"))
+                self.assertTrue(hasattr(app, "workspace_tabs"))
+                self.assertTrue(hasattr(app, "queue_tree"))
+                self.assertTrue(hasattr(app, "queue_start_btn"))
                 self.assertEqual(str(app.cancel_export_btn.cget("text")), "取消导出")
                 self.assertTrue(app.cancel_export_btn.instate(["disabled"]))
                 self.assertTrue(hasattr(app, "eta_label"))
@@ -624,8 +641,10 @@ class WidgetSmokeTests(unittest.TestCase):
                 self.assertTrue(app._export_section.collapsed)
                 self.assertTrue(app._host_section.collapsed)
                 packed = list(app.root.pack_slaves())
+                self.assertIn(app.workspace_tabs, packed)
+                preview_packed = list(app.preview_tab.pack_slaves())
                 self.assertEqual(
-                    packed[-6:-1],
+                    preview_packed,
                     [
                         app._settings_frame, app._preview_section,
                         app._export_section, app._host_section,
@@ -633,6 +652,87 @@ class WidgetSmokeTests(unittest.TestCase):
                     ],
                 )
                 self.assertIs(packed[-1], getattr(app.log, "frame", app.log))
+                self.assertEqual(app.queue_tree.get_children(""), ())
+                self.assertTrue(app.queue_start_btn.instate(["disabled"]))
+                source = os.path.join(tmp, "queued.mp4")
+                open(source, "wb").close()
+                app._probe_queue_video = lambda _path: (
+                    {"frames": 48, "fps": 24.0, "width": 1920, "height": 1080},
+                    {"is_hdr": False, "label": "SDR / sRGB"},
+                )
+                self.assertEqual(app._add_paths_to_queue([source], switch_tab=False), 1)
+                self.assertEqual(app._add_paths_to_queue([source], switch_tab=False), 0)
+                self.assertEqual(len(app._queue_jobs), 1)
+                queued = app._queue_jobs[0]
+                self.assertEqual(queued.state, "pending")
+                self.assertEqual(queued.progress_total, 0)
+                self.assertEqual(queued.metadata["frames"], 48)
+                self.assertIn(queued.job_id, app.queue_tree.get_children(""))
+                self.assertTrue(app.queue_start_btn.instate(["!disabled"]))
+                queued.state = "failed"
+                queued.error = "test failure"
+                app._refresh_queue_tree()
+                app.queue_tree.selection_set(queued.job_id)
+                app.retry_selected_queue_jobs()
+                self.assertEqual(queued.state, "pending")
+                self.assertEqual(queued.progress_total, 48)
+                app.queue_tree.selection_set(queued.job_id)
+                app.remove_selected_queue_jobs()
+                self.assertEqual(app._queue_jobs, [])
+
+                hdr_source = os.path.join(tmp, "queued-hdr.mp4")
+                open(hdr_source, "wb").close()
+                app._export_settings["v_mode"].set("视觉无损（并行分段）")
+                app._probe_queue_video = lambda _path: (
+                    {"frames": 24, "fps": 24.0, "width": 1280, "height": 720},
+                    {"is_hdr": True, "label": "HDR10 / PQ", "profile": "pq"},
+                )
+                self.assertEqual(
+                    app._add_paths_to_queue([hdr_source], switch_tab=False), 1,
+                )
+                self.assertEqual(app._queue_jobs[0].export_settings["mode"], "single")
+                app._queue_jobs = []
+                app._save_queue_state()
+                app._refresh_queue_tree(keep_selection=False)
+                app._export_settings["v_mode"].set("严格时序（单会话）")
+                app._probe_queue_video = lambda _path: (
+                    {"frames": 48, "fps": 24.0, "width": 1920, "height": 1080},
+                    {"is_hdr": False, "label": "SDR / sRGB"},
+                )
+
+                second = os.path.join(tmp, "queued-second.mp4")
+                open(second, "wb").close()
+                self.assertEqual(
+                    app._add_paths_to_queue([source, second], switch_tab=False), 2,
+                )
+                callbacks = []
+                original_after = app.root.after
+                original_showinfo = messagebox.showinfo
+                app.root.after = lambda _delay, callback: callbacks.append(callback)
+                messagebox.showinfo = lambda *args, **kwargs: None
+                app._export_video_source = lambda path, **kwargs: {
+                    "success": path == source,
+                    "cancelled": False,
+                    "error": "simulated failure" if path == second else "",
+                    "output_path": kwargs["out_path"],
+                    "frames": 48,
+                }
+                try:
+                    app._queue_running = True
+                    app._run_next_queue_job()
+                    self.assertEqual(app._queue_jobs[0].state, "completed")
+                    self.assertEqual(len(callbacks), 1)
+                    callbacks.pop(0)()
+                    self.assertEqual(app._queue_jobs[1].state, "failed")
+                    self.assertEqual(app._queue_jobs[1].error, "simulated failure")
+                    callbacks.pop(0)()
+                    self.assertFalse(app._queue_running)
+                finally:
+                    app.root.after = original_after
+                    messagebox.showinfo = original_showinfo
+                app._queue_jobs = []
+                app._save_queue_state()
+                app._refresh_queue_tree(keep_selection=False)
                 app.timeline.set_range(0, 242)
                 app.timeline.set(12)
                 self.assertEqual(app.timeline.get(), 12)
@@ -653,12 +753,17 @@ class WidgetSmokeTests(unittest.TestCase):
                     os.environ.pop("DLSS5TOOL_SETTINGS_PATH", None)
                 else:
                     os.environ["DLSS5TOOL_SETTINGS_PATH"] = old
+                if old_queue is None:
+                    os.environ.pop("DLSS5TOOL_QUEUE_PATH", None)
+                else:
+                    os.environ["DLSS5TOOL_QUEUE_PATH"] = old_queue
 
     def test_closed_switch_sends_zero_and_remembers(self):
         import tkinter as tk
 
         with tempfile.TemporaryDirectory() as tmp:
             path = os.path.join(tmp, "dlss5_settings.json")
+            queue_path = os.path.join(tmp, "dlss5_queue.json")
             app_settings.save(
                 {
                     "intensity": 0.9,
@@ -675,7 +780,9 @@ class WidgetSmokeTests(unittest.TestCase):
                 path=path,
             )
             old = os.environ.get("DLSS5TOOL_SETTINGS_PATH")
+            old_queue = os.environ.get("DLSS5TOOL_QUEUE_PATH")
             os.environ["DLSS5TOOL_SETTINGS_PATH"] = path
+            os.environ["DLSS5TOOL_QUEUE_PATH"] = queue_path
             root = tk.Tk()
             root.withdraw()
             try:
@@ -770,6 +877,10 @@ class WidgetSmokeTests(unittest.TestCase):
                     os.environ.pop("DLSS5TOOL_SETTINGS_PATH", None)
                 else:
                     os.environ["DLSS5TOOL_SETTINGS_PATH"] = old
+                if old_queue is None:
+                    os.environ.pop("DLSS5TOOL_QUEUE_PATH", None)
+                else:
+                    os.environ["DLSS5TOOL_QUEUE_PATH"] = old_queue
 
 
 if __name__ == "__main__":

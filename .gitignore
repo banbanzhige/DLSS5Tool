@@ -23,6 +23,8 @@ Desktop.ini
 # Local application state and diagnostics
 /dlss5_settings.json
 /dlss5_settings.json.tmp
+/dlss5_queue.json
+/dlss5_queue.json.tmp
 /dlss_run.log
 *.log
 

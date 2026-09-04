@@ -49,6 +49,7 @@ DEFAULTS = {
     "ui_export_open": False,
     "ui_host_open": False,
     "ui_preview_open": False,
+    "queue_output_dir": "",
     "preview_quality": "auto",
     "preview_prefetch": 24,
     "preview_cache": 96,
@@ -152,6 +153,9 @@ def validate(values):
         "ui_export_open", "ui_host_open", "ui_preview_open",
     ):
         result[name] = _as_bool(source.get(name, result[name]), result[name])
+    queue_output_dir = source.get("queue_output_dir", result["queue_output_dir"])
+    if isinstance(queue_output_dir, str):
+        result["queue_output_dir"] = queue_output_dir.strip()
     result["host_in_flight"] = _clamp_int(
         source.get("host_in_flight", result["host_in_flight"]), 1, 3
     )

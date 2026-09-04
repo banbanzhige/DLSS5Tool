@@ -129,6 +129,7 @@ class EncodingSettingsTests(unittest.TestCase):
             "rate_control": "bitrate",
             "quality_profile": "compact",
             "video_bitrate_mbps": 42.5,
+            "queue_output_dir": " C:/exports ",
         }
         with tempfile.TemporaryDirectory() as temp_dir:
             path = os.path.join(temp_dir, "settings.json")
@@ -140,6 +141,7 @@ class EncodingSettingsTests(unittest.TestCase):
         self.assertEqual(values["rate_control"], "bitrate")
         self.assertEqual(values["quality_profile"], "compact")
         self.assertEqual(values["video_bitrate_mbps"], 42.5)
+        self.assertEqual(values["queue_output_dir"], "C:/exports")
 
     def test_invalid_values_fall_back_or_are_clamped(self):
         values = app_settings.validate({
