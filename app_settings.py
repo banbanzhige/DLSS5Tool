@@ -8,13 +8,15 @@ import sys
 
 
 DLSS_SLIDER_MIN = 0.0
-DLSS_SLIDER_MAX = 1.0
+DLSS_STANDARD_MAX = 1.0
+DLSS_SLIDER_MAX = 5.0
 DLSS_SLIDER_STEP = 0.01
 
 
 DEFAULTS = {
     "preview_view": "对比",
     "style": 0,
+    "enable_5x": False,
     "intensity": 1.0,
     "use_intensity": False,
     "local_tone": 1.0,
@@ -31,6 +33,12 @@ DEFAULTS = {
     "warmup_frames": 8,
     "decode_buffer": 4,
     "nvenc_preset": "p5",
+    "output_resolution": "source",
+    "custom_output_width": 1920,
+    "custom_output_height": 1080,
+    "rate_control": "quality",
+    "quality_profile": "high",
+    "video_bitrate_mbps": 20.0,
     "hdr_mode": True,
     "host_backend": "auto",
     "host_zero_fast_path": True,
@@ -90,10 +98,14 @@ def validate(values):
     if source.get("preview_view") in {"原图", "DLSS", "对比"}:
         result["preview_view"] = source["preview_view"]
     result["style"] = _clamp_int(source.get("style", result["style"]), 0, 2)
+    result["enable_5x"] = _as_bool(
+        source.get("enable_5x", result["enable_5x"]), result["enable_5x"]
+    )
+    slider_max = DLSS_SLIDER_MAX if result["enable_5x"] else DLSS_STANDARD_MAX
     for name in (
         "intensity", "local_tone", "local_struct", "skin_struct", "output_mix",
     ):
-        result[name] = _clamp_float(source.get(name, result[name]))
+        result[name] = _clamp_float(source.get(name, result[name]), high=slider_max)
     result["output_view"] = _clamp_int(source.get("output_view", result["output_view"]), 0, 2)
     if source.get("export_mode") in {"single", "parallel"}:
         result["export_mode"] = source["export_mode"]
@@ -109,6 +121,25 @@ def validate(values):
     preset = str(source.get("nvenc_preset", result["nvenc_preset"]))
     if preset in {f"p{i}" for i in range(1, 8)}:
         result["nvenc_preset"] = preset
+    if source.get("output_resolution") in {
+        "source", "2160p", "1440p", "1080p", "720p", "custom",
+    }:
+        result["output_resolution"] = source["output_resolution"]
+    result["custom_output_width"] = _clamp_int(
+        source.get("custom_output_width", result["custom_output_width"]), 2, 8192
+    )
+    result["custom_output_height"] = _clamp_int(
+        source.get("custom_output_height", result["custom_output_height"]), 2, 8192
+    )
+    if source.get("rate_control") in {"quality", "bitrate"}:
+        result["rate_control"] = source["rate_control"]
+    if source.get("quality_profile") in {"maximum", "high", "balanced", "compact"}:
+        result["quality_profile"] = source["quality_profile"]
+    try:
+        bitrate = float(source.get("video_bitrate_mbps", result["video_bitrate_mbps"]))
+    except (TypeError, ValueError):
+        bitrate = result["video_bitrate_mbps"]
+    result["video_bitrate_mbps"] = max(0.5, min(500.0, bitrate))
     if source.get("host_backend") in {"auto", "v2", "legacy"}:
         result["host_backend"] = source["host_backend"]
     if source.get("host_submission") in {"merged", "compatibility"}:

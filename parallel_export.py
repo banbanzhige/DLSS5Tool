@@ -59,9 +59,25 @@ def _preserve_diagnostics(temp_dir, output_dir):
     return diagnostic_dir
 
 
+def _encoding_worker_args(
+    nvenc_preset="p5", rate_control="quality", quality_profile="high",
+    video_bitrate_mbps=20.0, output_size=None,
+):
+    output_width, output_height = output_size or (0, 0)
+    return [
+        "--nvenc-preset", str(nvenc_preset),
+        "--rate-control", str(rate_control),
+        "--quality-profile", str(quality_profile),
+        "--video-bitrate-mbps", str(video_bitrate_mbps),
+        "--output-width", str(output_width),
+        "--output-height", str(output_height),
+    ]
+
+
 def export_parallel(
     source, output, settings, workers=2, warmup=8, nvenc_preset="p5",
-    progress=None,
+    rate_control="quality", quality_profile="high", video_bitrate_mbps=20.0,
+    output_size=None, progress=None,
 ):
     """Export contiguous segments concurrently and losslessly concatenate them."""
     source = os.path.abspath(source)
@@ -108,8 +124,11 @@ def export_parallel(
                 "--result", result_path,
                 "--worker-id", str(worker_id),
                 "--nvenc", "1" if use_nvenc else "0",
-                "--nvenc-preset", nvenc_preset,
             ]
+            cmd += _encoding_worker_args(
+                nvenc_preset, rate_control, quality_profile,
+                video_bitrate_mbps, output_size,
+            )
             stderr_handle = open(stderr_path, "wb")
             stderr_handles.append(stderr_handle)
             process = subprocess.Popen(

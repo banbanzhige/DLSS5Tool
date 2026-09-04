@@ -196,28 +196,44 @@ class EffectiveSliderTests(unittest.TestCase):
         self.assertEqual(effective_skin_settings(True, 0.0), (0, 0.0))
         self.assertEqual(effective_skin_settings(True, 0.8), (1, 0.8))
 
-    def test_slider_input_supports_one_percent_steps_and_one_hundred_percent(self):
+    def test_slider_input_requires_5x_permission_above_one_hundred_percent(self):
         self.assertEqual(_normalize_slider_input("0.73"), 0.73)
         self.assertEqual(_normalize_slider_input("75%"), 0.75)
         self.assertEqual(_normalize_slider_input("0.734"), 0.73)
         self.assertEqual(_normalize_slider_input("150%"), 1.0)
+        self.assertEqual(_normalize_slider_input("500%"), 1.0)
+        self.assertEqual(_normalize_slider_input("150%", max_value=5.0), 1.5)
+        self.assertEqual(_normalize_slider_input("500%", max_value=5.0), 5.0)
+        self.assertEqual(_normalize_slider_input("600%", max_value=5.0), 5.0)
         self.assertEqual(_normalize_slider_input("bad", fallback=0.8), 0.8)
 
-    def test_persisted_slider_values_are_clamped_to_one(self):
-        values = app_settings.validate(
+    def test_persisted_slider_values_require_5x_permission(self):
+        standard = app_settings.validate(
             {
                 "intensity": 0.75,
                 "local_tone": 1.0,
                 "local_struct": 1.25,
                 "skin_struct": 2.0,
-                "output_mix": 2.5,
+                "output_mix": 6.0,
             }
         )
-        self.assertEqual(values["intensity"], 0.75)
-        self.assertEqual(values["local_tone"], 1.0)
-        self.assertEqual(values["local_struct"], 1.0)
-        self.assertEqual(values["skin_struct"], 1.0)
-        self.assertEqual(values["output_mix"], 1.0)
+        self.assertFalse(standard["enable_5x"])
+        self.assertEqual(standard["intensity"], 0.75)
+        self.assertEqual(standard["local_tone"], 1.0)
+        self.assertEqual(standard["local_struct"], 1.0)
+        self.assertEqual(standard["skin_struct"], 1.0)
+        self.assertEqual(standard["output_mix"], 1.0)
+
+        experimental = app_settings.validate({
+            "enable_5x": True,
+            "local_struct": 1.25,
+            "skin_struct": 2.0,
+            "output_mix": 6.0,
+        })
+        self.assertTrue(experimental["enable_5x"])
+        self.assertEqual(experimental["local_struct"], 1.25)
+        self.assertEqual(experimental["skin_struct"], 2.0)
+        self.assertEqual(experimental["output_mix"], 5.0)
 
 
 class OutputViewTests(unittest.TestCase):
@@ -226,6 +242,12 @@ class OutputViewTests(unittest.TestCase):
         proc = np.full((4, 8, 3), 200, np.uint8)
         out = compose_output_frame(orig, proc, view=0, mix=1.0)
         np.testing.assert_array_equal(out, proc)
+
+    def test_output_mix_above_one_amplifies_the_processed_residual(self):
+        orig = np.full((2, 3, 3), 100, np.uint8)
+        proc = np.full((2, 3, 3), 120, np.uint8)
+        out = compose_output_frame(orig, proc, view=0, mix=5.0)
+        np.testing.assert_array_equal(out, np.full_like(proc, 200))
 
     def test_diff_x10_is_midgray_when_identical(self):
         img = np.full((4, 8, 3), 40, np.uint8)
@@ -537,6 +559,16 @@ class WidgetSmokeTests(unittest.TestCase):
                 app.set_status("就绪")
                 self.assertEqual(str(app.eta_label.cget("text")), "")
                 self.assertTrue(app.clear_btn.instate(["disabled"]))
+                export = app._collect_export_settings()
+                self.assertEqual(export["output_resolution"], "source")
+                self.assertEqual(export["rate_control"], "quality")
+                self.assertEqual(export["quality_profile"], "high")
+                app._export_settings["v_rate_control"].set("目标码率")
+                app._export_settings["v_output_resolution"].set("自定义上限")
+                app._on_export_settings_change()
+                self.assertTrue(app._export_settings["w_quality_profile"].instate(["disabled"]))
+                self.assertTrue(app._export_settings["w_video_bitrate"].instate(["!disabled"]))
+                self.assertTrue(app._export_settings["w_custom_width"].instate(["!disabled"]))
                 app.video = "dummy.mp4"
                 app._update_action_labels()
                 self.assertTrue(app.clear_btn.instate(["!disabled"]))
@@ -658,6 +690,7 @@ class WidgetSmokeTests(unittest.TestCase):
                 remembered = app._collect_persisted_settings()
                 self.assertAlmostEqual(remembered["intensity"], 0.9)
                 self.assertFalse(remembered["use_intensity"])
+                self.assertFalse(remembered["enable_5x"])
                 self.assertAlmostEqual(remembered["skin_struct"], 0.8)
                 self.assertFalse(remembered["use_auto_mask"])
                 self.assertEqual(str(app._settings["w_intensity"].cget("state")), "disabled")
@@ -681,6 +714,17 @@ class WidgetSmokeTests(unittest.TestCase):
                 self.assertGreater(intensity_w, 0)
                 self.assertEqual(intensity_w, mix_w)
                 self.assertEqual(intensity_w, tone_w)
+
+                app._settings["v_enable_5x"].set(True)
+                app._on_5x_toggle()
+                self.assertEqual(float(app._settings["w_intensity"].cget("to")), 5.0)
+                self.assertIn("0%–500%", str(app._settings["w_range_hint"].cget("text")))
+                app._settings["v_intensity"].set(4.0)
+                app._settings["v_enable_5x"].set(False)
+                app._on_5x_toggle()
+                self.assertEqual(float(app._settings["w_intensity"].cget("to")), 1.0)
+                self.assertEqual(float(app._settings["v_intensity"].get()), 1.0)
+                app._settings["v_intensity"].set(0.9)
 
                 app._settings["v_use_intensity"].set(True)
                 app._settings["v_auto_mask"].set(True)

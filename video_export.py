@@ -21,6 +21,84 @@ _NVENC_CACHE = {}
 _CREATE_NO_WINDOW = getattr(subprocess, "CREATE_NO_WINDOW", 0)
 _MP4_COPY_AUDIO_CODECS = {"aac", "mp3", "ac3", "eac3", "alac"}
 _HDR_TRANSFERS = {"smpte2084": "hdr10_pq", "arib-std-b67": "hdr10_hlg"}
+_MAX_OUTPUT_MIX = 5.0
+_QUALITY_PROFILE_VALUES = {
+    "maximum": {"nvenc": 16, "software": 16},
+    "high": {"nvenc": 19, "software": 18},
+    "balanced": {"nvenc": 23, "software": 22},
+    "compact": {"nvenc": 27, "software": 26},
+}
+_SOFTWARE_PRESETS = {
+    "p1": "ultrafast",
+    "p2": "superfast",
+    "p3": "veryfast",
+    "p4": "faster",
+    "p5": "fast",
+    "p6": "medium",
+    "p7": "slow",
+}
+
+
+def _clamp_video_bitrate(value):
+    try:
+        return max(0.5, min(500.0, float(value)))
+    except (TypeError, ValueError):
+        return 20.0
+
+
+def _bitrate_arg(value):
+    return f"{float(value):.3f}".rstrip("0").rstrip(".") + "M"
+
+
+def build_video_encoder_args(
+    is_hdr, uses_nvenc, nvenc_preset="p5", rate_control="quality",
+    quality_profile="high", video_bitrate_mbps=20.0,
+):
+    """Build one validated encoder policy for SDR/HDR and GPU/CPU paths."""
+    is_hdr = bool(is_hdr)
+    uses_nvenc = bool(uses_nvenc)
+    nvenc_preset = nvenc_preset if nvenc_preset in _SOFTWARE_PRESETS else "p5"
+    rate_control = rate_control if rate_control in {"quality", "bitrate"} else "quality"
+    quality_profile = (
+        quality_profile if quality_profile in _QUALITY_PROFILE_VALUES else "high"
+    )
+    bitrate = _clamp_video_bitrate(video_bitrate_mbps)
+
+    if uses_nvenc:
+        args = [
+            "-c:v", "hevc_nvenc" if is_hdr else "h264_nvenc",
+        ]
+        if is_hdr:
+            args.extend(["-profile:v", "main10"])
+        args.extend(["-preset", nvenc_preset, "-tune", "hq"])
+        if rate_control == "quality":
+            quality = _QUALITY_PROFILE_VALUES[quality_profile]["nvenc"]
+            args.extend(["-rc", "vbr", "-cq", str(quality), "-b:v", "0"])
+        else:
+            args.extend([
+                "-rc", "vbr",
+                "-b:v", _bitrate_arg(bitrate),
+                "-maxrate", _bitrate_arg(bitrate * 1.5),
+                "-bufsize", _bitrate_arg(bitrate * 2.0),
+            ])
+        return args
+
+    args = [
+        "-c:v", "libx265" if is_hdr else "libx264",
+        "-preset", _SOFTWARE_PRESETS[nvenc_preset],
+    ]
+    if is_hdr:
+        args[2:2] = ["-profile:v", "main10"]
+    if rate_control == "quality":
+        quality = _QUALITY_PROFILE_VALUES[quality_profile]["software"]
+        args.extend(["-crf", str(quality)])
+    else:
+        args.extend([
+            "-b:v", _bitrate_arg(bitrate),
+            "-maxrate", _bitrate_arg(bitrate * 1.5),
+            "-bufsize", _bitrate_arg(bitrate * 2.0),
+        ])
+    return args
 
 
 def find_ffmpeg():
@@ -260,17 +338,25 @@ def compose_hdr_frame(original, processed, view=0, mix=1.0, profile="hdr10_pq"):
         if width > 1:
             result[:, max(width // 2 - 1, 0), :3] = 1.0
         return result.astype(np.float16)
-    mix = max(0.0, min(1.0, float(mix)))
+    mix = max(0.0, min(_MAX_OUTPUT_MIX, float(mix)))
     if mix <= 0.0:
         return np.ascontiguousarray(original, dtype=np.float16)
-    if mix >= 1.0:
+    if mix == 1.0:
         return np.ascontiguousarray(processed, dtype=np.float16)
     decode = _pq_eotf if profile == "hdr10_pq" else _hlg_eotf
     encode = _pq_oetf if profile == "hdr10_pq" else _hlg_oetf
-    linear = decode(original_f[..., :3]) * (1.0 - mix) + decode(processed_f[..., :3]) * mix
+    original_linear = decode(original_f[..., :3])
+    processed_linear = decode(processed_f[..., :3])
+    linear = np.maximum(
+        original_linear + (processed_linear - original_linear) * mix,
+        0.0,
+    )
     result = np.empty_like(original_f)
     result[..., :3] = np.clip(encode(linear), 0.0, 1.0)
-    result[..., 3] = original_f[..., 3] * (1.0 - mix) + processed_f[..., 3] * mix
+    result[..., 3] = np.clip(
+        original_f[..., 3] + (processed_f[..., 3] - original_f[..., 3]) * mix,
+        0.0, 1.0,
+    )
     return result.astype(np.float16)
 
 
@@ -418,7 +504,8 @@ def compose_output_frame(original, processed, view=0, mix=1.0):
         if width > 1:
             frame[:, max(width // 2 - 1, 0)] = [255, 255, 255]
         return frame
-    if mix >= 1.0:
+    mix = max(0.0, min(_MAX_OUTPUT_MIX, float(mix)))
+    if mix == 1.0:
         return processed
     if mix <= 0.0:
         return original
@@ -523,6 +610,8 @@ class FFmpegVideoWriter:
     def __init__(
         self, output_path, width, height, fps, audio_source=None,
         use_nvenc=None, nvenc_preset="p5", hdr_metadata=None,
+        rate_control="quality", quality_profile="high",
+        video_bitrate_mbps=20.0, output_size=None,
     ):
         self.output_path = os.path.abspath(output_path)
         self.width = int(width)
@@ -540,6 +629,23 @@ class FFmpegVideoWriter:
         else:
             self.uses_nvenc = bool(use_nvenc)
         self.nvenc_preset = nvenc_preset if nvenc_preset in {f"p{i}" for i in range(1, 8)} else "p5"
+        self.rate_control = rate_control if rate_control in {"quality", "bitrate"} else "quality"
+        self.quality_profile = (
+            quality_profile if quality_profile in _QUALITY_PROFILE_VALUES else "high"
+        )
+        self.video_bitrate_mbps = _clamp_video_bitrate(video_bitrate_mbps)
+        self.output_width = self.width + self.width % 2
+        self.output_height = self.height + self.height % 2
+        self._resize_output = False
+        if output_size is not None:
+            try:
+                output_width, output_height = (int(value) for value in output_size)
+            except (TypeError, ValueError):
+                output_width, output_height = self.width, self.height
+            output_width = max(2, output_width - output_width % 2)
+            output_height = max(2, output_height - output_height % 2)
+            self.output_width, self.output_height = output_width, output_height
+            self._resize_output = (output_width, output_height) != (self.width, self.height)
         self.encoder_name = (
             "HEVC Main10 NVENC（HDR）" if self.is_hdr and self.uses_nvenc else
             "libx265 Main10（HDR CPU 回退）" if self.is_hdr else
@@ -562,6 +668,11 @@ class FFmpegVideoWriter:
             transfer = self.hdr_metadata["color_transfer"]
             primaries = self.hdr_metadata["color_primaries"]
             matrix = self.hdr_metadata["color_space"]
+            geometry = (
+                f"zscale=w={self.output_width}:h={self.output_height}:filter=lanczos:"
+                if self._resize_output else
+                "pad=ceil(iw/2)*2:ceil(ih/2)*2,zscale="
+            )
             cmd.extend([
                 "-f", "rawvideo", "-pixel_format", "rgba64le",
                 "-video_size", f"{self.width}x{self.height}",
@@ -569,41 +680,36 @@ class FFmpegVideoWriter:
                 "-color_range", "pc", "-color_primaries", primaries,
                 "-color_trc", transfer, "-i", "pipe:0", "-an",
                 "-vf",
-                f"pad=ceil(iw/2)*2:ceil(ih/2)*2,zscale=matrixin=gbr:matrix={matrix}:"
+                f"{geometry}matrixin=gbr:matrix={matrix}:"
                 f"transferin={transfer}:transfer={transfer}:primariesin={primaries}:"
                 f"primaries={primaries}:rangein=full:range=limited,format=p010le",
             ])
-            if self.uses_nvenc:
-                cmd.extend([
-                    "-c:v", "hevc_nvenc", "-profile:v", "main10",
-                    "-preset", self.nvenc_preset, "-tune", "hq",
-                    "-rc", "vbr", "-cq", "19", "-b:v", "0",
-                ])
-            else:
-                cmd.extend([
-                    "-c:v", "libx265", "-profile:v", "main10",
-                    "-preset", "fast", "-crf", "18",
-                ])
+            cmd.extend(build_video_encoder_args(
+                True, self.uses_nvenc, self.nvenc_preset, self.rate_control,
+                self.quality_profile, self.video_bitrate_mbps,
+            ))
             cmd.extend([
                 "-color_range", "tv", "-color_primaries", primaries,
                 "-color_trc", transfer, "-colorspace", matrix,
                 "-tag:v", "hvc1",
             ])
         else:
+            output_filter = (
+                f"scale={self.output_width}:{self.output_height}:flags=lanczos,format=yuv420p"
+                if self._resize_output else
+                "pad=ceil(iw/2)*2:ceil(ih/2)*2,format=yuv420p"
+            )
             cmd.extend([
                 "-f", "rawvideo", "-pixel_format", "bgr24",
                 "-video_size", f"{self.width}x{self.height}",
                 "-framerate", f"{self.fps:.12g}", "-i", "pipe:0", "-an",
                 # H.264 4:2:0 needs even dimensions; padding affects only unusual odd-sized input.
-                "-vf", "pad=ceil(iw/2)*2:ceil(ih/2)*2,format=yuv420p",
+                "-vf", output_filter,
             ])
-            if self.uses_nvenc:
-                cmd.extend([
-                    "-c:v", "h264_nvenc", "-preset", self.nvenc_preset, "-tune", "hq",
-                    "-rc", "vbr", "-cq", "19", "-b:v", "0",
-                ])
-            else:
-                cmd.extend(["-c:v", "libx264", "-preset", "fast", "-crf", "18"])
+            cmd.extend(build_video_encoder_args(
+                False, self.uses_nvenc, self.nvenc_preset, self.rate_control,
+                self.quality_profile, self.video_bitrate_mbps,
+            ))
         cmd.extend(["-movflags", "+faststart", self._temp_path])
 
         try:
@@ -662,6 +768,10 @@ class FFmpegVideoWriter:
                 pass
         code = self._proc.wait()
         self._stderr_thread.join(timeout=2)
+        try:
+            self._proc.stderr.close()
+        except (AttributeError, OSError):
+            pass
         return code
 
     def finish(self):
@@ -704,6 +814,12 @@ class FFmpegVideoWriter:
                     self._proc.kill()
                 except OSError:
                     pass
+        if hasattr(self, "_stderr_thread"):
+            self._stderr_thread.join(timeout=2)
+        try:
+            self._proc.stderr.close()
+        except (AttributeError, OSError):
+            pass
         self._remove_temp()
 
     def _remove_temp(self):

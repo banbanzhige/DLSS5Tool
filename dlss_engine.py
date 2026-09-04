@@ -140,8 +140,8 @@ def _configure_host(lib, settings):
 
 
 # settings dict keys that actually change the output on this Feature 18 config:
-#   style (int), intensity/local_tone/local_struct (0..1), use_auto_mask,
-#   skin_struct (effective with auto mask), output_view (0/1/2), output_mix (0..1).
+#   style (int), intensity/local_tone/local_struct (0..5), use_auto_mask,
+#   skin_struct (effective with auto mask), output_view (0/1/2), output_mix (0..5).
 def _set_options(lib, s):
     lib.dlssnr_set_options(
         int(s.get('preset', 1)),          # preset: inert at same-res, keep 1

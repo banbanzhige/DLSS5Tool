@@ -51,9 +51,35 @@ OUTVIEW_NAMES = {value: name for name, value in OUTVIEW_CHOICES.items()}
 EXPORT_MODE_CHOICES = {"严格时序（单会话）": "single", "视觉无损（并行分段）": "parallel"}
 EXPORT_MODE_NAMES = {value: name for name, value in EXPORT_MODE_CHOICES.items()}
 NVENC_PRESET_CHOICES = {
-    "p1 最快": "p1", "p3 快速": "p3", "p5 高质量": "p5", "p7 最慢": "p7",
+    "p1 最快": "p1", "p3 快速": "p3", "p5 较慢（推荐）": "p5", "p7 最慢": "p7",
 }
 NVENC_PRESET_NAMES = {value: name for name, value in NVENC_PRESET_CHOICES.items()}
+OUTPUT_RESOLUTION_CHOICES = {
+    "跟随源视频（推荐）": "source",
+    "2160p": "2160p",
+    "1440p": "1440p",
+    "1080p": "1080p",
+    "720p": "720p",
+    "自定义上限": "custom",
+}
+OUTPUT_RESOLUTION_NAMES = {
+    value: name for name, value in OUTPUT_RESOLUTION_CHOICES.items()
+}
+OUTPUT_RESOLUTION_MAX_EDGES = {
+    "2160p": 3840, "1440p": 2560, "1080p": 1920, "720p": 1280,
+}
+RATE_CONTROL_CHOICES = {
+    "按画质（推荐）": "quality",
+    "目标码率": "bitrate",
+}
+RATE_CONTROL_NAMES = {value: name for name, value in RATE_CONTROL_CHOICES.items()}
+QUALITY_PROFILE_CHOICES = {
+    "极高质量": "maximum",
+    "高质量（推荐）": "high",
+    "均衡": "balanced",
+    "小体积": "compact",
+}
+QUALITY_PROFILE_NAMES = {value: name for name, value in QUALITY_PROFILE_CHOICES.items()}
 HOST_BACKEND_CHOICES = {
     "自动（优先 v2）": "auto", "v2 优化主机": "v2", "旧版兼容主机": "legacy",
 }
@@ -279,6 +305,58 @@ def _realtime_preview_size(width, height, quality="auto"):
     return _fit_preview_size(width, height, max_edge)
 
 
+def _fit_output_box(width, height, max_width, max_height):
+    """Fit a source inside an output box without upscaling or changing aspect ratio."""
+    try:
+        width, height = int(width), int(height)
+        max_width, max_height = int(max_width), int(max_height)
+    except (TypeError, ValueError):
+        return 0, 0
+    if min(width, height, max_width, max_height) <= 0:
+        return 0, 0
+    scale = min(1.0, max_width / float(width), max_height / float(height))
+    if scale >= 1.0:
+        return width, height
+    output_width = max(2, int(width * scale))
+    output_height = max(2, int(height * scale))
+    output_width -= output_width % 2
+    output_height -= output_height % 2
+    return max(output_width, 2), max(output_height, 2)
+
+
+def _resolve_output_size(
+    width, height, resolution="source", custom_width=1920, custom_height=1080,
+):
+    """Resolve a named output limit to the actual aspect-preserving frame size."""
+    try:
+        width, height = int(width), int(height)
+    except (TypeError, ValueError):
+        return 0, 0
+    if width <= 0 or height <= 0:
+        return 0, 0
+    if resolution == "source":
+        return width, height
+    if resolution == "custom":
+        return _fit_output_box(width, height, custom_width, custom_height)
+    max_edge = OUTPUT_RESOLUTION_MAX_EDGES.get(resolution)
+    if max_edge is None:
+        return width, height
+    if width >= height:
+        return _fit_output_box(width, height, max_edge, max_edge * 9 // 16)
+    return _fit_output_box(width, height, max_edge * 9 // 16, max_edge)
+
+
+def _estimate_output_size_mb(duration_seconds, video_bitrate_mbps, audio_mbps=0.256):
+    """Estimate decimal megabytes for target-bitrate mode, including typical audio."""
+    try:
+        duration = max(0.0, float(duration_seconds))
+        video_rate = max(0.0, float(video_bitrate_mbps))
+        audio_rate = max(0.0, float(audio_mbps))
+    except (TypeError, ValueError):
+        return 0.0
+    return duration * (video_rate + audio_rate) / 8.0
+
+
 def _postprocess_and_write(writer, original, processed, view, mix):
     """CPU post-processing + FFmpeg write stage, run on one ordered worker thread."""
     writer.write(compose_output_frame(original, processed, view, mix))
@@ -299,7 +377,9 @@ def effective_skin_settings(enabled, value):
     return (1 if strength > 0.0 else 0), strength
 
 
-def _normalize_slider_input(value, fallback=0.0):
+def _normalize_slider_input(
+    value, fallback=0.0, max_value=app_settings.DLSS_STANDARD_MAX,
+):
     """Parse decimal or percentage input and snap it to the supported slider range."""
     try:
         text = str(value).strip()
@@ -314,9 +394,19 @@ def _normalize_slider_input(value, fallback=0.0):
             parsed = float(fallback)
         except (TypeError, ValueError):
             parsed = app_settings.DLSS_SLIDER_MIN
+    try:
+        max_value = float(max_value)
+        if not math.isfinite(max_value):
+            raise ValueError
+    except (TypeError, ValueError):
+        max_value = app_settings.DLSS_STANDARD_MAX
+    max_value = max(
+        app_settings.DLSS_STANDARD_MAX,
+        min(app_settings.DLSS_SLIDER_MAX, max_value),
+    )
     parsed = max(
         app_settings.DLSS_SLIDER_MIN,
-        min(app_settings.DLSS_SLIDER_MAX, parsed),
+        min(max_value, parsed),
     )
     steps = round(
         (parsed - app_settings.DLSS_SLIDER_MIN) / app_settings.DLSS_SLIDER_STEP
@@ -698,10 +788,13 @@ class App:
         self.root.after_idle(self._update_preview_memory_hint)
 
         self._export_section = CollapsibleSection(
-            root, "导出性能",
+            root, "导出设置",
             collapsed=not self._saved_settings.get("ui_export_open", False),
             on_toggle=self._on_panels_toggle,
-            tooltip="案例实测：2进程 / 预热8帧最快。并行模式保持视觉质量，但不保证逐像素时序一致。",
+            tooltip=(
+                "设置输出分辨率、编码质量或目标码率，以及导出性能。"
+                "并行模式保持视觉质量，但不保证逐像素时序一致。"
+            ),
         )
         self._export_section.pack(fill="x", padx=8, pady=2)
         self._export_settings = self._build_export_settings(self._export_section.body)
@@ -874,6 +967,7 @@ class App:
         self._slider_committers = []
         saved = self._saved_settings
         d['v_style'] = tk.StringVar(value=STYLE_NAMES.get(saved['style'], "默认"))
+        d['v_enable_5x'] = tk.BooleanVar(value=saved.get('enable_5x', False))
         d['v_intensity'] = tk.DoubleVar(value=saved['intensity'])
         d['v_use_intensity'] = tk.BooleanVar(value=saved['use_intensity'])
         d['v_local_tone'] = tk.DoubleVar(value=saved['local_tone'])
@@ -901,7 +995,18 @@ class App:
             top, textvariable=d['v_outview'], values=list(OUTVIEW_CHOICES),
             state="readonly", width=10,
         )
-        outview_cb.pack(side="left", padx=(6, 0))
+        outview_cb.pack(side="left", padx=(6, 20))
+        enable_5x = ttk.Checkbutton(
+            top, text="允许 5× 实验范围", variable=d['v_enable_5x'],
+            command=self._on_5x_toggle,
+        )
+        enable_5x.pack(side="left")
+        d['w_enable_5x'] = enable_5x
+        Tooltip(
+            enable_5x,
+            "默认关闭：全部强度参数和输出混合限制在 0%–100%。"
+            "开启后允许输入 0%–500%；高于 100% 可能产生饱和、伪影或过度处理。",
+        )
         Tooltip(
             outview_cb,
             "导出视图只影响导出构图；上方预览始终使用「处理」构图。\n"
@@ -918,36 +1023,50 @@ class App:
         grid.pack(fill="x")
         for col in range(3):
             grid.columnconfigure(col, weight=1, uniform="dlss_slider")
+        slider_max = (
+            app_settings.DLSS_SLIDER_MAX
+            if d['v_enable_5x'].get() else app_settings.DLSS_STANDARD_MAX
+        )
         _, d['w_intensity'], d['w_intensity_value'] = self._add_toggle_slider(
             grid, 0, 0, "强度", d['v_intensity'], d['v_use_intensity'],
-            "关闭时按 0 处理。开启后使用记忆的强度。",
+            "关闭时按 0 处理。开启后使用记忆的强度。", slider_max=slider_max,
         )
         d['w_use_output_mix'], d['w_outmix'], d['w_outmix_value'] = self._add_toggle_slider(
             grid, 0, 1, "输出混合", d['v_outmix'], d['v_use_output_mix'],
-            "仅「处理」有效。0=原图，1=完整 DLSS；DLSS/对比预览与导出同步生效。\n"
+            "仅「处理」有效。0=原图，1=完整 DLSS，超过 1 会放大处理残差；"
+            "DLSS/对比预览与导出同步生效。\n"
             "关闭时按 0（原图），开启后使用记忆的混合比例。",
             on_change=self.on_output_settings_change,
+            slider_max=slider_max,
         )
         _, d['w_local_tone'], d['w_local_tone_value'] = self._add_toggle_slider(
             grid, 1, 0, "本地色调", d['v_local_tone'], d['v_use_local_tone'],
-            "关闭时按 0 处理。开启后使用记忆的本地色调。",
+            "关闭时按 0 处理。开启后使用记忆的本地色调。", slider_max=slider_max,
         )
         _, d['w_local_struct'], d['w_local_struct_value'] = self._add_toggle_slider(
             grid, 1, 1, "本地结构", d['v_local_struct'], d['v_use_local_struct'],
-            "关闭时按 0 处理。开启后使用记忆的本地结构。",
+            "关闭时按 0 处理。开启后使用记忆的本地结构。", slider_max=slider_max,
         )
         _, d['w_skin_struct'], d['w_skin_struct_value'] = self._add_toggle_slider(
             grid, 1, 2, "皮肤蒙版", d['v_skin_struct'], d['v_auto_mask'],
             "关闭时皮肤结构按 0 处理。开启且数值大于 0 时使用自动蒙版保护皮肤纹理；"
             "数值为 0 时等同关闭。",
+            slider_max=slider_max,
         )
+        range_hint = ttk.Label(
+            body,
+            text="",
+            foreground="#6a6a6a", wraplength=820, justify="left",
+        )
+        range_hint.pack(fill="x", padx=24, pady=(0, 6))
+        d['w_range_hint'] = range_hint
         self._settings = d
         self._update_dlss_control_states()
         return d
 
     def _add_toggle_slider(
         self, parent, row, column, text, value_var, enabled_var,
-        tooltip=None, on_change=None,
+        tooltip=None, on_change=None, slider_max=app_settings.DLSS_STANDARD_MAX,
     ):
         on_change = on_change or self.on_settings_change
         cell = ttk.Frame(parent)
@@ -975,7 +1094,9 @@ class App:
                 fallback = float(value_var.get())
             except (TypeError, ValueError, tk.TclError):
                 fallback = app_settings.DLSS_SLIDER_MIN
-            value = _normalize_slider_input(value_text.get(), fallback)
+            value = _normalize_slider_input(
+                value_text.get(), fallback, max_value=self._dlss_slider_limit(),
+            )
             value_var.set(value)
             value_text.set(f"{value:.2f}")
             if notify:
@@ -984,7 +1105,7 @@ class App:
         value_input = ttk.Spinbox(
             header,
             from_=app_settings.DLSS_SLIDER_MIN,
-            to=app_settings.DLSS_SLIDER_MAX,
+            to=slider_max,
             increment=app_settings.DLSS_SLIDER_STEP,
             format="%.2f",
             textvariable=value_text,
@@ -1002,7 +1123,7 @@ class App:
         scale = tk.Scale(
             cell,
             from_=app_settings.DLSS_SLIDER_MIN,
-            to=app_settings.DLSS_SLIDER_MAX,
+            to=slider_max,
             resolution=app_settings.DLSS_SLIDER_STEP,
             orient="horizontal",
             showvalue=False, variable=value_var, length=160,
@@ -1014,11 +1135,40 @@ class App:
             Tooltip(checkbox, tooltip)
             value_help = (
                 tooltip
-                + "\n可拖动或直接输入 0.00～1.00（1.00=100%），也支持输入如 75%。"
+                + "\n可拖动或直接输入数值，也支持 75% 等百分比格式。"
+                + "\n默认最高 1.00（100%）；开启「允许 5× 实验范围」后最高 5.00（500%）。"
             )
             Tooltip(scale, value_help)
             Tooltip(value_input, value_help)
         return checkbox, scale, value_input
+
+    def _dlss_slider_limit(self):
+        settings = getattr(self, "_settings", None) or {}
+        enabled_var = settings.get('v_enable_5x')
+        try:
+            enabled = bool(enabled_var.get()) if enabled_var is not None else False
+        except tk.TclError:
+            enabled = False
+        return (
+            app_settings.DLSS_SLIDER_MAX
+            if enabled else app_settings.DLSS_STANDARD_MAX
+        )
+
+    def _on_5x_toggle(self):
+        d = self._settings
+        limit = self._dlss_slider_limit()
+        if limit <= app_settings.DLSS_STANDARD_MAX:
+            for key in (
+                'v_intensity', 'v_local_tone', 'v_local_struct',
+                'v_skin_struct', 'v_outmix',
+            ):
+                variable = d[key]
+                try:
+                    value = float(variable.get())
+                except (TypeError, ValueError, tk.TclError):
+                    value = app_settings.DLSS_SLIDER_MIN
+                variable.set(_normalize_slider_input(value, value, max_value=limit))
+        self.on_settings_change()
 
     def _set_slider_enabled(self, scale, value_input, enabled):
         colors = SCALE_ENABLED if enabled else SCALE_DISABLED
@@ -1030,6 +1180,21 @@ class App:
         if not hasattr(self, "_settings"):
             return
         d = self._settings
+        limit = self._dlss_slider_limit()
+        for scale_key, input_key in (
+            ('w_intensity', 'w_intensity_value'),
+            ('w_local_tone', 'w_local_tone_value'),
+            ('w_local_struct', 'w_local_struct_value'),
+            ('w_skin_struct', 'w_skin_struct_value'),
+            ('w_outmix', 'w_outmix_value'),
+        ):
+            d[scale_key].config(to=limit)
+            d[input_key].config(to=limit)
+        d['w_range_hint'].config(text=(
+            "5× 实验范围已开启：可使用 0%–500%；超过 100% 可能造成饱和、伪影或过度处理。"
+            if limit > app_settings.DLSS_STANDARD_MAX else
+            "标准范围：0%–100%。如需实验增强，请开启上方「允许 5× 实验范围」。"
+        ))
         self._set_slider_enabled(
             d['w_intensity'], d['w_intensity_value'], d['v_use_intensity'].get(),
         )
@@ -1186,8 +1351,20 @@ class App:
             'v_warmup': tk.IntVar(value=saved['warmup_frames']),
             'v_decode_buffer': tk.IntVar(value=saved['decode_buffer']),
             'v_nvenc_preset': tk.StringVar(
-                value=NVENC_PRESET_NAMES.get(saved['nvenc_preset'], "p5 高质量")
+                value=NVENC_PRESET_NAMES.get(saved['nvenc_preset'], "p5 较慢（推荐）")
             ),
+            'v_output_resolution': tk.StringVar(value=OUTPUT_RESOLUTION_NAMES.get(
+                saved.get('output_resolution', 'source'), "跟随源视频（推荐）"
+            )),
+            'v_custom_width': tk.IntVar(value=saved.get('custom_output_width', 1920)),
+            'v_custom_height': tk.IntVar(value=saved.get('custom_output_height', 1080)),
+            'v_rate_control': tk.StringVar(value=RATE_CONTROL_NAMES.get(
+                saved.get('rate_control', 'quality'), "按画质（推荐）"
+            )),
+            'v_quality_profile': tk.StringVar(value=QUALITY_PROFILE_NAMES.get(
+                saved.get('quality_profile', 'high'), "高质量（推荐）"
+            )),
+            'v_video_bitrate': tk.DoubleVar(value=saved.get('video_bitrate_mbps', 20.0)),
             'v_hdr': tk.BooleanVar(value=saved.get('hdr_mode', True)),
         }
         ttk.Label(parent, text="模式:").grid(row=0, column=0, sticky="e", padx=(6, 2), pady=4)
@@ -1205,37 +1382,102 @@ class App:
         ttk.Label(parent, text="解码缓存:").grid(row=0, column=6, sticky="e", padx=(4, 2))
         decode = ttk.Spinbox(parent, from_=1, to=8, textvariable=d['v_decode_buffer'], width=5)
         decode.grid(row=0, column=7, padx=(0, 10))
-        ttk.Label(parent, text="NVENC:").grid(row=1, column=0, sticky="e", padx=(6, 2), pady=4)
+        ttk.Label(parent, text="输出分辨率:").grid(
+            row=1, column=0, sticky="e", padx=(6, 2), pady=4,
+        )
+        resolution = ttk.Combobox(
+            parent, textvariable=d['v_output_resolution'],
+            values=list(OUTPUT_RESOLUTION_CHOICES), state="readonly", width=18,
+        )
+        resolution.grid(row=1, column=1, sticky="w", padx=(0, 10))
+        ttk.Label(parent, text="码率控制:").grid(row=1, column=2, sticky="e", padx=(4, 2))
+        rate_control = ttk.Combobox(
+            parent, textvariable=d['v_rate_control'], values=list(RATE_CONTROL_CHOICES),
+            state="readonly", width=14,
+        )
+        rate_control.grid(row=1, column=3, sticky="w", padx=(0, 10))
+        quality_label = ttk.Label(parent, text="编码质量:")
+        quality_label.grid(row=1, column=4, sticky="e", padx=(4, 2))
+        quality = ttk.Combobox(
+            parent, textvariable=d['v_quality_profile'],
+            values=list(QUALITY_PROFILE_CHOICES), state="readonly", width=14,
+        )
+        quality.grid(row=1, column=5, sticky="w", padx=(0, 10))
+        bitrate_label = ttk.Label(parent, text="目标码率 Mbps:")
+        bitrate_label.grid(row=1, column=6, sticky="e", padx=(4, 2))
+        bitrate = ttk.Spinbox(
+            parent, from_=0.5, to=500.0, increment=0.5,
+            textvariable=d['v_video_bitrate'], width=7,
+        )
+        bitrate.grid(row=1, column=7, sticky="w", padx=(0, 10))
+
+        custom_label = ttk.Label(parent, text="自定义上限:")
+        custom_label.grid(row=2, column=0, sticky="e", padx=(6, 2), pady=4)
+        custom_frame = ttk.Frame(parent)
+        custom_frame.grid(row=2, column=1, sticky="w", padx=(0, 10))
+        custom_width = ttk.Spinbox(
+            custom_frame, from_=2, to=8192, increment=2,
+            textvariable=d['v_custom_width'], width=6,
+        )
+        custom_width.pack(side="left")
+        ttk.Label(custom_frame, text="×").pack(side="left", padx=3)
+        custom_height = ttk.Spinbox(
+            custom_frame, from_=2, to=8192, increment=2,
+            textvariable=d['v_custom_height'], width=6,
+        )
+        custom_height.pack(side="left")
+
+        ttk.Label(parent, text="编码速度:").grid(row=2, column=2, sticky="e", padx=(4, 2))
         preset = ttk.Combobox(
             parent, textvariable=d['v_nvenc_preset'], values=list(NVENC_PRESET_CHOICES),
             state="readonly", width=12,
         )
-        preset.grid(row=1, column=1, sticky="w", padx=(0, 10))
+        preset.grid(row=2, column=3, sticky="w", padx=(0, 10))
         hdr = ttk.Checkbutton(
             parent, text="HDR10 / HLG 高精度处理", variable=d['v_hdr'],
             command=self._on_export_settings_change,
         )
-        hdr.grid(row=1, column=2, columnspan=3, sticky="w", padx=(4, 10), pady=4)
+        hdr.grid(row=2, column=4, columnspan=4, sticky="w", padx=(4, 10), pady=4)
         hint = ttk.Label(
             parent,
             text="导入 PQ/HLG 视频后自动使用 RGBA16F 与 HEVC Main10。",
-            foreground="#555555", wraplength=760, justify="left",
+            foreground="#555555", wraplength=940, justify="left",
         )
-        hint.grid(row=2, column=0, columnspan=8, sticky="w", padx=8, pady=(0, 4))
+        hint.grid(row=3, column=0, columnspan=8, sticky="w", padx=8, pady=(0, 4))
         d.update({
             'w_mode': mode,
             'w_workers': workers,
             'w_warmup': warmup,
             'w_decode_buffer': decode,
+            'w_output_resolution': resolution,
+            'w_custom_label': custom_label,
+            'w_custom_width': custom_width,
+            'w_custom_height': custom_height,
+            'w_rate_control': rate_control,
+            'w_quality_label': quality_label,
+            'w_quality_profile': quality,
+            'w_bitrate_label': bitrate_label,
+            'w_video_bitrate': bitrate,
             'w_hdr': hdr,
             'w_hdr_hint': hint,
         })
         mode.bind("<<ComboboxSelected>>", lambda e: self._on_export_settings_change())
-        preset.bind("<<ComboboxSelected>>", lambda e: self._schedule_settings_save())
-        for widget in (workers, warmup, decode):
-            widget.config(command=self._schedule_settings_save)
-            widget.bind("<FocusOut>", lambda e: self._schedule_settings_save())
-            widget.bind("<Return>", lambda e: self._schedule_settings_save())
+        for widget in (resolution, rate_control, quality, preset):
+            widget.bind("<<ComboboxSelected>>", lambda e: self._on_export_settings_change())
+        for widget in (workers, warmup, decode, custom_width, custom_height, bitrate):
+            widget.config(command=self._on_export_settings_change)
+            widget.bind("<FocusOut>", lambda e: self._on_export_settings_change())
+            widget.bind("<Return>", lambda e: self._on_export_settings_change())
+        Tooltip(
+            resolution,
+            "只控制视频输出尺寸，并保持原宽高比；不会放大低分辨率素材。"
+            "DLSS 仍以源分辨率处理，因此缩小输出不会减少神经渲染耗时。",
+        )
+        Tooltip(
+            rate_control,
+            "按画质会稳定压缩质量但文件大小浮动；目标码率便于控制体积，复杂画面可能波动。",
+        )
+        Tooltip(preset, "越慢通常压缩效率越高；它不等同于清晰度或目标码率。")
         self.root.after_idle(self._update_export_control_states)
         return d
 
@@ -1421,6 +1663,7 @@ class App:
             commit()
         d = self._settings
         return {
+            'enable_5x': bool(d['v_enable_5x'].get()),
             'intensity': float(d['v_intensity'].get()),
             'use_intensity': bool(d['v_use_intensity'].get()),
             'local_tone': float(d['v_local_tone'].get()),
@@ -1468,12 +1711,31 @@ class App:
                 return int(variable.get())
             except (ValueError, tk.TclError):
                 return default
+        def number(variable, default):
+            try:
+                return float(variable.get())
+            except (ValueError, tk.TclError):
+                return default
         return {
             'mode': EXPORT_MODE_CHOICES.get(d['v_mode'].get(), 'single'),
             'workers': max(2, min(4, integer(d['v_workers'], 2))),
             'warmup': max(0, min(120, integer(d['v_warmup'], 8))),
             'decode_buffer': max(1, min(8, integer(d['v_decode_buffer'], 4))),
             'nvenc_preset': NVENC_PRESET_CHOICES.get(d['v_nvenc_preset'].get(), 'p5'),
+            'output_resolution': OUTPUT_RESOLUTION_CHOICES.get(
+                d['v_output_resolution'].get(), 'source'
+            ),
+            'custom_output_width': max(2, min(8192, integer(d['v_custom_width'], 1920))),
+            'custom_output_height': max(2, min(8192, integer(d['v_custom_height'], 1080))),
+            'rate_control': RATE_CONTROL_CHOICES.get(
+                d['v_rate_control'].get(), 'quality'
+            ),
+            'quality_profile': QUALITY_PROFILE_CHOICES.get(
+                d['v_quality_profile'].get(), 'high'
+            ),
+            'video_bitrate_mbps': max(
+                0.5, min(500.0, number(d['v_video_bitrate'], 20.0))
+            ),
             'hdr_mode': bool(d['v_hdr'].get()),
         }
 
@@ -1492,8 +1754,26 @@ class App:
         self._export_settings['w_decode_buffer'].config(state="normal")
         self._export_settings['w_mode'].config(state="disabled" if effective_hdr else "readonly")
         self._set_ttk_enabled(self._export_settings['w_hdr'], not self._is_image)
+        video_controls_enabled = not self._is_image
+        self._export_settings['w_output_resolution'].config(
+            state="readonly" if video_controls_enabled else "disabled"
+        )
+        self._export_settings['w_rate_control'].config(
+            state="readonly" if video_controls_enabled else "disabled"
+        )
+        custom_enabled = video_controls_enabled and export['output_resolution'] == 'custom'
+        quality_enabled = video_controls_enabled and export['rate_control'] == 'quality'
+        bitrate_enabled = video_controls_enabled and export['rate_control'] == 'bitrate'
+        for key in ('w_custom_label', 'w_custom_width', 'w_custom_height'):
+            self._set_ttk_enabled(self._export_settings[key], custom_enabled)
+        self._set_ttk_enabled(self._export_settings['w_quality_label'], quality_enabled)
+        self._export_settings['w_quality_profile'].config(
+            state="readonly" if quality_enabled else "disabled"
+        )
+        self._set_ttk_enabled(self._export_settings['w_bitrate_label'], bitrate_enabled)
+        self._set_ttk_enabled(self._export_settings['w_video_bitrate'], bitrate_enabled)
         if self._is_image:
-            text = "HDR 高精度路径当前用于视频；图片继续按现有 SDR 流程导出。"
+            text = "图片继续按原尺寸和现有 SDR 图片流程导出；分辨率与视频码率设置不参与。"
         elif color.get('is_hdr'):
             if export['hdr_mode']:
                 text = (
@@ -1506,6 +1786,32 @@ class App:
             text = "当前源为 SDR；保持现有 RGBA8 / H.264 导出路径。"
         else:
             text = "导入 PQ/HLG 视频后自动使用 RGBA16F 与 HEVC Main10。"
+        if not self._is_image:
+            source_width, source_height = self._source_size()
+            output_width, output_height = _resolve_output_size(
+                source_width, source_height, export['output_resolution'],
+                export['custom_output_width'], export['custom_output_height'],
+            )
+            if output_width > 0 and output_height > 0:
+                output_note = f"输出 {output_width}×{output_height}"
+            else:
+                output_note = "输出尺寸将在导入视频后显示"
+            if export['rate_control'] == 'quality':
+                quality_name = QUALITY_PROFILE_NAMES.get(
+                    export['quality_profile'], "高质量（推荐）"
+                )
+                encoding_note = f"按画质：{quality_name}，文件大小随内容变化"
+            else:
+                duration = self.nframes / max(float(self.fps), 1.0) if self.nframes else 0.0
+                estimated = _estimate_output_size_mb(
+                    duration, export['video_bitrate_mbps']
+                )
+                estimate_note = f"，预计约 {estimated:.0f} MB" if estimated > 0 else ""
+                parallel_note = "；并行模式为近似目标" if export['mode'] == 'parallel' else ""
+                encoding_note = (
+                    f"目标 {export['video_bitrate_mbps']:g} Mbps{estimate_note}{parallel_note}"
+                )
+            text += f"\n{output_note}；{encoding_note}。"
         self._export_settings['w_hdr_hint'].config(text=text)
 
     def _on_export_settings_change(self):
@@ -1525,6 +1831,12 @@ class App:
             "warmup_frames": export['warmup'],
             "decode_buffer": export['decode_buffer'],
             "nvenc_preset": export['nvenc_preset'],
+            "output_resolution": export['output_resolution'],
+            "custom_output_width": export['custom_output_width'],
+            "custom_output_height": export['custom_output_height'],
+            "rate_control": export['rate_control'],
+            "quality_profile": export['quality_profile'],
+            "video_bitrate_mbps": export['video_bitrate_mbps'],
             "hdr_mode": export['hdr_mode'],
             "ui_export_open": bool(
                 getattr(self, "_export_section", None) and not self._export_section.collapsed
@@ -3519,6 +3831,10 @@ class App:
             writer = FFmpegVideoWriter(
                 out_path, width, height, fps, audio_source=self.video,
                 nvenc_preset=export_settings['nvenc_preset'], hdr_metadata=color_info,
+                rate_control=export_settings['rate_control'],
+                quality_profile=export_settings['quality_profile'],
+                video_bitrate_mbps=export_settings['video_bitrate_mbps'],
+                output_size=export_settings.get('output_size'),
             )
             live = ProcessLive(width, height, hdr_settings)
             self.logln(
@@ -3608,6 +3924,16 @@ class App:
         export_settings = self._collect_export_settings()
         self._save_settings_now()
         n, fps, w, h = self._video_info(self.video)
+        output_width, output_height = _resolve_output_size(
+            w, h, export_settings['output_resolution'],
+            export_settings['custom_output_width'], export_settings['custom_output_height'],
+        )
+        if output_width <= 0 or output_height <= 0:
+            output_width, output_height = w, h
+        export_settings['output_size'] = (
+            (output_width, output_height)
+            if (output_width, output_height) != (w, h) else None
+        )
         view = settings['output_view']; mix = float(settings['output_mix'])
         live = None; writer = None
         default_out_path = os.path.splitext(self.video)[0] + "_dlss.mp4"
@@ -3623,6 +3949,19 @@ class App:
         color_info = self._video_color_info or {}
         hdr_active = bool(export_settings['hdr_mode'] and color_info.get('is_hdr'))
         try:
+            if export_settings['rate_control'] == 'quality':
+                encoding_note = QUALITY_PROFILE_NAMES.get(
+                    export_settings['quality_profile'], "高质量（推荐）"
+                )
+                encoding_note = f"按画质 {encoding_note}"
+            else:
+                encoding_note = f"目标码率 {export_settings['video_bitrate_mbps']:g} Mbps"
+                if export_settings['mode'] == 'parallel':
+                    encoding_note += "（并行分段近似）"
+            self.logln(
+                f"[导出] 输出 {output_width}×{output_height}；{encoding_note}；"
+                f"编码速度 {export_settings['nvenc_preset']}"
+            )
             if hdr_active:
                 result = self._export_hdr_video(
                     out_path, n, fps, w, h, settings, export_settings, view, mix,
@@ -3652,6 +3991,10 @@ class App:
                     workers=export_settings['workers'],
                     warmup=export_settings['warmup'],
                     nvenc_preset=export_settings['nvenc_preset'],
+                    rate_control=export_settings['rate_control'],
+                    quality_profile=export_settings['quality_profile'],
+                    video_bitrate_mbps=export_settings['video_bitrate_mbps'],
+                    output_size=export_settings['output_size'],
                     progress=self._parallel_progress,
                 )
                 exported_frames = result['frames']
@@ -3670,6 +4013,10 @@ class App:
                 writer = FFmpegVideoWriter(
                     out_path, w, h, fps, audio_source=self.video,
                     nvenc_preset=export_settings['nvenc_preset'],
+                    rate_control=export_settings['rate_control'],
+                    quality_profile=export_settings['quality_profile'],
+                    video_bitrate_mbps=export_settings['video_bitrate_mbps'],
+                    output_size=export_settings['output_size'],
                 )
                 self.logln(f"[导出] 编码器: {writer.encoder_name}；完成后保留原视频音轨")
                 decode_buffer = export_settings['decode_buffer']

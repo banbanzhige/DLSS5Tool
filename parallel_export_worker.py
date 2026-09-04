@@ -56,6 +56,11 @@ def main():
     parser.add_argument("--worker-id", type=int, required=True)
     parser.add_argument("--nvenc", type=int, default=1)
     parser.add_argument("--nvenc-preset", default="p5")
+    parser.add_argument("--rate-control", choices=("quality", "bitrate"), default="quality")
+    parser.add_argument("--quality-profile", default="high")
+    parser.add_argument("--video-bitrate-mbps", type=float, default=20.0)
+    parser.add_argument("--output-width", type=int, default=0)
+    parser.add_argument("--output-height", type=int, default=0)
     args = parser.parse_args()
 
     source = os.path.abspath(args.input)
@@ -90,6 +95,10 @@ def main():
         writer = FFmpegVideoWriter(
             output, width, height, fps, audio_source=None,
             use_nvenc=bool(args.nvenc), nvenc_preset=args.nvenc_preset,
+            rate_control=args.rate_control, quality_profile=args.quality_profile,
+            video_bitrate_mbps=args.video_bitrate_mbps,
+            output_size=(args.output_width, args.output_height)
+            if args.output_width > 0 and args.output_height > 0 else None,
         )
         live = None
         pending = []

@@ -64,6 +64,14 @@ class HdrFrameTests(unittest.TestCase):
         mixed = compose_hdr_frame(original, processed, mix=0.5, profile="hdr10_pq")
         self.assertGreater(float(mixed[0, 0, 0]), 0.5)
 
+    def test_pq_mix_above_one_amplifies_in_linear_light(self):
+        original = np.full((1, 1, 4), 0.3, np.float16)
+        processed = np.full((1, 1, 4), 0.5, np.float16)
+        original[..., 3] = processed[..., 3] = 1.0
+        boosted = compose_hdr_frame(original, processed, mix=5.0, profile="hdr10_pq")
+        self.assertGreater(float(boosted[0, 0, 0]), float(processed[0, 0, 0]))
+        self.assertLessEqual(float(boosted.max()), 1.0)
+
     def test_preview_tone_map_returns_sdr_bgr(self):
         source = np.full((4, 6, 3), 180, np.uint8)
         preview = tone_map_hdr_preview(
