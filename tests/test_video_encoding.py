@@ -276,7 +276,7 @@ class EncodingSettingsTests(unittest.TestCase):
         self.assertEqual(values["output_resolution"], "source")
         self.assertEqual(values["output_container"], "mp4")
         self.assertEqual(values["rate_control"], "quality")
-        self.assertEqual(values["quality_profile"], "high")
+        self.assertEqual(values["quality_profile"], "balanced")
         self.assertEqual(values["video_bitrate_mbps"], 20.0)
         self.assertEqual(values["custom_output_width"], 2)
         self.assertEqual(values["custom_output_height"], 8192)

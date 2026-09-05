@@ -126,6 +126,49 @@ class ImageIoTests(unittest.TestCase):
 
 
 class SettingsPanelPersistenceTests(unittest.TestCase):
+    def test_release_defaults_match_recommended_profile(self):
+        defaults = app_settings.validate({})
+        expected = {
+            "preview_view": "原图",
+            "style": 0,
+            "enable_5x": False,
+            "intensity": 1.0,
+            "use_intensity": True,
+            "local_tone": 0.94,
+            "use_local_tone": True,
+            "local_struct": 0.84,
+            "use_local_struct": True,
+            "use_auto_mask": True,
+            "skin_struct": 1.0,
+            "output_view": 0,
+            "output_mix": 1.0,
+            "use_output_mix": True,
+            "preview_quality": "original",
+            "preview_cache_mb": 8192,
+            "output_container": "mp4",
+            "output_resolution": "source",
+            "rate_control": "quality",
+            "quality_profile": "balanced",
+            "video_bitrate_mbps": 20.0,
+            "nvenc_preset": "p7",
+            "hdr_mode": True,
+            "export_mode": "single",
+            "parallel_workers": 4,
+            "warmup_frames": 8,
+            "decode_buffer": 4,
+            "host_backend": "auto",
+            "host_submission": "merged",
+            "host_in_flight": 3,
+            "host_zero_fast_path": True,
+            "host_persistent_buffers": True,
+            "host_auto_fallback": True,
+            "ui_preview_open": True,
+            "ui_export_open": True,
+            "ui_host_open": True,
+        }
+        for name, value in expected.items():
+            self.assertEqual(defaults[name], value, name)
+
     def test_ui_panel_flags_roundtrip(self):
         with tempfile.TemporaryDirectory() as tmp:
             path = os.path.join(tmp, "dlss5_settings.json")
@@ -139,7 +182,7 @@ class SettingsPanelPersistenceTests(unittest.TestCase):
             self.assertTrue(loaded["ui_export_open"])
             self.assertTrue(loaded["ui_host_open"])
             self.assertEqual(loaded["preview_view"], "DLSS")
-            self.assertFalse(app_settings.validate({})["ui_preview_open"])
+            self.assertTrue(app_settings.validate({})["ui_preview_open"])
 
     def test_preview_cache_settings_roundtrip(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -163,15 +206,18 @@ class SettingsPanelPersistenceTests(unittest.TestCase):
             self.assertEqual(loaded["preview_prefetch"], 48)
             self.assertEqual(loaded["preview_quality"], "1440p")
             self.assertEqual(loaded["preview_cache_mb"], 4096)
-            self.assertEqual(app_settings.validate({"preview_quality": "bad"})["preview_quality"], "auto")
+            self.assertEqual(
+                app_settings.validate({"preview_quality": "bad"})["preview_quality"],
+                "original",
+            )
 
-    def test_slider_toggles_default_off_and_roundtrip(self):
+    def test_slider_toggles_default_on_and_roundtrip(self):
         loaded = app_settings.validate({"intensity": 0.9, "skin_struct": 0.8})
-        self.assertFalse(loaded["use_intensity"])
-        self.assertFalse(loaded["use_local_tone"])
-        self.assertFalse(loaded["use_local_struct"])
-        self.assertFalse(loaded["use_output_mix"])
-        self.assertFalse(loaded["use_auto_mask"])
+        self.assertTrue(loaded["use_intensity"])
+        self.assertTrue(loaded["use_local_tone"])
+        self.assertTrue(loaded["use_local_struct"])
+        self.assertTrue(loaded["use_output_mix"])
+        self.assertTrue(loaded["use_auto_mask"])
         self.assertEqual(loaded["intensity"], 0.9)
         self.assertEqual(loaded["skin_struct"], 0.8)
         with tempfile.TemporaryDirectory() as tmp:
@@ -694,7 +740,9 @@ class WidgetSmokeTests(unittest.TestCase):
                 self.assertEqual(export["output_container"], "mp4")
                 self.assertEqual(export["output_resolution"], "source")
                 self.assertEqual(export["rate_control"], "quality")
-                self.assertEqual(export["quality_profile"], "high")
+                self.assertEqual(export["quality_profile"], "balanced")
+                self.assertEqual(export["workers"], 4)
+                self.assertEqual(export["nvenc_preset"], "p7")
                 app._export_settings["v_rate_control"].set("目标码率")
                 app._export_settings["v_output_resolution"].set("自定义上限")
                 app._on_export_settings_change()
@@ -761,10 +809,10 @@ class WidgetSmokeTests(unittest.TestCase):
                 app.clear_media()
                 self.assertIsNone(app.video)
                 self.assertTrue(app.clear_btn.instate(["disabled"]))
-                self.assertTrue(app._preview_section.collapsed)
-                self.assertEqual(app._preview_settings["v_quality"].get(), "自动（推荐）")
-                self.assertTrue(app._export_section.collapsed)
-                self.assertTrue(app._host_section.collapsed)
+                self.assertFalse(app._preview_section.collapsed)
+                self.assertEqual(app._preview_settings["v_quality"].get(), "原始分辨率")
+                self.assertFalse(app._export_section.collapsed)
+                self.assertFalse(app._host_section.collapsed)
                 packed = list(app.root.pack_slaves())
                 self.assertIn(app.workspace_tabs, packed)
                 preview_packed = list(app.preview_tab.pack_slaves())
@@ -894,6 +942,8 @@ class WidgetSmokeTests(unittest.TestCase):
                 app.timeline.set(12)
                 self.assertEqual(app.timeline.get(), 12)
                 self.assertEqual(_format_timecode(app.timeline.get(), 24), "0:00.50")
+                app._export_section.toggle()
+                self.assertTrue(app._export_section.collapsed)
                 app._export_section.toggle()
                 self.assertFalse(app._export_section.collapsed)
                 bar = TimelineBar(root)
