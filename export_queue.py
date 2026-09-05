@@ -16,6 +16,7 @@ import uuid
 QUEUE_STATES = {
     "pending", "running", "completed", "failed", "cancelled", "interrupted",
 }
+_IMAGE_EXTENSIONS = {".png", ".jpg", ".jpeg", ".webp", ".bmp", ".tif", ".tiff"}
 
 
 @dataclass
@@ -26,6 +27,7 @@ class ExportJob:
     export_settings: dict
     metadata: dict = field(default_factory=dict)
     color_info: dict = field(default_factory=dict)
+    media_kind: str = "video"
     job_id: str = field(default_factory=lambda: uuid.uuid4().hex)
     state: str = "pending"
     progress_done: int = 0
@@ -39,15 +41,21 @@ class ExportJob:
     @classmethod
     def create(
         cls, source_path, output_path, settings, export_settings,
-        metadata=None, color_info=None,
+        metadata=None, color_info=None, media_kind=None,
     ):
+        source_path = os.path.abspath(os.path.normpath(source_path))
+        inferred_kind = (
+            "image" if os.path.splitext(source_path)[1].lower() in _IMAGE_EXTENSIONS
+            else "video"
+        )
         return cls(
-            source_path=os.path.abspath(os.path.normpath(source_path)),
+            source_path=source_path,
             output_path=os.path.abspath(os.path.normpath(output_path)),
             settings=deepcopy(settings or {}),
             export_settings=deepcopy(export_settings or {}),
             metadata=deepcopy(metadata or {}),
             color_info=deepcopy(color_info or {}),
+            media_kind=media_kind if media_kind in {"video", "image"} else inferred_kind,
         )
 
     @classmethod
@@ -65,6 +73,13 @@ class ExportJob:
             state = "pending"
         if state == "running":
             state = "interrupted"
+        inferred_kind = (
+            "image" if os.path.splitext(source)[1].lower() in _IMAGE_EXTENSIONS
+            else "video"
+        )
+        media_kind = raw.get("media_kind", inferred_kind)
+        if media_kind not in {"video", "image"}:
+            media_kind = inferred_kind
         def mapping(name):
             value = raw.get(name)
             return deepcopy(value) if isinstance(value, dict) else {}
@@ -76,6 +91,7 @@ class ExportJob:
                 export_settings=mapping("export_settings"),
                 metadata=mapping("metadata"),
                 color_info=mapping("color_info"),
+                media_kind=media_kind,
                 job_id=str(raw.get("job_id") or uuid.uuid4().hex),
                 state=state,
                 progress_done=max(int(raw.get("progress_done", 0)), 0),

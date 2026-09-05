@@ -17,6 +17,13 @@ class ExportJobTests(unittest.TestCase):
         export_settings["mode"] = "single"
         self.assertEqual(job.settings["nested"]["value"], 1)
         self.assertEqual(job.export_settings["mode"], "parallel")
+        self.assertEqual(job.media_kind, "video")
+
+    def test_media_kind_is_inferred_for_images(self):
+        job = export_queue.ExportJob.create(
+            "source.webp", "output.webp", {"style": 1}, {},
+        )
+        self.assertEqual(job.media_kind, "image")
 
     def test_retry_resets_runtime_state_but_keeps_snapshot(self):
         job = export_queue.ExportJob.create(
@@ -62,6 +69,22 @@ class ExportQueuePersistenceTests(unittest.TestCase):
                 json.dump({"jobs": [None, {}, {"source_path": "x.mp4"}]}, handle)
             loaded = export_queue.load(path)
         self.assertEqual(loaded, [])
+
+    def test_legacy_image_job_infers_kind_when_field_is_missing(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            path = os.path.join(temp_dir, "queue.json")
+            with open(path, "w", encoding="utf-8") as handle:
+                json.dump({
+                    "jobs": [{
+                        "source_path": os.path.join(temp_dir, "source.png"),
+                        "output_path": os.path.join(temp_dir, "output.png"),
+                        "settings": {},
+                        "export_settings": {},
+                    }],
+                }, handle)
+            loaded = export_queue.load(path)
+        self.assertEqual(len(loaded), 1)
+        self.assertEqual(loaded[0].media_kind, "image")
 
 
 if __name__ == "__main__":

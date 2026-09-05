@@ -18,6 +18,7 @@ import sys
 import threading
 import time
 import traceback
+import webbrowser
 from collections import deque
 import tkinter as tk
 from concurrent.futures import ThreadPoolExecutor
@@ -28,14 +29,17 @@ import numpy as np
 
 import app_settings
 from app_version import APP_VERSION
+import diagnostics
 import dlss_engine
 import export_queue as export_queue_state
+import updater
 from dlss_host_process import ProcessLive
 from parallel_export import export_parallel
 from preview_audio import PreviewAudio, ms_to_frame
 from video_export import (
     FFmpegHDRVideoReader, FFmpegVideoWriter, compose_hdr_frame,
-    compose_output_frame, find_ffmpeg, probe_video_stream, tone_map_hdr_preview,
+    compose_output_frame, find_ffmpeg, output_container_extension,
+    probe_video_stream, resolve_output_container, tone_map_hdr_preview,
 )
 
 try:
@@ -55,6 +59,16 @@ NVENC_PRESET_CHOICES = {
     "p1 最快": "p1", "p3 快速": "p3", "p5 较慢（推荐）": "p5", "p7 最慢": "p7",
 }
 NVENC_PRESET_NAMES = {value: name for name, value in NVENC_PRESET_CHOICES.items()}
+OUTPUT_CONTAINER_CHOICES = {
+    "MP4（推荐）": "mp4",
+    "MKV": "mkv",
+    "MOV": "mov",
+    "跟随输入": "source",
+}
+OUTPUT_CONTAINER_NAMES = {
+    value: name for name, value in OUTPUT_CONTAINER_CHOICES.items()
+}
+OUTPUT_CONTAINER_LABELS = {"mp4": "MP4", "mkv": "MKV", "mov": "MOV"}
 OUTPUT_RESOLUTION_CHOICES = {
     "跟随源视频（推荐）": "source",
     "2160p": "2160p",
@@ -103,10 +117,6 @@ VIDEO_FILETYPES = [
     ("媒体", "*.mp4 *.avi *.mov *.mkv *.m4v *.webm *.png *.jpg *.jpeg *.webp *.bmp *.tif *.tiff"),
     ("视频", "*.mp4 *.avi *.mov *.mkv *.m4v *.webm"),
     ("图片", "*.png *.jpg *.jpeg *.webp *.bmp *.tif *.tiff"),
-    ("所有文件", "*.*"),
-]
-VIDEO_ONLY_FILETYPES = [
-    ("视频", "*.mp4 *.avi *.mov *.mkv *.m4v *.webm"),
     ("所有文件", "*.*"),
 ]
 QUEUE_STATE_NAMES = {
@@ -655,6 +665,13 @@ class App:
         self._exporting = False
         self._export_cancel_event = threading.Event()
         self._switching_backend = False
+        self._diagnosing = False
+        self._diagnostic_thread = None
+        self._update_checking = False
+        self._update_downloading = False
+        self._update_progress_percent = None
+        self._update_thread = None
+        self._update_cancel_event = threading.Event()
         self._live = None
         self._live_cache = None
         self._last_dlss_frame = -1
@@ -782,11 +799,34 @@ class App:
 
         # ---- preview/settings and batch queue tabs ----
         self.workspace_tabs = ttk.Notebook(root)
-        self.workspace_tabs.pack(fill="x", padx=8, pady=(0, 2))
-        self.preview_tab = ttk.Frame(self.workspace_tabs)
+        self.workspace_tabs.pack(fill="both", expand=True, padx=8, pady=(0, 2))
+        self._preview_page = ttk.Frame(self.workspace_tabs)
         self.queue_tab = ttk.Frame(self.workspace_tabs)
-        self.workspace_tabs.add(self.preview_tab, text="预览与调参")
+        self.workspace_tabs.add(self._preview_page, text="预览与调参")
         self.workspace_tabs.add(self.queue_tab, text="导出队列")
+
+        self._preview_page.grid_rowconfigure(0, weight=1)
+        self._preview_page.grid_columnconfigure(0, weight=1)
+        preview_bg = ttk.Style().lookup("TFrame", "background") or root.cget("background")
+        self._preview_canvas = tk.Canvas(
+            self._preview_page, height=340, background=preview_bg,
+            highlightthickness=0, borderwidth=0,
+        )
+        self._preview_canvas.grid(row=0, column=0, sticky="nsew")
+        self._preview_scrollbar = ttk.Scrollbar(
+            self._preview_page, orient="vertical", command=self._preview_canvas.yview,
+        )
+        self._preview_scrollbar.grid(row=0, column=1, sticky="ns")
+        self._preview_scrollbar.grid_remove()
+        self._preview_scrollbar_visible = False
+        self._preview_canvas.configure(yscrollcommand=self._preview_scrollbar.set)
+        self.preview_tab = ttk.Frame(self._preview_canvas)
+        self._preview_window = self._preview_canvas.create_window(
+            (0, 0), window=self.preview_tab, anchor="nw",
+        )
+        self.preview_tab.bind("<Configure>", self._sync_preview_scrollregion)
+        self._preview_canvas.bind("<Configure>", self._resize_preview_content)
+        self.root.bind_all("<MouseWheel>", self._on_workspace_mousewheel, add="+")
 
         # ---- DLSS settings ----
         sf = ttk.LabelFrame(self.preview_tab, text="DLSS 设置")
@@ -851,12 +891,32 @@ class App:
             actions, text="加入队列", command=self.add_current_to_queue,
         )
         self.add_queue_btn.pack(side="left", padx=(6, 0))
-        Tooltip(self.add_queue_btn, "使用当前处理与导出参数，把当前视频加入导出队列。")
+        Tooltip(self.add_queue_btn, "使用当前处理与导出参数，把当前视频或图片加入导出队列。")
         self.cancel_export_btn = ttk.Button(
             actions, text="取消导出", command=self.cancel_export,
         )
         self.cancel_export_btn.pack(side="left", padx=(6, 0))
         Tooltip(self.cancel_export_btn, "停止当前视频导出，并清理本次未完成的输出文件。")
+        utility_actions = actions
+        self.diagnostic_btn = ttk.Button(
+            utility_actions, text="一键诊断", width=10,
+            command=self.export_diagnostics,
+        )
+        self.diagnostic_btn.pack(side="right")
+        Tooltip(
+            self.diagnostic_btn,
+            "无需导入素材。检测 GPU/驱动、实际 DLL、当前设置和 Feature 18 宿主，"
+            "导出一个可直接发送给维护者的日志。",
+        )
+        self.update_btn = ttk.Button(
+            utility_actions, text="检查更新", width=10,
+            command=lambda: self.check_for_updates(manual=True),
+        )
+        self.update_btn.pack(side="right", padx=(0, 6))
+        Tooltip(
+            self.update_btn,
+            "从项目 GitHub Releases 检查正式版本；确认后自动下载完整的 win64 便携包。",
+        )
         self.pbar = ttk.Progressbar(e, maximum=100)
         self.pbar.pack(fill="x", pady=(4, 0))
         self.eta_label = ttk.Label(e, text="", anchor="w")
@@ -874,7 +934,55 @@ class App:
         self._refresh_queue_tree()
         self._save_queue_state()
         self.root.after_idle(self._draw_empty)
+        if getattr(sys, "frozen", False) and not os.environ.get(
+            "DLSS5TOOL_DISABLE_UPDATE_CHECK"
+        ):
+            # Start exactly one non-blocking check during application startup.
+            # Up-to-date, newer local builds, and network failures stay silent.
+            self.check_for_updates(manual=False)
         root.minsize(880, 680)
+
+    def _resize_preview_content(self, event=None):
+        """Keep the settings content flush with the viewport width."""
+        width = max(getattr(event, "width", self._preview_canvas.winfo_width()), 1)
+        self._preview_canvas.itemconfigure(self._preview_window, width=width)
+        self.root.after_idle(self._sync_preview_scrollregion)
+
+    def _sync_preview_scrollregion(self, event=None):
+        """Update the scroll range and only show the bar when content overflows."""
+        if not hasattr(self, "_preview_canvas"):
+            return
+        self._preview_canvas.update_idletasks()
+        content_height = self.preview_tab.winfo_reqheight()
+        viewport_height = self._preview_canvas.winfo_height()
+        self._preview_canvas.configure(
+            scrollregion=(0, 0, self._preview_canvas.winfo_width(), content_height),
+        )
+        needs_scrollbar = content_height > viewport_height + 2
+        if needs_scrollbar == self._preview_scrollbar_visible:
+            return
+        self._preview_scrollbar_visible = needs_scrollbar
+        if needs_scrollbar:
+            self._preview_scrollbar.grid()
+        else:
+            self._preview_canvas.yview_moveto(0.0)
+            self._preview_scrollbar.grid_remove()
+
+    def _on_workspace_mousewheel(self, event):
+        """Scroll the settings page when the pointer is anywhere inside it."""
+        widget = getattr(event, "widget", None)
+        while widget is not None and widget is not self._preview_page:
+            widget = getattr(widget, "master", None)
+        if (
+            widget is not self._preview_page
+            or not getattr(self, "_preview_scrollbar_visible", False)
+        ):
+            return None
+        delta = getattr(event, "delta", 0)
+        if not delta:
+            return None
+        self._preview_canvas.yview_scroll(-3 if delta > 0 else 3, "units")
+        return "break"
 
     # ---------- batch export queue ----------
     def _build_queue_tab(self, parent):
@@ -927,7 +1035,7 @@ class App:
         self.queue_output_browse_btn.pack(side="left")
         Tooltip(
             self.queue_output_entry,
-            "仅影响之后添加的任务。留空时输出到各源视频所在目录；队列会自动避免覆盖已有文件。",
+            "仅影响之后添加的任务。留空时输出到各源媒体所在目录；队列会自动避免覆盖已有文件。",
         )
 
         tree_frame = ttk.Frame(parent)
@@ -1030,15 +1138,20 @@ class App:
             fps = float(meta.get("fps", 0.0) or 0.0)
         except (TypeError, ValueError, OverflowError):
             width, height, fps = 0, 0, 0.0
-        color = (job.color_info or {}).get("label", "待检测")
         size = f"{width}×{height}" if width and height else "尺寸未知"
-        return f"{size} · {fps:g} fps · {color}" if fps else f"{size} · {color}"
+        if job.media_kind == "image":
+            return f"图片 · {size} · SDR"
+        color = (job.color_info or {}).get("label", "待检测")
+        return f"视频 · {size} · {fps:g} fps · {color}" if fps else f"视频 · {size} · {color}"
 
     @staticmethod
     def _queue_settings_text(job):
         settings = job.settings or {}
         export = job.export_settings or {}
         style = STYLE_NAMES.get(settings.get("style"), "默认")
+        if job.media_kind == "image":
+            image_format = os.path.splitext(job.output_path)[1].upper().lstrip(".") or "PNG"
+            return f"{style} · {image_format} · 原尺寸"
         if export.get("rate_control") == "bitrate":
             try:
                 bitrate = float(export.get("video_bitrate_mbps", 20))
@@ -1048,7 +1161,12 @@ class App:
         else:
             quality = QUALITY_PROFILE_NAMES.get(export.get("quality_profile"), "高质量（推荐）")
         mode = "严格" if export.get("mode", "single") == "single" else "并行"
-        return f"{style} · {quality} · {mode}"
+        container = resolve_output_container(
+            job.source_path, export.get("output_container", "mp4")
+        )
+        hdr_active = bool(export.get("hdr_mode") and (job.color_info or {}).get("is_hdr"))
+        codec = "HEVC10" if hdr_active else "H.264"
+        return f"{style} · {OUTPUT_CONTAINER_LABELS[container]}/{codec} · {quality} · {mode}"
 
     @staticmethod
     def _queue_progress_text(job):
@@ -1141,7 +1259,7 @@ class App:
         if not hasattr(self, "queue_start_btn"):
             return
         selected = self._selected_queue_jobs()
-        editable = not self._queue_running and not self._exporting
+        editable = not self._queue_running and not self._exporting and not self._diagnosing
         pending = any(job.state == "pending" for job in self._queue_jobs)
         retryable = any(
             job.state in {"failed", "cancelled", "interrupted"} for job in selected
@@ -1164,9 +1282,13 @@ class App:
         )
         self._set_ttk_enabled(self.queue_start_btn, editable and pending)
         self._set_ttk_enabled(self.queue_pause_btn, self._queue_running)
+        active_job = self._queue_job(self._queue_active_job_id)
         self._set_ttk_enabled(
             self.queue_cancel_btn,
-            self._queue_running and self._queue_active_job_id is not None and self._exporting,
+            self._queue_running
+            and active_job is not None
+            and active_job.media_kind == "video"
+            and self._exporting,
         )
         self.queue_start_btn.config(text="继续队列" if pending and self._queue_last_summary == "paused" else "开始队列")
         self.queue_pause_btn.config(
@@ -1177,7 +1299,7 @@ class App:
         selected = self._selected_queue_jobs()
         if not selected:
             text = (
-                "队列为空，可添加文件、文件夹或拖入多个视频。"
+                "队列为空，可添加文件、文件夹或拖入多个图片与视频。"
                 if not self._queue_jobs else
                 "选择任务可查看完整输入、输出和错误信息。"
             )
@@ -1185,7 +1307,23 @@ class App:
             text = f"已选择 {len(selected)} 个任务。"
         else:
             job = selected[0]
-            text = f"输入：{job.source_path}\n输出：{job.output_path}"
+            text = (
+                f"输入：{job.source_path}\n输出：{job.output_path}"
+                f"\n参数：{self._queue_settings_text(job)}"
+            )
+            if job.media_kind == "image":
+                text += "\n实际输出：图片保持源格式 · SDR · 原尺寸"
+            else:
+                export = job.export_settings or {}
+                container = resolve_output_container(
+                    job.source_path, export.get("output_container", "mp4")
+                )
+                hdr_active = bool(
+                    export.get("hdr_mode") and (job.color_info or {}).get("is_hdr")
+                )
+                codec = "HEVC Main10 · 10-bit HDR" if hdr_active else "H.264 · 8-bit SDR"
+                mode = "严格单会话" if export.get("mode", "single") == "single" else "并行分段"
+                text += f"\n实际输出：{OUTPUT_CONTAINER_LABELS[container]} · {codec} · {mode}"
             if job.error:
                 text += "\n错误：" + job.error
         if hasattr(self, "queue_details"):
@@ -1219,17 +1357,52 @@ class App:
             result = f"{stem}_{index}{ext}"
         return result
 
-    def _new_queue_output_path(self, source_path):
+    def _new_queue_output_path(
+        self, source_path, media_kind=None, export_settings=None, exclude_job_id=None,
+    ):
         output_dir = self.queue_output_dir_var.get().strip()
         if not output_dir:
             output_dir = os.path.dirname(source_path)
         output_dir = os.path.abspath(os.path.normpath(output_dir))
+        media_kind = media_kind or ("image" if _is_image_path(source_path) else "video")
         stem = os.path.splitext(os.path.basename(source_path))[0] + "_dlss"
-        candidate = os.path.join(output_dir, stem + ".mp4")
+        if media_kind == "image":
+            extension = os.path.splitext(source_path)[1].lower()
+            if extension not in IMAGE_ENCODE_EXTS:
+                extension = ".png"
+        else:
+            export_settings = export_settings or self._collect_export_settings()
+            container = resolve_output_container(
+                source_path, export_settings.get("output_container", "mp4")
+            )
+            extension = output_container_extension(container)
+        candidate = os.path.join(output_dir, stem + extension)
         reserved = [
-            job.output_path for job in self._queue_jobs
+            job.output_path for job in self._queue_jobs if job.job_id != exclude_job_id
         ]
         return self._unique_target_path(candidate, reserved)
+
+    def _normalize_queue_output_path(self, job):
+        if job.media_kind == "image":
+            expected_ext = os.path.splitext(job.source_path)[1].lower()
+            if expected_ext not in IMAGE_ENCODE_EXTS:
+                expected_ext = ".png"
+        else:
+            container = resolve_output_container(
+                job.source_path,
+                (job.export_settings or {}).get("output_container", "mp4"),
+            )
+            expected_ext = output_container_extension(container)
+        if os.path.splitext(job.output_path)[1].lower() == expected_ext:
+            return job.output_path
+        candidate = os.path.splitext(job.output_path)[0] + expected_ext
+        return self._unique_target_path(
+            candidate,
+            reserved=[
+                item.output_path for item in self._queue_jobs
+                if item.job_id != job.job_id
+            ],
+        )
 
     def _probe_queue_video(self, path):
         cap = cv2.VideoCapture(path)
@@ -1255,10 +1428,22 @@ class App:
         }
         return metadata, color_info
 
+    def _probe_queue_media(self, path):
+        if _is_image_path(path):
+            image = _read_image_bgr(path)
+            if image is None or image.size == 0:
+                raise RuntimeError("无法读取图片，请检查文件是否损坏。")
+            height, width = image.shape[:2]
+            return {
+                "frames": 1, "fps": 0.0, "width": width, "height": height,
+                "duration": 0.0,
+            }, {"is_hdr": False, "profile": "srgb", "label": "SDR 图片"}
+        return self._probe_queue_video(path)
+
     def add_queue_files(self):
         if self._queue_running or self._exporting:
             return
-        paths = filedialog.askopenfilenames(filetypes=VIDEO_ONLY_FILETYPES)
+        paths = filedialog.askopenfilenames(filetypes=VIDEO_FILETYPES)
         if paths:
             self._add_paths_to_queue(paths)
 
@@ -1272,16 +1457,13 @@ class App:
         for current, _dirs, files in os.walk(folder):
             for name in sorted(files):
                 path = os.path.join(current, name)
-                if _is_video_path(path):
+                if _is_video_path(path) or _is_image_path(path):
                     paths.append(path)
         self._add_paths_to_queue(paths)
 
     def add_current_to_queue(self):
         if not self.video:
-            messagebox.showwarning("加入队列", "请先导入一个视频。")
-            return
-        if self._is_image:
-            messagebox.showinfo("加入队列", "当前批量队列仅处理视频素材。")
+            messagebox.showwarning("加入队列", "请先导入一个视频或图片。")
             return
         self._add_paths_to_queue([self.video])
 
@@ -1292,10 +1474,10 @@ class App:
         normalized = []
         for raw in paths:
             path = os.path.abspath(os.path.normpath(str(raw)))
-            if os.path.isfile(path) and _is_video_path(path):
+            if os.path.isfile(path) and (_is_video_path(path) or _is_image_path(path)):
                 normalized.append(path)
         if not normalized:
-            messagebox.showwarning("添加到队列", "没有找到受支持的视频文件。")
+            messagebox.showwarning("添加到队列", "没有找到受支持的视频或图片文件。")
             return 0
         existing = {os.path.normcase(job.source_path) for job in self._queue_jobs}
         settings = self._collect_settings()
@@ -1308,26 +1490,37 @@ class App:
             if key in existing:
                 duplicates += 1
                 continue
-            output = self._new_queue_output_path(path)
+            media_kind = "image" if _is_image_path(path) else "video"
+            output = self._new_queue_output_path(path, media_kind, export_settings)
             try:
-                if os.path.normcase(path) == os.path.normcase(self.video or "") and not self._is_image:
+                if os.path.normcase(path) == os.path.normcase(self.video or ""):
                     metadata = {
                         "frames": self.nframes, "fps": self.fps,
                         "width": self._media_w, "height": self._media_h,
-                        "duration": self.nframes / max(float(self.fps), 1.0),
+                        "duration": (
+                            self.nframes / max(float(self.fps), 1.0)
+                            if media_kind == "video" else 0.0
+                        ),
                     }
                     color_info = dict(self._video_color_info or {})
+                    if media_kind == "image":
+                        color_info = {"is_hdr": False, "profile": "srgb", "label": "SDR 图片"}
                 else:
-                    metadata, color_info = self._probe_queue_video(path)
+                    metadata, color_info = self._probe_queue_media(path)
                 effective_export = dict(export_settings)
-                if effective_export.get("hdr_mode") and color_info.get("is_hdr"):
+                if (
+                    media_kind == "video"
+                    and effective_export.get("hdr_mode")
+                    and color_info.get("is_hdr")
+                ):
                     effective_export["mode"] = "single"
                 job = export_queue_state.ExportJob.create(
                     path, output, settings, effective_export, metadata, color_info,
+                    media_kind=media_kind,
                 )
             except Exception as ex:
                 job = export_queue_state.ExportJob.create(
-                    path, output, settings, export_settings,
+                    path, output, settings, export_settings, media_kind=media_kind,
                 )
                 job.state = "failed"
                 job.error = str(ex)
@@ -1344,7 +1537,7 @@ class App:
             self.queue_tree.see(last.job_id)
         if switch_tab:
             self.workspace_tabs.select(self.queue_tab)
-        note = f"已添加 {added} 个视频"
+        note = f"已添加 {added} 个媒体文件"
         if duplicates:
             note += f"，跳过 {duplicates} 个重复项"
         if invalid:
@@ -1411,8 +1604,16 @@ class App:
                 continue
             job.settings = dict(settings)
             job.export_settings = dict(export_settings)
-            if job.export_settings.get("hdr_mode") and (job.color_info or {}).get("is_hdr"):
+            if (
+                job.media_kind == "video"
+                and job.export_settings.get("hdr_mode")
+                and (job.color_info or {}).get("is_hdr")
+            ):
                 job.export_settings["mode"] = "single"
+            job.output_path = self._new_queue_output_path(
+                job.source_path, job.media_kind, job.export_settings,
+                exclude_job_id=job.job_id,
+            )
             changed = True
         if changed:
             self._save_queue_state()
@@ -1424,7 +1625,7 @@ class App:
             return
         job = selected[0]
         if self._load_media(job.source_path):
-            self.workspace_tabs.select(self.preview_tab)
+            self.workspace_tabs.select(self._preview_page)
 
     def start_export_queue(self):
         if self._queue_running or self._exporting:
@@ -1437,7 +1638,7 @@ class App:
         self._queue_pause_requested = False
         self._queue_last_summary = None
         self.workspace_tabs.select(self.queue_tab)
-        self.logln("[队列] 开始串行处理视频任务")
+        self.logln("[队列] 开始串行处理媒体任务")
         self._update_action_labels()
         self._update_host_control_states()
         self._update_queue_action_states()
@@ -1465,6 +1666,7 @@ class App:
         job.started_at = time.time()
         job.finished_at = 0.0
         try:
+            job.output_path = self._normalize_queue_output_path(job)
             output_dir = os.path.dirname(job.output_path) or os.getcwd()
             os.makedirs(output_dir, exist_ok=True)
             if os.path.exists(job.output_path):
@@ -1483,14 +1685,22 @@ class App:
                 text=f"正在准备 {os.path.basename(job.source_path)}"
             )
             self.logln(f"[队列] 开始: {job.source_path}")
-            result = self._export_video_source(
-                job.source_path,
-                settings=dict(job.settings),
-                export_settings=dict(job.export_settings),
-                color_info=dict(job.color_info),
-                out_path=job.output_path,
-                notify=False,
-            )
+            if job.media_kind == "image":
+                result = self._export_image_source(
+                    job.source_path,
+                    settings=dict(job.settings),
+                    out_path=job.output_path,
+                    notify=False,
+                )
+            else:
+                result = self._export_video_source(
+                    job.source_path,
+                    settings=dict(job.settings),
+                    export_settings=dict(job.export_settings),
+                    color_info=dict(job.color_info),
+                    out_path=job.output_path,
+                    notify=False,
+                )
             job.output_path = result.get("output_path") or job.output_path
             if result["success"]:
                 job.state = "completed"
@@ -1638,8 +1848,13 @@ class App:
     def _update_action_labels(self):
         try:
             has = bool(self.video)
-            busy = bool(self._exporting or self._queue_running)
+            busy = bool(self._exporting or self._queue_running or self._diagnosing)
             cancel_requested = self._export_cancel_event.is_set()
+            active_job = self._queue_job(self._queue_active_job_id)
+            cancellable_export = (
+                active_job.media_kind == "video" if active_job is not None
+                else not self._is_image
+            )
             self._set_ttk_enabled(self.import_btn, not busy)
             self._set_ttk_enabled(self.clear_btn, has and not busy)
             self._set_ttk_enabled(self.export_btn, has and not busy)
@@ -1649,10 +1864,28 @@ class App:
             self._set_ttk_enabled(
                 self.cancel_export_btn,
                 self._exporting
-                and (self._queue_active_job_id is not None or not self._is_image)
+                and cancellable_export
                 and not cancel_requested,
             )
             self.cancel_export_btn.config(text="取消中…" if cancel_requested else "取消导出")
+            self._set_ttk_enabled(
+                self.diagnostic_btn,
+                not self._exporting
+                and not self._queue_running
+                and not self._switching_backend
+                and not self._diagnosing,
+            )
+            self.diagnostic_btn.config(text="诊断中…" if self._diagnosing else "一键诊断")
+            update_busy = self._update_checking or self._update_downloading
+            self._set_ttk_enabled(self.update_btn, not update_busy)
+            if self._update_downloading:
+                percent = self._update_progress_percent
+                update_text = f"下载 {percent}%" if percent is not None else "下载更新…"
+            elif self._update_checking:
+                update_text = "检查中…"
+            else:
+                update_text = "检查更新"
+            self.update_btn.config(text=update_text)
             if self._is_image:
                 self.export_btn.config(text="导出 DLSS 图片")
             else:
@@ -1953,34 +2186,50 @@ class App:
             'v_cache_mb': tk.IntVar(value=saved.get('preview_cache_mb', 2048)),
             'v_scrub_ms': tk.IntVar(value=saved.get('preview_scrub_ms', 40)),
         }
-        ttk.Label(parent, text="播放质量:").grid(row=0, column=0, sticky="e", padx=(6, 2), pady=4)
+
+        parent.grid_columnconfigure(0, weight=1)
+        preview_group = ttk.LabelFrame(parent, text="播放与缓存", padding=(8, 6, 8, 8))
+        preview_group.grid(row=0, column=0, sticky="ew", padx=(6, 8), pady=(2, 4))
+        cells = []
+        for column in range(4):
+            preview_group.grid_columnconfigure(column, weight=2 if column == 0 else 1)
+            cell = ttk.Frame(preview_group)
+            cell.grid(row=0, column=column, sticky="ew", padx=(4, 8))
+            cells.append(cell)
+
+        ttk.Label(cells[0], text="播放质量:", anchor="e", width=8).pack(side="left")
         quality = ttk.Combobox(
-            parent, textvariable=d['v_quality'], values=list(PREVIEW_QUALITY_CHOICES),
-            state="readonly", width=14,
+            cells[0], textvariable=d['v_quality'], values=list(PREVIEW_QUALITY_CHOICES),
+            state="readonly", width=12,
         )
-        quality.grid(row=0, column=1, sticky="w", padx=(0, 10))
+        quality.pack(side="left", fill="x", expand=True, padx=(3, 0))
         Tooltip(quality, "自动模式会把 4K 级素材降到 1080p 实时处理；暂停后恢复原始分辨率。")
-        ttk.Label(parent, text="缓存预算:").grid(row=0, column=2, sticky="e", padx=(4, 2))
+
+        ttk.Label(cells[1], text="缓存预算:", anchor="e", width=8).pack(side="left")
         cache_mb = ttk.Spinbox(
-            parent, from_=256, to=32768, increment=256,
+            cells[1], from_=256, to=32768, increment=256,
             textvariable=d['v_cache_mb'], width=7,
         )
-        cache_mb.grid(row=0, column=3, sticky="w")
-        ttk.Label(parent, text="MiB").grid(row=0, column=4, sticky="w", padx=(2, 10))
-        ttk.Label(parent, text="启动缓冲:").grid(row=0, column=5, sticky="e", padx=(4, 2))
-        ttk.Label(parent, text=f"{PREVIEW_BUFFER_SECONDS:.1f} 秒").grid(
-            row=0, column=6, sticky="w", padx=(0, 10),
+        cache_mb.pack(side="left", padx=(3, 0))
+        ttk.Label(cells[1], text="MiB").pack(side="left", padx=(3, 0))
+
+        ttk.Label(cells[2], text="启动缓冲:", anchor="e", width=8).pack(side="left")
+        ttk.Label(cells[2], text=f"{PREVIEW_BUFFER_SECONDS:.1f} 秒").pack(
+            side="left", padx=(3, 0),
         )
-        ttk.Label(parent, text="拖动后生成:").grid(row=0, column=7, sticky="e", padx=(4, 2))
-        scrub = ttk.Spinbox(parent, from_=0, to=400, textvariable=d['v_scrub_ms'], width=6)
-        scrub.grid(row=0, column=8, sticky="w")
+
+        ttk.Label(cells[3], text="拖动后生成:", anchor="e", width=8).pack(side="left")
+        scrub = ttk.Spinbox(cells[3], from_=0, to=400, textvariable=d['v_scrub_ms'], width=6)
+        scrub.pack(side="left", padx=(3, 0))
         Tooltip(scrub, "停止拖动或跳转后等待这段时间，再生成精确预览并从当前帧向后预渲染。")
-        ttk.Label(parent, text="ms").grid(row=0, column=9, sticky="w", padx=(2, 8))
+        ttk.Label(cells[3], text="ms").pack(side="left", padx=(3, 0))
         d.update({
             'w_quality': quality, 'w_cache_mb': cache_mb, 'w_scrub_ms': scrub,
         })
-        cache_hint = ttk.Label(parent, text="", foreground="#666666")
-        cache_hint.grid(row=1, column=0, columnspan=10, sticky="w", padx=(6, 8), pady=(0, 2))
+        cache_hint = ttk.Label(
+            preview_group, text="", foreground="#666666", justify="left", wraplength=880,
+        )
+        cache_hint.grid(row=1, column=0, columnspan=4, sticky="w", padx=4, pady=(7, 0))
         d['w_cache_hint'] = cache_hint
         quality.bind("<<ComboboxSelected>>", self._on_preview_settings_change)
         for widget in (cache_mb, scrub):
@@ -2081,6 +2330,9 @@ class App:
             'v_nvenc_preset': tk.StringVar(
                 value=NVENC_PRESET_NAMES.get(saved['nvenc_preset'], "p5 较慢（推荐）")
             ),
+            'v_output_container': tk.StringVar(value=OUTPUT_CONTAINER_NAMES.get(
+                saved.get('output_container', 'mp4'), "MP4（推荐）"
+            )),
             'v_output_resolution': tk.StringVar(value=OUTPUT_RESOLUTION_NAMES.get(
                 saved.get('output_resolution', 'source'), "跟随源视频（推荐）"
             )),
@@ -2095,88 +2347,140 @@ class App:
             'v_video_bitrate': tk.DoubleVar(value=saved.get('video_bitrate_mbps', 20.0)),
             'v_hdr': tk.BooleanVar(value=saved.get('hdr_mode', True)),
         }
-        ttk.Label(parent, text="模式:").grid(row=0, column=0, sticky="e", padx=(6, 2), pady=4)
-        mode = ttk.Combobox(
-            parent, textvariable=d['v_mode'], values=list(EXPORT_MODE_CHOICES),
-            state="readonly", width=20,
+
+        # Keep controls in compact, equal-width field groups.  The previous flat
+        # eight-column grid let wide comboboxes and short spinboxes pull every row
+        # onto a different visual rhythm as the window width or DPI changed.
+        parent.grid_columnconfigure(0, weight=1)
+        output_group = ttk.LabelFrame(parent, text="输出与编码", padding=(8, 6, 8, 8))
+        output_group.grid(row=0, column=0, sticky="ew", padx=(6, 8), pady=(2, 4))
+        performance_group = ttk.LabelFrame(parent, text="性能参数", padding=(8, 6, 8, 8))
+        performance_group.grid(row=1, column=0, sticky="ew", padx=(6, 8), pady=(0, 4))
+        for column in (1, 3, 5, 7):
+            output_group.grid_columnconfigure(column, weight=1)
+
+        ttk.Label(output_group, text="输出容器:", anchor="e", width=10).grid(
+            row=0, column=0, sticky="e", padx=(4, 3), pady=4,
         )
-        mode.grid(row=0, column=1, padx=(0, 10))
-        ttk.Label(parent, text="并行进程:").grid(row=0, column=2, sticky="e", padx=(4, 2))
-        workers = ttk.Spinbox(parent, from_=2, to=4, textvariable=d['v_workers'], width=5)
-        workers.grid(row=0, column=3, padx=(0, 10))
-        ttk.Label(parent, text="预热帧:").grid(row=0, column=4, sticky="e", padx=(4, 2))
-        warmup = ttk.Spinbox(parent, from_=0, to=120, textvariable=d['v_warmup'], width=6)
-        warmup.grid(row=0, column=5, padx=(0, 10))
-        ttk.Label(parent, text="解码缓存:").grid(row=0, column=6, sticky="e", padx=(4, 2))
-        decode = ttk.Spinbox(parent, from_=1, to=8, textvariable=d['v_decode_buffer'], width=5)
-        decode.grid(row=0, column=7, padx=(0, 10))
-        ttk.Label(parent, text="输出分辨率:").grid(
-            row=1, column=0, sticky="e", padx=(6, 2), pady=4,
+        container = ttk.Combobox(
+            output_group, textvariable=d['v_output_container'],
+            values=list(OUTPUT_CONTAINER_CHOICES), state="readonly", width=15,
+        )
+        container.grid(row=0, column=1, sticky="ew", padx=(0, 10), pady=4)
+
+        ttk.Label(output_group, text="输出分辨率:", anchor="e", width=10).grid(
+            row=0, column=2, sticky="e", padx=(4, 3), pady=4,
         )
         resolution = ttk.Combobox(
-            parent, textvariable=d['v_output_resolution'],
-            values=list(OUTPUT_RESOLUTION_CHOICES), state="readonly", width=18,
+            output_group, textvariable=d['v_output_resolution'],
+            values=list(OUTPUT_RESOLUTION_CHOICES), state="readonly", width=15,
         )
-        resolution.grid(row=1, column=1, sticky="w", padx=(0, 10))
-        ttk.Label(parent, text="码率控制:").grid(row=1, column=2, sticky="e", padx=(4, 2))
+        resolution.grid(row=0, column=3, sticky="ew", padx=(0, 10), pady=4)
+
+        ttk.Label(output_group, text="码率控制:", anchor="e", width=10).grid(
+            row=0, column=4, sticky="e", padx=(4, 3), pady=4,
+        )
         rate_control = ttk.Combobox(
-            parent, textvariable=d['v_rate_control'], values=list(RATE_CONTROL_CHOICES),
-            state="readonly", width=14,
+            output_group, textvariable=d['v_rate_control'], values=list(RATE_CONTROL_CHOICES),
+            state="readonly", width=12,
         )
-        rate_control.grid(row=1, column=3, sticky="w", padx=(0, 10))
-        quality_label = ttk.Label(parent, text="编码质量:")
-        quality_label.grid(row=1, column=4, sticky="e", padx=(4, 2))
+        rate_control.grid(row=0, column=5, sticky="ew", padx=(0, 10), pady=4)
+
+        quality_label = ttk.Label(output_group, text="编码质量:", anchor="e", width=10)
+        quality_label.grid(row=0, column=6, sticky="e", padx=(4, 3), pady=4)
         quality = ttk.Combobox(
-            parent, textvariable=d['v_quality_profile'],
-            values=list(QUALITY_PROFILE_CHOICES), state="readonly", width=14,
+            output_group, textvariable=d['v_quality_profile'],
+            values=list(QUALITY_PROFILE_CHOICES), state="readonly", width=12,
         )
-        quality.grid(row=1, column=5, sticky="w", padx=(0, 10))
-        bitrate_label = ttk.Label(parent, text="目标码率 Mbps:")
-        bitrate_label.grid(row=1, column=6, sticky="e", padx=(4, 2))
+        quality.grid(row=0, column=7, sticky="ew", padx=(0, 4), pady=4)
+
+        bitrate_label = ttk.Label(output_group, text="目标码率:", anchor="e", width=10)
+        bitrate_label.grid(row=1, column=4, sticky="e", padx=(4, 3), pady=4)
         bitrate = ttk.Spinbox(
-            parent, from_=0.5, to=500.0, increment=0.5,
+            output_group, from_=0.5, to=500.0, increment=0.5,
             textvariable=d['v_video_bitrate'], width=7,
         )
-        bitrate.grid(row=1, column=7, sticky="w", padx=(0, 10))
+        bitrate.grid(row=1, column=5, sticky="ew", padx=(0, 10), pady=4)
 
-        custom_label = ttk.Label(parent, text="自定义上限:")
-        custom_label.grid(row=2, column=0, sticky="e", padx=(6, 2), pady=4)
-        custom_frame = ttk.Frame(parent)
-        custom_frame.grid(row=2, column=1, sticky="w", padx=(0, 10))
+        custom_label = ttk.Label(output_group, text="自定义上限:", anchor="e", width=10)
+        custom_label.grid(row=1, column=0, sticky="e", padx=(4, 3), pady=4)
+        custom_frame = ttk.Frame(output_group)
+        custom_frame.grid(row=1, column=1, sticky="w", padx=(0, 10), pady=4)
         custom_width = ttk.Spinbox(
             custom_frame, from_=2, to=8192, increment=2,
             textvariable=d['v_custom_width'], width=6,
         )
         custom_width.pack(side="left")
-        ttk.Label(custom_frame, text="×").pack(side="left", padx=3)
+        ttk.Label(custom_frame, text="×").pack(side="left", padx=4)
         custom_height = ttk.Spinbox(
             custom_frame, from_=2, to=8192, increment=2,
             textvariable=d['v_custom_height'], width=6,
         )
         custom_height.pack(side="left")
 
-        ttk.Label(parent, text="编码速度:").grid(row=2, column=2, sticky="e", padx=(4, 2))
+        ttk.Label(output_group, text="编码速度:", anchor="e", width=10).grid(
+            row=1, column=2, sticky="e", padx=(4, 3), pady=4,
+        )
         preset = ttk.Combobox(
-            parent, textvariable=d['v_nvenc_preset'], values=list(NVENC_PRESET_CHOICES),
+            output_group, textvariable=d['v_nvenc_preset'], values=list(NVENC_PRESET_CHOICES),
             state="readonly", width=12,
         )
-        preset.grid(row=2, column=3, sticky="w", padx=(0, 10))
+        preset.grid(row=1, column=3, sticky="ew", padx=(0, 10), pady=4)
+
+        ttk.Label(output_group, text="色彩处理:", anchor="e", width=10).grid(
+            row=2, column=0, sticky="e", padx=(4, 3), pady=4,
+        )
         hdr = ttk.Checkbutton(
-            parent, text="HDR10 / HLG 高精度处理", variable=d['v_hdr'],
+            output_group, text="HDR10 / HLG 高精度处理", variable=d['v_hdr'],
             command=self._on_export_settings_change,
         )
-        hdr.grid(row=2, column=4, columnspan=4, sticky="w", padx=(4, 10), pady=4)
+        hdr.grid(row=2, column=1, columnspan=3, sticky="w", padx=(0, 4), pady=4)
+
         hint = ttk.Label(
-            parent,
+            output_group,
             text="导入 PQ/HLG 视频后自动使用 RGBA16F 与 HEVC Main10。",
-            foreground="#555555", wraplength=940, justify="left",
+            foreground="#555555", wraplength=880, justify="left",
         )
-        hint.grid(row=3, column=0, columnspan=8, sticky="w", padx=8, pady=(0, 4))
+        hint.grid(row=3, column=0, columnspan=8, sticky="w", padx=4, pady=(4, 0))
+
+        performance_cells = []
+        for column in range(4):
+            performance_group.grid_columnconfigure(column, weight=2 if column == 0 else 1)
+            cell = ttk.Frame(performance_group)
+            cell.grid(row=0, column=column, sticky="ew", padx=(4, 8))
+            performance_cells.append(cell)
+
+        ttk.Label(performance_cells[0], text="导出模式:", anchor="e", width=8).pack(side="left")
+        mode = ttk.Combobox(
+            performance_cells[0], textvariable=d['v_mode'], values=list(EXPORT_MODE_CHOICES),
+            state="readonly", width=14,
+        )
+        mode.pack(side="left", fill="x", expand=True, padx=(3, 0))
+
+        ttk.Label(performance_cells[1], text="并行进程:", anchor="e", width=8).pack(side="left")
+        workers = ttk.Spinbox(
+            performance_cells[1], from_=2, to=4, textvariable=d['v_workers'], width=7,
+        )
+        workers.pack(side="left", padx=(3, 0))
+
+        ttk.Label(performance_cells[2], text="预热帧:", anchor="e", width=8).pack(side="left")
+        warmup = ttk.Spinbox(
+            performance_cells[2], from_=0, to=120, textvariable=d['v_warmup'], width=7,
+        )
+        warmup.pack(side="left", padx=(3, 0))
+
+        ttk.Label(performance_cells[3], text="解码缓存:", anchor="e", width=8).pack(side="left")
+        decode = ttk.Spinbox(
+            performance_cells[3], from_=1, to=8, textvariable=d['v_decode_buffer'], width=7,
+        )
+        decode.pack(side="left", padx=(3, 0))
         d.update({
+            'w_output_container': container,
             'w_mode': mode,
             'w_workers': workers,
             'w_warmup': warmup,
             'w_decode_buffer': decode,
+            'w_nvenc_preset': preset,
             'w_output_resolution': resolution,
             'w_custom_label': custom_label,
             'w_custom_width': custom_width,
@@ -2190,12 +2494,17 @@ class App:
             'w_hdr_hint': hint,
         })
         mode.bind("<<ComboboxSelected>>", lambda e: self._on_export_settings_change())
-        for widget in (resolution, rate_control, quality, preset):
+        for widget in (container, resolution, rate_control, quality, preset):
             widget.bind("<<ComboboxSelected>>", lambda e: self._on_export_settings_change())
         for widget in (workers, warmup, decode, custom_width, custom_height, bitrate):
             widget.config(command=self._on_export_settings_change)
             widget.bind("<FocusOut>", lambda e: self._on_export_settings_change())
             widget.bind("<Return>", lambda e: self._on_export_settings_change())
+        Tooltip(
+            container,
+            "视频可输出 MP4、MKV 或 MOV。跟随输入仅跟随这三类容器；"
+            "M4V 视为 MP4，AVI/WebM 会安全回退到 MP4。图片始终保持源格式。",
+        )
         Tooltip(
             resolution,
             "只控制视频输出尺寸，并保持原宽高比；不会放大低分辨率素材。"
@@ -2221,39 +2530,58 @@ class App:
             'v_in_flight': tk.IntVar(value=saved['host_in_flight']),
             'v_fallback': tk.BooleanVar(value=saved['host_auto_fallback']),
         }
-        ttk.Label(parent, text="后端:").grid(row=0, column=0, sticky="e", padx=(6, 2), pady=4)
+
+        parent.grid_columnconfigure(0, weight=1)
+        host_group = ttk.LabelFrame(parent, text="主机与提交", padding=(8, 6, 8, 8))
+        host_group.grid(row=0, column=0, sticky="ew", padx=(6, 8), pady=(2, 4))
+        for column in range(3):
+            host_group.grid_columnconfigure(column, weight=1, uniform="host_field")
+        host_cells = []
+        for column in range(3):
+            cell = ttk.Frame(host_group)
+            cell.grid(row=0, column=column, sticky="ew", padx=(4, 8), pady=(0, 6))
+            host_cells.append(cell)
+
+        ttk.Label(host_cells[0], text="后端:", anchor="e", width=10).pack(side="left")
         backend = ttk.Combobox(
-            parent, textvariable=d['v_backend'], values=list(HOST_BACKEND_CHOICES),
+            host_cells[0], textvariable=d['v_backend'], values=list(HOST_BACKEND_CHOICES),
             state="readonly", width=17,
         )
-        backend.grid(row=0, column=1, sticky="w", padx=(0, 10))
-        ttk.Label(parent, text="提交方式:").grid(row=0, column=2, sticky="e", padx=(4, 2))
+        backend.pack(side="left", fill="x", expand=True, padx=(3, 0))
+
+        ttk.Label(host_cells[1], text="提交方式:", anchor="e", width=10).pack(side="left")
         submission = ttk.Combobox(
-            parent, textvariable=d['v_submission'], values=list(HOST_SUBMISSION_CHOICES),
+            host_cells[1], textvariable=d['v_submission'], values=list(HOST_SUBMISSION_CHOICES),
             state="readonly", width=17,
         )
-        submission.grid(row=0, column=3, sticky="w", padx=(0, 10))
-        zero_fast = ttk.Checkbutton(
-            parent, text="零引导快路径", variable=d['v_zero_fast'],
-            command=self._on_host_settings_change,
-        )
-        zero_fast.grid(row=0, column=4, sticky="w", padx=(4, 8))
-        persistent = ttk.Checkbutton(
-            parent, text="持久上传/回读缓冲", variable=d['v_persistent'],
-            command=self._on_host_settings_change,
-        )
-        persistent.grid(row=0, column=5, sticky="w", padx=(4, 8))
-        ttk.Label(parent, text="GPU 队列帧:").grid(row=1, column=0, sticky="e", padx=(6, 2), pady=4)
+        submission.pack(side="left", fill="x", expand=True, padx=(3, 0))
+
+        ttk.Label(host_cells[2], text="GPU 队列帧:", anchor="e", width=10).pack(side="left")
         in_flight = ttk.Spinbox(
-            parent, from_=1, to=3, textvariable=d['v_in_flight'], width=5,
+            host_cells[2], from_=1, to=3, textvariable=d['v_in_flight'], width=7,
             command=self._on_host_settings_change,
         )
-        in_flight.grid(row=1, column=1, sticky="w", padx=(0, 10))
+        in_flight.pack(side="left", padx=(3, 0))
+
+        ttk.Separator(host_group, orient="horizontal").grid(
+            row=1, column=0, columnspan=3, sticky="ew", padx=4, pady=(0, 6),
+        )
+
+        zero_fast = ttk.Checkbutton(
+            host_group, text="零引导快路径", variable=d['v_zero_fast'],
+            command=self._on_host_settings_change,
+        )
+        zero_fast.grid(row=2, column=0, sticky="w", padx=(4, 8))
+        persistent = ttk.Checkbutton(
+            host_group, text="持久上传/回读缓冲", variable=d['v_persistent'],
+            command=self._on_host_settings_change,
+        )
+        persistent.grid(row=2, column=1, sticky="w", padx=(4, 8))
         fallback = ttk.Checkbutton(
-            parent, text="优化路径失败时自动回退", variable=d['v_fallback'],
+            host_group, text="优化路径失败时自动回退", variable=d['v_fallback'],
             command=self._on_host_settings_change,
         )
-        fallback.grid(row=1, column=2, columnspan=2, sticky="w", padx=(4, 8))
+        fallback.grid(row=2, column=2, sticky="w", padx=(4, 8))
         d.update({
             'w_backend': backend,
             'w_submission': submission,
@@ -2289,7 +2617,7 @@ class App:
     def _update_host_control_states(self):
         if not hasattr(self, "_host_settings"):
             return
-        if self._exporting or self._queue_running or self._switching_backend:
+        if self._exporting or self._queue_running or self._switching_backend or self._diagnosing:
             for name in (
                 'w_backend', 'w_submission', 'w_zero_fast', 'w_persistent',
                 'w_in_flight', 'w_fallback',
@@ -2450,6 +2778,9 @@ class App:
             'warmup': max(0, min(120, integer(d['v_warmup'], 8))),
             'decode_buffer': max(1, min(8, integer(d['v_decode_buffer'], 4))),
             'nvenc_preset': NVENC_PRESET_CHOICES.get(d['v_nvenc_preset'].get(), 'p5'),
+            'output_container': OUTPUT_CONTAINER_CHOICES.get(
+                d['v_output_container'].get(), 'mp4'
+            ),
             'output_resolution': OUTPUT_RESOLUTION_CHOICES.get(
                 d['v_output_resolution'].get(), 'source'
             ),
@@ -2473,16 +2804,30 @@ class App:
         export = self._collect_export_settings()
         color = getattr(self, "_video_color_info", None) or {}
         effective_hdr = bool(export['hdr_mode'] and color.get('is_hdr'))
+        video_controls_enabled = not self._is_image
         if effective_hdr and export['mode'] == 'parallel':
             self._export_settings['v_mode'].set(EXPORT_MODE_NAMES['single'])
             export['mode'] = 'single'
-        state = "normal" if export['mode'] == 'parallel' and not effective_hdr else "disabled"
+        state = (
+            "normal"
+            if video_controls_enabled and export['mode'] == 'parallel' and not effective_hdr
+            else "disabled"
+        )
         self._export_settings['w_workers'].config(state=state)
         self._export_settings['w_warmup'].config(state=state)
-        self._export_settings['w_decode_buffer'].config(state="normal")
-        self._export_settings['w_mode'].config(state="disabled" if effective_hdr else "readonly")
-        self._set_ttk_enabled(self._export_settings['w_hdr'], not self._is_image)
-        video_controls_enabled = not self._is_image
+        self._export_settings['w_decode_buffer'].config(
+            state="normal" if video_controls_enabled else "disabled"
+        )
+        self._export_settings['w_mode'].config(
+            state="disabled" if self._is_image or effective_hdr else "readonly"
+        )
+        self._export_settings['w_output_container'].config(
+            state="readonly" if video_controls_enabled else "disabled"
+        )
+        self._export_settings['w_nvenc_preset'].config(
+            state="readonly" if video_controls_enabled else "disabled"
+        )
+        self._set_ttk_enabled(self._export_settings['w_hdr'], video_controls_enabled)
         self._export_settings['w_output_resolution'].config(
             state="readonly" if video_controls_enabled else "disabled"
         )
@@ -2501,19 +2846,42 @@ class App:
         self._set_ttk_enabled(self._export_settings['w_bitrate_label'], bitrate_enabled)
         self._set_ttk_enabled(self._export_settings['w_video_bitrate'], bitrate_enabled)
         if self._is_image:
-            text = "图片继续按原尺寸和现有 SDR 图片流程导出；分辨率与视频码率设置不参与。"
+            image_ext = os.path.splitext(self.video or "")[1].upper().lstrip(".") or "PNG"
+            text = (
+                f"实际输出：{image_ext} · SDR 图片 · 原尺寸；保持源图片格式。"
+                "视频容器、分辨率、编码、码率、HDR 与性能参数不参与。"
+            )
         elif color.get('is_hdr'):
+            container = resolve_output_container(
+                self.video, export.get('output_container', 'mp4')
+            )
+            container_label = OUTPUT_CONTAINER_LABELS[container]
             if export['hdr_mode']:
                 text = (
-                    f"检测到 {color.get('label', 'HDR')}：RGBA16F 神经渲染 → HEVC Main10；"
+                    f"实际输出：{container_label} · HEVC Main10 · 10-bit {color.get('label', 'HDR')}；"
+                    "RGBA16F 神经渲染，"
                     "预览仅作 SDR 映射，HDR 导出固定使用严格单会话。"
                 )
             else:
-                text = "检测到 HDR 源，但高精度处理已关闭；导出将走 SDR 8-bit 兼容路径。"
+                text = (
+                    f"实际输出：{container_label} · H.264 · 8-bit SDR；"
+                    "检测到 HDR 源，但高精度处理已关闭，将先 tone-map 到 SDR。"
+                )
         elif self.video:
-            text = "当前源为 SDR；保持现有 RGBA8 / H.264 导出路径。"
+            container = resolve_output_container(
+                self.video, export.get('output_container', 'mp4')
+            )
+            text = (
+                f"实际输出：{OUTPUT_CONTAINER_LABELS[container]} · H.264 · 8-bit SDR；"
+                "音轨兼容时直通，否则转换为 AAC。"
+            )
         else:
-            text = "导入 PQ/HLG 视频后自动使用 RGBA16F 与 HEVC Main10。"
+            if export.get('output_container') == 'source':
+                container_note = "容器将在导入后跟随 MP4/MKV/MOV；M4V 视为 MP4，AVI/WebM 回退 MP4"
+            else:
+                container = resolve_output_container("", export.get('output_container', 'mp4'))
+                container_note = f"输出容器 {OUTPUT_CONTAINER_LABELS[container]}"
+            text = f"{container_note}；导入 PQ/HLG 视频后自动使用 HEVC Main10。"
         if not self._is_image:
             source_width, source_height = self._source_size()
             output_width, output_height = _resolve_output_size(
@@ -2559,6 +2927,7 @@ class App:
             "warmup_frames": export['warmup'],
             "decode_buffer": export['decode_buffer'],
             "nvenc_preset": export['nvenc_preset'],
+            "output_container": export['output_container'],
             "output_resolution": export['output_resolution'],
             "custom_output_width": export['custom_output_width'],
             "custom_output_height": export['custom_output_height'],
@@ -2600,6 +2969,8 @@ class App:
             self.root.focus_set()
         except Exception:
             pass
+        if hasattr(self, "_preview_canvas"):
+            self.root.after_idle(self._sync_preview_scrollregion)
         self._schedule_settings_save()
 
     def _cancel_after(self, name):
@@ -2612,12 +2983,22 @@ class App:
             setattr(self, name, None)
 
     def _on_close(self):
+        if self._diagnosing:
+            messagebox.showinfo("诊断中", "请等待诊断报告生成后再关闭程序。")
+            return
         if self._exporting or self._queue_running:
             messagebox.showinfo(
                 "正在导出",
                 "请先点击“当前项后暂停”；如需立即停止，再点击“取消当前项”，待任务结束后关闭程序。",
             )
             return
+        if self._update_downloading:
+            if not messagebox.askyesno(
+                "正在下载更新",
+                "更新包仍在下载。是否取消下载并退出？\n\n已下载的临时文件会自动清理。",
+            ):
+                return
+            self._update_cancel_event.set()
         self._cancel_after("_settings_save_after")
         self._cancel_after("_live_debounce")
         self._cancel_after("_output_preview_after")
@@ -2668,6 +3049,7 @@ class App:
                         self._live.resize(w, h, int(settings.get('preset', 1)))
                     else:
                         self._live = ProcessLive(w, h, settings)
+                    self._live.update(settings)
                     self._live_w, self._live_h = w, h
                     self._last_dlss_frame = -1
                 else:
@@ -3488,7 +3870,7 @@ class App:
 
     def _preview_tab_selected(self):
         try:
-            return self.workspace_tabs.select() == str(self.preview_tab)
+            return self.workspace_tabs.select() == str(self._preview_page)
         except Exception:
             return True
 
@@ -4160,9 +4542,305 @@ class App:
         self.import_media()
 
     def import_media(self):
+        if self._diagnosing:
+            messagebox.showinfo("诊断中", "请等待诊断报告生成后再导入素材。")
+            return
         path = filedialog.askopenfilename(filetypes=VIDEO_FILETYPES)
         if path:
             self._load_media(path)
+
+    # ---------- application updates ----------
+    @staticmethod
+    def _open_release_page(url=updater.RELEASES_URL):
+        try:
+            webbrowser.open(url or updater.RELEASES_URL)
+            return True
+        except Exception:
+            return False
+
+    @staticmethod
+    def _open_download_directory(path):
+        try:
+            directory = os.path.dirname(os.path.abspath(path))
+            if os.name == "nt":
+                os.startfile(directory)
+            else:
+                webbrowser.open("file://" + directory)
+            return True
+        except Exception:
+            return False
+
+    def check_for_updates(self, manual=True):
+        """Check GitHub without blocking Tk; startup failures stay unobtrusive."""
+        if self._update_checking or self._update_downloading:
+            if manual:
+                messagebox.showinfo("检查更新", "更新检查或下载已经在进行中。")
+            return
+        self._update_checking = True
+        self._update_thread = None
+        self._update_action_labels()
+        if manual:
+            self.logln(f"[更新] 正在检查 GitHub Releases；当前版本 {APP_VERSION}")
+        result_queue = queue.Queue(maxsize=1)
+
+        def worker():
+            try:
+                result_queue.put((updater.fetch_latest_release(), None))
+            except BaseException as exception:
+                result_queue.put((None, str(exception) or repr(exception)))
+
+        def poll_result():
+            try:
+                release, error = result_queue.get_nowait()
+            except queue.Empty:
+                self.root.after(100, poll_result)
+                return
+            self._update_checking = False
+            self._update_thread = None
+            self._update_action_labels()
+            self._handle_update_check_result(release, error, manual)
+
+        self._update_thread = threading.Thread(
+            target=worker, name="dlss5-update-check", daemon=True,
+        )
+        self._update_thread.start()
+        self.root.after(100, poll_result)
+
+    def _handle_update_check_result(self, release, error, manual):
+        """Keep automatic startup checks silent unless an update exists."""
+        if error:
+            if manual:
+                self.logln("[更新] 检查失败: " + error)
+                messagebox.showwarning("检查更新失败", error)
+            return
+        comparison = updater.compare_versions(release.tag, APP_VERSION)
+        if comparison is None:
+            if manual:
+                messagebox.showwarning(
+                    "检查更新失败", f"无法比较版本号：{APP_VERSION} / {release.tag}"
+                )
+            return
+        if comparison <= 0:
+            if manual:
+                self.logln(f"[更新] GitHub 最新正式版本为 {release.tag}")
+                messagebox.showinfo(
+                    "已是最新版本",
+                    f"当前版本：{APP_VERSION}\nGitHub 最新正式版本：{release.tag}",
+                )
+            return
+        self._prompt_for_update(release)
+
+    def _prompt_for_update(self, release):
+        asset = updater.select_portable_asset(release)
+        notes = release.body.strip()
+        if len(notes) > 900:
+            notes = notes[:897].rstrip() + "…"
+        notes_text = f"\n\n更新说明：\n{notes}" if notes else ""
+        if asset is None:
+            self.logln(f"[更新] 发现 {release.tag}，但未找到完整 win64 便携包")
+            if messagebox.askyesno(
+                "发现新版本",
+                f"当前版本：{APP_VERSION}\n最新版本：{release.tag}{notes_text}\n\n"
+                "此 Release 没有可识别的完整 win64 便携包。是否打开发布页？",
+            ):
+                self._open_release_page(release.page_url)
+            return
+        size_text = updater.format_size(asset.size) if asset.size else "大小未知"
+        self.logln(f"[更新] 发现新版本 {release.tag}：{asset.name}（{size_text}）")
+        if messagebox.askyesno(
+            "发现新版本",
+            f"当前版本：{APP_VERSION}\n最新版本：{release.tag}{notes_text}\n\n"
+            f"是否将 {asset.name}（{size_text}）自动下载到“下载”文件夹？\n"
+            "下载完成后请关闭程序、完整解压，再运行新版本。",
+        ):
+            self._start_update_download(release, asset)
+
+    def _start_update_download(self, release, asset):
+        try:
+            directory = updater.default_download_directory()
+            os.makedirs(directory, exist_ok=True)
+            destination = updater.unique_download_path(directory, asset.name)
+        except OSError as ex:
+            messagebox.showerror("无法下载更新", f"无法使用下载文件夹：\n{ex}")
+            return
+        self._update_downloading = True
+        self._update_progress_percent = 0 if asset.size else None
+        self._update_cancel_event.clear()
+        self._update_action_labels()
+        self.logln(f"[更新] 开始下载到: {destination}")
+        events = queue.Queue()
+
+        def progress(downloaded, total):
+            events.put(("progress", downloaded, total))
+
+        def worker():
+            try:
+                path = updater.download_asset(
+                    asset,
+                    destination,
+                    progress=progress,
+                    cancelled=self._update_cancel_event.is_set,
+                )
+                events.put(("complete", path, None))
+            except BaseException as exception:
+                events.put(("complete", None, str(exception) or repr(exception)))
+
+        def poll_events():
+            completed = None
+            while True:
+                try:
+                    event = events.get_nowait()
+                except queue.Empty:
+                    break
+                if event[0] == "progress":
+                    _kind, downloaded, total = event
+                    if total:
+                        self._update_progress_percent = min(
+                            100, int(downloaded * 100 / total)
+                        )
+                    self._update_action_labels()
+                else:
+                    completed = event
+            if completed is None:
+                self.root.after(100, poll_events)
+                return
+            _kind, path, error = completed
+            self._update_downloading = False
+            self._update_progress_percent = None
+            self._update_thread = None
+            self._update_action_labels()
+            if error:
+                if self._update_cancel_event.is_set():
+                    self.logln("[更新] 下载已取消，临时文件已清理")
+                else:
+                    self.logln("[更新] 下载失败: " + error)
+                    messagebox.showerror("更新下载失败", error)
+                return
+            self.logln(f"[更新] {release.tag} 已下载并校验完成: {path}")
+            if messagebox.askyesno(
+                "更新下载完成",
+                f"新版本已下载并校验完成：\n{path}\n\n"
+                "本程序是免安装版，不会在运行中覆盖自身。"
+                "请关闭程序后完整解压。\n\n是否打开所在文件夹？",
+            ):
+                self._open_download_directory(path)
+
+        self._update_thread = threading.Thread(
+            target=worker, name="dlss5-update-download", daemon=True,
+        )
+        self._update_thread.start()
+        self.root.after(100, poll_events)
+
+    def export_diagnostics(self):
+        """Create a shareable support log without requiring imported media."""
+        if self._diagnosing:
+            return
+        if self._exporting or self._queue_running or self._switching_backend:
+            messagebox.showinfo("忙", "请等待当前导出、队列或主机切换完成后再诊断。")
+            return
+        initial_dir = ""
+        if self.video:
+            initial_dir = os.path.dirname(os.path.abspath(self.video))
+        if not initial_dir or not os.path.isdir(initial_dir):
+            desktop = os.path.join(os.path.expanduser("~"), "Desktop")
+            initial_dir = desktop if os.path.isdir(desktop) else os.getcwd()
+        output_path = filedialog.asksaveasfilename(
+            title="保存 DLSS5Tool 诊断日志",
+            initialdir=initial_dir,
+            initialfile=diagnostics.suggested_report_name(),
+            defaultextension=".log",
+            filetypes=[("诊断日志", "*.log"), ("文本文件", "*.txt"), ("所有文件", "*.*")],
+        )
+        if not output_path:
+            return
+        try:
+            ui_log = self.log.get("1.0", "end")
+        except Exception:
+            ui_log = ""
+        active_host = None
+        if self._live is not None:
+            active_host = {
+                "backend": getattr(self._live, "backend", "unknown"),
+                "preference": getattr(self._live, "preference", "unknown"),
+                "max_in_flight": getattr(self._live, "max_in_flight", 1),
+                "supports_async": bool(getattr(self._live, "supports_async", False)),
+            }
+        media = None
+        if self.video:
+            media = {
+                "name": os.path.basename(self.video),
+                "kind": self._source_kind,
+                "width": self._media_w,
+                "height": self._media_h,
+                "frames": self.nframes,
+                "fps": self.fps,
+                "color": dict(self._video_color_info or {}),
+            }
+        context = {
+            "settings": self._collect_settings(),
+            "export_settings": self._collect_export_settings(),
+            "active_host": active_host,
+            "media": media,
+            "ui_log": ui_log,
+        }
+        self._diagnosing = True
+        self.root.config(cursor="wait")
+        self._update_action_labels()
+        self._update_host_control_states()
+        self._update_queue_action_states()
+        self.set_status("正在诊断 GPU、DLL 与 Feature 18 主机…")
+        self.logln("[诊断] 开始生成一键诊断报告…")
+
+        def finish(result, error):
+            self._diagnosing = False
+            self._diagnostic_thread = None
+            self.root.config(cursor="")
+            self._update_action_labels()
+            self._update_host_control_states()
+            self._update_queue_action_states()
+            if error:
+                self.set_status("诊断报告导出失败")
+                self.logln("[诊断] 导出失败: " + error)
+                messagebox.showerror(
+                    "诊断失败",
+                    "无法保存诊断报告：\n" + error + "\n\n请换一个可写目录后重试。",
+                )
+                return
+            path = result["path"]
+            passed = int(result.get("passed", 0))
+            total = int(result.get("total", 0))
+            self.set_status(f"诊断完成 · 宿主探针 {passed}/{total} 通过")
+            self.logln(f"[诊断] 已导出: {path}；宿主探针 {passed}/{total} 通过")
+            messagebox.showinfo(
+                "诊断完成",
+                f"诊断日志已保存：\n{path}\n\n宿主探针 {passed}/{total} 通过。"
+                "无论通过或失败，都可以把这个日志直接发给维护者。",
+            )
+
+        result_queue = queue.Queue(maxsize=1)
+
+        def worker():
+            result = None
+            error = None
+            try:
+                result = diagnostics.write_diagnostic_report(output_path, context)
+            except BaseException as exception:
+                error = str(exception) or repr(exception)
+            result_queue.put((result, error))
+
+        def poll_result():
+            try:
+                result, error = result_queue.get_nowait()
+            except queue.Empty:
+                self.root.after(100, poll_result)
+                return
+            finish(result, error)
+
+        self._diagnostic_thread = threading.Thread(
+            target=worker, name="dlss5-diagnostic", daemon=True,
+        )
+        self._diagnostic_thread.start()
+        self.root.after(100, poll_result)
 
     def _setup_drag_and_drop(self):
         """Register both the window and video-facing widgets as file drop targets."""
@@ -4182,21 +4860,26 @@ class App:
             self.logln("[拖拽] 初始化失败，仍可点击导入: " + str(ex))
 
     def _on_drop_enter(self, event):
-        if not self._exporting and not self._queue_running:
+        if not self._exporting and not self._queue_running and not self._diagnosing:
             self.canvas.config(bg=CANVAS_DROP_BG)
-            self.set_status("松开鼠标以导入；多个视频会加入队列")
+            self.set_status("松开鼠标以导入；多个媒体文件会加入队列")
         return getattr(event, "action", None)
 
     def _on_drop_leave(self, event):
         self.canvas.config(bg=CANVAS_BG)
-        if not self._exporting and not self._queue_running:
+        if not self._exporting and not self._queue_running and not self._diagnosing:
             self.set_status("就绪")
         return getattr(event, "action", None)
 
     def _on_drop(self, event):
         self.canvas.config(bg=CANVAS_BG)
-        if self._exporting or self._queue_running:
-            messagebox.showinfo("忙", "正在处理队列，请暂停或结束后再导入。")
+        if self._exporting or self._queue_running or self._diagnosing:
+            message = (
+                "正在生成诊断报告，请完成后再导入。"
+                if self._diagnosing else
+                "正在处理队列，请暂停或结束后再导入。"
+            )
+            messagebox.showinfo("忙", message)
             return getattr(event, "action", None)
         try:
             paths = list(self.root.tk.splitlist(event.data))
@@ -4212,7 +4895,7 @@ class App:
                         expanded.extend(
                             os.path.join(current, name)
                             for name in sorted(files)
-                            if _is_video_path(name)
+                            if _is_video_path(name) or _is_image_path(name)
                         )
                 elif path:
                     expanded.append(path)
@@ -4255,8 +4938,13 @@ class App:
             pass
 
     def clear_media(self):
-        if self._exporting or self._queue_running:
-            messagebox.showinfo("忙", "正在处理队列，请暂停或结束后再清空。")
+        if self._exporting or self._queue_running or self._diagnosing:
+            message = (
+                "正在生成诊断报告，请完成后再清空。"
+                if self._diagnosing else
+                "正在处理队列，请暂停或结束后再清空。"
+            )
+            messagebox.showinfo("忙", message)
             return
         if not self.video and self._live is None:
             return
@@ -4281,8 +4969,13 @@ class App:
         self.logln("已清空导入，解码/音轨/DLSS 主机已释放")
 
     def _load_media(self, path):
-        if self._exporting or self._queue_running:
-            messagebox.showinfo("忙", "正在处理队列，请暂停或结束后再导入。")
+        if self._exporting or self._queue_running or self._diagnosing:
+            message = (
+                "正在生成诊断报告，请完成后再导入。"
+                if self._diagnosing else
+                "正在处理队列，请暂停或结束后再导入。"
+            )
+            messagebox.showinfo("忙", message)
             return False
         path = os.path.abspath(os.path.normpath(path))
         if not os.path.isfile(path):
@@ -4515,9 +5208,11 @@ class App:
             return False
 
     def cancel_export(self):
+        active_job = self._queue_job(self._queue_active_job_id)
         if (
             not self._exporting
-            or (self._queue_active_job_id is None and self._is_image)
+            or (active_job is not None and active_job.media_kind == "image")
+            or (active_job is None and self._is_image)
             or self._export_cancel_event.is_set()
         ):
             return
@@ -4536,20 +5231,54 @@ class App:
     def _export_image(self):
         settings = self._collect_settings()
         self._save_settings_now()
-        orig = self._image_bgr
-        if orig is None:
+        if self._image_bgr is None:
             messagebox.showwarning("提示", "请先导入图片")
             return
-        ext = os.path.splitext(self.video)[1].lower() or ".png"
-        default_out = os.path.splitext(self.video)[0] + "_dlss" + ext
-        out_path = self._unique_output_path(self.video, ext)
-        if out_path != default_out:
+        return self._export_image_source(self.video, settings, notify=True)
+
+    def _process_still_image(self, source_bgr, settings):
+        """Process one standalone image without consulting or polluting preview caches."""
+        height, width = source_bgr.shape[:2]
+        rgba = cv2.cvtColor(source_bgr, cv2.COLOR_BGR2RGBA)
+        with self._live_lock:
+            live = self._ensure_live(width, height, settings)
+            if live is None:
+                return None
+            processed_rgba = live.process(rgba, reset=True)
+            self._last_dlss_frame = -1
+        if processed_rgba is None:
+            return None
+        return cv2.cvtColor(processed_rgba[..., :3], cv2.COLOR_RGB2BGR)
+
+    def _export_image_source(self, source_path, settings, out_path=None, notify=True):
+        """Export one immutable SDR image request for the preview UI or mixed queue."""
+        source_path = os.path.abspath(os.path.normpath(source_path))
+        settings = {**self._collect_settings(), **dict(settings or {})}
+        orig = _read_image_bgr(source_path)
+        if orig is None or orig.size == 0:
+            error = "无法读取图片，请检查输入文件。"
+            self.logln("导出错误: " + error)
+            if notify:
+                messagebox.showerror("导出失败", error)
+            return {
+                "success": False, "cancelled": False, "error": error,
+                "output_path": out_path or "", "frames": 0,
+            }
+        ext = os.path.splitext(source_path)[1].lower()
+        if ext not in IMAGE_ENCODE_EXTS:
+            ext = ".png"
+        default_out = os.path.splitext(source_path)[0] + "_dlss" + ext
+        out_path = out_path or self._unique_output_path(source_path, ext)
+        if not notify and os.path.exists(out_path):
+            out_path = self._unique_target_path(out_path)
+        if out_path != default_out and notify:
             self.logln("[导出] 目标文件已存在，自动改名为: " + os.path.basename(out_path))
         self._begin_export_ui("正在导出图片…")
         success = False
+        error_message = ""
         started_at = self._export_t0
         try:
-            processed = self._live_dlss_image(0, source_bgr=orig, settings=settings)
+            processed = self._process_still_image(orig, settings)
             if processed is None:
                 raise RuntimeError("DLSS 处理失败")
             view = settings["output_view"]
@@ -4563,11 +5292,17 @@ class App:
             self.set_progress(1, 1, "完成")
         except Exception as ex:
             traceback.print_exc()
-            self.logln("导出错误: " + str(ex))
+            error_message = str(ex)
+            self.logln("导出错误: " + error_message)
         self._end_export_ui(
             success, out_path, "完成",
             "已导出图片:\n" + out_path if success else None,
+            notify=notify,
         )
+        return {
+            "success": success, "cancelled": False, "error": error_message,
+            "output_path": out_path, "frames": 1 if success else 0,
+        }
 
     # ---------- export ----------
     def _export_hdr_video(
@@ -4707,6 +5442,11 @@ class App:
             **self._collect_export_settings(), **dict(export_settings or {}),
         }
         color_info = dict(color_info or {})
+        resolved_container = resolve_output_container(
+            source_path, export_settings.get("output_container", "mp4")
+        )
+        export_settings["resolved_container"] = resolved_container
+        output_extension = output_container_extension(resolved_container)
         n, fps, w, h = self._video_info(source_path)
         if w <= 0 or h <= 0:
             error = "无法读取视频尺寸，请检查输入文件。"
@@ -4729,8 +5469,8 @@ class App:
         )
         view = settings['output_view']; mix = float(settings['output_mix'])
         live = None; writer = None
-        default_out_path = os.path.splitext(source_path)[0] + "_dlss.mp4"
-        out_path = out_path or self._unique_output_path(source_path)
+        default_out_path = os.path.splitext(source_path)[0] + "_dlss" + output_extension
+        out_path = out_path or self._unique_output_path(source_path, output_extension)
         if not notify and os.path.exists(out_path):
             out_path = self._unique_target_path(out_path)
         if out_path != default_out_path and notify:
@@ -4756,7 +5496,8 @@ class App:
                 if export_settings['mode'] == 'parallel':
                     encoding_note += "（并行分段近似）"
             self.logln(
-                f"[导出] 输出 {output_width}×{output_height}；{encoding_note}；"
+                f"[导出] {OUTPUT_CONTAINER_LABELS[resolved_container]} · "
+                f"输出 {output_width}×{output_height}；{encoding_note}；"
                 f"编码速度 {export_settings['nvenc_preset']}"
             )
             if hdr_active:
@@ -5015,6 +5756,11 @@ def main():
 if __name__ == "__main__":
     # Required for ProcessLive's spawn worker in a PyInstaller build.
     multiprocessing.freeze_support()
+    if "--diagnostic-worker" in sys.argv:
+        worker_index = sys.argv.index("--diagnostic-worker")
+        raise SystemExit(diagnostics.diagnostic_worker_main(
+            sys.argv[worker_index + 1:worker_index + 5]
+        ))
     if "--parallel-worker" in sys.argv:
         sys.argv.remove("--parallel-worker")
         from parallel_export_worker import main as parallel_worker_main

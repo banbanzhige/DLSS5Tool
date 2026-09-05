@@ -2,12 +2,16 @@ import os
 import queue
 import tempfile
 import threading
+import time
 import unittest
-from tkinter import messagebox
+from tkinter import filedialog, messagebox
 
 import numpy as np
 
 import app_settings
+import diagnostics
+import updater
+from app_version import APP_VERSION
 from gui import (
     App, TimelineBar,
     _ExportCancelled,
@@ -541,6 +545,93 @@ class PreviewQueueTests(unittest.TestCase):
 
 
 class WidgetSmokeTests(unittest.TestCase):
+    def test_automatic_update_check_only_prompts_for_a_newer_release(self):
+        logs = []
+        prompted = []
+        fake_app = type("FakeApp", (), {})()
+        fake_app.logln = logs.append
+        fake_app._prompt_for_update = prompted.append
+        current = updater.ReleaseInfo(APP_VERSION, updater.RELEASES_URL, "", ())
+
+        App._handle_update_check_result(fake_app, None, "offline", manual=False)
+        App._handle_update_check_result(fake_app, current, None, manual=False)
+        App._handle_update_check_result(
+            fake_app,
+            updater.ReleaseInfo("v99.0.0", updater.RELEASES_URL, "", ()),
+            None,
+            manual=False,
+        )
+
+        self.assertEqual(logs, [])
+        self.assertEqual([release.tag for release in prompted], ["v99.0.0"])
+
+    def test_one_click_diagnostic_exports_in_background(self):
+        import tkinter as tk
+
+        with tempfile.TemporaryDirectory() as tmp:
+            settings_path = os.path.join(tmp, "dlss5_settings.json")
+            queue_path = os.path.join(tmp, "dlss5_queue.json")
+            report_path = os.path.join(tmp, "diagnostic.log")
+            old_settings = os.environ.get("DLSS5TOOL_SETTINGS_PATH")
+            old_queue = os.environ.get("DLSS5TOOL_QUEUE_PATH")
+            os.environ["DLSS5TOOL_SETTINGS_PATH"] = settings_path
+            os.environ["DLSS5TOOL_QUEUE_PATH"] = queue_path
+            root = tk.Tk()
+            root.withdraw()
+            app = None
+            original_dialog = filedialog.asksaveasfilename
+            original_writer = diagnostics.write_diagnostic_report
+            original_showinfo = messagebox.showinfo
+            original_showerror = messagebox.showerror
+            filedialog.asksaveasfilename = lambda **_kwargs: report_path
+
+            def fake_writer(path, context):
+                with open(path, "w", encoding="utf-8") as handle:
+                    handle.write("diagnostic ok")
+                self.assertIn("settings", context)
+                return {"path": path, "passed": 2, "total": 2}
+
+            diagnostics.write_diagnostic_report = fake_writer
+            messagebox.showinfo = lambda *args, **kwargs: None
+            messagebox.showerror = lambda *args, **kwargs: None
+            try:
+                app = App(root)
+                app.export_diagnostics()
+                self.assertTrue(app._diagnosing)
+                self.assertEqual(str(app.diagnostic_btn.cget("text")), "诊断中…")
+                deadline = time.monotonic() + 3.0
+                while app._diagnosing and time.monotonic() < deadline:
+                    root.update()
+                    time.sleep(0.01)
+                self.assertFalse(app._diagnosing)
+                self.assertTrue(os.path.isfile(report_path))
+                self.assertEqual(str(app.diagnostic_btn.cget("text")), "一键诊断")
+                self.assertIn("宿主探针 2/2 通过", app.eta_label.cget("text"))
+            finally:
+                filedialog.asksaveasfilename = original_dialog
+                diagnostics.write_diagnostic_report = original_writer
+                messagebox.showinfo = original_showinfo
+                messagebox.showerror = original_showerror
+                if app is not None:
+                    for name in (
+                        "_settings_save_after", "_live_debounce",
+                        "_output_preview_after", "_scrub_after", "_resize_after",
+                        "_play_after", "_preview_decode_after",
+                    ):
+                        app._cancel_after(name)
+                    app._prefetch_stop.set()
+                for after_id in root.tk.call("after", "info"):
+                    root.after_cancel(after_id)
+                root.destroy()
+                if old_settings is None:
+                    os.environ.pop("DLSS5TOOL_SETTINGS_PATH", None)
+                else:
+                    os.environ["DLSS5TOOL_SETTINGS_PATH"] = old_settings
+                if old_queue is None:
+                    os.environ.pop("DLSS5TOOL_QUEUE_PATH", None)
+                else:
+                    os.environ["DLSS5TOOL_QUEUE_PATH"] = old_queue
+
     def test_app_and_timeline_construct(self):
         import tkinter as tk
 
@@ -561,6 +652,29 @@ class WidgetSmokeTests(unittest.TestCase):
                 self.assertTrue(hasattr(app, "import_btn"))
                 self.assertTrue(hasattr(app, "clear_btn"))
                 self.assertTrue(hasattr(app, "cancel_export_btn"))
+                self.assertTrue(hasattr(app, "diagnostic_btn"))
+                self.assertEqual(str(app.diagnostic_btn.cget("text")), "一键诊断")
+                self.assertTrue(app.diagnostic_btn.instate(["!disabled"]))
+                self.assertTrue(hasattr(app, "update_btn"))
+                self.assertEqual(str(app.update_btn.cget("text")), "检查更新")
+                self.assertTrue(app.update_btn.instate(["!disabled"]))
+                self.assertIs(app.update_btn.master, app.diagnostic_btn.master)
+                self.assertEqual(
+                    int(app.update_btn.cget("width")),
+                    int(app.diagnostic_btn.cget("width")),
+                )
+                app._update_checking = True
+                app._update_action_labels()
+                self.assertEqual(str(app.update_btn.cget("text")), "检查中…")
+                self.assertTrue(app.update_btn.instate(["disabled"]))
+                app._update_checking = False
+                app._diagnosing = True
+                app._update_action_labels()
+                self.assertEqual(str(app.diagnostic_btn.cget("text")), "诊断中…")
+                self.assertTrue(app.diagnostic_btn.instate(["disabled"]))
+                self.assertTrue(app.import_btn.instate(["disabled"]))
+                app._diagnosing = False
+                app._update_action_labels()
                 self.assertTrue(hasattr(app, "workspace_tabs"))
                 self.assertTrue(hasattr(app, "queue_tree"))
                 self.assertTrue(hasattr(app, "queue_start_btn"))
@@ -577,6 +691,7 @@ class WidgetSmokeTests(unittest.TestCase):
                 self.assertEqual(str(app.eta_label.cget("text")), "")
                 self.assertTrue(app.clear_btn.instate(["disabled"]))
                 export = app._collect_export_settings()
+                self.assertEqual(export["output_container"], "mp4")
                 self.assertEqual(export["output_resolution"], "source")
                 self.assertEqual(export["rate_control"], "quality")
                 self.assertEqual(export["quality_profile"], "high")
@@ -586,7 +701,17 @@ class WidgetSmokeTests(unittest.TestCase):
                 self.assertTrue(app._export_settings["w_quality_profile"].instate(["disabled"]))
                 self.assertTrue(app._export_settings["w_video_bitrate"].instate(["!disabled"]))
                 self.assertTrue(app._export_settings["w_custom_width"].instate(["!disabled"]))
+                app.video = "dummy.png"
+                app._source_kind = "image"
+                app._image_bgr = np.zeros((4, 8, 3), np.uint8)
+                app._update_export_control_states()
+                self.assertTrue(app._export_settings["w_output_container"].instate(["disabled"]))
+                self.assertTrue(app._export_settings["w_nvenc_preset"].instate(["disabled"]))
+                self.assertTrue(app._export_settings["w_mode"].instate(["disabled"]))
+                app._source_kind = None
+                app._image_bgr = None
                 app.video = "dummy.mp4"
+                app._update_export_control_states()
                 app._update_action_labels()
                 self.assertTrue(app.clear_btn.instate(["!disabled"]))
                 self.assertTrue(app.cancel_export_btn.instate(["disabled"]))
@@ -683,6 +808,7 @@ class WidgetSmokeTests(unittest.TestCase):
                 hdr_source = os.path.join(tmp, "queued-hdr.mp4")
                 open(hdr_source, "wb").close()
                 app._export_settings["v_mode"].set("视觉无损（并行分段）")
+                app._export_settings["v_output_container"].set("MKV")
                 app._probe_queue_video = lambda _path: (
                     {"frames": 24, "fps": 24.0, "width": 1280, "height": 720},
                     {"is_hdr": True, "label": "HDR10 / PQ", "profile": "pq"},
@@ -691,10 +817,13 @@ class WidgetSmokeTests(unittest.TestCase):
                     app._add_paths_to_queue([hdr_source], switch_tab=False), 1,
                 )
                 self.assertEqual(app._queue_jobs[0].export_settings["mode"], "single")
+                self.assertEqual(app._queue_jobs[0].export_settings["output_container"], "mkv")
+                self.assertTrue(app._queue_jobs[0].output_path.endswith(".mkv"))
                 app._queue_jobs = []
                 app._save_queue_state()
                 app._refresh_queue_tree(keep_selection=False)
                 app._export_settings["v_mode"].set("严格时序（单会话）")
+                app._export_settings["v_output_container"].set("MP4（推荐）")
                 app._probe_queue_video = lambda _path: (
                     {"frames": 48, "fps": 24.0, "width": 1920, "height": 1080},
                     {"is_hdr": False, "label": "SDR / sRGB"},
@@ -702,9 +831,28 @@ class WidgetSmokeTests(unittest.TestCase):
 
                 second = os.path.join(tmp, "queued-second.mp4")
                 open(second, "wb").close()
+                image_source = os.path.join(tmp, "queued-image.png")
+                _write_image_bgr(image_source, np.zeros((12, 16, 3), np.uint8))
+                image_output = os.path.join(tmp, "standalone-image.png")
+                original_process_image = app._process_still_image
+                app._process_still_image = lambda image, settings: image.copy()
+                try:
+                    image_result = app._export_image_source(
+                        image_source, app._collect_settings(),
+                        out_path=image_output, notify=False,
+                    )
+                finally:
+                    app._process_still_image = original_process_image
+                self.assertTrue(image_result["success"])
+                self.assertEqual(_read_image_bgr(image_output).shape, (12, 16, 3))
                 self.assertEqual(
-                    app._add_paths_to_queue([source, second], switch_tab=False), 2,
+                    app._add_paths_to_queue(
+                        [source, image_source, second], switch_tab=False,
+                    ),
+                    3,
                 )
+                self.assertEqual(app._queue_jobs[1].media_kind, "image")
+                self.assertTrue(app._queue_jobs[1].output_path.endswith(".png"))
                 callbacks = []
                 original_after = app.root.after
                 original_showinfo = messagebox.showinfo
@@ -717,14 +865,23 @@ class WidgetSmokeTests(unittest.TestCase):
                     "output_path": kwargs["out_path"],
                     "frames": 48,
                 }
+                app._export_image_source = lambda path, **kwargs: {
+                    "success": True,
+                    "cancelled": False,
+                    "error": "",
+                    "output_path": kwargs["out_path"],
+                    "frames": 1,
+                }
                 try:
                     app._queue_running = True
                     app._run_next_queue_job()
                     self.assertEqual(app._queue_jobs[0].state, "completed")
                     self.assertEqual(len(callbacks), 1)
                     callbacks.pop(0)()
-                    self.assertEqual(app._queue_jobs[1].state, "failed")
-                    self.assertEqual(app._queue_jobs[1].error, "simulated failure")
+                    self.assertEqual(app._queue_jobs[1].state, "completed")
+                    callbacks.pop(0)()
+                    self.assertEqual(app._queue_jobs[2].state, "failed")
+                    self.assertEqual(app._queue_jobs[2].error, "simulated failure")
                     callbacks.pop(0)()
                     self.assertFalse(app._queue_running)
                 finally:
@@ -748,6 +905,8 @@ class WidgetSmokeTests(unittest.TestCase):
                 app._cancel_after("_settings_save_after")
                 root.update_idletasks()
             finally:
+                for after_id in root.tk.call("after", "info"):
+                    root.after_cancel(after_id)
                 root.destroy()
                 if old is None:
                     os.environ.pop("DLSS5TOOL_SETTINGS_PATH", None)
@@ -872,6 +1031,8 @@ class WidgetSmokeTests(unittest.TestCase):
                 app._cancel_after("_settings_save_after")
                 root.update_idletasks()
             finally:
+                for after_id in root.tk.call("after", "info"):
+                    root.after_cancel(after_id)
                 root.destroy()
                 if old is None:
                     os.environ.pop("DLSS5TOOL_SETTINGS_PATH", None)

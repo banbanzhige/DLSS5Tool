@@ -19,7 +19,11 @@ import numpy as np
 
 _NVENC_CACHE = {}
 _CREATE_NO_WINDOW = getattr(subprocess, "CREATE_NO_WINDOW", 0)
-_MP4_COPY_AUDIO_CODECS = {"aac", "mp3", "ac3", "eac3", "alac"}
+OUTPUT_CONTAINER_EXTENSIONS = {"mp4": ".mp4", "mkv": ".mkv", "mov": ".mov"}
+_SOURCE_CONTAINER_MAP = {
+    ".mp4": "mp4", ".m4v": "mp4", ".mkv": "mkv", ".mov": "mov",
+}
+_ISO_BMFF_COPY_AUDIO_CODECS = {"aac", "mp3", "ac3", "eac3", "alac"}
 _HDR_TRANSFERS = {"smpte2084": "hdr10_pq", "arib-std-b67": "hdr10_hlg"}
 _MAX_OUTPUT_MIX = 5.0
 _QUALITY_PROFILE_VALUES = {
@@ -37,6 +41,28 @@ _SOFTWARE_PRESETS = {
     "p6": "medium",
     "p7": "slow",
 }
+
+
+def resolve_output_container(source_path, preference="mp4"):
+    """Resolve an explicit or follow-source choice to mp4, mkv, or mov."""
+    preference = str(preference or "mp4").strip().lower()
+    if preference in OUTPUT_CONTAINER_EXTENSIONS:
+        return preference
+    if preference == "source":
+        source_ext = os.path.splitext(str(source_path or ""))[1].lower()
+        return _SOURCE_CONTAINER_MAP.get(source_ext, "mp4")
+    return "mp4"
+
+
+def output_container_extension(container):
+    return OUTPUT_CONTAINER_EXTENSIONS.get(str(container).lower(), ".mp4")
+
+
+def output_container_from_path(path):
+    ext = os.path.splitext(str(path or ""))[1].lower()
+    return {value: key for key, value in OUTPUT_CONTAINER_EXTENSIONS.items()}.get(
+        ext, "mp4"
+    )
 
 
 def _clamp_video_bitrate(value):
@@ -517,26 +543,48 @@ def mux_source_audio(ffmpeg, video_path, audio_source, output_path):
     video_path = os.path.abspath(video_path)
     audio_source = os.path.abspath(audio_source)
     output_path = os.path.abspath(output_path)
+    output_ext = os.path.splitext(output_path)[1].lower()
+    if output_ext not in OUTPUT_CONTAINER_EXTENSIONS.values():
+        raise ValueError("视频输出容器仅支持 MP4、MKV 或 MOV")
     audio_codecs = probe_audio_codecs(ffmpeg, audio_source)
-    if audio_codecs == []:
-        os.replace(video_path, output_path)
-        return "源视频无音轨"
-
     output_dir = os.path.dirname(output_path) or os.getcwd()
+    container = output_container_from_path(output_path)
+    container_ext = output_container_extension(container)
     prefix = "." + os.path.basename(output_path) + "."
     mux_temp = tempfile.NamedTemporaryFile(
-        prefix=prefix, suffix=".mux.tmp.mp4", dir=output_dir, delete=False
+        prefix=prefix, suffix=f".mux.tmp{container_ext}", dir=output_dir, delete=False
     )
     mux_path = mux_temp.name
     mux_temp.close()
-    common = [
-        ffmpeg, "-hide_banner", "-loglevel", "error", "-y",
-        "-i", video_path, "-i", audio_source,
-        "-map", "0:v:0", "-map", "1:a?",
-        "-c:v", "copy", "-movflags", "+faststart",
-    ]
+    common = [ffmpeg, "-hide_banner", "-loglevel", "error", "-y", "-i", video_path]
+    if audio_codecs == []:
+        common.extend(["-map", "0:v:0", "-an"])
+    else:
+        common.extend(["-i", audio_source, "-map", "0:v:0", "-map", "1:a?"])
+    common.extend(["-c:v", "copy"])
+    if container in {"mp4", "mov"}:
+        common.extend(["-movflags", "+faststart"])
     try:
-        if audio_codecs and all(c in _MP4_COPY_AUDIO_CODECS for c in audio_codecs):
+        if audio_codecs == []:
+            result = subprocess.run(
+                common + [mux_path],
+                stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL,
+                stderr=subprocess.PIPE, creationflags=_CREATE_NO_WINDOW,
+            )
+            if result.returncode != 0:
+                detail = result.stderr.decode("utf-8", errors="replace")[-4000:]
+                raise RuntimeError("FFmpeg 视频封装失败：\n" + detail)
+            os.replace(mux_path, output_path)
+            return "源视频无音轨"
+
+        copy_audio = (
+            container == "mkv"
+            or (
+                audio_codecs is not None
+                and all(codec in _ISO_BMFF_COPY_AUDIO_CODECS for codec in audio_codecs)
+            )
+        )
+        if copy_audio:
             result = subprocess.run(
                 common + ["-c:a", "copy", mux_path],
                 stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL,
@@ -614,6 +662,10 @@ class FFmpegVideoWriter:
         video_bitrate_mbps=20.0, output_size=None,
     ):
         self.output_path = os.path.abspath(output_path)
+        output_ext = os.path.splitext(self.output_path)[1].lower()
+        if output_ext not in OUTPUT_CONTAINER_EXTENSIONS.values():
+            raise ValueError("视频输出容器仅支持 MP4、MKV 或 MOV")
+        self.output_container = output_container_from_path(self.output_path)
         self.width = int(width)
         self.height = int(height)
         self.fps = float(fps)
@@ -658,7 +710,9 @@ class FFmpegVideoWriter:
         output_dir = os.path.dirname(self.output_path) or os.getcwd()
         prefix = "." + os.path.basename(self.output_path) + "."
         temp = tempfile.NamedTemporaryFile(
-            prefix=prefix, suffix=".video.tmp.mp4", dir=output_dir, delete=False
+            prefix=prefix,
+            suffix=f".video.tmp{output_container_extension(self.output_container)}",
+            dir=output_dir, delete=False,
         )
         self._temp_path = temp.name
         temp.close()
@@ -691,8 +745,9 @@ class FFmpegVideoWriter:
             cmd.extend([
                 "-color_range", "tv", "-color_primaries", primaries,
                 "-color_trc", transfer, "-colorspace", matrix,
-                "-tag:v", "hvc1",
             ])
+            if self.output_container in {"mp4", "mov"}:
+                cmd.extend(["-tag:v", "hvc1"])
         else:
             output_filter = (
                 f"scale={self.output_width}:{self.output_height}:flags=lanczos,format=yuv420p"
@@ -710,7 +765,9 @@ class FFmpegVideoWriter:
                 False, self.uses_nvenc, self.nvenc_preset, self.rate_control,
                 self.quality_profile, self.video_bitrate_mbps,
             ))
-        cmd.extend(["-movflags", "+faststart", self._temp_path])
+        if self.output_container in {"mp4", "mov"}:
+            cmd.extend(["-movflags", "+faststart"])
+        cmd.append(self._temp_path)
 
         try:
             self._proc = subprocess.Popen(

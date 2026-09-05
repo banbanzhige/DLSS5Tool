@@ -33,6 +33,7 @@ DEFAULTS = {
     "warmup_frames": 8,
     "decode_buffer": 4,
     "nvenc_preset": "p5",
+    "output_container": "mp4",
     "output_resolution": "source",
     "custom_output_width": 1920,
     "custom_output_height": 1080,
@@ -122,6 +123,8 @@ def validate(values):
     preset = str(source.get("nvenc_preset", result["nvenc_preset"]))
     if preset in {f"p{i}" for i in range(1, 8)}:
         result["nvenc_preset"] = preset
+    if source.get("output_container") in {"mp4", "mkv", "mov", "source"}:
+        result["output_container"] = source["output_container"]
     if source.get("output_resolution") in {
         "source", "2160p", "1440p", "1080p", "720p", "custom",
     }:
