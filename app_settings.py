@@ -4,6 +4,7 @@
 
 import json
 import os
+import re
 import sys
 
 
@@ -51,6 +52,8 @@ DEFAULTS = {
     "ui_export_open": True,
     "ui_host_open": True,
     "ui_preview_open": True,
+    "preview_detached": False,
+    "preview_window_geometry": "",
     "queue_output_dir": "",
     "preview_quality": "original",
     "preview_prefetch": 24,
@@ -92,6 +95,16 @@ def _as_bool(value, default):
     if value in (0, 1):
         return bool(value)
     return default
+
+
+def _as_window_geometry(value):
+    """Keep only a normal Tk ``WIDTHxHEIGHT+X+Y`` geometry string."""
+    if not isinstance(value, str):
+        return ""
+    value = value.strip()
+    if re.fullmatch(r"\d{2,5}x\d{2,5}[+-]\d{1,6}[+-]\d{1,6}", value):
+        return value
+    return ""
 
 
 def validate(values):
@@ -160,9 +173,12 @@ def validate(values):
         "use_output_mix", "use_auto_mask",
         "hdr_mode",
         "host_zero_fast_path", "host_persistent_buffers", "host_auto_fallback",
-        "ui_export_open", "ui_host_open", "ui_preview_open",
+        "ui_export_open", "ui_host_open", "ui_preview_open", "preview_detached",
     ):
         result[name] = _as_bool(source.get(name, result[name]), result[name])
+    result["preview_window_geometry"] = _as_window_geometry(
+        source.get("preview_window_geometry", result["preview_window_geometry"])
+    )
     queue_output_dir = source.get("queue_output_dir", result["queue_output_dir"])
     if isinstance(queue_output_dir, str):
         result["queue_output_dir"] = queue_output_dir.strip()

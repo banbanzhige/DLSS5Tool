@@ -14,11 +14,13 @@ import updater
 from app_version import APP_VERSION
 from gui import (
     App, TimelineBar,
+    PREVIEW_BACKGROUND_TICK_MS, PREVIEW_INTERACTION_IDLE_MS, PREVIEW_WORKER_POLL_MS,
     _ExportCancelled,
     _clamp_frame, _decode_plan, _first_image, _format_duration, _format_timecode,
     _fit_preview_size, _frame_ranges, _large_image_host_settings, _realtime_preview_size,
     _is_image_path, _is_video_path, _play_target_frame, _read_image_bgr,
-    _normalize_slider_input, _preview_viewport, _write_image_bgr, compose_preview_frame,
+    _clamp_window_geometry, _normalize_slider_input, _preview_viewport,
+    _preview_control_layout, _write_image_bgr, compose_preview_frame,
     effective_skin_settings, effective_slider,
 )
 from preview_audio import frame_to_ms, ms_to_frame
@@ -48,6 +50,28 @@ class PlayerHelperTests(unittest.TestCase):
         self.assertEqual(_format_timecode(12, 24), "0:00.50")
         self.assertEqual(_format_timecode(24, 24), "0:01.00")
         self.assertEqual(_format_timecode(24 * 60, 24), "1:00.00")
+
+    def test_detached_window_geometry_stays_on_virtual_desktop(self):
+        bounds = (-1920, 0, 3840, 1080)
+        self.assertEqual(
+            _clamp_window_geometry("1100x700-1800+900", bounds),
+            "1100x700-1800+380",
+        )
+        self.assertEqual(
+            _clamp_window_geometry("bad", (0, 0, 1920, 1080)),
+            "1100x700+48+48",
+        )
+        self.assertEqual(
+            _clamp_window_geometry("100x100+0+0", (0, 0, 1920, 1080)),
+            "320x240+0+0",
+        )
+
+    def test_preview_controls_wrap_at_narrow_widths(self):
+        self.assertEqual(_preview_control_layout(900), "wide")
+        self.assertEqual(_preview_control_layout(805), "wide")
+        self.assertEqual(_preview_control_layout(804), "stacked")
+        self.assertEqual(_preview_control_layout(420), "stacked")
+        self.assertEqual(_preview_control_layout(419), "compact")
 
     def test_play_target_skips_ahead_and_stops_at_last(self):
         self.assertEqual(_play_target_frame(0, 0, 24, 242), 0)
@@ -249,6 +273,8 @@ class SettingsPanelPersistenceTests(unittest.TestCase):
             "ui_preview_open": True,
             "ui_export_open": True,
             "ui_host_open": True,
+            "preview_detached": False,
+            "preview_window_geometry": "",
         }
         for name, value in expected.items():
             self.assertEqual(defaults[name], value, name)
@@ -257,16 +283,32 @@ class SettingsPanelPersistenceTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             path = os.path.join(tmp, "dlss5_settings.json")
             saved = app_settings.save(
-                {"ui_export_open": True, "ui_host_open": 1, "preview_view": "DLSS"},
+                {
+                    "ui_export_open": True,
+                    "ui_host_open": 1,
+                    "preview_view": "DLSS",
+                    "preview_detached": True,
+                    "preview_window_geometry": "1280x720-1200+80",
+                },
                 path=path,
             )
             self.assertTrue(saved["ui_export_open"])
             self.assertTrue(saved["ui_host_open"])
+            self.assertTrue(saved["preview_detached"])
+            self.assertEqual(saved["preview_window_geometry"], "1280x720-1200+80")
             loaded = app_settings.load(path)
             self.assertTrue(loaded["ui_export_open"])
             self.assertTrue(loaded["ui_host_open"])
             self.assertEqual(loaded["preview_view"], "DLSS")
+            self.assertTrue(loaded["preview_detached"])
+            self.assertEqual(loaded["preview_window_geometry"], "1280x720-1200+80")
             self.assertTrue(app_settings.validate({})["ui_preview_open"])
+            self.assertEqual(
+                app_settings.validate({"preview_window_geometry": "off screen"})[
+                    "preview_window_geometry"
+                ],
+                "",
+            )
 
     def test_preview_cache_settings_roundtrip(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -528,7 +570,293 @@ class PreviewCacheTests(unittest.TestCase):
 
 
 class PreviewQueueTests(unittest.TestCase):
-    def test_scrub_delay_triggers_precise_preview_and_paused_prerender(self):
+    def test_interaction_freeze_invalidates_cache_without_joining_worker(self):
+        app = App.__new__(App)
+        cancelled = []
+
+        class NoJoinThread:
+            def join(self, *_args, **_kwargs):
+                raise AssertionError("interaction freeze must not join the worker")
+
+        app._cancel_after = cancelled.append
+        app._pre_rendering = True
+        app._preview_cache_frozen = False
+        app._prefetch_stop = threading.Event()
+        app._prefetch_gen = 4
+        app._preview_frame_queue = object()
+        app._cache_lock = threading.RLock()
+        app._queued_preview_frames = {1, 2, 3}
+        app._play_dlss_thread = NoJoinThread()
+
+        app._freeze_preview_cache(resume_ms=None)
+
+        self.assertTrue(app._preview_cache_frozen)
+        self.assertTrue(app._prefetch_stop.is_set())
+        self.assertEqual(app._prefetch_gen, 5)
+        self.assertIsNone(app._preview_frame_queue)
+        self.assertEqual(app._queued_preview_frames, set())
+        self.assertIn("_preview_decode_after", cancelled)
+        self.assertIn("_scrub_after", cancelled)
+        self.assertIn("_preview_cache_resume_after", cancelled)
+
+    def test_idle_freeze_does_not_resume_a_held_interaction(self):
+        app = App.__new__(App)
+        scheduled = []
+
+        class FakeRoot:
+            def after(self, delay, callback):
+                scheduled.append(delay)
+                return "resume-id"
+
+        def cancel(name):
+            if name == "_preview_cache_resume_after":
+                app._preview_cache_resume_after = None
+
+        app.root = FakeRoot()
+        app._cancel_after = cancel
+        app._pre_rendering = False
+        app._prefetch_stop = threading.Event()
+        app._prefetch_gen = 1
+        app._preview_frame_queue = None
+        app._cache_lock = threading.RLock()
+        app._queued_preview_frames = set()
+        app._preview_cache_frozen = False
+        app._preview_cache_resume_after = None
+        app._play_dlss_thread = None
+        app._exporting = False
+        app.video = "video.mp4"
+
+        app._freeze_preview_cache(resume_ms=None)
+        app._freeze_preview_cache()
+        self.assertEqual(scheduled, [])
+        self.assertTrue(app._preview_cache_frozen)
+        app._schedule_preview_cache_resume()
+        self.assertEqual(scheduled, [PREVIEW_INTERACTION_IDLE_MS])
+
+    def test_full_preview_stays_idle_while_cache_is_frozen(self):
+        app = App.__new__(App)
+        events = []
+
+        class FakeRoot:
+            def after(self, delay, callback):
+                events.append(("after", delay))
+                return "after-id"
+
+        app.root = FakeRoot()
+        app._scrub_after = None
+        app._preview_cache_frozen = True
+        app._cancel_after = lambda name: events.append(("cancel", name))
+        app._schedule_preview_cache_resume = lambda *a, **k: events.append("resume")
+        app._preview_scrub_ms = lambda: 75
+
+        app._schedule_full_preview()
+        self.assertEqual(events, [("cancel", "_scrub_after")])
+
+    def test_timeline_seek_keeps_cache_frozen_until_release(self):
+        app = App.__new__(App)
+        events = []
+        app.video = "video.mp4"
+        app._exporting = False
+        app.playing = False
+        app._focus_preview_host = lambda: None
+        app.pause = lambda: events.append("pause")
+        app._freeze_preview_cache = (
+            lambda resume_ms=PREVIEW_INTERACTION_IDLE_MS: events.append(("freeze", resume_ms))
+        )
+        app._goto_frame = (
+            lambda frame, quality="full": events.append(("goto", frame, quality))
+        )
+        app._schedule_preview_cache_resume = (
+            lambda delay=PREVIEW_INTERACTION_IDLE_MS: events.append(("resume", delay))
+        )
+
+        for detached in (False, True):
+            events.clear()
+            app._preview_detached = detached
+            app._on_timeline_seek(8, "start")
+            app._on_timeline_seek(12, "move")
+            app._on_timeline_seek(15, "end")
+            self.assertEqual(
+                events,
+                [
+                    ("freeze", None),
+                    ("goto", 8, "fast"),
+                    ("freeze", None),
+                    ("goto", 12, "fast"),
+                    ("goto", 15, "fast"),
+                    ("resume", PREVIEW_INTERACTION_IDLE_MS),
+                ],
+                msg=f"detached={detached}",
+            )
+
+    def test_canvas_configure_only_freezes_the_active_pane(self):
+        app = App.__new__(App)
+        frozen = []
+        scheduled = []
+        docked = object()
+        detached = object()
+        app.canvas = docked
+        app.video = "video.mp4"
+        app.playing = False
+        app._resize_after = None
+        app._freeze_preview_cache = lambda *a, **k: frozen.append("freeze")
+        app._cancel_after = lambda name: scheduled.append(("cancel", name))
+
+        class FakeRoot:
+            def after(self, delay, callback):
+                scheduled.append(("after", delay, callback))
+                return "resize-id"
+
+        app.root = FakeRoot()
+        app._on_canvas_configure(type("Event", (), {"widget": detached})())
+        self.assertEqual(frozen, [])
+        self.assertEqual(scheduled, [])
+        app._on_canvas_configure(type("Event", (), {"widget": docked})())
+        self.assertEqual(frozen, ["freeze"])
+        self.assertEqual(scheduled[0], ("cancel", "_resize_after"))
+        self.assertEqual(scheduled[1][0], "after")
+        self.assertEqual(scheduled[1][2], app._apply_canvas_resize)
+
+    def test_resume_waits_for_live_worker_without_joining(self):
+        app = App.__new__(App)
+        scheduled = []
+        joined = []
+
+        class FakeRoot:
+            def after(self, delay, callback):
+                scheduled.append((delay, callback))
+                return "resume-id"
+
+        class LiveThread:
+            def is_alive(self):
+                return True
+
+            def join(self, *_args, **_kwargs):
+                joined.append(True)
+
+        app.root = FakeRoot()
+        app._preview_cache_resume_after = None
+        app._play_dlss_thread = LiveThread()
+        app._play_dlss_busy = True
+        app._preview_cache_frozen = True
+        app.video = "video.mp4"
+        app._exporting = False
+
+        app._resume_preview_cache()
+        self.assertEqual(joined, [])
+        self.assertTrue(app._preview_cache_frozen)
+        self.assertIs(app._play_dlss_thread.__class__, LiveThread)
+        self.assertEqual(scheduled[-1][0], PREVIEW_WORKER_POLL_MS)
+        self.assertEqual(scheduled[-1][1], app._resume_preview_cache)
+
+    def test_resume_closes_live_after_worker_exits_when_source_cleared(self):
+        app = App.__new__(App)
+        closed = []
+
+        class DeadThread:
+            def is_alive(self):
+                return False
+
+        app._preview_cache_resume_after = "resume-id"
+        app._play_dlss_thread = DeadThread()
+        app._play_dlss_busy = True
+        app._preview_cache_frozen = True
+        app.video = None
+        app._exporting = False
+        app._close_live = lambda: closed.append("live")
+
+        app._resume_preview_cache()
+        self.assertEqual(closed, ["live"])
+        self.assertFalse(app._preview_cache_frozen)
+        self.assertIsNone(app._play_dlss_thread)
+        self.assertFalse(app._play_dlss_busy)
+
+    def test_begin_source_load_freezes_without_joining_worker(self):
+        app = App.__new__(App)
+        events = []
+
+        class NoJoinThread:
+            def is_alive(self):
+                return True
+
+            def join(self, *_args, **_kwargs):
+                raise AssertionError("source load must not join the worker")
+
+        app.pause = lambda: events.append("pause")
+        app._freeze_preview_cache = (
+            lambda resume_ms=PREVIEW_INTERACTION_IDLE_MS: events.append(("freeze", resume_ms))
+        )
+        app._audio = type("Audio", (), {"close": lambda self: events.append("audio")})()
+        app._cache_clear = lambda: events.append("clear")
+        app._cancel_after = lambda name: events.append(("cancel", name))
+        app._update_zoom_controls = lambda: None
+        app.timeline = type("Bar", (), {"set_cache_ranges": lambda self, *_a: None})()
+        app._play_dlss_thread = NoJoinThread()
+        app._cap = None
+
+        app._begin_source_load()
+        self.assertEqual(events[0], "pause")
+        self.assertIn(("freeze", None), events)
+        self.assertNotIn("join", events)
+        self.assertIsNone(app.video)
+
+    def test_canvas_pan_click_resumes_cache_in_compare_view(self):
+        app = App.__new__(App)
+        events = []
+        app._drag_split = False
+        app._canvas_press = ("pan", 0, 0, 0.5, 0.5, 1.0, (8, 4))
+        app._pan_moved = False
+        app.video = "video.mp4"
+        app._exporting = False
+        app.playing = False
+        app.view_var = type("FakeVar", (), {"get": lambda _self: "对比"})()
+        app._update_split_from_event = lambda _event: events.append("split")
+        app.toggle_play = lambda: events.append("play")
+        app._schedule_preview_cache_resume = lambda *a, **k: events.append("resume")
+        app.on_canvas_hover = lambda _event: events.append("hover")
+
+        app.on_canvas_release(type("Event", (), {"x": 0, "y": 0})())
+        self.assertEqual(events, ["split", "resume", "hover"])
+        self.assertIsNone(app._canvas_press)
+
+    def test_preview_timeline_status_skips_work_while_frozen(self):
+        app = App.__new__(App)
+        app.video = "video.mp4"
+        app.view_var = type("FakeVar", (), {"get": lambda _self: "DLSS"})()
+        app._preview_cache_frozen = True
+        app._preview_status_at = 0.0
+        app.timeline = type(
+            "Bar",
+            (),
+            {"set_cache_ranges": lambda *a, **k: self.fail("frozen status must not scan cache")},
+        )()
+        app._update_preview_timeline_and_status()
+
+    def test_paused_background_decode_yields_between_frames(self):
+        app = App.__new__(App)
+        scheduled = []
+
+        class FakeRoot:
+            def after(self, delay, callback):
+                scheduled.append((delay, callback))
+                return "decode-id"
+
+        app.root = FakeRoot()
+        app._preview_decode_after = None
+        app._cancel_after = lambda _name: None
+        app._preview_session_active = lambda: True
+        app._preview_decode_tick = lambda: None
+        app._pre_rendering = True
+        app.playing = False
+
+        app._schedule_preview_decode(0)
+        self.assertEqual(scheduled[-1][0], PREVIEW_BACKGROUND_TICK_MS)
+
+        app.playing = True
+        app._schedule_preview_decode(1)
+        self.assertEqual(scheduled[-1][0], 1)
+
+    def test_scrub_delay_queues_exact_preview_without_blocking_ui(self):
         app = App.__new__(App)
         callbacks = []
         events = []
@@ -545,8 +873,17 @@ class PreviewQueueTests(unittest.TestCase):
         app.playing = False
         app.video = "video.mp4"
         app._exporting = False
+        app._source_kind = "video"
+        app._hold_original = False
+        app._frame = 12
+        app.view_var = type("FakeVar", (), {"get": lambda _self: "DLSS"})()
+        app._precise_preview_size = lambda: (1920, 1080)
+        app._cached_dlss = lambda frame, size: None
+        app.display_view = lambda quality="full": events.append(("display", quality))
         app._display_precise_preview = lambda: events.append(("precise", None))
-        app._start_paused_prerender = lambda: events.append(("prerender", None)) or True
+        app._start_paused_prerender = (
+            lambda target_size=None: events.append(("prerender", target_size)) or True
+        )
         app._update_preview_timeline_and_status = (
             lambda force=False: events.append(("status", force))
         )
@@ -559,8 +896,8 @@ class PreviewQueueTests(unittest.TestCase):
             events,
             [
                 ("cancel", "_scrub_after"),
-                ("precise", None),
-                ("prerender", None),
+                ("display", "fast"),
+                ("prerender", (1920, 1080)),
                 ("status", True),
             ],
         )
@@ -747,6 +1084,7 @@ class WidgetSmokeTests(unittest.TestCase):
                         "_settings_save_after", "_live_debounce",
                         "_output_preview_after", "_scrub_after", "_resize_after",
                         "_play_after", "_preview_decode_after",
+                        "_preview_cache_resume_after",
                     ):
                         app._cancel_after(name)
                     app._prefetch_stop.set()
@@ -779,9 +1117,44 @@ class WidgetSmokeTests(unittest.TestCase):
                 self.assertEqual(app._frame, 0)
                 self.assertFalse(app._fullscreen)
                 self.assertEqual(str(app.fs_btn.cget("text")), "全屏")
+                self.assertEqual(str(app.detach_btn.cget("text")), "分离预览")
                 self.assertEqual(str(app.zoom_reset_btn.cget("text")), "适应")
                 self.assertTrue(app.zoom_in_btn.instate(["disabled"]))
                 self.assertTrue(app.zoom_out_btn.instate(["disabled"]))
+                docked_canvas = app.canvas
+                docked_timeline = app.timeline
+                self.assertFalse(app._preview_detached)
+                self.assertIs(app.canvas, app._docked_preview_pane["canvas"])
+                self.assertEqual(app.timeline.on_seek, app._on_timeline_seek)
+                app.timeline.set_range(0, 20)
+                app.timeline.set(7)
+                app.timeline.set_cache_ranges([(1, 4)], [(5, 8)])
+                app.detach_preview()
+                root.update_idletasks()
+                self.assertTrue(app._preview_detached)
+                self.assertIsNotNone(app._detached_preview_window)
+                self.assertIsNot(app.canvas, docked_canvas)
+                self.assertIs(app.canvas.winfo_toplevel(), app._detached_preview_window)
+                self.assertIs(app.canvas, app._detached_preview_pane["canvas"])
+                self.assertEqual(app.timeline.on_seek, app._on_timeline_seek)
+                self.assertEqual(str(app.detach_btn.cget("text")), "停靠主窗")
+                self.assertEqual(app.timeline.get(), 7)
+                self.assertEqual(app.timeline._rendered_ranges, [(1, 4)])
+                detached_settings = app._collect_persisted_settings()
+                self.assertTrue(detached_settings["preview_detached"])
+                self.assertRegex(
+                    detached_settings["preview_window_geometry"],
+                    r"^\d+x\d+[+-]\d+[+-]\d+$",
+                )
+                app.dock_preview()
+                root.update_idletasks()
+                self.assertFalse(app._preview_detached)
+                self.assertIsNone(app._detached_preview_window)
+                self.assertIs(app.canvas, docked_canvas)
+                self.assertIs(app.timeline, docked_timeline)
+                self.assertEqual(app.timeline.get(), 7)
+                self.assertEqual(str(app.detach_btn.cget("text")), "分离预览")
+                self.assertFalse(app._collect_persisted_settings()["preview_detached"])
                 self.assertTrue(hasattr(app, "import_btn"))
                 self.assertTrue(hasattr(app, "clear_btn"))
                 self.assertTrue(hasattr(app, "cancel_export_btn"))

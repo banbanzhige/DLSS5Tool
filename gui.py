@@ -14,6 +14,7 @@ import math
 import os
 import multiprocessing
 import queue
+import re
 import sys
 import threading
 import time
@@ -118,6 +119,9 @@ PREVIEW_QUALITY_NAMES = {value: name for name, value in PREVIEW_QUALITY_CHOICES.
 PREVIEW_MAX_EDGES = {"1080p": 1920, "1440p": 2560}
 PREVIEW_QUEUE_SIZE = 3
 PREVIEW_BUFFER_SECONDS = 1.0
+PREVIEW_BACKGROUND_TICK_MS = 16
+PREVIEW_INTERACTION_IDLE_MS = 180
+PREVIEW_WORKER_POLL_MS = 20
 LARGE_IMAGE_TILE_THRESHOLD_PIXELS = 45_000_000
 LARGE_IMAGE_TILE_WIDTH = 6000
 LARGE_IMAGE_TILE_HEIGHT = 3000
@@ -180,6 +184,10 @@ _SPACE_PASSTHROUGH = _INPUT_WIDGETS | {
     "Button", "TButton", "Checkbutton", "TCheckbutton",
     "Radiobutton", "TRadiobutton",
 }
+
+_WINDOW_GEOMETRY_RE = re.compile(
+    r"^(?P<width>\d+)x(?P<height>\d+)(?P<x>[+-]\d+)(?P<y>[+-]\d+)$"
+)
 _FRAME_STREAM_END = object()
 
 
@@ -203,6 +211,59 @@ def _format_timecode(frame, fps):
     minutes = int(total // 60)
     seconds = total - minutes * 60
     return f"{minutes}:{seconds:05.2f}"
+
+
+def _virtual_screen_bounds(root=None):
+    """Return the usable virtual desktop rectangle, including secondary displays."""
+    if sys.platform == "win32":
+        try:
+            user32 = ctypes.windll.user32
+            x = int(user32.GetSystemMetrics(76))  # SM_XVIRTUALSCREEN
+            y = int(user32.GetSystemMetrics(77))  # SM_YVIRTUALSCREEN
+            width = int(user32.GetSystemMetrics(78))  # SM_CXVIRTUALSCREEN
+            height = int(user32.GetSystemMetrics(79))  # SM_CYVIRTUALSCREEN
+            if width > 0 and height > 0:
+                return x, y, width, height
+        except Exception:
+            pass
+    if root is not None:
+        try:
+            return (
+                int(root.winfo_vrootx()), int(root.winfo_vrooty()),
+                int(root.winfo_vrootwidth()), int(root.winfo_vrootheight()),
+            )
+        except Exception:
+            pass
+    return 0, 0, 1920, 1080
+
+
+def _clamp_window_geometry(value, bounds, fallback=(1100, 700, 48, 48)):
+    """Clamp a saved Tk geometry so a detached preview remains fully reachable."""
+    bx, by, bw, bh = map(int, bounds)
+    fw, fh, fx, fy = map(int, fallback)
+    match = _WINDOW_GEOMETRY_RE.fullmatch(str(value or "").strip())
+    if match:
+        width = int(match.group("width"))
+        height = int(match.group("height"))
+        x = int(match.group("x"))
+        y = int(match.group("y"))
+    else:
+        width, height, x, y = fw, fh, fx, fy
+    width = min(max(width, 320), max(bw, 1))
+    height = min(max(height, 240), max(bh, 1))
+    x = max(bx, min(x, bx + max(bw - width, 0)))
+    y = max(by, min(y, by + max(bh - height, 0)))
+    return f"{width}x{height}{x:+d}{y:+d}"
+
+
+def _preview_control_layout(width):
+    """Choose a player-toolbar layout that never dictates a wide preview window."""
+    width = max(int(width), 0)
+    if width >= 805:
+        return "wide"
+    if width >= 420:
+        return "stacked"
+    return "compact"
 
 
 def _play_target_frame(start_frame, elapsed, fps, last):
@@ -760,6 +821,8 @@ class App:
         self._resize_after = None
         self._play_after = None
         self._preview_decode_after = None
+        self._preview_cache_resume_after = None
+        self._preview_cache_frozen = False
         self._preview_zoom = 1.0
         self._preview_pan_x = 0.5
         self._preview_pan_y = 0.5
@@ -818,6 +881,15 @@ class App:
         self._fullscreen = False
         self._fs_hidden = []
         self._fs_geom = None
+        self._fs_window = None
+        self._fs_used_zoomed = False
+        self._preview_detached = False
+        self._detached_preview_window = None
+        self._detached_preview_pane = None
+        self._detached_preview_placeholder = None
+        self._detached_preview_geometry = self._saved_settings.get(
+            "preview_window_geometry", ""
+        )
         self._queue_jobs = export_queue_state.load()
         self._queue_running = False
         self._queue_pause_requested = False
@@ -825,85 +897,11 @@ class App:
         self._queue_last_summary = None
         self.view_var = tk.StringVar(value=self._saved_settings["preview_view"])
 
-        # ---- preview canvas ----
-        self.canvas = tk.Canvas(root, bg=CANVAS_BG, highlightthickness=0)
-        self.canvas.pack(fill="both", expand=True, padx=8, pady=(8, 4))
-        self.canvas.bind("<Configure>", self._on_canvas_configure)
-        self.canvas.bind("<Button-1>", self.on_canvas_press)
-        self.canvas.bind("<B1-Motion>", self.on_canvas_drag)
-        self.canvas.bind("<ButtonRelease-1>", self.on_canvas_release)
-        self.canvas.bind("<Motion>", self.on_canvas_hover)
-        self.canvas.bind("<Double-Button-1>", self.on_canvas_double)
-        self.canvas.bind("<Leave>", lambda e: self.canvas.config(cursor=""))
-        self.canvas.bind("<MouseWheel>", self._on_canvas_wheel)
-
-        # ---- transport: timeline + playback chrome ----
-        transport = ttk.Frame(root)
-        self.transport = transport
-        transport.pack(fill="x", padx=8, pady=(0, 4))
-        self.timeline = TimelineBar(transport)
-        self.timeline.pack(fill="x", pady=(0, 4))
-        self.timeline.on_seek = self._on_timeline_seek
-        self.timeline.bind("<MouseWheel>", self._on_wheel_step)
-        Tooltip(self.timeline, "浅青：当前设置下已渲染；灰青：已解码并等待渲染。")
-
-        ctrl = ttk.Frame(transport)
-        ctrl.pack(fill="x")
-        self.prev_btn = ttk.Button(ctrl, text="⟨", width=3, command=lambda: self.step_frame(-1))
-        self.prev_btn.pack(side="left")
-        Tooltip(self.prev_btn, "上一帧（←）")
-        self.play_btn = ttk.Button(ctrl, text="▶ 播放", width=8, command=self.toggle_play)
-        self.play_btn.pack(side="left", padx=(4, 0))
-        Tooltip(self.play_btn, "播放 / 暂停（空格）。播完停在最后一帧。")
-        self.next_btn = ttk.Button(ctrl, text="⟩", width=3, command=lambda: self.step_frame(1))
-        self.next_btn.pack(side="left", padx=(4, 0))
-        Tooltip(self.next_btn, "下一帧（→）")
-        self.mute_btn = ttk.Button(ctrl, text="音", width=3, command=self.toggle_mute)
-        self.mute_btn.pack(side="left", padx=(4, 0))
-        Tooltip(self.mute_btn, "预览播放原视频声音。点击静音/取消静音。")
-
-        self.time_label = ttk.Label(ctrl, text="0:00.00 / 0:00.00", width=18, anchor="w")
-        self.time_label.pack(side="left", padx=(10, 6))
-        ttk.Label(ctrl, text="帧").pack(side="left")
-        self.fentry = tk.Entry(ctrl, width=6)
-        self.fentry.pack(side="left", padx=3)
-        self.fentry.insert(0, "0")
-        self.fentry.bind("<Return>", self.on_frame_entry)
-        self.fentry.bind("<FocusOut>", lambda e: self.sync_frame_entry())
-        self.ftotal = ttk.Label(ctrl, text="/ 0")
-        self.ftotal.pack(side="left")
-
-        self.fs_btn = ttk.Button(ctrl, text="全屏", width=6, command=self.toggle_fullscreen)
-        self.fs_btn.pack(side="right")
-        Tooltip(self.fs_btn, "全屏预览（F11 或双击画面，Esc 退出）")
-        zoom_bar = ttk.Frame(ctrl)
-        zoom_bar.pack(side="right", padx=(0, 8))
-        self.zoom_out_btn = ttk.Button(
-            zoom_bar, text="−", width=3, command=lambda: self._step_zoom(-1),
-        )
-        self.zoom_out_btn.pack(side="left")
-        self.zoom_reset_btn = ttk.Button(
-            zoom_bar, text="适应", width=7, command=self.reset_preview_zoom,
-        )
-        self.zoom_reset_btn.pack(side="left", padx=2)
-        self.zoom_in_btn = ttk.Button(
-            zoom_bar, text="+", width=3, command=lambda: self._step_zoom(1),
-        )
-        self.zoom_in_btn.pack(side="left")
-        Tooltip(self.zoom_out_btn, "缩小预览（-）")
-        Tooltip(self.zoom_reset_btn, "恢复适应窗口（0）")
-        Tooltip(self.zoom_in_btn, "放大预览（+）")
-        view_bar = ttk.Frame(ctrl)
-        view_bar.pack(side="right", padx=(0, 8))
-        for name in VIEWS:
-            ttk.Radiobutton(
-                view_bar, text=name, value=name, variable=self.view_var,
-                style="Toolbutton", command=self.on_view_change,
-            ).pack(side="left", padx=1)
-        Tooltip(
-            view_bar,
-            "1 原图  ·  2 DLSS  ·  3 对比。滚轮缩放；放大后拖动画面；对比模式拖动分界线；按住 Alt 查看纯原图。",
-        )
+        # ---- preview canvas + transport ----
+        # A detached preview gets its own widgets, but these active references keep
+        # playback, cache, zoom, and comparison state single-sourced on App.
+        self._docked_preview_pane = self._create_preview_pane(root, detached=False)
+        self._activate_preview_pane(self._docked_preview_pane)
 
         # ---- preview/settings and batch queue tabs ----
         self.workspace_tabs = ttk.Notebook(root)
@@ -1042,6 +1040,8 @@ class App:
         self._refresh_queue_tree()
         self._save_queue_state()
         self.root.after_idle(self._draw_empty)
+        if self._saved_settings.get("preview_detached", False):
+            self.root.after_idle(self.detach_preview)
         if getattr(sys, "frozen", False) and not os.environ.get(
             "DLSS5TOOL_DISABLE_UPDATE_CHECK"
         ):
@@ -1049,6 +1049,404 @@ class App:
             # Up-to-date, newer local builds, and network failures stay silent.
             self.check_for_updates(manual=False)
         root.minsize(880, 680)
+
+    def _create_preview_pane(self, parent, detached=False):
+        """Build one visual player surface backed by the shared App state."""
+        canvas = tk.Canvas(parent, bg=CANVAS_BG, highlightthickness=0)
+        canvas.pack(fill="both", expand=True, padx=8, pady=(8, 4))
+        canvas.bind("<Configure>", self._on_canvas_configure)
+        canvas.bind("<Button-1>", self.on_canvas_press)
+        canvas.bind("<B1-Motion>", self.on_canvas_drag)
+        canvas.bind("<ButtonRelease-1>", self.on_canvas_release)
+        canvas.bind("<Motion>", self.on_canvas_hover)
+        canvas.bind("<Double-Button-1>", self.on_canvas_double)
+        canvas.bind("<Leave>", lambda _event, widget=canvas: widget.config(cursor=""))
+        canvas.bind("<MouseWheel>", self._on_canvas_wheel)
+
+        transport = ttk.Frame(parent)
+        transport.pack(fill="x", padx=8, pady=(0, 6 if detached else 4))
+        timeline = TimelineBar(transport)
+        timeline.pack(fill="x", pady=(0, 4))
+        timeline.on_seek = self._on_timeline_seek
+        timeline.bind("<MouseWheel>", self._on_wheel_step)
+        Tooltip(timeline, "浅青：当前设置下已渲染；灰青：已解码并等待渲染。")
+
+        ctrl = ttk.Frame(transport)
+        ctrl.pack(fill="x")
+        left = ttk.Frame(ctrl)
+        left.pack(side="left")
+        playback_bar = ttk.Frame(left)
+        playback_bar.pack(side="left")
+        prev_btn = ttk.Button(
+            playback_bar, text="⟨", width=3, command=lambda: self.step_frame(-1),
+        )
+        prev_btn.pack(side="left")
+        Tooltip(prev_btn, "上一帧（←）")
+        play_btn = ttk.Button(
+            playback_bar, text="▶ 播放", width=8, command=self.toggle_play,
+        )
+        play_btn.pack(side="left", padx=(4, 0))
+        Tooltip(play_btn, "播放 / 暂停（空格）。播完停在最后一帧。")
+        next_btn = ttk.Button(
+            playback_bar, text="⟩", width=3, command=lambda: self.step_frame(1),
+        )
+        next_btn.pack(side="left", padx=(4, 0))
+        Tooltip(next_btn, "下一帧（→）")
+        mute_btn = ttk.Button(
+            playback_bar, text="音", width=3, command=self.toggle_mute,
+        )
+        mute_btn.pack(side="left", padx=(4, 0))
+        Tooltip(mute_btn, "预览播放原视频声音。点击静音/取消静音。")
+
+        position_bar = ttk.Frame(left)
+        position_bar.pack(side="left")
+        time_label = ttk.Label(
+            position_bar, text="0:00.00 / 0:00.00", width=18, anchor="w",
+        )
+        time_label.pack(side="left", padx=(10, 6))
+        ttk.Label(position_bar, text="帧").pack(side="left")
+        fentry = tk.Entry(position_bar, width=6)
+        fentry.pack(side="left", padx=3)
+        fentry.insert(0, "0")
+        fentry.bind("<Return>", self.on_frame_entry)
+        fentry.bind("<FocusOut>", lambda _event: self.sync_frame_entry())
+        ftotal = ttk.Label(position_bar, text="/ 0")
+        ftotal.pack(side="left")
+
+        right = ttk.Frame(ctrl)
+        right.pack(side="right")
+        view_bar = ttk.Frame(right)
+        view_bar.pack(side="left", padx=(0, 8))
+        for name in VIEWS:
+            ttk.Radiobutton(
+                view_bar, text=name, value=name, variable=self.view_var,
+                style="Toolbutton", command=self.on_view_change,
+            ).pack(side="left", padx=1)
+        Tooltip(
+            view_bar,
+            "1 原图  ·  2 DLSS  ·  3 对比。滚轮缩放；放大后拖动画面；"
+            "对比模式拖动分界线；按住 Alt 查看纯原图。",
+        )
+        zoom_bar = ttk.Frame(right)
+        zoom_bar.pack(side="left", padx=(0, 8))
+        zoom_out_btn = ttk.Button(
+            zoom_bar, text="−", width=3, command=lambda: self._step_zoom(-1),
+        )
+        zoom_out_btn.pack(side="left")
+        zoom_reset_btn = ttk.Button(
+            zoom_bar, text="适应", width=7, command=self.reset_preview_zoom,
+        )
+        zoom_reset_btn.pack(side="left", padx=2)
+        zoom_in_btn = ttk.Button(
+            zoom_bar, text="+", width=3, command=lambda: self._step_zoom(1),
+        )
+        zoom_in_btn.pack(side="left")
+        Tooltip(zoom_out_btn, "缩小预览（-）")
+        Tooltip(zoom_reset_btn, "恢复适应窗口（0）")
+        Tooltip(zoom_in_btn, "放大预览（+）")
+        detach_btn = ttk.Button(
+            right,
+            text="停靠主窗" if detached else "分离预览",
+            width=8,
+            command=self.toggle_detached_preview,
+        )
+        detach_btn.pack(side="left", padx=(0, 4))
+        Tooltip(
+            detach_btn,
+            "将预览停靠回主窗口" if detached else "在可自由缩放的独立窗口中预览",
+        )
+        fs_btn = ttk.Button(right, text="全屏", width=6, command=self.toggle_fullscreen)
+        fs_btn.pack(side="left")
+        Tooltip(fs_btn, "全屏预览（F11 或双击画面，Esc 退出）")
+
+        layout_state = {"mode": "wide"}
+        ctrl.bind(
+            "<Configure>",
+            lambda event: self._layout_preview_controls(
+                event.width,
+                left, right,
+                playback_bar, position_bar,
+                view_bar, zoom_bar, detach_btn, fs_btn,
+                layout_state,
+            ),
+            add="+",
+        )
+
+        return {
+            "canvas": canvas,
+            "transport": transport,
+            "timeline": timeline,
+            "prev_btn": prev_btn,
+            "play_btn": play_btn,
+            "next_btn": next_btn,
+            "mute_btn": mute_btn,
+            "time_label": time_label,
+            "fentry": fentry,
+            "ftotal": ftotal,
+            "zoom_out_btn": zoom_out_btn,
+            "zoom_reset_btn": zoom_reset_btn,
+            "zoom_in_btn": zoom_in_btn,
+            "detach_btn": detach_btn,
+            "fs_btn": fs_btn,
+        }
+
+    @staticmethod
+    def _layout_preview_controls(
+        width,
+        left, right,
+        playback_bar, position_bar,
+        view_bar, zoom_bar, detach_btn, fs_btn,
+        state,
+    ):
+        mode = _preview_control_layout(width)
+        if state.get("mode") == mode:
+            return
+        state["mode"] = mode
+        for widget in (
+            left, right,
+            playback_bar, position_bar,
+            view_bar, zoom_bar, detach_btn, fs_btn,
+        ):
+            widget.pack_forget()
+
+        if mode == "wide":
+            left.pack(side="left")
+            right.pack(side="right")
+        else:
+            left.pack(side="top", fill="x", anchor="w")
+            right.pack(side="top", fill="x", anchor="w", pady=(4, 0))
+
+        if mode == "compact":
+            playback_bar.pack(side="top", anchor="w")
+            position_bar.pack(side="top", anchor="w", pady=(3, 0))
+            view_bar.pack(side="top", anchor="w", pady=(0, 3))
+        else:
+            playback_bar.pack(side="left")
+            position_bar.pack(side="left")
+            view_bar.pack(side="left", padx=(0, 8))
+
+        zoom_bar.pack(side="left", padx=(0, 8))
+        detach_btn.pack(side="left", padx=(0, 4))
+        fs_btn.pack(side="left")
+
+    def _activate_preview_pane(self, pane):
+        for name, widget in pane.items():
+            setattr(self, name, widget)
+
+    @staticmethod
+    def _timeline_snapshot(timeline):
+        return {
+            "minimum": timeline._min,
+            "maximum": timeline._max,
+            "value": timeline.get(),
+            "rendered": list(timeline._rendered_ranges),
+            "queued": list(timeline._queued_ranges),
+        }
+
+    def _sync_preview_chrome(self, timeline_state):
+        self.timeline.set_range(timeline_state["minimum"], timeline_state["maximum"])
+        self.timeline.set_cache_ranges(
+            timeline_state["rendered"], timeline_state["queued"],
+        )
+        self.timeline.set(timeline_state["value"])
+        self._sync_transport_labels()
+        self._set_play_btn(self.playing)
+        try:
+            self.mute_btn.config(text="静" if self._audio.muted else "音")
+        except Exception:
+            pass
+        self._update_zoom_controls()
+        self._set_detach_btn(self._preview_detached)
+        self._set_fs_btn(self._fullscreen)
+
+    def _set_detach_btn(self, detached):
+        try:
+            self.detach_btn.config(text="停靠主窗" if detached else "分离预览")
+        except Exception:
+            pass
+
+    def _preview_host_window(self):
+        window = self._detached_preview_window
+        try:
+            if window is not None and window.winfo_exists():
+                return window
+        except Exception:
+            pass
+        return self.root
+
+    def _focus_preview_host(self):
+        target = self._preview_host_window()
+        try:
+            target.focus_set()
+        except Exception:
+            pass
+
+    def _sync_window_titles(self):
+        filename = os.path.basename(self.video) if self.video else None
+        main_suffix = filename or "实时预览 + 导出"
+        self.root.title(f"{APP_TITLE} — {main_suffix}")
+        window = self._detached_preview_window
+        if window is not None:
+            try:
+                preview_suffix = f"预览 — {filename}" if filename else "独立预览"
+                window.title(f"{APP_TITLE} — {preview_suffix}")
+            except Exception:
+                pass
+
+    def _detached_geometry_for_save(self):
+        if self._fullscreen and self._fs_window is self._detached_preview_window:
+            return self._fs_geom or self._detached_preview_geometry
+        window = self._detached_preview_window
+        if window is not None:
+            try:
+                return window.geometry()
+            except Exception:
+                pass
+        return self._detached_preview_geometry
+
+    def _detached_window_geometry(self):
+        try:
+            self.root.update_idletasks()
+            fallback = (
+                1100, 700,
+                self.root.winfo_rootx() + 40,
+                self.root.winfo_rooty() + 40,
+            )
+        except Exception:
+            fallback = (1100, 700, 48, 48)
+        return _clamp_window_geometry(
+            self._detached_preview_geometry,
+            _virtual_screen_bounds(self.root),
+            fallback=fallback,
+        )
+
+    def _show_detached_placeholder(self):
+        if self._detached_preview_placeholder is None:
+            placeholder = ttk.Frame(self.root, padding=(10, 6))
+            ttk.Label(
+                placeholder,
+                text="预览已在独立窗口中打开",
+            ).pack(side="left")
+            ttk.Button(
+                placeholder,
+                text="停靠回来",
+                command=self.dock_preview,
+            ).pack(side="left", padx=(10, 0))
+            self._detached_preview_placeholder = placeholder
+        self._detached_preview_placeholder.pack(
+            fill="x", padx=8, pady=(8, 4), before=self.workspace_tabs,
+        )
+
+    def _hide_detached_placeholder(self):
+        if self._detached_preview_placeholder is not None:
+            self._detached_preview_placeholder.pack_forget()
+
+    def _on_detached_configure(self, event=None):
+        window = self._detached_preview_window
+        if (
+            window is None or event is None or event.widget is not window
+            or self._fullscreen
+        ):
+            return
+        try:
+            self._detached_preview_geometry = window.geometry()
+        except Exception:
+            return
+        self._schedule_settings_save()
+
+    def _register_preview_drop_target(self, widget):
+        if DND_FILES is None:
+            return
+        try:
+            widget.drop_target_register(DND_FILES)
+            widget.dnd_bind("<<DropEnter>>", self._on_drop_enter)
+            widget.dnd_bind("<<DropLeave>>", self._on_drop_leave)
+            widget.dnd_bind("<<Drop>>", self._on_drop)
+        except Exception as ex:
+            self.logln("[拖拽] 独立预览注册失败，仍可点击导入: " + str(ex))
+
+    def toggle_detached_preview(self):
+        if self._detached_preview_window is None:
+            self.detach_preview()
+        else:
+            self.dock_preview()
+
+    def detach_preview(self):
+        window = self._detached_preview_window
+        if window is not None:
+            try:
+                window.deiconify()
+                window.lift()
+                window.focus_set()
+            except Exception:
+                pass
+            return
+        if self._fullscreen:
+            self._exit_fullscreen()
+        timeline_state = self._timeline_snapshot(self.timeline)
+        window = tk.Toplevel(self.root)
+        window.withdraw()
+        window.resizable(True, True)
+        bounds = _virtual_screen_bounds(self.root)
+        window.minsize(min(320, bounds[2]), min(240, bounds[3]))
+        window.geometry(self._detached_window_geometry())
+        window.protocol("WM_DELETE_WINDOW", self.dock_preview)
+        window.bind("<Configure>", self._on_detached_configure)
+        window.bind("<FocusOut>", self._on_root_focus_out)
+        pane = self._create_preview_pane(window, detached=True)
+
+        self._docked_preview_pane["canvas"].pack_forget()
+        self._docked_preview_pane["transport"].pack_forget()
+        self._detached_preview_window = window
+        self._detached_preview_pane = pane
+        self._preview_detached = True
+        self._activate_preview_pane(pane)
+        self._sync_preview_chrome(timeline_state)
+        self._show_detached_placeholder()
+        self._register_preview_drop_target(self.canvas)
+        self._sync_window_titles()
+        self._schedule_settings_save()
+
+        try:
+            if self.root.state() != "withdrawn":
+                window.deiconify()
+                window.lift()
+                window.focus_set()
+        except Exception:
+            window.deiconify()
+        self._refresh_preview_surface()
+
+    def dock_preview(self):
+        window = self._detached_preview_window
+        if window is None:
+            return
+        if self._fullscreen:
+            self._exit_fullscreen()
+        try:
+            self._detached_preview_geometry = window.geometry()
+        except Exception:
+            pass
+        timeline_state = self._timeline_snapshot(self.timeline)
+        self._preview_detached = False
+        self._activate_preview_pane(self._docked_preview_pane)
+        self._sync_preview_chrome(timeline_state)
+        self._detached_preview_window = None
+        self._detached_preview_pane = None
+        try:
+            window.destroy()
+        except Exception:
+            pass
+        self._hide_detached_placeholder()
+        self.canvas.pack(
+            fill="both", expand=True, padx=8, pady=(8, 4), before=self.workspace_tabs,
+        )
+        self.transport.pack(
+            fill="x", padx=8, pady=(0, 4), before=self.workspace_tabs,
+        )
+        self._sync_window_titles()
+        self._schedule_settings_save()
+        self._focus_preview_host()
+        self._refresh_preview_surface()
 
     def _resize_preview_content(self, event=None):
         """Keep the settings content flush with the viewport width."""
@@ -3151,17 +3549,16 @@ class App:
             scale = 1
         if self.playing:
             self.pause()
-        self._stop_paused_prerender()
-        self._wait_play_dlss(timeout=2.0)
+        self._freeze_preview_cache()
         self._cache_clear()
         self._last_dlss_frame = -1
         self._split_frame = -1
         self._split_dlss = None
-        self._close_super_resolution()
         self._update_export_control_states()
         self._schedule_settings_save()
         if self.video and self.view_var.get() in ("DLSS", "对比"):
-            self.root.after_idle(self._display_precise_preview)
+            self.display_view(quality="fast")
+            self._schedule_preview_cache_resume()
 
     def _on_export_settings_change(self):
         self._update_export_control_states()
@@ -3198,6 +3595,8 @@ class App:
             "ui_preview_open": bool(
                 getattr(self, "_preview_section", None) and not self._preview_section.collapsed
             ),
+            "preview_detached": bool(self._detached_preview_window),
+            "preview_window_geometry": self._detached_geometry_for_save(),
             "queue_output_dir": (
                 self.queue_output_dir_var.get().strip()
                 if hasattr(self, "queue_output_dir_var") else ""
@@ -3258,6 +3657,7 @@ class App:
         self._cancel_after("_output_preview_after")
         self._cancel_after("_scrub_after")
         self._cancel_after("_resize_after")
+        self._cancel_after("_preview_cache_resume_after")
         self._save_settings_now()
         self._save_queue_state()
         self.pause()
@@ -3507,9 +3907,12 @@ class App:
 
     def load_view_img(self, view, frame):
         if view == "原图":
-            return self._read_frame(frame)
+            original = self._source_cache_get(frame)
+            return original if original is not None else self._read_frame(frame)
         if view == "DLSS":
-            original = self._read_frame(frame)
+            original = self._source_cache_get(frame)
+            if original is None:
+                original = self._read_frame(frame)
             if original is None:
                 return None
             processed = self._live_dlss_image(frame, source_bgr=original)
@@ -3811,7 +4214,9 @@ class App:
             or getattr(self, "_split_orig", None) is None
         )
         if need:
-            orig = self._read_frame(frame)
+            orig = self._source_cache_get(frame)
+            if orig is None:
+                orig = self._read_frame(frame)
             if orig is None:
                 self.canvas.delete("all")
                 self.canvas.create_text(
@@ -3838,7 +4243,9 @@ class App:
                 )
                 self._split_dlss = dlss
         elif not fast and self._split_dlss is None:
-            orig = self._read_frame(frame)
+            orig = self._source_cache_get(frame)
+            if orig is None:
+                orig = self._read_frame(frame)
             dlss = self._live_dlss_image(frame, source_bgr=orig) if orig is not None else None
             if dlss is None:
                 self._draw_fit(self._split_orig, cw, ch, badge="DLSS 生成失败")
@@ -3934,7 +4341,9 @@ class App:
         if getattr(self, "_split_orig", None) is not None:
             self._blit_split(cw, ch)
         else:
-            self.display_view(quality="full")
+            self.display_view(
+                quality="fast" if self._preview_cache_frozen else "full"
+            )
 
     def _point_in_navigator(self, x, y):
         geom = getattr(self, "_navigator_geom", None)
@@ -3965,7 +4374,9 @@ class App:
         if image is not None:
             self._draw_fit(image, cw, ch)
         else:
-            self.display_view(quality="full")
+            self.display_view(
+                quality="fast" if self._preview_cache_frozen else "full"
+            )
 
     def _update_pan_from_navigator(self, event):
         geom = getattr(self, "_navigator_geom", None)
@@ -3979,14 +4390,12 @@ class App:
     def on_canvas_press(self, event):
         if not self.video or self._exporting:
             return
-        try:
-            self.root.focus_set()
-        except Exception:
-            pass
+        self._focus_preview_host()
         if self._hold_original and not _alt_is_down():
             self._set_hold_original(False)
         if self._point_in_navigator(event.x, event.y):
             self.pause()
+            self._freeze_preview_cache(resume_ms=None)
             self._drag_split = False
             self._canvas_press = ("navigator", event.x, event.y)
             self.canvas.config(cursor="hand2")
@@ -3994,6 +4403,8 @@ class App:
             return
         shift = bool(event.state & 0x0001)
         if self.view_var.get() == "对比" and (self._near_split(event.x) or shift):
+            self.pause()
+            self._freeze_preview_cache(resume_ms=None)
             self._drag_split = True
             self._split_moved = False
             self._canvas_press = ("split", event.x, event.y)
@@ -4003,6 +4414,7 @@ class App:
         self._drag_split = False
         if self._preview_zoom > 1.0 and self._point_in_video(event.x, event.y):
             self.pause()
+            self._freeze_preview_cache(resume_ms=None)
             self._pan_moved = False
             self._canvas_press = (
                 "pan", event.x, event.y,
@@ -4036,6 +4448,8 @@ class App:
             dx, dy = event.x - press[1], event.y - press[2]
             if abs(dx) <= 6 or abs(dx) < abs(dy):
                 return
+            self.pause()
+            self._freeze_preview_cache(resume_ms=None)
             self._drag_split = True
             self.canvas.config(cursor="sb_h_double_arrow")
         self._split_moved = True
@@ -4046,6 +4460,7 @@ class App:
             self._drag_split = False
             self._canvas_press = None
             self.on_canvas_hover(event)
+            self._schedule_preview_cache_resume()
             return
         press = self._canvas_press
         self._canvas_press = None
@@ -4053,15 +4468,17 @@ class App:
             return
         if press[0] == "navigator":
             self.on_canvas_hover(event)
+            self._schedule_preview_cache_resume()
             return
         if press[0] == "pan":
             moved = self._pan_moved
             self._pan_moved = False
-            if not moved:
-                if self.view_var.get() == "对比":
-                    self._update_split_from_event(event)
-                else:
-                    self.toggle_play()
+            if not moved and self.view_var.get() == "对比":
+                self._update_split_from_event(event)
+            elif not moved:
+                self.toggle_play()
+            if not self.playing:
+                self._schedule_preview_cache_resume()
             self.on_canvas_hover(event)
             return
         if press[0] not in ("click", "compare"):
@@ -4103,10 +4520,7 @@ class App:
         return "break"
 
     def toggle_fullscreen(self):
-        try:
-            self.root.focus_set()
-        except Exception:
-            pass
+        self._focus_preview_host()
         if self._fullscreen:
             self._exit_fullscreen()
             return
@@ -4123,46 +4537,60 @@ class App:
     def _enter_fullscreen(self):
         if self._fullscreen:
             return
+        target = self._preview_host_window()
         self._fullscreen = True
-        self._fs_geom = self.root.geometry()
+        self._fs_window = target
+        self._fs_used_zoomed = False
+        self._fs_geom = target.geometry()
         self._fs_hidden = []
-        for widget in (
-            self.workspace_tabs, self.log,
-        ):
-            try:
-                info = widget.pack_info()
-            except Exception:
-                continue
-            self._fs_hidden.append((widget, info))
-            widget.pack_forget()
+        if target is self.root:
+            for widget in (
+                self.workspace_tabs, self.log,
+            ):
+                try:
+                    info = widget.pack_info()
+                except Exception:
+                    continue
+                self._fs_hidden.append((widget, info))
+                widget.pack_forget()
         try:
             self.canvas.pack_configure(padx=0, pady=0)
             self.transport.pack_configure(padx=12, pady=(0, 10))
         except Exception:
             pass
         try:
-            self.root.attributes("-fullscreen", True)
+            target.attributes("-fullscreen", True)
         except Exception:
-            self.root.state("zoomed")
+            target.state("zoomed")
+            self._fs_used_zoomed = True
         self._set_fs_btn(True)
-        self.root.after_idle(lambda: self.display_view(quality="full"))
+        self._refresh_preview_surface()
 
     def _exit_fullscreen(self):
         if not self._fullscreen:
             return
         self._fullscreen = False
+        target = self._fs_window or self._preview_host_window()
         try:
-            self.root.attributes("-fullscreen", False)
+            target.attributes("-fullscreen", False)
         except Exception:
             pass
+        if self._fs_used_zoomed:
+            try:
+                target.state("normal")
+            except Exception:
+                pass
         if self._fs_geom:
             try:
-                self.root.geometry(self._fs_geom)
+                target.geometry(self._fs_geom)
             except Exception:
                 pass
         try:
-            self.canvas.pack_configure(padx=8, pady=4)
-            self.transport.pack_configure(padx=8, pady=(0, 4))
+            self.canvas.pack_configure(padx=8, pady=(8, 4))
+            self.transport.pack_configure(
+                padx=8,
+                pady=(0, 6 if target is self._detached_preview_window else 4),
+            )
         except Exception:
             pass
         for widget, info in self._fs_hidden:
@@ -4171,14 +4599,25 @@ class App:
             except Exception:
                 pass
         self._fs_hidden = []
+        if target is self._detached_preview_window and self._fs_geom:
+            self._detached_preview_geometry = self._fs_geom
+        self._fs_window = None
+        self._fs_used_zoomed = False
         self._set_fs_btn(False)
-        self.root.after_idle(lambda: self.display_view(quality="full"))
+        self._schedule_settings_save()
+        self._refresh_preview_surface()
+
+    def _refresh_preview_surface(self):
+        """Redraw the active pane with the same freeze/fast/resume policy as resize."""
+        if self.video and not self.playing:
+            self._freeze_preview_cache()
+        self._cancel_after("_resize_after")
+        self._resize_after = self.root.after(CANVAS_RESIZE_MS, self._apply_canvas_resize)
 
     def _on_canvas_configure(self, event):
         if event.widget is not self.canvas:
             return
-        self._cancel_after("_resize_after")
-        self._resize_after = self.root.after(CANVAS_RESIZE_MS, self._apply_canvas_resize)
+        self._refresh_preview_surface()
 
     def _apply_canvas_resize(self):
         self._resize_after = None
@@ -4186,7 +4625,11 @@ class App:
         if self.playing:
             self._present_play_frame(self._frame)
         elif self.video:
-            quality = "fast" if self._scrub_after else "full"
+            quality = (
+                "fast"
+                if self._scrub_after or self._preview_cache_frozen
+                else "full"
+            )
             self.display_view(quality=quality)
         else:
             self._draw_empty()
@@ -4234,12 +4677,32 @@ class App:
 
     def _schedule_full_preview(self):
         self._cancel_after("_scrub_after")
+        if getattr(self, "_preview_cache_frozen", False):
+            # Interaction owns the resume timer. Restarting it here would let a
+            # paused timeline drag refill the cache while the pointer is down.
+            return
         delay = max(0, int(self._preview_scrub_ms()))
         self._scrub_after = self.root.after(delay, self._apply_full_preview)
 
     def _apply_full_preview(self):
         self._scrub_after = None
-        if self.playing or not self.video or self._exporting:
+        if (
+            getattr(self, "_preview_cache_frozen", False)
+            or self.playing or not self.video or self._exporting
+        ):
+            return
+        wants_dlss = self.view_var.get() in ("DLSS", "对比") and not self._hold_original
+        precise_size = self._precise_preview_size()
+        if (
+            wants_dlss and not self._is_image
+            and self._cached_dlss(self._frame, precise_size) is None
+        ):
+            # Exact paused previews used to run synchronously here and could lock
+            # Tk during a GPU evaluation. Queue that current frame on the worker;
+            # the UI keeps showing the inexpensive source preview meanwhile.
+            self.display_view(quality="fast")
+            if self._start_paused_prerender(target_size=precise_size):
+                self._update_preview_timeline_and_status(force=True)
             return
         self._display_precise_preview()
         if self._start_paused_prerender():
@@ -4269,17 +4732,15 @@ class App:
     def _on_timeline_seek(self, frame, phase):
         if not self.video or self._exporting:
             return
-        try:
-            self.root.focus_set()
-        except Exception:
-            pass
+        self._focus_preview_host()
         if self.playing:
             self.pause()
         if phase in ("start", "move"):
-            self._stop_paused_prerender()
+            self._freeze_preview_cache(resume_ms=None)
             self._goto_frame(frame, quality="fast")
             return
         self._goto_frame(frame, quality="fast")
+        self._schedule_preview_cache_resume()
 
     def _update_zoom_controls(self):
         zoom = max(PREVIEW_ZOOM_MIN, min(self._preview_zoom, PREVIEW_ZOOM_MAX))
@@ -4307,6 +4768,8 @@ class App:
         if not math.isfinite(zoom):
             return False
         zoom = max(PREVIEW_ZOOM_MIN, min(zoom, PREVIEW_ZOOM_MAX))
+        self.pause()
+        self._freeze_preview_cache()
         old_zoom = self._preview_zoom
         if anchor is not None:
             geom = getattr(self, "_video_geom", None)
@@ -4338,7 +4801,6 @@ class App:
                     source_h, ch, source_y, anchor[1],
                 )
         self._preview_zoom = zoom
-        self.pause()
         self._update_zoom_controls()
         if abs(zoom - old_zoom) > 1e-9 or anchor is None:
             self._refresh_viewport_display()
@@ -4377,29 +4839,26 @@ class App:
         if not self.video or self._exporting:
             return
         self.pause()
-        self._goto_frame(self._frame + int(delta), quality="full")
-        self._schedule_full_preview()
-        try:
-            self.root.focus_set()
-        except Exception:
-            pass
+        self._freeze_preview_cache()
+        self._goto_frame(self._frame + int(delta), quality="fast")
+        self._focus_preview_host()
 
     def skip_seconds(self, seconds):
         if not self.video or self._exporting:
             return
         self.pause()
+        self._freeze_preview_cache()
         frames = int(round(float(seconds) * max(self.fps, 1.0)))
-        self._goto_frame(self._frame + frames, quality="full")
-        self._schedule_full_preview()
+        self._goto_frame(self._frame + frames, quality="fast")
 
     def jump_frame(self, frame):
         if not self.video or self._exporting:
             return
         self.pause()
+        self._freeze_preview_cache()
         if frame < 0:
             frame = self._last_frame_index()
-        self._goto_frame(frame, quality="full")
-        self._schedule_full_preview()
+        self._goto_frame(frame, quality="fast")
 
     def on_frame_entry(self, event=None):
         txt = self.fentry.get().strip()
@@ -4409,8 +4868,8 @@ class App:
             self.sync_frame_entry()
             return
         self.pause()
-        self._goto_frame(f, quality="full")
-        self._schedule_full_preview()
+        self._freeze_preview_cache()
+        self._goto_frame(f, quality="fast")
 
     def sync_frame_entry(self):
         try:
@@ -4430,6 +4889,8 @@ class App:
             return
         if self.view_var.get() == "原图":
             self._stop_paused_prerender()
+            self._cancel_after("_preview_cache_resume_after")
+            self._preview_cache_frozen = False
             self._active_preview_size = None
             self.set_status("")
             if self.playing and self._buffering:
@@ -4437,12 +4898,18 @@ class App:
         elif self.playing:
             if self._preview_frame_queue is None or self._prefetch_stop.is_set():
                 self._start_strict_preview_buffering()
+        else:
+            self._freeze_preview_cache(resume_ms=None)
+            self._schedule_preview_cache_resume()
         self._split_size = None
-        self.display_view(quality="full")
-        if not self.playing and self.view_var.get() in ("DLSS", "对比"):
-            self._schedule_full_preview()
+        self.display_view(
+            quality="fast" if self._preview_cache_frozen else "full"
+        )
 
     def on_settings_change(self, event=None):
+        if self.playing:
+            self.pause()
+        self._freeze_preview_cache(resume_ms=None)
         self._update_dlss_control_states()
         self._schedule_settings_save()
         self._cancel_after("_live_debounce")
@@ -4468,8 +4935,15 @@ class App:
 
     def _refresh_dlss(self):
         self._live_debounce = None
+        thread = getattr(self, "_play_dlss_thread", None)
+        if thread is not None and thread.is_alive():
+            self._live_debounce = self.root.after(
+                PREVIEW_WORKER_POLL_MS, self._refresh_dlss,
+            )
+            return
+        self._play_dlss_thread = None
+        self._play_dlss_busy = False
         current_source = self._source_cache_get(self._frame)
-        self._wait_play_dlss(timeout=2.0)
         if self._live:
             try:
                 with self._live_lock:
@@ -4485,15 +4959,9 @@ class App:
             self._source_cache_store(self._frame, current_source)
         self._split_frame = -1
         self._split_dlss = None
-        if self.video and not self._is_image:
-            self._stop_paused_prerender()
-            if self.playing and self.view_var.get() in ("DLSS", "对比"):
-                self._start_strict_preview_buffering()
-        if self.playing:
-            return
         if self.view_var.get() in ("DLSS", "对比"):
-            self.display_view(quality="full")
-            self._schedule_full_preview()
+            self.display_view(quality="fast")
+        self._schedule_preview_cache_resume()
 
     def _input_widget_focused(self, extra=()):
         w = self.root.focus_get()
@@ -4506,6 +4974,15 @@ class App:
         return cls in _INPUT_WIDGETS or cls in extra
 
     def _preview_tab_selected(self):
+        window = self._detached_preview_window
+        if window is not None:
+            focused = self.root.focus_get()
+            if focused is None:
+                return False
+            try:
+                return focused.winfo_toplevel() is window
+            except Exception:
+                return False
         try:
             return self.workspace_tabs.select() == str(self._preview_page)
         except Exception:
@@ -4622,7 +5099,9 @@ class App:
         return None
 
     def _on_root_focus_out(self, event=None):
-        if event is not None and event.widget is not self.root:
+        if event is not None and event.widget not in (
+            self.root, self._detached_preview_window,
+        ):
             return
         if self._hold_original and not _alt_is_down():
             self._hold_original = False
@@ -4630,10 +5109,7 @@ class App:
                 self.display_view(quality="full")
 
     def toggle_play(self):
-        try:
-            self.root.focus_set()
-        except Exception:
-            pass
+        self._focus_preview_host()
         self._set_hold_original(False)
         if self.playing:
             self.pause()
@@ -4659,10 +5135,7 @@ class App:
             pass
 
     def toggle_mute(self):
-        try:
-            self.root.focus_set()
-        except Exception:
-            pass
+        self._focus_preview_host()
         self._audio.set_muted(not self._audio.muted)
         try:
             self.mute_btn.config(text="静" if self._audio.muted else "音")
@@ -4684,6 +5157,8 @@ class App:
             self.timeline.set(0)
             self._sync_transport_labels()
         self._set_hold_original(False)
+        self._cancel_after("_preview_cache_resume_after")
+        self._preview_cache_frozen = False
         view = self.view_var.get()
         preview_size = self._playback_preview_size()
         self.playing = True
@@ -4728,7 +5203,10 @@ class App:
             return False
         self._source_cache_store(self._frame, source)
         self._preview_decode_next = self._frame + 1
-        self._start_prefetch()
+        if self._start_prefetch() is False:
+            self._enter_preview_buffering(self._frame)
+            self._schedule_preview_cache_resume(PREVIEW_WORKER_POLL_MS)
+            return True
         self._queue_preview_frame(self._frame, source)
         self._enter_preview_buffering(self._frame)
         self._schedule_preview_decode(0)
@@ -4737,9 +5215,75 @@ class App:
     def _preview_session_active(self):
         return bool(
             (self.playing or self._pre_rendering)
+            and not getattr(self, "_preview_cache_frozen", False)
             and self.video and not self._exporting and not self._is_image
             and self.view_var.get() in ("DLSS", "对比")
         )
+
+    def _schedule_preview_cache_resume(self, delay=PREVIEW_INTERACTION_IDLE_MS):
+        self._cancel_after("_preview_cache_resume_after")
+        root = getattr(self, "root", None)
+        if root is None or self._exporting:
+            self._preview_cache_frozen = False
+            return
+        self._preview_cache_resume_after = root.after(
+            max(int(delay), 0), self._resume_preview_cache,
+        )
+
+    def _freeze_preview_cache(self, resume_ms=PREVIEW_INTERACTION_IDLE_MS):
+        """Stop background decode/render work without blocking the Tk event loop."""
+        held_without_timer = (
+            getattr(self, "_preview_cache_frozen", False)
+            and getattr(self, "_preview_cache_resume_after", None) is None
+        )
+        self._cancel_after("_preview_cache_resume_after")
+        self._cancel_after("_preview_decode_after")
+        self._cancel_after("_scrub_after")
+        self._pre_rendering = False
+        self._preview_cache_frozen = True
+        stop = getattr(self, "_prefetch_stop", None)
+        if stop is not None:
+            stop.set()
+        # Invalidating the generation prevents a retiring worker from writing old
+        # frames into a new source's cache after the UI has already switched.
+        self._preview_frame_queue = None
+        lock = getattr(self, "_cache_lock", None)
+        if lock is None:
+            self._prefetch_gen = getattr(self, "_prefetch_gen", 0) + 1
+        else:
+            with lock:
+                self._prefetch_gen = getattr(self, "_prefetch_gen", 0) + 1
+                self._queued_preview_frames.clear()
+        if resume_ms is None or held_without_timer:
+            return
+        if getattr(self, "root", None) is not None:
+            self._schedule_preview_cache_resume(resume_ms)
+
+    def _resume_preview_cache(self):
+        self._preview_cache_resume_after = None
+        thread = getattr(self, "_play_dlss_thread", None)
+        if thread is not None and thread.is_alive():
+            self._preview_cache_resume_after = self.root.after(
+                PREVIEW_WORKER_POLL_MS, self._resume_preview_cache,
+            )
+            return
+        self._play_dlss_thread = None
+        self._play_dlss_busy = False
+        self._preview_cache_frozen = False
+        if self._exporting:
+            return
+        if not self.video:
+            self._close_live()
+            return
+        if self.playing:
+            if (
+                self.view_var.get() in ("DLSS", "对比")
+                and self._preview_frame_queue is None
+            ):
+                self._start_strict_preview_buffering()
+            return
+        if self.view_var.get() in ("DLSS", "对比") and not self._hold_original:
+            self._schedule_full_preview()
 
     def _stop_paused_prerender(self):
         self._pre_rendering = False
@@ -4749,14 +5293,17 @@ class App:
         with self._cache_lock:
             self._queued_preview_frames.clear()
 
-    def _start_paused_prerender(self):
-        if self.playing or not self.video or self._exporting or self._is_image:
+    def _start_paused_prerender(self, target_size=None):
+        if (
+            getattr(self, "_preview_cache_frozen", False)
+            or self.playing or not self.video or self._exporting or self._is_image
+        ):
             return False
         if self.view_var.get() not in ("DLSS", "对比") or self._hold_original:
             return False
         self._stop_paused_prerender()
         self._pre_rendering = True
-        self._active_preview_size = self._playback_preview_size()
+        self._active_preview_size = target_size or self._playback_preview_size()
         source = self._source_cache_get(self._frame)
         if source is None:
             source = self._read_frame(self._frame)
@@ -4764,7 +5311,14 @@ class App:
             self._pre_rendering = False
             return False
         self._source_cache_store(self._frame, source)
-        self._start_prefetch()
+        started = (
+            self._start_prefetch(preview_size=target_size)
+            if target_size is not None else self._start_prefetch()
+        )
+        if started is False:
+            self._pre_rendering = False
+            self._schedule_preview_cache_resume(PREVIEW_WORKER_POLL_MS)
+            return False
         self._queue_preview_frame(self._frame, source)
         self._schedule_preview_decode(0)
         return True
@@ -4793,6 +5347,8 @@ class App:
     def _schedule_preview_decode(self, delay=1):
         self._cancel_after("_preview_decode_after")
         if self._preview_session_active():
+            if self._pre_rendering and not self.playing:
+                delay = max(int(delay), PREVIEW_BACKGROUND_TICK_MS)
             self._preview_decode_after = self.root.after(delay, self._preview_decode_tick)
 
     def _preview_decode_tick(self):
@@ -4828,6 +5384,7 @@ class App:
             self._schedule_preview_decode(1)
             return
         if waiting_on_worker:
+            self._present_current_cached_preview()
             self._update_preview_timeline_and_status()
             self._schedule_preview_decode(20)
             return
@@ -4835,14 +5392,33 @@ class App:
             self._pre_rendering = False
             self._prefetch_stop.set()
             self._preview_frame_queue = None
+            self._present_current_cached_preview()
             self._update_preview_timeline_and_status(force=True)
             return
         self._update_preview_timeline_and_status(force=True)
         self._schedule_preview_decode(20)
 
+    def _present_current_cached_preview(self):
+        if (
+            getattr(self, "_preview_cache_frozen", False)
+            or self.playing or not self.video or self._exporting
+        ):
+            return False
+        target_size = self._active_preview_size or self._precise_preview_size()
+        if self._cached_dlss(self._frame, target_size) is None:
+            return False
+        self.display_view(quality="full")
+        return True
+
     def _update_preview_timeline_and_status(self, force=False):
         if not self.video or self.view_var.get() not in ("DLSS", "对比"):
             return
+        if getattr(self, "_preview_cache_frozen", False) and not force:
+            return
+        now = time.perf_counter()
+        if not force and now - self._preview_status_at < 0.2:
+            return
+        self._preview_status_at = now
         size = self._active_preview_size or self._playback_preview_size()
         sk = self._settings_hash()
         with self._cache_lock:
@@ -4855,10 +5431,6 @@ class App:
         self.timeline.set_cache_ranges(
             _frame_ranges(rendered_frames), _frame_ranges(queued_frames),
         )
-        now = time.perf_counter()
-        if not force and now - self._preview_status_at < 0.2:
-            return
-        self._preview_status_at = now
         elapsed = (
             now - self._preview_process_t0
             if self._preview_process_t0 is not None else 0.0
@@ -5026,11 +5598,15 @@ class App:
         self._dlss_pending = bool(pending or self._split_dlss is None)
         self._blit_split(cw, ch)
 
-    def _start_prefetch(self):
+    def _start_prefetch(self, preview_size=None):
         if not self._preview_session_active():
-            return
+            return False
         if self.view_var.get() == "原图":
-            return
+            return False
+        previous = getattr(self, "_play_dlss_thread", None)
+        if previous is not None and previous.is_alive():
+            return False
+        self._play_dlss_thread = None
         self._prefetch_stop.set()
         self._prefetch_gen += 1
         gen = self._prefetch_gen
@@ -5038,7 +5614,7 @@ class App:
         self._prefetch_stop = stop
         self._preview_worker_error = None
         settings = self._collect_settings()
-        preview_size = self._playback_preview_size()
+        preview_size = preview_size or self._playback_preview_size()
         self._active_preview_size = preview_size
         frame_queue = queue.Queue(
             maxsize=max(self._buffer_target_frames() + PREVIEW_QUEUE_SIZE, 4)
@@ -5054,6 +5630,7 @@ class App:
         self._play_dlss_thread = thread
         self._play_dlss_busy = True
         thread.start()
+        return True
 
     def _queue_preview_frame(self, frame, bgr):
         if (
@@ -5085,9 +5662,13 @@ class App:
         def store_output(frame, output):
             if output is None:
                 raise RuntimeError(f"DLSS 预览第 {frame} 帧失败")
+            if gen != self._prefetch_gen:
+                return
             bgr = cv2.cvtColor(output[..., :3], cv2.COLOR_RGB2BGR)
-            self._cache_store(frame, sk, bgr)
             with self._cache_lock:
+                if gen != self._prefetch_gen:
+                    return
+                self._cache_store(frame, sk, bgr)
                 self._queued_preview_frames.discard(frame)
 
         def receive_one(store=True):
@@ -5116,14 +5697,27 @@ class App:
                     continue
                 source_h, source_w = bgr.shape[:2]
                 target_w, target_h = map(int, preview_size)
-                if (target_w, target_h) != (source_w, source_h):
+                sr_scale = self._super_resolution_scale(settings)
+                sr_target = super_resolution_target_size(
+                    source_w, source_h, sr_scale,
+                )
+                use_super_resolution = (
+                    sr_scale > 1 and (target_w, target_h) == sr_target
+                )
+                if use_super_resolution:
+                    rgba_source = cv2.cvtColor(bgr, cv2.COLOR_BGR2RGBA)
+                    rgba = self._upscale_rgba(rgba_source, sr_scale, is_hdr=False)
+                    target_h, target_w = rgba.shape[:2]
+                    if gen == self._prefetch_gen:
+                        enhanced_source = cv2.cvtColor(rgba, cv2.COLOR_RGBA2BGR)
+                        self._last_super_resolution_preview = (frame, enhanced_source)
+                elif (target_w, target_h) != (source_w, source_h):
                     bgr = cv2.resize(
                         bgr, (target_w, target_h), interpolation=cv2.INTER_AREA,
                     )
-                rgb = cv2.cvtColor(bgr, cv2.COLOR_BGR2RGB)
-                rgba = np.dstack([
-                    rgb, np.full((target_h, target_w), 255, np.uint8),
-                ])
+                    rgba = cv2.cvtColor(bgr, cv2.COLOR_BGR2RGBA)
+                else:
+                    rgba = cv2.cvtColor(bgr, cv2.COLOR_BGR2RGBA)
                 if live is None:
                     with self._live_lock:
                         live = self._ensure_live(target_w, target_h, settings)
@@ -5143,21 +5737,26 @@ class App:
                         output = live.process(rgba, reset=reset)
                     store_output(frame, output)
                 last_submitted = frame
-                self._last_dlss_frame = frame
+                if gen == self._prefetch_gen:
+                    self._last_dlss_frame = frame
         except Exception as ex:
-            self._preview_worker_error = str(ex)
+            if gen == self._prefetch_gen:
+                self._preview_worker_error = str(ex)
         finally:
             try:
                 keep_results = gen == self._prefetch_gen
                 while pending:
                     receive_one(store=keep_results)
             except Exception as ex:
-                self._preview_worker_error = str(ex)
+                if gen == self._prefetch_gen:
+                    self._preview_worker_error = str(ex)
             if gen == self._prefetch_gen:
                 self._play_dlss_busy = False
 
     def _wait_play_dlss(self, timeout=5.0):
         self._cancel_after("_preview_decode_after")
+        self._cancel_after("_preview_cache_resume_after")
+        self._cancel_after("_scrub_after")
         self._prefetch_stop.set()
         self._pre_rendering = False
         self._preview_frame_queue = None
@@ -5196,9 +5795,12 @@ class App:
         if self._diagnosing:
             messagebox.showinfo("诊断中", "请等待诊断报告生成后再导入素材。")
             return
+        self._freeze_preview_cache(resume_ms=None)
         path = filedialog.askopenfilename(filetypes=VIDEO_FILETYPES)
         if path:
             self._load_media(path)
+        else:
+            self._schedule_preview_cache_resume()
 
     # ---------- application updates ----------
     @staticmethod
@@ -5512,6 +6114,7 @@ class App:
 
     def _on_drop_enter(self, event):
         if not self._exporting and not self._queue_running and not self._diagnosing:
+            self._freeze_preview_cache(resume_ms=None)
             self.canvas.config(bg=CANVAS_DROP_BG)
             self.set_status("松开鼠标以导入；多个媒体文件会加入队列")
         return getattr(event, "action", None)
@@ -5520,6 +6123,7 @@ class App:
         self.canvas.config(bg=CANVAS_BG)
         if not self._exporting and not self._queue_running and not self._diagnosing:
             self.set_status("就绪")
+            self._schedule_preview_cache_resume()
         return getattr(event, "action", None)
 
     def _on_drop(self, event):
@@ -5557,9 +6161,8 @@ class App:
 
     def _begin_source_load(self):
         self.pause()
-        self._wait_play_dlss()
+        self._freeze_preview_cache(resume_ms=None)
         self._audio.close()
-        self._close_super_resolution()
         self._cache_clear()
         self._last_dlss_frame = -1
         self._play_orig = None
@@ -5613,7 +6216,12 @@ class App:
         if not self.video and self._live is None:
             return
         self._begin_source_load()
-        self._close_live()
+        thread = getattr(self, "_play_dlss_thread", None)
+        if thread is None or not thread.is_alive():
+            self._play_dlss_thread = None
+            self._close_live()
+        else:
+            self._schedule_preview_cache_resume(PREVIEW_WORKER_POLL_MS)
         self._photo = None
         self._pilimg = None
         self._hold_original = False
@@ -5625,7 +6233,7 @@ class App:
             self.eta_label.config(text="")
         except Exception:
             pass
-        self.root.title(f"{APP_TITLE} — 实时预览 + 导出")
+        self._sync_window_titles()
         self._update_action_labels()
         self._update_export_control_states()
         self._draw_empty()
@@ -5646,10 +6254,14 @@ class App:
             messagebox.showerror("导入失败", "找不到拖入的文件：\n" + path)
             self.set_status("导入失败：文件不存在")
             return False
-        if _is_image_path(path):
-            return self._load_image(path)
-        if _is_video_path(path):
-            return self._load_video(path)
+        if _is_image_path(path) or _is_video_path(path):
+            # Freeze the current source before potentially slow media probing so
+            # queued cache ticks cannot run ahead of the import/drop interaction.
+            self._freeze_preview_cache(resume_ms=None)
+            loaded = self._load_image(path) if _is_image_path(path) else self._load_video(path)
+            if not loaded:
+                self._schedule_preview_cache_resume()
+            return loaded
         messagebox.showerror(
             "不支持的格式",
             "请选择视频（MP4/AVI/MOV/MKV/M4V/WebM）或图片（PNG/JPG/WEBP/BMP/TIFF）。",
@@ -5675,18 +6287,19 @@ class App:
         self._media_w, self._media_h = w, h
         self.nframes, self.fps = 1, 1.0
         self._frame = 0
-        self.root.title(f"{APP_TITLE} — {os.path.basename(path)}")
+        self._sync_window_titles()
         self.timeline.set_range(0, 0)
         self.timeline.set(0)
         self._sync_transport_labels()
         self._update_action_labels()
         self._update_export_control_states()
         try:
-            self.display_view(quality="full")
+            self.display_view(quality="fast")
         except Exception as ex:
             self.logln(f"[preview] {ex}")
         self.logln(f"已导入图片: {path}  ({w}×{h})")
         self.set_status(f"图片 · {w}×{h}")
+        self._schedule_preview_cache_resume()
         return True
 
     def _load_video(self, path):
@@ -5742,14 +6355,14 @@ class App:
         self._update_preview_memory_hint()
         last = max(n - 1, 0)
         self._frame = 0
-        self.root.title(f"{APP_TITLE} — {os.path.basename(self.video)}")
+        self._sync_window_titles()
         self.timeline.set_range(0, last)
         self.timeline.set(0)
         self._sync_transport_labels()
         self._update_action_labels()
         self._update_export_control_states()
         try:
-            self.display_view(quality="full")
+            self.display_view(quality="fast")
         except Exception as ex:
             self.logln(f"[preview] {ex}")
         self.logln(
@@ -5760,7 +6373,7 @@ class App:
         )
         duration = n / max(float(fps) or 30.0, 1.0)
         self._audio.prepare(path, duration, callback=self._audio_ready_cb)
-        self._schedule_full_preview()
+        self._schedule_preview_cache_resume()
         if not self._hinted_keys:
             self.set_status("滚轮缩放 · 拖动平移 · 0 适应窗口 · ← → 逐帧 · F11 全屏")
             self._hinted_keys = True
@@ -5814,6 +6427,8 @@ class App:
 
     def _begin_export_ui(self, status_text):
         self.pause()
+        self._cancel_after("_preview_cache_resume_after")
+        self._preview_cache_frozen = False
         self._wait_play_dlss()
         if self._fullscreen:
             self._exit_fullscreen()
