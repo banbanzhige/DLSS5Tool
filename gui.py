@@ -164,6 +164,12 @@ SCALE_DISABLED = {
 SCALE_VALUE_ON = "#222222"
 SCALE_VALUE_OFF = "#9a9a9a"
 CANVAS_RESIZE_MS = 30
+PREVIEW_ZOOM_MIN = 0.25
+PREVIEW_ZOOM_MAX = 8.0
+PREVIEW_ZOOM_STEP = 1.25
+NAVIGATOR_MAX_WIDTH = 180
+NAVIGATOR_MAX_HEIGHT = 120
+NAVIGATOR_MARGIN = 12
 VK_MENU = 0x12
 SPLIT_HIT_PX = 18
 _INPUT_WIDGETS = {
@@ -336,6 +342,43 @@ def _realtime_preview_size(width, height, quality="auto"):
     else:
         max_edge = PREVIEW_MAX_EDGES[quality]
     return _fit_preview_size(width, height, max_edge)
+
+
+def _preview_viewport(width, height, canvas_width, canvas_height,
+                      zoom=1.0, center_x=0.5, center_y=0.5):
+    """Return source crop, canvas destination, clamped center and display scale."""
+    try:
+        width, height = int(width), int(height)
+        canvas_width, canvas_height = int(canvas_width), int(canvas_height)
+        zoom = float(zoom)
+        center_x, center_y = float(center_x), float(center_y)
+    except (TypeError, ValueError):
+        return None
+    if not all(math.isfinite(value) for value in (zoom, center_x, center_y)):
+        return None
+    if min(width, height, canvas_width, canvas_height) <= 0:
+        return None
+    zoom = max(PREVIEW_ZOOM_MIN, min(zoom, PREVIEW_ZOOM_MAX))
+    scale = min(canvas_width / width, canvas_height / height) * zoom
+
+    def axis(source_size, viewport_size, center):
+        drawn = source_size * scale
+        if drawn <= viewport_size + 1e-6:
+            offset = (viewport_size - drawn) / 2.0
+            return 0.0, float(source_size), offset, drawn, 0.5
+        visible = viewport_size / scale
+        center_px = max(visible / 2.0, min(center * source_size, source_size - visible / 2.0))
+        start = center_px - visible / 2.0
+        return start, start + visible, 0.0, float(viewport_size), center_px / source_size
+
+    x0, x1, dx, dw, center_x = axis(width, canvas_width, center_x)
+    y0, y1, dy, dh, center_y = axis(height, canvas_height, center_y)
+    return (
+        (x0, y0, x1, y1),
+        (dx, dy, dw, dh),
+        (center_x, center_y),
+        scale,
+    )
 
 
 def _large_image_host_settings(width, height, settings):
@@ -717,6 +760,18 @@ class App:
         self._resize_after = None
         self._play_after = None
         self._preview_decode_after = None
+        self._preview_zoom = 1.0
+        self._preview_pan_x = 0.5
+        self._preview_pan_y = 0.5
+        self._viewport_crop_norm = (0.0, 0.0, 1.0, 1.0)
+        self._viewport_scale = 1.0
+        self._viewport_source_size = (1, 1)
+        self._navigator_geom = None
+        self._navigator_source = None
+        self._navigator_thumb = None
+        self._navigator_thumb_size = None
+        self._pan_moved = False
+        self._last_viewport_image = None
         self._hold_original = False
         self._drag_split = False
         self._split_moved = False
@@ -780,7 +835,7 @@ class App:
         self.canvas.bind("<Motion>", self.on_canvas_hover)
         self.canvas.bind("<Double-Button-1>", self.on_canvas_double)
         self.canvas.bind("<Leave>", lambda e: self.canvas.config(cursor=""))
-        self.canvas.bind("<MouseWheel>", self._on_wheel_step)
+        self.canvas.bind("<MouseWheel>", self._on_canvas_wheel)
 
         # ---- transport: timeline + playback chrome ----
         transport = ttk.Frame(root)
@@ -821,6 +876,23 @@ class App:
         self.fs_btn = ttk.Button(ctrl, text="全屏", width=6, command=self.toggle_fullscreen)
         self.fs_btn.pack(side="right")
         Tooltip(self.fs_btn, "全屏预览（F11 或双击画面，Esc 退出）")
+        zoom_bar = ttk.Frame(ctrl)
+        zoom_bar.pack(side="right", padx=(0, 8))
+        self.zoom_out_btn = ttk.Button(
+            zoom_bar, text="−", width=3, command=lambda: self._step_zoom(-1),
+        )
+        self.zoom_out_btn.pack(side="left")
+        self.zoom_reset_btn = ttk.Button(
+            zoom_bar, text="适应", width=7, command=self.reset_preview_zoom,
+        )
+        self.zoom_reset_btn.pack(side="left", padx=2)
+        self.zoom_in_btn = ttk.Button(
+            zoom_bar, text="+", width=3, command=lambda: self._step_zoom(1),
+        )
+        self.zoom_in_btn.pack(side="left")
+        Tooltip(self.zoom_out_btn, "缩小预览（-）")
+        Tooltip(self.zoom_reset_btn, "恢复适应窗口（0）")
+        Tooltip(self.zoom_in_btn, "放大预览（+）")
         view_bar = ttk.Frame(ctrl)
         view_bar.pack(side="right", padx=(0, 8))
         for name in VIEWS:
@@ -830,7 +902,7 @@ class App:
             ).pack(side="left", padx=1)
         Tooltip(
             view_bar,
-            "1 原图  ·  2 DLSS  ·  3 对比。对比模式可单击定位或横向拖动分界线；按住 Alt 查看纯原图。",
+            "1 原图  ·  2 DLSS  ·  3 对比。滚轮缩放；放大后拖动画面；对比模式拖动分界线；按住 Alt 查看纯原图。",
         )
 
         # ---- preview/settings and batch queue tabs ----
@@ -1982,6 +2054,7 @@ class App:
                 self.export_btn.config(text="导出 DLSS 图片")
             else:
                 self.export_btn.config(text="导出 DLSS 视频")
+            self._update_zoom_controls()
         except Exception:
             pass
 
@@ -3570,6 +3643,8 @@ class App:
     def _draw_empty(self, cw=None, ch=None):
         if cw is None or ch is None:
             cw, ch = self._canvas_size()
+        self._video_geom = None
+        self._navigator_geom = None
         self.canvas.delete("all")
         self.canvas.create_text(
             cw // 2, ch // 2,
@@ -3619,16 +3694,107 @@ class App:
             x, y, text=text, fill=fill, **kwargs,
         )
 
-    def _draw_fit(self, img, cw, ch, badge=None):
+    def _render_viewport_image(self, img, cw, ch, track=True):
         ih, iw = img.shape[:2]
-        scale = min(cw / iw, ch / ih)
-        nw, nh = max(int(iw * scale), 1), max(int(ih * scale), 1)
-        nimg = cv2.resize(img, (nw, nh))
+        layout = _preview_viewport(
+            iw, ih, cw, ch,
+            self._preview_zoom, self._preview_pan_x, self._preview_pan_y,
+        )
+        if layout is None:
+            return None, (0, 0, 0, 0)
+        (x0, y0, x1, y1), (dx, dy, dw, dh), center, scale = layout
+        ix0 = max(0, min(int(math.floor(x0)), iw - 1))
+        iy0 = max(0, min(int(math.floor(y0)), ih - 1))
+        ix1 = max(ix0 + 1, min(int(math.ceil(x1)), iw))
+        iy1 = max(iy0 + 1, min(int(math.ceil(y1)), ih))
+        crop = img[iy0:iy1, ix0:ix1]
+        nw, nh = max(int(round(dw)), 1), max(int(round(dh)), 1)
+        interpolation = (
+            cv2.INTER_AREA
+            if nw < crop.shape[1] or nh < crop.shape[0]
+            else cv2.INTER_LINEAR
+        )
+        rendered = cv2.resize(crop, (nw, nh), interpolation=interpolation)
+        ox, oy = int(round(dx)), int(round(dy))
+        if track:
+            self._preview_pan_x, self._preview_pan_y = center
+            self._viewport_crop_norm = (
+                x0 / iw, y0 / ih, x1 / iw, y1 / ih,
+            )
+            self._viewport_scale = scale
+            self._viewport_source_size = (iw, ih)
+            self._video_geom = (ox, oy, nw, nh)
+        return rendered, (ox, oy, nw, nh)
+
+    def _draw_navigator(self, img, cw, ch):
+        crop = getattr(self, "_viewport_crop_norm", (0.0, 0.0, 1.0, 1.0))
+        if (
+            self._preview_zoom <= 1.0 + 1e-6
+            or (crop[0] <= 1e-6 and crop[1] <= 1e-6
+                and crop[2] >= 1.0 - 1e-6 and crop[3] >= 1.0 - 1e-6)
+        ):
+            self._navigator_geom = None
+            self._nav_photo = None
+            self._navigator_source = None
+            self._navigator_thumb = None
+            self._navigator_thumb_size = None
+            return
+        ih, iw = img.shape[:2]
+        max_width = min(NAVIGATOR_MAX_WIDTH, max(int(cw * 0.22), 64))
+        max_height = min(NAVIGATOR_MAX_HEIGHT, max(int(ch * 0.22), 48))
+        scale = min(max_width / iw, max_height / ih, 1.0)
+        nw, nh = max(int(round(iw * scale)), 1), max(int(round(ih * scale)), 1)
+        if self._navigator_source is img and self._navigator_thumb_size == (nw, nh):
+            thumb = self._navigator_thumb
+        else:
+            thumb = cv2.resize(img, (nw, nh), interpolation=cv2.INTER_AREA)
+            self._navigator_source = img
+            self._navigator_thumb = thumb
+            self._navigator_thumb_size = (nw, nh)
+        from PIL import Image, ImageTk
+        self._nav_pilimg = Image.fromarray(cv2.cvtColor(thumb, cv2.COLOR_BGR2RGB))
+        self._nav_photo = ImageTk.PhotoImage(self._nav_pilimg)
+        ox = max(cw - nw - NAVIGATOR_MARGIN, 0)
+        oy = max(ch - nh - NAVIGATOR_MARGIN, 0)
+        self._navigator_geom = (ox, oy, nw, nh)
+        self.canvas.create_rectangle(
+            ox - 3, oy - 3, ox + nw + 3, oy + nh + 3,
+            outline="#050505", width=3, tags=("navigator",),
+        )
+        self.canvas.create_image(
+            ox, oy, anchor="nw", image=self._nav_photo, tags=("navigator",),
+        )
+        vx0 = ox + crop[0] * nw
+        vy0 = oy + crop[1] * nh
+        vx1 = ox + crop[2] * nw
+        vy1 = oy + crop[3] * nh
+        self.canvas.create_rectangle(
+            vx0, vy0, vx1, vy1,
+            outline="#0a0a0a", width=4, tags=("navigator", "navigator_view"),
+        )
+        self.canvas.create_rectangle(
+            vx0, vy0, vx1, vy1,
+            outline=SPLIT_LINE, width=2, tags=("navigator", "navigator_view"),
+        )
+
+    def _draw_pending_status(self, cw, ch):
+        if not self._dlss_pending:
+            return
+        nav = getattr(self, "_navigator_geom", None)
+        y = nav[1] - 8 if nav is not None else ch - 10
+        self.canvas.create_text(
+            cw - 10, y, text="DLSS…", fill="#aaaaaa", anchor="se",
+            font=("Microsoft YaHei", 9),
+        )
+
+    def _draw_fit(self, img, cw, ch, badge=None):
+        self._last_viewport_image = img if abs(self._preview_zoom - 1.0) > 1e-6 else None
+        nimg, (ox, oy, nw, nh) = self._render_viewport_image(img, cw, ch)
+        if nimg is None:
+            return
         from PIL import Image, ImageTk
         self._pilimg = Image.fromarray(cv2.cvtColor(nimg, cv2.COLOR_BGR2RGB))
         self._photo = ImageTk.PhotoImage(self._pilimg)
-        ox, oy = (cw - nw) // 2, (ch - nh) // 2
-        self._video_geom = (ox, oy, nw, nh)
         self.canvas.delete("all")
         self.canvas.create_image(ox, oy, anchor="nw", image=self._photo)
         if badge:
@@ -3636,17 +3802,12 @@ class App:
                 ox + 10, oy + 14, badge, fill=HUD_FILL, anchor="w",
                 font=("Microsoft YaHei", 9),
             )
-        if self._dlss_pending:
-            self.canvas.create_text(
-                cw - 10, ch - 10, text="DLSS…", fill="#888888", anchor="se",
-                font=("Microsoft YaHei", 9),
-            )
+        self._draw_navigator(img, cw, ch)
+        self._draw_pending_status(cw, ch)
 
     def _draw_split(self, frame, cw, ch, fast=False):
-        size = (cw, ch)
         need = (
             getattr(self, "_split_frame", -1) != frame
-            or getattr(self, "_split_size", None) != size
             or getattr(self, "_split_orig", None) is None
         )
         if need:
@@ -3658,13 +3819,9 @@ class App:
                     font=("Microsoft YaHei", 11),
                 )
                 return
-            ih, iw = orig.shape[:2]
-            scale = min(cw / iw, ch / ih)
-            nw, nh = max(int(iw * scale), 1), max(int(ih * scale), 1)
-            self._split_nw, self._split_nh = nw, nh
-            self._split_orig = cv2.resize(orig, (nw, nh))
+            self._split_orig = orig
             self._split_frame = frame
-            self._split_size = size
+            self._split_size = (cw, ch)
             if fast:
                 self._split_dlss = None
             else:
@@ -3679,7 +3836,7 @@ class App:
                     orig, dlss,
                     settings['output_view'], settings['output_mix'],
                 )
-                self._split_dlss = cv2.resize(dlss, (nw, nh))
+                self._split_dlss = dlss
         elif not fast and self._split_dlss is None:
             orig = self._read_frame(frame)
             dlss = self._live_dlss_image(frame, source_bgr=orig) if orig is not None else None
@@ -3692,22 +3849,32 @@ class App:
                 orig, dlss,
                 settings['output_view'], settings['output_mix'],
             )
-            self._split_dlss = cv2.resize(dlss, (self._split_nw, self._split_nh))
+            self._split_dlss = dlss
         self._blit_split(cw, ch)
 
     def _blit_split(self, cw, ch):
-        nw, nh = self._split_nw, self._split_nh
-        ox, oy = (cw - nw) // 2, (ch - nh) // 2
-        self._video_geom = (ox, oy, nw, nh)
+        original, (ox, oy, nw, nh) = self._render_viewport_image(
+            self._split_orig, cw, ch,
+        )
+        if original is None:
+            return
+        processed = None
+        if self._split_dlss is not None:
+            processed, processed_geom = self._render_viewport_image(
+                self._split_dlss, cw, ch, track=False,
+            )
+            if processed_geom != (ox, oy, nw, nh):
+                processed = cv2.resize(processed, (nw, nh), interpolation=cv2.INTER_LINEAR)
+        self._split_nw, self._split_nh = nw, nh
         self._drag_nw = nw
         self._drag_offsetx = ox
-        composed = self._split_orig
+        composed = original
         show_divider = self.view_var.get() == "对比" and not self._hold_original
         if show_divider:
-            composed = self._split_orig.copy()
+            composed = original.copy()
             sx = int(self.split_x * nw)
-            if self._split_dlss is not None:
-                composed[:, sx:] = self._split_dlss[:, sx:]
+            if processed is not None:
+                composed[:, sx:] = processed[:, sx:]
         from PIL import Image, ImageTk
         self._pilimg = Image.fromarray(cv2.cvtColor(composed, cv2.COLOR_BGR2RGB))
         self._photo = ImageTk.PhotoImage(self._pilimg)
@@ -3738,11 +3905,9 @@ class App:
                 ox + 10, oy + 14, "原图（按住 Alt）", fill=HUD_FILL, anchor="w",
                 font=("Microsoft YaHei", 9),
             )
-        if self._dlss_pending:
-            self.canvas.create_text(
-                cw - 10, ch - 10, text="DLSS…", fill="#888888", anchor="se",
-                font=("Microsoft YaHei", 9),
-            )
+        navigator_image = self._split_dlss if self._split_dlss is not None else self._split_orig
+        self._draw_navigator(navigator_image, cw, ch)
+        self._draw_pending_status(cw, ch)
 
     def _split_x_abs(self):
         geom = getattr(self, "_video_geom", None)
@@ -3771,6 +3936,46 @@ class App:
         else:
             self.display_view(quality="full")
 
+    def _point_in_navigator(self, x, y):
+        geom = getattr(self, "_navigator_geom", None)
+        if geom is None:
+            return False
+        ox, oy, nw, nh = geom
+        return ox - 3 <= x <= ox + nw + 3 and oy - 3 <= y <= oy + nh + 3
+
+    def _point_in_video(self, x, y):
+        geom = getattr(self, "_video_geom", None)
+        if geom is None:
+            return False
+        ox, oy, nw, nh = geom
+        return ox <= x <= ox + nw and oy <= y <= oy + nh
+
+    def _refresh_viewport_display(self):
+        if not self.video or self._exporting:
+            return
+        cw, ch = self._canvas_size()
+        if (
+            self.view_var.get() == "对比"
+            and getattr(self, "_split_orig", None) is not None
+            and getattr(self, "_split_frame", -1) == self._frame
+        ):
+            self._blit_split(cw, ch)
+            return
+        image = getattr(self, "_last_viewport_image", None)
+        if image is not None:
+            self._draw_fit(image, cw, ch)
+        else:
+            self.display_view(quality="full")
+
+    def _update_pan_from_navigator(self, event):
+        geom = getattr(self, "_navigator_geom", None)
+        if geom is None:
+            return
+        ox, oy, nw, nh = geom
+        self._preview_pan_x = max(0.0, min(1.0, (event.x - ox) / max(nw, 1)))
+        self._preview_pan_y = max(0.0, min(1.0, (event.y - oy) / max(nh, 1)))
+        self._refresh_viewport_display()
+
     def on_canvas_press(self, event):
         if not self.video or self._exporting:
             return
@@ -3780,6 +3985,13 @@ class App:
             pass
         if self._hold_original and not _alt_is_down():
             self._set_hold_original(False)
+        if self._point_in_navigator(event.x, event.y):
+            self.pause()
+            self._drag_split = False
+            self._canvas_press = ("navigator", event.x, event.y)
+            self.canvas.config(cursor="hand2")
+            self._update_pan_from_navigator(event)
+            return
         shift = bool(event.state & 0x0001)
         if self.view_var.get() == "对比" and (self._near_split(event.x) or shift):
             self._drag_split = True
@@ -3789,12 +4001,36 @@ class App:
             self._update_split_from_event(event)
             return
         self._drag_split = False
+        if self._preview_zoom > 1.0 and self._point_in_video(event.x, event.y):
+            self.pause()
+            self._pan_moved = False
+            self._canvas_press = (
+                "pan", event.x, event.y,
+                self._preview_pan_x, self._preview_pan_y,
+                self._viewport_scale, self._viewport_source_size,
+            )
+            self.canvas.config(cursor="fleur")
+            return
         kind = "compare" if self.view_var.get() == "对比" else "click"
         self._canvas_press = (kind, event.x, event.y)
 
     def on_canvas_drag(self, event):
+        press = self._canvas_press
+        if press and press[0] == "navigator":
+            self._update_pan_from_navigator(event)
+            return
+        if press and press[0] == "pan":
+            dx, dy = event.x - press[1], event.y - press[2]
+            if abs(dx) > 3 or abs(dy) > 3:
+                self._pan_moved = True
+            scale = max(float(press[5]), 1e-9)
+            source_w, source_h = press[6]
+            self._preview_pan_x = press[3] - dx / (scale * max(source_w, 1))
+            self._preview_pan_y = press[4] - dy / (scale * max(source_h, 1))
+            self._refresh_viewport_display()
+            self.canvas.config(cursor="fleur")
+            return
         if not self._drag_split:
-            press = self._canvas_press
             if not press or press[0] != "compare":
                 return
             dx, dy = event.x - press[1], event.y - press[2]
@@ -3813,7 +4049,22 @@ class App:
             return
         press = self._canvas_press
         self._canvas_press = None
-        if not press or press[0] not in ("click", "compare") or not self.video or self._exporting:
+        if not press or not self.video or self._exporting:
+            return
+        if press[0] == "navigator":
+            self.on_canvas_hover(event)
+            return
+        if press[0] == "pan":
+            moved = self._pan_moved
+            self._pan_moved = False
+            if not moved:
+                if self.view_var.get() == "对比":
+                    self._update_split_from_event(event)
+                else:
+                    self.toggle_play()
+            self.on_canvas_hover(event)
+            return
+        if press[0] not in ("click", "compare"):
             return
         if abs(event.x - press[1]) > 6 or abs(event.y - press[2]) > 6:
             return
@@ -3827,12 +4078,18 @@ class App:
         if self._drag_split:
             self.canvas.config(cursor="sb_h_double_arrow")
             return
-        if self.video and self._near_split(event.x):
+        if self._point_in_navigator(event.x, event.y):
+            self.canvas.config(cursor="hand2")
+        elif self.video and self._near_split(event.x):
             self.canvas.config(cursor="sb_h_double_arrow")
+        elif self.video and self._preview_zoom > 1.0 and self._point_in_video(event.x, event.y):
+            self.canvas.config(cursor="fleur")
         else:
             self.canvas.config(cursor="")
 
     def on_canvas_double(self, event):
+        if self._point_in_navigator(event.x, event.y):
+            return "break"
         if self.video and self.view_var.get() == "对比" and self._near_split(event.x):
             self.split_x = 0.5
             cw, ch = self._canvas_size()
@@ -4024,10 +4281,95 @@ class App:
             return
         self._goto_frame(frame, quality="fast")
 
+    def _update_zoom_controls(self):
+        zoom = max(PREVIEW_ZOOM_MIN, min(self._preview_zoom, PREVIEW_ZOOM_MAX))
+        text = "适应" if abs(zoom - 1.0) < 0.005 else f"{int(round(zoom * 100))}%"
+        try:
+            self.zoom_reset_btn.config(text=text)
+            enabled = bool(self.video) and not self._exporting
+            self._set_ttk_enabled(
+                self.zoom_out_btn, enabled and zoom > PREVIEW_ZOOM_MIN + 1e-6,
+            )
+            self._set_ttk_enabled(self.zoom_reset_btn, enabled)
+            self._set_ttk_enabled(
+                self.zoom_in_btn, enabled and zoom < PREVIEW_ZOOM_MAX - 1e-6,
+            )
+        except Exception:
+            pass
+
+    def _set_preview_zoom(self, zoom, anchor=None):
+        if not self.video or self._exporting:
+            return False
+        try:
+            zoom = float(zoom)
+        except (TypeError, ValueError):
+            return False
+        if not math.isfinite(zoom):
+            return False
+        zoom = max(PREVIEW_ZOOM_MIN, min(zoom, PREVIEW_ZOOM_MAX))
+        old_zoom = self._preview_zoom
+        if anchor is not None:
+            geom = getattr(self, "_video_geom", None)
+            crop = getattr(self, "_viewport_crop_norm", None)
+            source_size = getattr(self, "_viewport_source_size", None)
+            if geom is not None and crop is not None and source_size is not None:
+                ox, oy, nw, nh = geom
+                rel_x = max(0.0, min(1.0, (anchor[0] - ox) / max(nw, 1)))
+                rel_y = max(0.0, min(1.0, (anchor[1] - oy) / max(nh, 1)))
+                source_x = crop[0] + rel_x * (crop[2] - crop[0])
+                source_y = crop[1] + rel_y * (crop[3] - crop[1])
+                source_w, source_h = source_size
+                cw, ch = self._canvas_size()
+                fit_scale = min(cw / max(source_w, 1), ch / max(source_h, 1))
+                new_scale = max(fit_scale * zoom, 1e-9)
+
+                def anchored_center(source, canvas, source_at_pointer, pointer):
+                    if source * new_scale <= canvas + 1e-6:
+                        return 0.5
+                    visible = canvas / new_scale
+                    pointer = max(0.0, min(float(pointer), float(canvas)))
+                    start = source_at_pointer * source - pointer / new_scale
+                    return (start + visible / 2.0) / source
+
+                self._preview_pan_x = anchored_center(
+                    source_w, cw, source_x, anchor[0],
+                )
+                self._preview_pan_y = anchored_center(
+                    source_h, ch, source_y, anchor[1],
+                )
+        self._preview_zoom = zoom
+        self.pause()
+        self._update_zoom_controls()
+        if abs(zoom - old_zoom) > 1e-9 or anchor is None:
+            self._refresh_viewport_display()
+        return True
+
+    def _step_zoom(self, direction):
+        factor = PREVIEW_ZOOM_STEP if int(direction) > 0 else 1.0 / PREVIEW_ZOOM_STEP
+        self._set_preview_zoom(self._preview_zoom * factor)
+
+    def reset_preview_zoom(self):
+        self._preview_pan_x = 0.5
+        self._preview_pan_y = 0.5
+        self._set_preview_zoom(1.0)
+
+    def _on_canvas_wheel(self, event):
+        delta = getattr(event, "delta", 0)
+        if not self.video or self._exporting or not delta:
+            return "break"
+        notches = max(1, min(abs(int(delta)) // 120 or 1, 4))
+        factor = PREVIEW_ZOOM_STEP ** notches
+        zoom = self._preview_zoom * (factor if delta > 0 else 1.0 / factor)
+        self._set_preview_zoom(zoom, anchor=(event.x, event.y))
+        return "break"
+
     def _on_wheel_step(self, event):
         if not self.video or self._exporting:
             return
-        delta = -1 if getattr(event, "delta", 0) < 0 else 1
+        wheel = getattr(event, "delta", 0)
+        if not wheel:
+            return "break"
+        delta = -1 if wheel < 0 else 1
         self.step_frame(delta)
         return "break"
 
@@ -4180,6 +4522,12 @@ class App:
         self.root.bind_all("<Key-1>", lambda e: self._on_view_hotkey("原图"))
         self.root.bind_all("<Key-2>", lambda e: self._on_view_hotkey("DLSS"))
         self.root.bind_all("<Key-3>", lambda e: self._on_view_hotkey("对比"))
+        self.root.bind_all("<Key-0>", self._on_zoom_reset_key)
+        self.root.bind_all("<KeyPress-plus>", lambda e: self._on_zoom_key(1))
+        self.root.bind_all("<KeyPress-equal>", lambda e: self._on_zoom_key(1))
+        self.root.bind_all("<KeyPress-minus>", lambda e: self._on_zoom_key(-1))
+        self.root.bind_all("<KP_Add>", lambda e: self._on_zoom_key(1))
+        self.root.bind_all("<KP_Subtract>", lambda e: self._on_zoom_key(-1))
         self.root.bind_all("<KeyPress>", self._on_modifier_poll, add="+")
         self.root.bind_all("<KeyRelease>", self._on_modifier_poll, add="+")
         self.root.bind_all("<F11>", self._on_fullscreen_key)
@@ -4210,6 +4558,18 @@ class App:
         if self.view_var.get() != view:
             self.view_var.set(view)
             self.on_view_change()
+        return "break"
+
+    def _on_zoom_key(self, direction):
+        if not self._preview_tab_selected() or self._input_widget_focused() or self._exporting:
+            return None
+        self._step_zoom(direction)
+        return "break"
+
+    def _on_zoom_reset_key(self, event=None):
+        if not self._preview_tab_selected() or self._input_widget_focused() or self._exporting:
+            return None
+        self.reset_preview_zoom()
         return "break"
 
     def _on_fullscreen_key(self, event=None):
@@ -4657,14 +5017,10 @@ class App:
         return cv2.addWeighted(muted, 0.28, np.zeros_like(muted), 0.72, 0.0)
 
     def _blit_play_split(self, orig, dlss, cw, ch, pending=False):
-        ih, iw = orig.shape[:2]
-        scale = min(cw / iw, ch / ih)
-        nw, nh = max(int(iw * scale), 1), max(int(ih * scale), 1)
-        self._split_nw, self._split_nh = nw, nh
-        self._split_orig = cv2.resize(orig, (nw, nh))
+        self._split_orig = orig
         if dlss is None and pending:
             dlss = self._pending_preview_image(orig)
-        self._split_dlss = None if dlss is None else cv2.resize(dlss, (nw, nh))
+        self._split_dlss = dlss
         self._split_frame = self._frame
         self._split_size = (cw, ch)
         self._dlss_pending = bool(pending or self._split_dlss is None)
@@ -5210,6 +5566,17 @@ class App:
         self._split_frame = -1
         self._split_orig = None
         self._split_dlss = None
+        self._preview_zoom = 1.0
+        self._preview_pan_x = 0.5
+        self._preview_pan_y = 0.5
+        self._viewport_crop_norm = (0.0, 0.0, 1.0, 1.0)
+        self._viewport_scale = 1.0
+        self._viewport_source_size = (1, 1)
+        self._navigator_geom = None
+        self._navigator_source = None
+        self._navigator_thumb = None
+        self._navigator_thumb_size = None
+        self._last_viewport_image = None
         self._cancel_after("_scrub_after")
         if getattr(self, "_cap", None):
             self._cap.release()
@@ -5225,6 +5592,7 @@ class App:
         self._buffering = False
         self._buffer_started_at = None
         self.video = None
+        self._update_zoom_controls()
         self.nframes = 0
         self.fps = 30.0
         self._frame = 0
@@ -5394,7 +5762,7 @@ class App:
         self._audio.prepare(path, duration, callback=self._audio_ready_cb)
         self._schedule_full_preview()
         if not self._hinted_keys:
-            self.set_status("空格播放/暂停 · ← → 逐帧 · Alt 对照原图 · F11 全屏")
+            self.set_status("滚轮缩放 · 拖动平移 · 0 适应窗口 · ← → 逐帧 · F11 全屏")
             self._hinted_keys = True
         else:
             self.set_status(f"{n} 帧 · {fps:.0f} fps · {w}×{h}")

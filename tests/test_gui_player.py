@@ -18,7 +18,7 @@ from gui import (
     _clamp_frame, _decode_plan, _first_image, _format_duration, _format_timecode,
     _fit_preview_size, _frame_ranges, _large_image_host_settings, _realtime_preview_size,
     _is_image_path, _is_video_path, _play_target_frame, _read_image_bgr,
-    _normalize_slider_input, _write_image_bgr, compose_preview_frame,
+    _normalize_slider_input, _preview_viewport, _write_image_bgr, compose_preview_frame,
     effective_skin_settings, effective_slider,
 )
 from preview_audio import frame_to_ms, ms_to_frame
@@ -69,6 +69,76 @@ class PlayerHelperTests(unittest.TestCase):
         self.assertEqual(_realtime_preview_size(2560, 1440, "auto"), (2560, 1440))
         self.assertEqual(_realtime_preview_size(3840, 2160, "1440p"), (2560, 1440))
         self.assertEqual(_realtime_preview_size(3840, 2160, "original"), (3840, 2160))
+
+    def test_preview_viewport_fits_and_crops_before_zooming(self):
+        crop, dest, center, scale = _preview_viewport(1920, 1080, 1000, 800)
+        self.assertEqual(crop, (0.0, 0.0, 1920.0, 1080.0))
+        self.assertAlmostEqual(dest[0], 0.0)
+        self.assertAlmostEqual(dest[1], 118.75)
+        self.assertAlmostEqual(dest[2], 1000.0)
+        self.assertAlmostEqual(dest[3], 562.5)
+        self.assertEqual(center, (0.5, 0.5))
+        self.assertAlmostEqual(scale, 1000 / 1920)
+
+        crop, dest, center, scale = _preview_viewport(
+            1920, 1080, 1000, 800, zoom=2.0,
+        )
+        self.assertEqual(dest, (0.0, 0.0, 1000.0, 800.0))
+        self.assertAlmostEqual(crop[0], 480.0)
+        self.assertAlmostEqual(crop[1], 156.0)
+        self.assertAlmostEqual(crop[2], 1440.0)
+        self.assertAlmostEqual(crop[3], 924.0)
+        self.assertEqual(center, (0.5, 0.5))
+        self.assertAlmostEqual(scale, 1000 / 1920 * 2)
+
+    def test_preview_viewport_clamps_pan_and_allows_zooming_out(self):
+        crop, _dest, center, _scale = _preview_viewport(
+            1920, 1080, 1000, 800, zoom=2.0, center_x=-2, center_y=-2,
+        )
+        self.assertAlmostEqual(crop[0], 0.0)
+        self.assertAlmostEqual(crop[1], 0.0)
+        self.assertAlmostEqual(center[0], 0.25)
+        self.assertAlmostEqual(center[1], 768 / 2 / 1080)
+
+        crop, dest, center, _scale = _preview_viewport(
+            1920, 1080, 1000, 800, zoom=0.5, center_x=0, center_y=1,
+        )
+        self.assertEqual(crop, (0.0, 0.0, 1920.0, 1080.0))
+        self.assertAlmostEqual(dest[0], 250.0)
+        self.assertAlmostEqual(dest[1], 259.375)
+        self.assertEqual(center, (0.5, 0.5))
+        self.assertIsNone(_preview_viewport(0, 1080, 1000, 800))
+        self.assertIsNone(_preview_viewport(1920, 1080, 1000, 800, zoom=float("nan")))
+
+    def test_canvas_wheel_zooms_around_pointer_but_timeline_wheel_steps(self):
+        app = App.__new__(App)
+        app.video = "dummy.mp4"
+        app._exporting = False
+        app._preview_zoom = 1.0
+        app._preview_pan_x = 0.5
+        app._preview_pan_y = 0.5
+        app._video_geom = (0, 119, 1000, 562)
+        app._viewport_crop_norm = (0.0, 0.0, 1.0, 1.0)
+        app._viewport_source_size = (1920, 1080)
+        app._canvas_size = lambda: (1000, 800)
+        app.pause = lambda: None
+        app._update_zoom_controls = lambda: None
+        app._refresh_viewport_display = lambda: None
+        event = type("Event", (), {"x": 750, "y": 400, "delta": 120})()
+        self.assertEqual(app._on_canvas_wheel(event), "break")
+        self.assertAlmostEqual(app._preview_zoom, 1.25)
+        layout = _preview_viewport(
+            1920, 1080, 1000, 800, app._preview_zoom,
+            app._preview_pan_x, app._preview_pan_y,
+        )
+        crop, _dest, _center, _scale = layout
+        source_x = crop[0] + 0.75 * (crop[2] - crop[0])
+        self.assertAlmostEqual(source_x / 1920, 0.75)
+
+        steps = []
+        app.step_frame = lambda delta: steps.append(delta)
+        self.assertEqual(app._on_wheel_step(event), "break")
+        self.assertEqual(steps, [1])
 
     def test_large_still_images_use_v2_feature_subrects(self):
         settings = {"host_backend": "legacy", "host_in_flight": 3}
@@ -709,6 +779,9 @@ class WidgetSmokeTests(unittest.TestCase):
                 self.assertEqual(app._frame, 0)
                 self.assertFalse(app._fullscreen)
                 self.assertEqual(str(app.fs_btn.cget("text")), "全屏")
+                self.assertEqual(str(app.zoom_reset_btn.cget("text")), "适应")
+                self.assertTrue(app.zoom_in_btn.instate(["disabled"]))
+                self.assertTrue(app.zoom_out_btn.instate(["disabled"]))
                 self.assertTrue(hasattr(app, "import_btn"))
                 self.assertTrue(hasattr(app, "clear_btn"))
                 self.assertTrue(hasattr(app, "cancel_export_btn"))
@@ -768,6 +841,9 @@ class WidgetSmokeTests(unittest.TestCase):
                 app._source_kind = "image"
                 app._image_bgr = np.zeros((4, 8, 3), np.uint8)
                 app._update_export_control_states()
+                app._update_action_labels()
+                self.assertTrue(app.zoom_in_btn.instate(["!disabled"]))
+                self.assertTrue(app.zoom_out_btn.instate(["!disabled"]))
                 self.assertTrue(app._export_settings["w_output_container"].instate(["disabled"]))
                 self.assertTrue(app._export_settings["w_nvenc_preset"].instate(["disabled"]))
                 self.assertTrue(app._export_settings["w_mode"].instate(["disabled"]))
@@ -829,6 +905,11 @@ class WidgetSmokeTests(unittest.TestCase):
                 app.on_canvas_press(click)
                 app.on_canvas_release(click)
                 self.assertEqual(updates[-1], (15, 20))
+                app._preview_zoom = 2.0
+                app._blit_split(120, 70)
+                self.assertTrue(app.canvas.find_withtag("navigator"))
+                self.assertIsNotNone(app._navigator_geom)
+                app._preview_zoom = 1.0
                 app.clear_media()
                 self.assertIsNone(app.video)
                 self.assertTrue(app.clear_btn.instate(["disabled"]))
