@@ -16,7 +16,7 @@ from gui import (
     App, TimelineBar,
     _ExportCancelled,
     _clamp_frame, _decode_plan, _first_image, _format_duration, _format_timecode,
-    _fit_preview_size, _frame_ranges, _realtime_preview_size,
+    _fit_preview_size, _frame_ranges, _large_image_host_settings, _realtime_preview_size,
     _is_image_path, _is_video_path, _play_target_frame, _read_image_bgr,
     _normalize_slider_input, _write_image_bgr, compose_preview_frame,
     effective_skin_settings, effective_slider,
@@ -69,6 +69,20 @@ class PlayerHelperTests(unittest.TestCase):
         self.assertEqual(_realtime_preview_size(2560, 1440, "auto"), (2560, 1440))
         self.assertEqual(_realtime_preview_size(3840, 2160, "1440p"), (2560, 1440))
         self.assertEqual(_realtime_preview_size(3840, 2160, "original"), (3840, 2160))
+
+    def test_large_still_images_use_v2_feature_subrects(self):
+        settings = {"host_backend": "legacy", "host_in_flight": 3}
+        self.assertEqual(
+            _large_image_host_settings(7680, 4320, settings), settings,
+        )
+        tiled = _large_image_host_settings(11637, 5120, settings)
+        self.assertEqual(tiled["host_backend"], "v2")
+        self.assertEqual(tiled["host_in_flight"], 1)
+        self.assertTrue(tiled["host_tiled_mode"])
+        self.assertEqual(
+            (tiled["host_tile_width"], tiled["host_tile_height"]),
+            (6000, 3000),
+        )
 
     def test_frame_ranges_compacts_non_contiguous_cache(self):
         self.assertEqual(_frame_ranges([]), [])
@@ -739,6 +753,7 @@ class WidgetSmokeTests(unittest.TestCase):
                 export = app._collect_export_settings()
                 self.assertEqual(export["output_container"], "mp4")
                 self.assertEqual(export["output_resolution"], "source")
+                self.assertEqual(export["super_resolution_scale"], 1)
                 self.assertEqual(export["rate_control"], "quality")
                 self.assertEqual(export["quality_profile"], "balanced")
                 self.assertEqual(export["workers"], 4)
@@ -759,6 +774,14 @@ class WidgetSmokeTests(unittest.TestCase):
                 app._source_kind = None
                 app._image_bgr = None
                 app.video = "dummy.mp4"
+                app._export_settings["v_mode"].set("视觉无损（并行分段）")
+                app._export_settings["v_super_resolution"].set("2×")
+                app._update_export_control_states()
+                export = app._collect_export_settings()
+                self.assertEqual(export["super_resolution_scale"], 2)
+                self.assertEqual(export["mode"], "single")
+                self.assertTrue(app._export_settings["w_output_resolution"].instate(["disabled"]))
+                app._export_settings["v_super_resolution"].set("关闭")
                 app._update_export_control_states()
                 app._update_action_labels()
                 self.assertTrue(app.clear_btn.instate(["!disabled"]))

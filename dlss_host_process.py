@@ -62,6 +62,7 @@ def _metadata(live):
         "backend": live.backend,
         "max_in_flight": int(live.max_in_flight),
         "supports_async": bool(live.supports_async),
+        "tiled": bool(getattr(live, "tiled", False)),
     }
 
 
@@ -180,6 +181,7 @@ class _HostSession:
         self.backend = "unknown"
         self.max_in_flight = 1
         self.supports_async = False
+        self.tiled = False
         self.dtype = dlss_engine.frame_dtype(settings)
         self.log_path = os.path.join(
             tempfile.gettempdir(), "dlss5tool-host-%s.log" % uuid.uuid4().hex,
@@ -266,6 +268,7 @@ class _HostSession:
             self.backend = str(response["backend"])
             self.max_in_flight = max(1, int(response.get("max_in_flight", 1)))
             self.supports_async = bool(response.get("supports_async", False))
+            self.tiled = bool(response.get("tiled", False))
 
     def request(self, operation, timeout=_COMMAND_TIMEOUT, **payload):
         if self._closed:
@@ -398,6 +401,7 @@ class ProcessLive:
         self.backend = self._session.backend
         self.max_in_flight = self._session.max_in_flight
         self.supports_async = self._session.supports_async
+        self.tiled = self._session.tiled
 
     def _requires_replacement(self, new_preference):
         if new_preference == self.preference:
@@ -435,8 +439,9 @@ class ProcessLive:
         self.preference = new_preference
         self._sync_metadata()
 
-    def resize(self, width, height, preset=None):
+    def resize(self, width, height, preset=None, settings=None):
         updated = dict(self.settings)
+        updated.update(settings or {})
         if preset is not None:
             updated["preset"] = int(preset)
         self._replace(int(width), int(height), updated)

@@ -243,6 +243,7 @@ class EncodingSettingsTests(unittest.TestCase):
         raw_values = {
             "output_container": "mkv",
             "output_resolution": "custom",
+            "super_resolution_scale": 4,
             "custom_output_width": 2560,
             "custom_output_height": 1440,
             "rate_control": "bitrate",
@@ -255,6 +256,7 @@ class EncodingSettingsTests(unittest.TestCase):
             app_settings.save(raw_values, path)
             values = app_settings.load(path)
         self.assertEqual(values["output_resolution"], "custom")
+        self.assertEqual(values["super_resolution_scale"], 4)
         self.assertEqual(values["output_container"], "mkv")
         self.assertEqual(values["custom_output_width"], 2560)
         self.assertEqual(values["custom_output_height"], 1440)
@@ -267,6 +269,7 @@ class EncodingSettingsTests(unittest.TestCase):
         values = app_settings.validate({
             "output_container": "avi",
             "output_resolution": "8k",
+            "super_resolution_scale": 3,
             "rate_control": "size",
             "quality_profile": "lossless",
             "video_bitrate_mbps": "bad",
@@ -274,6 +277,7 @@ class EncodingSettingsTests(unittest.TestCase):
             "custom_output_height": 99999,
         })
         self.assertEqual(values["output_resolution"], "source")
+        self.assertEqual(values["super_resolution_scale"], 1)
         self.assertEqual(values["output_container"], "mp4")
         self.assertEqual(values["rate_control"], "quality")
         self.assertEqual(values["quality_profile"], "balanced")

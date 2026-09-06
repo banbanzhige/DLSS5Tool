@@ -26,6 +26,8 @@ for filename, required in (
     ("dlssnr_host_v2.dll", True),
     ("nvngx_dlssnr.dll", True),
     ("dlssnr_host.dll", False),
+    ("vsr_host.dll", True),
+    ("nvngx_vsr.dll", True),
 ):
     source = os.path.join(project_root, filename)
     if os.path.isfile(source):
@@ -51,6 +53,13 @@ a = Analysis(
     noarchive=False,
     optimize=0,
 )
+# Windows 10/11 provide UCRT as an operating-system component.  Some managed
+# endpoints block copying ucrtbase.dll into application folders; relying on the
+# supported OS copy also avoids shipping a stale system runtime.
+a.binaries = [
+    entry for entry in a.binaries
+    if os.path.basename(entry[0]).lower() != "ucrtbase.dll"
+]
 pyz = PYZ(a.pure)
 
 exe = EXE(

@@ -1,6 +1,6 @@
 # DLSS5Tool
 
-当前版本：**v1.1.5**
+当前版本：**v1.2.1**
 
 [查看完整更新日志](CHANGELOG.md)
 
@@ -38,6 +38,8 @@
 ## 能做什么
 
 - **任意视频或图片都能处理**：支持 MP4 / AVI / MOV / MKV / M4V / WebM，以及 PNG、JPEG、WebP、BMP、TIFF 等常见格式。无需游戏环境或 G-Buffer，导入成片即可使用 DLSS 5 Neural Rendering 进行同分辨率处理。
+- **超大图片保持原尺寸**：当单个 Feature 18 无法直接创建超大画布时，v2 宿主自动改用运行库原生 Subrect 分区评估；完整图片只上传和回读一次，最终仍保持源像素尺寸。
+- **可选 RTX AI 超分**：导出设置提供「关闭 / 2× / 4×」。开启后固定先用 RTX Video Super Resolution 放大，再让 Feature 18 在目标分辨率增强；暂停或逐帧时生成同链路精确预览。
 - **提升真实渲染质感**：利用 Feature 18 改善画面的材质观感、光影层次与结构细节，减轻生成内容常见的塑料感、过度磨皮和油腻高光，让视频或图片更接近自然、真实的渲染效果。
 - **风格与融合程度可控**：可以选择渲染风格，并分别调整强度、本地色调、本地结构和输出混合，自由控制神经渲染对原画面的介入程度，以及颜色、纹理与原始内容的融合效果。
 - **可选 500% 实验增强**：默认把全部强度滑条限制在安全的 `0%–100%`；开启「允许 5× 实验范围」后扩展到 `0%–500%`，超过 100% 可进一步推动模型参数，输出混合超过 100% 时会直接放大神经处理残差。
@@ -88,14 +90,19 @@
 
 因此：任意解码出来的 RGB 帧都能进 Feature 18，输出仍是同尺寸的神经增强帧。这不是通用 DLSS 超分集成，也不是光线重建；它是把游戏神经渲染接到离线成片上的实验路径。
 
+### 超大静态图片
+
+约 4500 万像素以上的静态图片自动使用 v2 分区路径。宿主保留完整尺寸的 Color、Output、MVec 和 Depth 纹理，以安全的逻辑尺寸创建一个 Feature 18，然后通过各资源的 Subrect 偏移和宽高覆盖整张图片。每块独立重置历史，整图只上传和回读一次；这不是先缩小后放大，也不是建立多个 Feature 实例。
+
 ### HDR10 / HLG 路径
 
 v1.1.0 对带 `smpte2084`（PQ）或 `arib-std-b67`（HLG）传递特性的影片启用独立高精度链路：
 
 1. FFmpeg 按源视频的范围、BT.2020 原色和传递特性解码为归一化 RGBA16F；不会先压成 8-bit。
-2. v2 宿主把输入、输出资源创建为 `DXGI_FORMAT_R16G16B16A16_FLOAT`，创建 Feature 18 时设置 `NVSDK_NGX_DLSS_Feature_Flags_IsHDR`，并显式提交预曝光参数。
-3. 输出混合在 PQ/HLG 解码后的线性光中进行，再编码回原传递曲线。
-4. 写出 HEVC Main 10 / 10-bit 4:2:0，并保留 BT.2020、PQ/HLG 与 limited-range 标签；NVENC 不可用时回退 `libx265`。
+2. 若启用超分，先把传递函数编码的 RGBA16F 量化到 RTX Video SDK 1.1 支持的 10-bit RGB 表面，完成 VSR 后恢复为 RGBA16F；过程中不 tone-map 到 SDR。
+3. v2 宿主把输入、输出资源创建为 `DXGI_FORMAT_R16G16B16A16_FLOAT`，创建 Feature 18 时设置 `NVSDK_NGX_DLSS_Feature_Flags_IsHDR`，并显式提交预曝光参数。
+4. 输出混合在 PQ/HLG 解码后的线性光中进行，再编码回原传递曲线。
+5. 写出 HEVC Main 10 / 10-bit 4:2:0，并保留 BT.2020、PQ/HLG 与 limited-range 标签；NVENC 不可用时回退 `libx265`。
 
 HDR 导出固定使用独立的 v2 严格单会话，避免分段边界和旧宿主回退破坏格式合同。普通显示器中的预览只是 SDR tone-map，不代表最终 HDR 亮度。当前保留的是基础 HDR10/HLG 色彩标记，不承诺复制 Dolby Vision、HDR10+ 动态元数据或源文件的 mastering-display / MaxCLL SEI。
 
@@ -112,6 +119,7 @@ HDR 导出固定使用独立的 v2 严格单会话，避免分段边界和旧宿
 - 自动检测 HDR10/PQ 与 HLG 视频；高精度模式使用 RGBA16F Feature 18 和 HEVC Main10，HDR 预览单独映射为 SDR。
 - 视频输出容器可选 MP4、MKV、MOV 或跟随输入；跟随输入仅保留 MP4/M4V、MKV、MOV，AVI/WebM 安全回退 MP4，不会产生只改扩展名的伪格式文件。
 - 视频导出可跟随源尺寸，或限制到 2160p / 1440p / 1080p / 720p / 自定义上限；始终保持宽高比且不会放大低分辨率素材。
+- RTX 超分开启时覆盖普通输出尺寸，严格按源尺寸的 2× 或 4× 输出；不人为限制 8K/16K，但会提前显示单帧大小、显存下限、建议空闲显存、系统内存与风险等级，高风险需用户确认。
 - 编码可选择极高质量、高质量、均衡、小体积四档恒定质量，或输入 0.5–500 Mbps 目标码率并查看预计文件大小。
 - 「导出队列」支持图片与视频混排，可多选媒体、递归添加文件夹或拖入多个文件，按加入时的处理与导出参数快照串行执行；图片保持源格式与原尺寸。
 - 队列支持独立输出目录、自动避让重名、排序、失败/取消重试、当前项后暂停和取消当前项；重启程序后会恢复未完成任务。
@@ -134,9 +142,10 @@ HDR 导出固定使用独立的 v2 严格单会话，避免分段边界和旧宿
 - HDR 高精度导出仅支持带 PQ/HLG 标签的视频，不用于静态图片；缺失色彩标签的素材按 SDR 处理。
 - HDR 预览和关闭高精度后的兼容导出会 tone-map 到 SDR；只有启用高精度的 HDR 视频导出保留 10-bit HDR 信号。
 - 视频解码和颜色转换仍依赖 FFmpeg / OpenCV，整体速度不只取决于 GPU。HDR 路径需要带 `zscale` 和 HEVC 编码器的 FFmpeg 构建。
-- 输出分辨率在 Neural Rendering 后缩小，因此可以降低文件尺寸，但不会减少 DLSS 处理耗时；当前不提供放大输出，以免与真正的 DLSS 超分混淆。
+- 普通输出分辨率仍在 Neural Rendering 后缩小；RTX 超分是独立的「VSR → DLSS 5」路径，不会与传统 Lanczos 缩放混淆。
+- 超过 4K 的超分目标自动把 DLSS GPU 在途帧降为 1，只降低吞吐、不改变输出；SDK、驱动或编码器仍可能拒绝超大尺寸，失败只终止隔离处理会话。
 - 目标码率使用单遍 VBR；并行分段模式下各段独立控制，所以最终平均码率和预计文件大小属于近似值。
-- 仓库刻意不包含 NVIDIA SDK、`nvngx_dlssnr.dll`、编译后的宿主 DLL、用户设置、日志或测试媒体。
+- 仓库刻意不包含 NVIDIA SDK、`nvngx_dlssnr.dll`、`nvngx_vsr.dll`、编译后的宿主 DLL、用户设置、日志或测试媒体。
 
 ## DLL 选择（2026-09-04 实测）
 
@@ -156,12 +165,13 @@ Magpie v0.6.1 自带的社区 DLL（SHA-256 `984BEE0F…F81014`）实际只列�
 - Microsoft Visual C++ 2015–2022 Redistributable（运行宿主所需）。
 - Visual Studio 2022 Build Tools 与「使用 C++ 的桌面开发」工作负载（仅重新编译宿主时需要）。
 - 从合法来源取得并有权使用的 NVIDIA DLSS Neural Rendering 运行时。
+- 使用 AI 超分时还需要 NVIDIA RTX Video SDK 1.1 的 VSR 运行时。
 
 ## 快速开始
 
 ### 免安装版（推荐普通用户）
 
-下载 `DLSS5Tool-v1.1.5-win64.zip` 并完整解压，然后双击
+下载 `DLSS5Tool-v1.2.1-win64.zip` 并完整解压，然后双击
 `DLSS5Tool.exe`。免安装版已包含 Python 依赖和基础 FFmpeg，无需另装 Python；仍需
 Windows 10/11 x64、兼容的 NVIDIA GPU/驱动和 Microsoft Visual C++ 2015–2022
 Redistributable。不要只把 EXE 单独移出解压目录，旁边的 `_internal` 目录是运行所必需的。
@@ -217,6 +227,18 @@ git clone --depth 1 https://github.com/NVIDIA/DLSS.git third_party/NVIDIA-DLSS
 `nvngx_dlssnr.dll` 放到项目根目录。可选的旧版 `dlssnr_host.dll` 只用于兼容回退，
 不属于源码发行版。
 
+若要启用 RTX AI 超分，从 NVIDIA 官方 NGC / RTX Video SDK 页面下载并接受 RTX Video
+SDK 1.1 许可证，将 SDK 解压到 `third_party/RTX_Video_SDK`，或设置
+`NV_RTX_VIDEO_SDK` 指向 SDK 根目录，然后运行：
+
+```powershell
+.\native_vsr_host\build.bat
+```
+
+脚本会生成 `vsr_host.dll`，并把官方 `nvngx_vsr.dll` 暂存到项目根目录。SDK、运行时和
+许可证不属于本仓库 MIT 授权；制作便携包时 `build_release.ps1` 会要求同时提供原始
+`NVIDIA_RTX_Video_SDK_License.pdf`。
+
 ### 3. 启动
 
 双击 `run.bat`，或运行：
@@ -241,6 +263,7 @@ git clone --depth 1 https://github.com/NVIDIA/DLSS.git third_party/NVIDIA-DLSS
 - 当所选处理分辨率的 DLSS 吞吐低于视频帧率时，严格同步播放会间歇等待；状态栏会显示缓冲帧数、处理速度和 RAM 用量。
 - 导出时可在「严格时序」和「视觉无损（并行分段）」之间选择。
 - 「输出分辨率」只改变视频写出尺寸并保持宽高比；选择低于源视频的尺寸不会降低 DLSS 的源分辨率处理精度。
+- 「AI 超分」只有关闭、2×、4×：开启后固定先超分、再以目标尺寸运行 DLSS 5，并自动使用严格单会话；目标尺寸和资源风险会直接显示在同一设置区。
 - 「码率控制」推荐使用按画质模式；需要控制文件体积时切换到目标码率，界面会按片长显示预计大小。
 - 「编码速度」越慢通常压缩效率越高，但它不等同于编码质量或目标码率。
 - 「输出容器」默认 MP4，也可选择 MKV、MOV 或跟随输入；容器不改变 SDR/HDR 编码策略，SDR 仍使用 H.264，HDR 高精度仍使用 HEVC Main10。
@@ -268,6 +291,14 @@ HDR 硬件链路可用一段已正确标记的 PQ/HLG 视频验证：
 .\.venv\Scripts\python.exe scripts\hdr_probe.py --input .\input-hdr.mp4 --output .\probe-hdr.mp4 --frames 12
 ```
 
+RTX超分与DLSS 5完整链路可用内置梯度做快速烟雾测试，也可给HDR探针增加 `--scale 2`：
+
+```powershell
+.\.venv\Scripts\python.exe scripts\vsr_probe.py --scale 2 --with-dlss
+.\.venv\Scripts\python.exe scripts\vsr_probe.py --scale 2 --hdr --with-dlss
+.\.venv\Scripts\python.exe scripts\vsr_probe.py --scale 2 --hlg --with-dlss
+```
+
 ## 目录结构
 
 | 路径 | 用途 |
@@ -277,10 +308,12 @@ HDR 硬件链路可用一段已正确标记的 PQ/HLG 视频验证：
 | `export_queue.py` | 批量导出任务模型、状态恢复与原子持久化 |
 | `dlss_engine.py` | 原生宿主的 `ctypes` 封装 |
 | `dlss_host_process.py` | 隔离进程、共享内存与热切换 |
+| `super_resolution.py` | RTX VSR 隔离进程、运行时发现与资源预估 |
 | `video_export.py` | FFmpeg 色彩检测、HDR/SDR 解码与 NVENC/x26x 写出 |
 | `parallel_export*.py` | 分段并行导出 |
 | `preview_audio.py` | 本地音频预览 |
 | `native_host_v2/` | D3D12/NGX v2 宿主源码与构建脚本 |
+| `native_vsr_host/` | RTX Video SDK D3D12 VSR 宿主源码与构建脚本 |
 | `scripts/` | 需要真实硬件的诊断探针 |
 | `tests/` | 不依赖 GPU 的单元测试 |
 | `third_party/` | 本地 SDK/参考仓库；不会提交 |

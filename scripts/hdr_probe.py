@@ -13,6 +13,7 @@ if ROOT not in sys.path:
     sys.path.insert(0, ROOT)
 
 from dlss_host_process import ProcessLive
+from super_resolution import ProcessSuperResolution
 from video_export import (
     FFmpegHDRVideoReader,
     FFmpegVideoWriter,
@@ -26,6 +27,7 @@ def main():
     parser.add_argument("--input", required=True)
     parser.add_argument("--output", required=True)
     parser.add_argument("--frames", type=int, default=8)
+    parser.add_argument("--scale", type=int, choices=(1, 2, 4), default=1)
     args = parser.parse_args()
 
     source = os.path.abspath(args.input)
@@ -53,22 +55,32 @@ def main():
         "local_tone": 1.0,
         "local_struct": 1.0,
     }
+    output_width = width * args.scale
+    output_height = height * args.scale
+    if output_width * output_height > 3840 * 2160:
+        settings["host_in_flight"] = 1
     reader = None
     writer = None
     live = None
+    sr_live = None
     started = time.perf_counter()
     count = 0
     completed = False
     try:
         reader = FFmpegHDRVideoReader(source, width, height, info, ffmpeg=ffmpeg)
         writer = FFmpegVideoWriter(
-            output, width, height, fps, audio_source=None, hdr_metadata=info,
+            output, output_width, output_height, fps,
+            audio_source=None, hdr_metadata=info,
         )
-        live = ProcessLive(width, height, settings)
+        if args.scale > 1:
+            sr_live = ProcessSuperResolution(width, height, args.scale, is_hdr=True)
+        live = ProcessLive(output_width, output_height, settings)
         while count < max(int(args.frames), 1):
             frame = reader.read()
             if frame is None:
                 break
+            if sr_live is not None:
+                frame = sr_live.process(frame)
             result = live.process(frame, reset=(count == 0))
             if result is None:
                 raise RuntimeError(f"Feature 18 returned no frame at index {count}")
@@ -83,6 +95,8 @@ def main():
             reader.close()
         if live is not None:
             live.close()
+        if sr_live is not None:
+            sr_live.close()
         if writer is not None and not completed:
             writer.abort()
     elapsed = time.perf_counter() - started
@@ -91,6 +105,8 @@ def main():
         "frames": count,
         "fps": count / elapsed if elapsed else 0.0,
         "profile": info["profile"],
+        "scale": args.scale,
+        "output_size": [output_width, output_height],
         "encoder": encoder,
         "host": host,
         "output": output,

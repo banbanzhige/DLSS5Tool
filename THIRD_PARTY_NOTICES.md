@@ -19,6 +19,19 @@ NVIDIA SDK 许可证包含专有权利、分发、商标、通知和使用范围
 - 在本项目中的用途：运行时加载的 Neural Rendering 模型/运行时
 - 分发策略：不纳入源码仓库，也不作为独立文件再分发；用户必须从合法授权来源取得
 
+## NVIDIA RTX Video SDK / Video Super Resolution
+
+- 上游：[NVIDIA RTX Video SDK](https://developer.nvidia.com/rtx-video-sdk)
+- 许可证：随 SDK 提供的 NVIDIA RTX Video SDK License
+- 文件名：`nvngx_vsr.dll`
+- 在本项目中的用途：在 DLSS 5 Neural Rendering 前执行 2× / 4× SDR 或 10-bit HDR 超分
+- 分发策略：SDK、头文件和运行时不纳入源码仓库；发行者必须从 NVIDIA 官方来源取得，
+  并在便携包中同时保留原始许可证文件和适用的专有条款
+
+本仓库自有的 `native_vsr_host` 源码不复制 NVIDIA 示例源码，但编译时需要单独安装
+RTX Video SDK 1.1 或兼容版本。公开或商业发布前，发行者仍需复核当时有效的 NVIDIA
+分发、通知与商标要求。
+
 ## 参考实现
 
 以下仓库用于研究和构建参考，不会作为 vendored 源码提交：

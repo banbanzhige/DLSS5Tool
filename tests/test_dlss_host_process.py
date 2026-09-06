@@ -17,7 +17,8 @@ class FakeLive:
         self.backend = self.settings.get("host_backend", "legacy")
         if self.settings.get("fake_fail_backend") == self.backend:
             raise RuntimeError("requested fake backend failure: " + self.backend)
-        self.max_in_flight = 2 if self.backend == "v2" else 1
+        self.tiled = bool(self.settings.get("host_tiled_mode", False))
+        self.max_in_flight = 2 if self.backend == "v2" and not self.tiled else 1
         self.supports_async = self.max_in_flight > 1
         self._pending = []
 
@@ -26,6 +27,9 @@ class FakeLive:
         if requested not in ("auto", self.backend):
             raise RuntimeError("fake backend cannot switch in process")
         self.settings.update(settings)
+        self.tiled = bool(self.settings.get("host_tiled_mode", False))
+        self.max_in_flight = 2 if self.backend == "v2" and not self.tiled else 1
+        self.supports_async = self.max_in_flight > 1
 
     def _render(self, rgba):
         increment = 2 if self.backend == "v2" else 1
@@ -112,6 +116,17 @@ class ProcessLiveTests(unittest.TestCase):
             np.testing.assert_array_equal(live.dequeue(), second + 2)
 
             live.resize(5, 4)
+            resized = np.full((4, 5, 4), 7, np.uint8)
+            np.testing.assert_array_equal(live.process(resized), resized + 2)
+        finally:
+            live.close()
+
+    def test_resize_applies_tiled_settings_in_replacement_process(self):
+        live = self.make_live("v2")
+        try:
+            live.resize(5, 4, settings={"host_tiled_mode": True})
+            self.assertTrue(live.tiled)
+            self.assertFalse(live.supports_async)
             resized = np.full((4, 5, 4), 7, np.uint8)
             np.testing.assert_array_equal(live.process(resized), resized + 2)
         finally:

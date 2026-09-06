@@ -36,6 +36,11 @@ import updater
 from dlss_host_process import ProcessLive
 from parallel_export import export_parallel
 from preview_audio import PreviewAudio, ms_to_frame
+from super_resolution import (
+    ProcessSuperResolution, classify_resource_risk, estimate_resources,
+    format_bytes, format_resource_hint, normalize_scale, query_gpu_memory,
+    runtime_status as super_resolution_runtime_status, target_size as super_resolution_target_size,
+)
 from video_export import (
     FFmpegHDRVideoReader, FFmpegVideoWriter, compose_hdr_frame,
     compose_output_frame, find_ffmpeg, output_container_extension,
@@ -83,6 +88,8 @@ OUTPUT_RESOLUTION_NAMES = {
 OUTPUT_RESOLUTION_MAX_EDGES = {
     "2160p": 3840, "1440p": 2560, "1080p": 1920, "720p": 1280,
 }
+SUPER_RESOLUTION_CHOICES = {"关闭": 1, "2×": 2, "4×": 4}
+SUPER_RESOLUTION_NAMES = {value: name for name, value in SUPER_RESOLUTION_CHOICES.items()}
 RATE_CONTROL_CHOICES = {
     "按画质（推荐）": "quality",
     "目标码率": "bitrate",
@@ -111,6 +118,9 @@ PREVIEW_QUALITY_NAMES = {value: name for name, value in PREVIEW_QUALITY_CHOICES.
 PREVIEW_MAX_EDGES = {"1080p": 1920, "1440p": 2560}
 PREVIEW_QUEUE_SIZE = 3
 PREVIEW_BUFFER_SECONDS = 1.0
+LARGE_IMAGE_TILE_THRESHOLD_PIXELS = 45_000_000
+LARGE_IMAGE_TILE_WIDTH = 6000
+LARGE_IMAGE_TILE_HEIGHT = 3000
 VIDEO_EXTENSIONS = {".mp4", ".avi", ".mov", ".mkv", ".m4v", ".webm"}
 IMAGE_EXTENSIONS = {".png", ".jpg", ".jpeg", ".webp", ".bmp", ".tif", ".tiff"}
 VIDEO_FILETYPES = [
@@ -326,6 +336,27 @@ def _realtime_preview_size(width, height, quality="auto"):
     else:
         max_edge = PREVIEW_MAX_EDGES[quality]
     return _fit_preview_size(width, height, max_edge)
+
+
+def _large_image_host_settings(width, height, settings):
+    """Use Feature 18 subrects when one full-frame feature exceeds safe limits."""
+    result = dict(settings or {})
+    try:
+        width, height = int(width), int(height)
+    except (TypeError, ValueError):
+        return result
+    if width <= 0 or height <= 0 or width * height < LARGE_IMAGE_TILE_THRESHOLD_PIXELS:
+        return result
+    result.update({
+        "host_backend": "v2",
+        "host_auto_fallback": False,
+        "host_zero_fast_path": True,
+        "host_in_flight": 1,
+        "host_tiled_mode": True,
+        "host_tile_width": min(width, LARGE_IMAGE_TILE_WIDTH),
+        "host_tile_height": min(height, LARGE_IMAGE_TILE_HEIGHT),
+    })
+    return result
 
 
 def _fit_output_box(width, height, max_width, max_height):
@@ -674,6 +705,11 @@ class App:
         self._update_cancel_event = threading.Event()
         self._live = None
         self._live_cache = None
+        self._super_resolution_live = None
+        self._super_resolution_key = None
+        self._super_resolution_lock = threading.RLock()
+        self._last_super_resolution_preview = None
+        self._confirmed_super_resolution_plans = set()
         self._last_dlss_frame = -1
         self._live_debounce = None
         self._output_preview_after = None
@@ -1149,9 +1185,13 @@ class App:
         settings = job.settings or {}
         export = job.export_settings or {}
         style = STYLE_NAMES.get(settings.get("style"), "默认")
+        scale = normalize_scale(
+            export.get("super_resolution_scale", settings.get("super_resolution_scale", 1))
+        )
+        scale_note = f" · RTX超分{scale}×" if scale > 1 else ""
         if job.media_kind == "image":
             image_format = os.path.splitext(job.output_path)[1].upper().lstrip(".") or "PNG"
-            return f"{style} · {image_format} · 原尺寸"
+            return f"{style} · {image_format}{scale_note}"
         if export.get("rate_control") == "bitrate":
             try:
                 bitrate = float(export.get("video_bitrate_mbps", 20))
@@ -1166,7 +1206,10 @@ class App:
         )
         hdr_active = bool(export.get("hdr_mode") and (job.color_info or {}).get("is_hdr"))
         codec = "HEVC10" if hdr_active else "H.264"
-        return f"{style} · {OUTPUT_CONTAINER_LABELS[container]}/{codec} · {quality} · {mode}"
+        return (
+            f"{style} · {OUTPUT_CONTAINER_LABELS[container]}/{codec} · "
+            f"{quality} · {mode}{scale_note}"
+        )
 
     @staticmethod
     def _queue_progress_text(job):
@@ -1514,6 +1557,8 @@ class App:
                     and color_info.get("is_hdr")
                 ):
                     effective_export["mode"] = "single"
+                if normalize_scale(effective_export.get("super_resolution_scale", 1)) > 1:
+                    effective_export["mode"] = "single"
                 job = export_queue_state.ExportJob.create(
                     path, output, settings, effective_export, metadata, color_info,
                     media_kind=media_kind,
@@ -1610,6 +1655,8 @@ class App:
                 and (job.color_info or {}).get("is_hdr")
             ):
                 job.export_settings["mode"] = "single"
+            if normalize_scale(job.export_settings.get("super_resolution_scale", 1)) > 1:
+                job.export_settings["mode"] = "single"
             job.output_path = self._new_queue_output_path(
                 job.source_path, job.media_kind, job.export_settings,
                 exclude_job_id=job.job_id,
@@ -1633,6 +1680,45 @@ class App:
         if not any(job.state == "pending" for job in self._queue_jobs):
             self.queue_status_label.config(text="没有等待处理的任务")
             return
+        plans = []
+        risk_order = {"low": 0, "unknown": 1, "medium": 2, "high": 3, "extreme": 4}
+        gpu_memory = query_gpu_memory(cache_seconds=0)
+        for job in self._queue_jobs:
+            if job.state != "pending":
+                continue
+            export = job.export_settings or {}
+            settings = job.settings or {}
+            scale = normalize_scale(
+                export.get("super_resolution_scale", settings.get("super_resolution_scale", 1))
+            )
+            if scale == 1:
+                continue
+            metadata = job.metadata or {}
+            try:
+                width = int(metadata.get("width", 0) or 0)
+                height = int(metadata.get("height", 0) or 0)
+            except (TypeError, ValueError):
+                continue
+            if width <= 0 or height <= 0:
+                continue
+            is_hdr = bool(
+                job.media_kind == "video" and export.get("hdr_mode")
+                and (job.color_info or {}).get("is_hdr")
+            )
+            estimate = estimate_resources(width, height, scale, is_hdr=is_hdr)
+            risk = classify_resource_risk(estimate, gpu_memory)
+            plans.append((risk_order.get(risk, 1), width, height, scale, is_hdr))
+        if plans:
+            _rank, width, height, scale, is_hdr = max(plans)
+            if not self._confirm_super_resolution_export(
+                width, height, scale, is_hdr=is_hdr, notify=True,
+            ):
+                self.queue_status_label.config(text="已取消启动队列")
+                return
+            for _rank, plan_width, plan_height, plan_scale, plan_hdr in plans:
+                self._confirmed_super_resolution_plans.add(
+                    (plan_width, plan_height, plan_scale, plan_hdr)
+                )
         self.pause()
         self._queue_running = True
         self._queue_pause_requested = False
@@ -1686,9 +1772,15 @@ class App:
             )
             self.logln(f"[队列] 开始: {job.source_path}")
             if job.media_kind == "image":
+                image_settings = dict(job.settings)
+                image_settings['super_resolution_scale'] = normalize_scale(
+                    (job.export_settings or {}).get(
+                        'super_resolution_scale', image_settings.get('super_resolution_scale', 1)
+                    )
+                )
                 result = self._export_image_source(
                     job.source_path,
-                    settings=dict(job.settings),
+                    settings=image_settings,
                     out_path=job.output_path,
                     notify=False,
                 )
@@ -2336,6 +2428,9 @@ class App:
             'v_output_resolution': tk.StringVar(value=OUTPUT_RESOLUTION_NAMES.get(
                 saved.get('output_resolution', 'source'), "跟随源视频（推荐）"
             )),
+            'v_super_resolution': tk.StringVar(value=SUPER_RESOLUTION_NAMES.get(
+                normalize_scale(saved.get('super_resolution_scale', 1)), "关闭"
+            )),
             'v_custom_width': tk.IntVar(value=saved.get('custom_output_width', 1920)),
             'v_custom_height': tk.IntVar(value=saved.get('custom_output_height', 1080)),
             'v_rate_control': tk.StringVar(value=RATE_CONTROL_NAMES.get(
@@ -2427,14 +2522,20 @@ class App:
         )
         preset.grid(row=1, column=3, sticky="ew", padx=(0, 10), pady=4)
 
-        ttk.Label(output_group, text="色彩处理:", anchor="e", width=10).grid(
+        ttk.Label(output_group, text="AI 超分:", anchor="e", width=10).grid(
             row=2, column=0, sticky="e", padx=(4, 3), pady=4,
         )
+        super_resolution = ttk.Combobox(
+            output_group, textvariable=d['v_super_resolution'],
+            values=list(SUPER_RESOLUTION_CHOICES), state="readonly", width=15,
+        )
+        super_resolution.grid(row=2, column=1, sticky="ew", padx=(0, 10), pady=4)
+
         hdr = ttk.Checkbutton(
             output_group, text="HDR10 / HLG 高精度处理", variable=d['v_hdr'],
             command=self._on_export_settings_change,
         )
-        hdr.grid(row=2, column=1, columnspan=3, sticky="w", padx=(0, 4), pady=4)
+        hdr.grid(row=2, column=2, columnspan=4, sticky="w", padx=(4, 4), pady=4)
 
         hint = ttk.Label(
             output_group,
@@ -2482,6 +2583,7 @@ class App:
             'w_decode_buffer': decode,
             'w_nvenc_preset': preset,
             'w_output_resolution': resolution,
+            'w_super_resolution': super_resolution,
             'w_custom_label': custom_label,
             'w_custom_width': custom_width,
             'w_custom_height': custom_height,
@@ -2496,6 +2598,9 @@ class App:
         mode.bind("<<ComboboxSelected>>", lambda e: self._on_export_settings_change())
         for widget in (container, resolution, rate_control, quality, preset):
             widget.bind("<<ComboboxSelected>>", lambda e: self._on_export_settings_change())
+        super_resolution.bind(
+            "<<ComboboxSelected>>", lambda e: self._on_super_resolution_change()
+        )
         for widget in (workers, warmup, decode, custom_width, custom_height, bitrate):
             widget.config(command=self._on_export_settings_change)
             widget.bind("<FocusOut>", lambda e: self._on_export_settings_change())
@@ -2509,6 +2614,11 @@ class App:
             resolution,
             "只控制视频输出尺寸，并保持原宽高比；不会放大低分辨率素材。"
             "DLSS 仍以源分辨率处理，因此缩小输出不会减少神经渲染耗时。",
+        )
+        Tooltip(
+            super_resolution,
+            "固定先用 RTX Video Super Resolution 放大，再以目标分辨率运行 DLSS 5。"
+            "支持 SDR 与 10-bit HDR；高分辨率会显著增加显存、内存和处理时间。",
         )
         Tooltip(
             rate_control,
@@ -2758,6 +2868,10 @@ class App:
         }
         if hasattr(self, "_host_settings"):
             result.update(self._collect_host_settings())
+        if hasattr(self, "_export_settings"):
+            result['super_resolution_scale'] = self._collect_export_settings()[
+                'super_resolution_scale'
+            ]
         return result
 
     def _collect_export_settings(self):
@@ -2784,6 +2898,9 @@ class App:
             'output_resolution': OUTPUT_RESOLUTION_CHOICES.get(
                 d['v_output_resolution'].get(), 'source'
             ),
+            'super_resolution_scale': SUPER_RESOLUTION_CHOICES.get(
+                d['v_super_resolution'].get(), 1
+            ),
             'custom_output_width': max(2, min(8192, integer(d['v_custom_width'], 1920))),
             'custom_output_height': max(2, min(8192, integer(d['v_custom_height'], 1080))),
             'rate_control': RATE_CONTROL_CHOICES.get(
@@ -2802,15 +2919,18 @@ class App:
         if not hasattr(self, "_export_settings"):
             return
         export = self._collect_export_settings()
+        super_resolution_scale = normalize_scale(export['super_resolution_scale'])
+        super_resolution_enabled = super_resolution_scale > 1
         color = getattr(self, "_video_color_info", None) or {}
         effective_hdr = bool(export['hdr_mode'] and color.get('is_hdr'))
         video_controls_enabled = not self._is_image
-        if effective_hdr and export['mode'] == 'parallel':
+        if (effective_hdr or super_resolution_enabled) and export['mode'] == 'parallel':
             self._export_settings['v_mode'].set(EXPORT_MODE_NAMES['single'])
             export['mode'] = 'single'
         state = (
             "normal"
-            if video_controls_enabled and export['mode'] == 'parallel' and not effective_hdr
+            if video_controls_enabled and export['mode'] == 'parallel'
+            and not effective_hdr and not super_resolution_enabled
             else "disabled"
         )
         self._export_settings['w_workers'].config(state=state)
@@ -2819,8 +2939,9 @@ class App:
             state="normal" if video_controls_enabled else "disabled"
         )
         self._export_settings['w_mode'].config(
-            state="disabled" if self._is_image or effective_hdr else "readonly"
+            state="disabled" if self._is_image or effective_hdr or super_resolution_enabled else "readonly"
         )
+        self._export_settings['w_super_resolution'].config(state="readonly")
         self._export_settings['w_output_container'].config(
             state="readonly" if video_controls_enabled else "disabled"
         )
@@ -2829,12 +2950,15 @@ class App:
         )
         self._set_ttk_enabled(self._export_settings['w_hdr'], video_controls_enabled)
         self._export_settings['w_output_resolution'].config(
-            state="readonly" if video_controls_enabled else "disabled"
+            state="readonly" if video_controls_enabled and not super_resolution_enabled else "disabled"
         )
         self._export_settings['w_rate_control'].config(
             state="readonly" if video_controls_enabled else "disabled"
         )
-        custom_enabled = video_controls_enabled and export['output_resolution'] == 'custom'
+        custom_enabled = (
+            video_controls_enabled and not super_resolution_enabled
+            and export['output_resolution'] == 'custom'
+        )
         quality_enabled = video_controls_enabled and export['rate_control'] == 'quality'
         bitrate_enabled = video_controls_enabled and export['rate_control'] == 'bitrate'
         for key in ('w_custom_label', 'w_custom_width', 'w_custom_height'):
@@ -2847,9 +2971,17 @@ class App:
         self._set_ttk_enabled(self._export_settings['w_video_bitrate'], bitrate_enabled)
         if self._is_image:
             image_ext = os.path.splitext(self.video or "")[1].upper().lstrip(".") or "PNG"
+            source_width, source_height = self._source_size()
+            image_width, image_height = super_resolution_target_size(
+                source_width, source_height, super_resolution_scale,
+            )
+            size_note = (
+                f"{image_width}×{image_height}"
+                if image_width > 0 and image_height > 0 else "导入后确定尺寸"
+            )
             text = (
-                f"实际输出：{image_ext} · SDR 图片 · 原尺寸；保持源图片格式。"
-                "视频容器、分辨率、编码、码率、HDR 与性能参数不参与。"
+                f"实际输出：{image_ext} · SDR 图片 · {size_note}；保持源图片格式。"
+                "视频容器、编码、码率与HDR参数不参与。"
             )
         elif color.get('is_hdr'):
             container = resolve_output_container(
@@ -2857,9 +2989,14 @@ class App:
             )
             container_label = OUTPUT_CONTAINER_LABELS[container]
             if export['hdr_mode']:
+                hdr_processing = (
+                    "10-bit超分后以RGBA16F神经渲染"
+                    if super_resolution_enabled
+                    else "RGBA16F神经渲染"
+                )
                 text = (
                     f"实际输出：{container_label} · HEVC Main10 · 10-bit {color.get('label', 'HDR')}；"
-                    "RGBA16F 神经渲染，"
+                    f"{hdr_processing}，"
                     "预览仅作 SDR 映射，HDR 导出固定使用严格单会话。"
                 )
             else:
@@ -2884,10 +3021,15 @@ class App:
             text = f"{container_note}；导入 PQ/HLG 视频后自动使用 HEVC Main10。"
         if not self._is_image:
             source_width, source_height = self._source_size()
-            output_width, output_height = _resolve_output_size(
-                source_width, source_height, export['output_resolution'],
-                export['custom_output_width'], export['custom_output_height'],
-            )
+            if super_resolution_enabled:
+                output_width, output_height = super_resolution_target_size(
+                    source_width, source_height, super_resolution_scale,
+                )
+            else:
+                output_width, output_height = _resolve_output_size(
+                    source_width, source_height, export['output_resolution'],
+                    export['custom_output_width'], export['custom_output_height'],
+                )
             if output_width > 0 and output_height > 0:
                 output_note = f"输出 {output_width}×{output_height}"
             else:
@@ -2908,7 +3050,45 @@ class App:
                     f"目标 {export['video_bitrate_mbps']:g} Mbps{estimate_note}{parallel_note}"
                 )
             text += f"\n{output_note}；{encoding_note}。"
+        source_width, source_height = self._source_size()
+        if super_resolution_enabled:
+            status = super_resolution_runtime_status()
+            if source_width > 0 and source_height > 0:
+                resource_estimate = estimate_resources(
+                    source_width, source_height, super_resolution_scale,
+                    is_hdr=effective_hdr,
+                )
+                text += "\nRTX超分：" + format_resource_hint(resource_estimate) + "。"
+            else:
+                text += f"\nRTX超分：{super_resolution_scale}×；资源需求将在导入素材后显示。"
+            if not status['available']:
+                text += " 缺少运行组件：" + "、".join(status['missing']) + "。"
         self._export_settings['w_hdr_hint'].config(text=text)
+
+    def _on_super_resolution_change(self):
+        scale = self._super_resolution_scale()
+        width, height = self._source_size()
+        color = getattr(self, '_video_color_info', None) or {}
+        export = self._collect_export_settings()
+        is_hdr = bool(export['hdr_mode'] and color.get('is_hdr'))
+        if width > 0 and height > 0 and not self._confirm_super_resolution_export(
+            width, height, scale, is_hdr=is_hdr, notify=True,
+        ):
+            self._export_settings['v_super_resolution'].set(SUPER_RESOLUTION_NAMES[1])
+            scale = 1
+        if self.playing:
+            self.pause()
+        self._stop_paused_prerender()
+        self._wait_play_dlss(timeout=2.0)
+        self._cache_clear()
+        self._last_dlss_frame = -1
+        self._split_frame = -1
+        self._split_dlss = None
+        self._close_super_resolution()
+        self._update_export_control_states()
+        self._schedule_settings_save()
+        if self.video and self.view_var.get() in ("DLSS", "对比"):
+            self.root.after_idle(self._display_precise_preview)
 
     def _on_export_settings_change(self):
         self._update_export_control_states()
@@ -2929,6 +3109,7 @@ class App:
             "nvenc_preset": export['nvenc_preset'],
             "output_container": export['output_container'],
             "output_resolution": export['output_resolution'],
+            "super_resolution_scale": export['super_resolution_scale'],
             "custom_output_width": export['custom_output_width'],
             "custom_output_height": export['custom_output_height'],
             "rate_control": export['rate_control'],
@@ -3015,6 +3196,7 @@ class App:
         self._source_kind = None
         self._video_color_info = None
         self._close_live()
+        self._close_super_resolution()
         self.root.destroy()
 
     def _parallel_progress(self, done, total, label):
@@ -3029,10 +3211,76 @@ class App:
             s.get('host_backend'), s.get('host_submission'),
             s.get('host_zero_fast_path'), s.get('host_persistent_buffers'),
             s.get('host_in_flight'),
+            normalize_scale(s.get('super_resolution_scale', 1)),
         )
 
     def _settings_hash(self):
         return self._hash_settings_dict(self._collect_settings())
+
+    def _super_resolution_scale(self, settings=None):
+        if settings is not None and 'super_resolution_scale' in settings:
+            return normalize_scale(settings['super_resolution_scale'])
+        if hasattr(self, '_export_settings'):
+            return normalize_scale(
+                self._collect_export_settings()['super_resolution_scale']
+            )
+        return 1
+
+    def _precise_preview_size(self):
+        width, height = self._source_size()
+        return super_resolution_target_size(
+            width, height, self._super_resolution_scale(),
+        )
+
+    def _ensure_super_resolution(self, width, height, scale, is_hdr=False):
+        scale = normalize_scale(scale)
+        if scale == 1:
+            return None
+        key = (int(width), int(height), scale, bool(is_hdr))
+        with self._super_resolution_lock:
+            if self._super_resolution_live is not None and self._super_resolution_key != key:
+                self._close_super_resolution()
+            if self._super_resolution_live is None:
+                self._super_resolution_live = ProcessSuperResolution(
+                    width, height, scale, is_hdr=is_hdr,
+                )
+                self._super_resolution_key = key
+            return self._super_resolution_live
+
+    def _close_super_resolution(self):
+        with self._super_resolution_lock:
+            if self._super_resolution_live is not None:
+                try:
+                    self._super_resolution_live.close()
+                except Exception:
+                    pass
+            self._super_resolution_live = None
+            self._super_resolution_key = None
+            self._last_super_resolution_preview = None
+
+    def _upscale_rgba(self, rgba, scale, is_hdr=False, session=None):
+        scale = normalize_scale(scale)
+        if scale == 1:
+            return rgba
+        height, width = rgba.shape[:2]
+        live = session or self._ensure_super_resolution(
+            width, height, scale, is_hdr=is_hdr,
+        )
+        if live is None:
+            raise RuntimeError("RTX 视频超分会话不可用")
+        return live.process(np.ascontiguousarray(rgba))
+
+    def _preview_composition_source(self, frame, original, processed):
+        if original is None or processed is None or original.shape[:2] == processed.shape[:2]:
+            return original
+        cached = self._last_super_resolution_preview
+        if cached is not None:
+            cached_frame, cached_image = cached
+            if int(cached_frame) == int(frame) and cached_image.shape[:2] == processed.shape[:2]:
+                return cached_image
+        return cv2.resize(
+            original, (processed.shape[1], processed.shape[0]), interpolation=cv2.INTER_LANCZOS4,
+        )
 
     def _ensure_live(self, w, h, settings=None):
         """Reuse one isolated host process for preview + strict single-session export.
@@ -3045,8 +3293,16 @@ class App:
             try:
                 need = (self._live is None) or (getattr(self, "_live_w", -1) != w) or (getattr(self, "_live_h", -1) != h)
                 if need:
+                    if settings.get("host_tiled_mode") and threading.current_thread() is threading.main_thread():
+                        self.logln(
+                            "[DLSS 大图] 使用 Feature 18 分区处理："
+                            f"{w}×{h}；子区域 "
+                            f"{settings.get('host_tile_width')}×{settings.get('host_tile_height')}"
+                        )
                     if self._live:
-                        self._live.resize(w, h, int(settings.get('preset', 1)))
+                        self._live.resize(
+                            w, h, int(settings.get('preset', 1)), settings=settings,
+                        )
                     else:
                         self._live = ProcessLive(w, h, settings)
                     self._live.update(settings)
@@ -3089,9 +3345,11 @@ class App:
         if width <= 0 or height <= 0:
             return
         if (width, height) == source_size:
-            self.set_status(f"实时预览 · 原始分辨率 {width}×{height}")
+            suffix = " · 暂停后生成超分精确帧" if self._super_resolution_scale() > 1 else ""
+            self.set_status(f"实时预览 · 原始分辨率 {width}×{height}{suffix}")
         else:
-            self.set_status(f"实时预览 {width}×{height} · 暂停后恢复原始分辨率")
+            suffix = "并生成超分精确帧" if self._super_resolution_scale() > 1 else "恢复原始分辨率"
+            self.set_status(f"实时预览 {width}×{height} · 暂停后{suffix}")
 
     @staticmethod
     def _cache_key(frame, size):
@@ -3104,37 +3362,64 @@ class App:
     def _live_dlss_image(self, frame, source_bgr=None, settings=None, target_size=None):
         settings = settings or self._collect_settings()
         sk = self._hash_settings_dict(settings)
-        if target_size is not None:
-            cached = self._cached_dlss_sk(frame, sk, target_size)
-            if cached is not None:
-                return cached
+        source_size = self._source_size(source_bgr)
+        sr_scale = self._super_resolution_scale(settings)
+        if target_size is None:
+            target_size = (
+                super_resolution_target_size(*source_size, sr_scale)
+                if sr_scale > 1 and not self.playing else source_size
+            )
+        cached = self._cached_dlss_sk(frame, sk, target_size)
+        if cached is not None:
+            return cached
         fr = source_bgr if source_bgr is not None else self._read_frame(frame)
         if fr is None:
             return None
         source_h, source_w = fr.shape[:2]
-        if target_size is None:
-            target_size = (source_w, source_h)
         try:
             requested_w, requested_h = map(int, target_size)
         except (TypeError, ValueError):
             requested_w, requested_h = source_w, source_h
         if requested_w <= 0 or requested_h <= 0:
             requested_w, requested_h = source_w, source_h
-        target_w, target_h = _fit_preview_size(
-            source_w, source_h, max(requested_w, requested_h)
+        sr_target = super_resolution_target_size(source_w, source_h, sr_scale)
+        use_super_resolution = (
+            sr_scale > 1 and not self.playing
+            and (requested_w, requested_h) == sr_target
         )
-        target_w = min(target_w, requested_w)
-        target_h = min(target_h, requested_h)
+        if use_super_resolution:
+            target_w, target_h = sr_target
+        else:
+            target_w, target_h = _fit_preview_size(
+                source_w, source_h, max(requested_w, requested_h)
+            )
+            target_w = min(target_w, requested_w)
+            target_h = min(target_h, requested_h)
         cached = self._cached_dlss_sk(frame, sk, (target_w, target_h))
         if cached is not None:
             return cached
-        if (target_w, target_h) != (source_w, source_h):
+        if use_super_resolution:
+            rgba_source = cv2.cvtColor(fr, cv2.COLOR_BGR2RGBA)
+            try:
+                rgba = self._upscale_rgba(rgba_source, sr_scale, is_hdr=False)
+            except Exception as ex:
+                self._live_error = str(ex)
+                self.logln("[RTX 超分预览] " + str(ex))
+                return None
+            fr = cv2.cvtColor(rgba, cv2.COLOR_RGBA2BGR)
+            self._last_super_resolution_preview = (int(frame), fr)
+        elif (target_w, target_h) != (source_w, source_h):
             fr = cv2.resize(fr, (target_w, target_h), interpolation=cv2.INTER_AREA)
-        h, w = fr.shape[:2]
-        rgb = cv2.cvtColor(fr, cv2.COLOR_BGR2RGB)
-        rgba = np.dstack([rgb, np.full((h, w), 255, np.uint8)])
+            rgba = cv2.cvtColor(fr, cv2.COLOR_BGR2RGBA)
+        else:
+            rgba = cv2.cvtColor(fr, cv2.COLOR_BGR2RGBA)
+        h, w = rgba.shape[:2]
+        live_settings = (
+            _large_image_host_settings(w, h, settings)
+            if getattr(self, "_source_kind", None) == "image" else settings
+        )
         with self._live_lock:
-            live = self._ensure_live(w, h, settings)
+            live = self._ensure_live(w, h, live_settings)
             if live is None:
                 return None
             reset = 0 if frame == self._last_dlss_frame + 1 else 1
@@ -3156,6 +3441,7 @@ class App:
                 return None
             processed = self._live_dlss_image(frame, source_bgr=original)
             settings = self._collect_settings()
+            original = self._preview_composition_source(frame, original, processed)
             return compose_preview_frame(
                 original, processed,
                 settings['output_view'], settings['output_mix'],
@@ -3163,11 +3449,11 @@ class App:
         return None
 
     def _cached_dlss(self, frame, target_size=None):
-        target_size = target_size or self._source_size()
+        target_size = target_size or self._precise_preview_size()
         return self._cached_dlss_sk(frame, self._settings_hash(), target_size)
 
     def _cached_dlss_sk(self, frame, sk, target_size=None):
-        target_size = target_size or self._source_size()
+        target_size = target_size or self._precise_preview_size()
         key = self._cache_key(frame, target_size)
         if key is None:
             return None
@@ -3268,6 +3554,7 @@ class App:
             self._last_shown_dlss = None
             self._preview_processed_frames = 0
             self._preview_process_t0 = None
+            self._last_super_resolution_preview = None
 
     def _canvas_size(self):
         return (
@@ -3387,6 +3674,7 @@ class App:
                     self._draw_fit(orig, cw, ch, badge="DLSS 生成失败")
                     return
                 settings = self._collect_settings()
+                orig = self._preview_composition_source(frame, orig, dlss)
                 dlss = compose_preview_frame(
                     orig, dlss,
                     settings['output_view'], settings['output_mix'],
@@ -3399,6 +3687,7 @@ class App:
                 self._draw_fit(self._split_orig, cw, ch, badge="DLSS 生成失败")
                 return
             settings = self._collect_settings()
+            orig = self._preview_composition_source(frame, orig, dlss)
             dlss = compose_preview_frame(
                 orig, dlss,
                 settings['output_view'], settings['output_mix'],
@@ -3701,18 +3990,24 @@ class App:
 
     def _display_precise_preview(self):
         source_size = self._source_size()
+        precise_size = self._precise_preview_size()
+        sr_scale = self._super_resolution_scale()
         wants_dlss = self.view_var.get() in ("DLSS", "对比") and not self._hold_original
         if wants_dlss:
             # Playback keeps a canvas-sized split image; invalidate it so compare
             # mode uses the full-resolution cache (or generates it) after pausing.
             self._split_frame = -1
             self._split_dlss = None
-        if wants_dlss and self._cached_dlss(self._frame, source_size) is None:
-            self.set_status("正在生成原始分辨率精确预览…")
+        if wants_dlss and self._cached_dlss(self._frame, precise_size) is None:
+            if sr_scale > 1:
+                self.set_status(f"正在生成 {sr_scale}× 超分精确预览…")
+            else:
+                self.set_status("正在生成原始分辨率精确预览…")
         self.display_view(quality="full")
-        if wants_dlss and self._cached_dlss(self._frame, source_size) is not None:
-            width, height = source_size
-            self.set_status(f"精确预览 · {width}×{height}")
+        if wants_dlss and self._cached_dlss(self._frame, precise_size) is not None:
+            width, height = precise_size
+            prefix = f"{sr_scale}× 超分" if sr_scale > 1 else "精确预览"
+            self.set_status(f"{prefix} · {width}×{height}")
 
     def _on_timeline_seek(self, frame, phase):
         if not self.video or self._exporting:
@@ -4908,6 +5203,7 @@ class App:
         self.pause()
         self._wait_play_dlss()
         self._audio.close()
+        self._close_super_resolution()
         self._cache_clear()
         self._last_dlss_frame = -1
         self._play_orig = None
@@ -5228,6 +5524,50 @@ class App:
         if self._export_cancel_event.is_set():
             raise _ExportCancelled()
 
+    def _confirm_super_resolution_export(self, width, height, scale, is_hdr=False, notify=True):
+        scale = normalize_scale(scale)
+        if scale == 1:
+            return True
+        status = super_resolution_runtime_status()
+        if not status['available']:
+            message = (
+                "RTX 视频超分组件不完整：" + "、".join(status['missing']) +
+                "。\n\n请重新构建或安装包含 RTX Video SDK 运行时的版本。"
+            )
+            self.logln("[RTX 超分] " + message.replace("\n", " "))
+            if notify:
+                messagebox.showerror("RTX 超分不可用", message)
+            return False
+        resource_estimate = estimate_resources(width, height, scale, is_hdr=is_hdr)
+        gpu_memory = query_gpu_memory(cache_seconds=0)
+        risk = classify_resource_risk(resource_estimate, gpu_memory)
+        plan_key = (int(width), int(height), scale, bool(is_hdr))
+        self.logln("[RTX 超分资源] " + format_resource_hint(resource_estimate, gpu_memory))
+        if (
+            not notify or risk not in {'medium', 'high', 'extreme'}
+            or plan_key in self._confirmed_super_resolution_plans
+        ):
+            return True
+        warning = (
+            f"即将执行 {scale}× RTX 视频超分 → DLSS 5\n\n"
+            f"目标尺寸：{resource_estimate['output_width']}×{resource_estimate['output_height']}\n"
+            f"单帧：{format_bytes(resource_estimate['single_frame_bytes'])}\n"
+            f"已知显存下限：{format_bytes(resource_estimate['known_gpu_bytes'])}\n"
+            f"建议空闲显存：{format_bytes(resource_estimate['recommended_gpu_bytes'])}\n"
+            f"预计系统内存：{format_bytes(resource_estimate['recommended_ram_bytes'])}"
+        )
+        if gpu_memory:
+            warning += f"\n当前 GPU 空闲：{format_bytes(gpu_memory['free_bytes'])}"
+        if resource_estimate['output_width'] > 8192 or resource_estimate['output_height'] > 8192:
+            warning += (
+                "\n\n目标有一边超过 8192。工具不会限制，但 RTX VSR 或视频编码器可能拒绝该尺寸。"
+            )
+        warning += "\n\n初始化或分配失败只会终止当前处理会话。是否继续？"
+        confirmed = messagebox.askyesno("高资源超分确认", warning, icon="warning")
+        if confirmed:
+            self._confirmed_super_resolution_plans.add(plan_key)
+        return confirmed
+
     def _export_image(self):
         settings = self._collect_settings()
         self._save_settings_now()
@@ -5240,8 +5580,17 @@ class App:
         """Process one standalone image without consulting or polluting preview caches."""
         height, width = source_bgr.shape[:2]
         rgba = cv2.cvtColor(source_bgr, cv2.COLOR_BGR2RGBA)
+        scale = self._super_resolution_scale(settings)
+        if scale > 1:
+            rgba = self._upscale_rgba(rgba, scale, is_hdr=False)
+            source_bgr = cv2.cvtColor(rgba, cv2.COLOR_RGBA2BGR)
+            self._last_super_resolution_preview = (0, source_bgr)
+            height, width = source_bgr.shape[:2]
         with self._live_lock:
-            live = self._ensure_live(width, height, settings)
+            live = self._ensure_live(
+                width, height,
+                _large_image_host_settings(width, height, settings),
+            )
             if live is None:
                 return None
             processed_rgba = live.process(rgba, reset=True)
@@ -5264,6 +5613,14 @@ class App:
                 "success": False, "cancelled": False, "error": error,
                 "output_path": out_path or "", "frames": 0,
             }
+        scale = self._super_resolution_scale(settings)
+        if not self._confirm_super_resolution_export(
+            orig.shape[1], orig.shape[0], scale, is_hdr=False, notify=notify,
+        ):
+            return {
+                "success": False, "cancelled": True, "error": "用户取消超分导出",
+                "output_path": out_path or "", "frames": 0,
+            }
         ext = os.path.splitext(source_path)[1].lower()
         if ext not in IMAGE_ENCODE_EXTS:
             ext = ".png"
@@ -5283,6 +5640,7 @@ class App:
                 raise RuntimeError("DLSS 处理失败")
             view = settings["output_view"]
             mix = float(settings["output_mix"])
+            orig = self._preview_composition_source(0, orig, processed)
             composed = compose_output_frame(orig, processed, view, mix)
             out_path = _write_image_bgr(out_path, composed)
             success = True
@@ -5305,6 +5663,93 @@ class App:
         }
 
     # ---------- export ----------
+    def _export_sdr_upscaled_video(
+        self, source_path, color_info, out_path, total_frames, fps, width, height,
+        settings, export_settings, view, mix,
+    ):
+        """Run fixed VSR -> Feature 18 -> encode with one bounded target frame."""
+        scale = normalize_scale(export_settings.get('super_resolution_scale', 1))
+        output_width, output_height = super_resolution_target_size(width, height, scale)
+        dlss_settings = dict(settings)
+        if output_width * output_height > 3840 * 2160:
+            dlss_settings['host_in_flight'] = 1
+        writer = None
+        sr_live = None
+        live = None
+        completed = False
+        written = 0
+        super_resolution_seconds = 0.0
+        dlss_seconds = 0.0
+        memory_before = query_gpu_memory(cache_seconds=0)
+        try:
+            writer = FFmpegVideoWriter(
+                out_path, output_width, output_height, fps, audio_source=source_path,
+                nvenc_preset=export_settings['nvenc_preset'],
+                rate_control=export_settings['rate_control'],
+                quality_profile=export_settings['quality_profile'],
+                video_bitrate_mbps=export_settings['video_bitrate_mbps'],
+                output_size=None,
+            )
+            sr_live = ProcessSuperResolution(width, height, scale, is_hdr=False)
+            live = ProcessLive(output_width, output_height, dlss_settings)
+            memory_after = query_gpu_memory(cache_seconds=0)
+            if memory_before and memory_after:
+                measured = max(
+                    memory_before['free_bytes'] - memory_after['free_bytes'], 0,
+                )
+                self.logln(f"[RTX 超分资源] 初始化后显存占用增加约 {format_bytes(measured)}")
+            self.logln(
+                f"[RTX 超分] SDR {width}×{height} → {output_width}×{output_height} → "
+                "DLSS 5"
+            )
+            self.logln(
+                f"[DLSS 主机] {live.backend}；目标分辨率队列 {live.max_in_flight} 帧"
+            )
+            decode_buffer = 1
+            for index, frame in self._iter_frames(
+                decode_buffer,
+                tone_map_hdr=bool((color_info or {}).get('is_hdr')),
+                source_path=source_path, color_info=color_info,
+            ):
+                self._raise_if_export_cancelled()
+                rgba = cv2.cvtColor(frame, cv2.COLOR_BGR2RGBA)
+                started = time.perf_counter()
+                upscaled_rgba = sr_live.process(rgba)
+                super_resolution_seconds += time.perf_counter() - started
+                upscaled_bgr = cv2.cvtColor(upscaled_rgba, cv2.COLOR_RGBA2BGR)
+                started = time.perf_counter()
+                processed_rgba = live.process(upscaled_rgba, reset=(index == 0))
+                dlss_seconds += time.perf_counter() - started
+                if processed_rgba is None:
+                    raise RuntimeError(f"DLSS 处理第 {index} 帧失败")
+                processed_bgr = cv2.cvtColor(processed_rgba, cv2.COLOR_RGBA2BGR)
+                writer.write(compose_output_frame(
+                    upscaled_bgr, processed_bgr, view=view, mix=mix,
+                ))
+                written = index + 1
+                if written == 1 or written % 2 == 0 or written >= total_frames:
+                    self.set_progress(written, max(total_frames, written), "超分 → DLSS 导出")
+                    self.root.update()
+            self._raise_if_export_cancelled()
+            writer.finish()
+            completed = True
+            return {
+                "frames": written,
+                "super_resolution_seconds": super_resolution_seconds,
+                "dlss_seconds": dlss_seconds,
+                "encoder": writer.encoder_name,
+                "audio_mode": writer.audio_mode,
+                "host_backend": live.backend,
+                "in_flight": live.max_in_flight,
+            }
+        finally:
+            if live is not None:
+                live.close()
+            if sr_live is not None:
+                sr_live.close()
+            if writer is not None and not completed:
+                writer.abort()
+
     def _export_hdr_video(
         self, source_path, color_info, out_path, total_frames, fps, width, height,
         settings, export_settings, view, mix,
@@ -5313,6 +5758,8 @@ class App:
         color_info = dict(color_info or {})
         if not color_info.get("is_hdr"):
             raise RuntimeError("HDR 导出请求与源视频色彩元数据不一致")
+        scale = normalize_scale(export_settings.get('super_resolution_scale', 1))
+        process_width, process_height = super_resolution_target_size(width, height, scale)
         hdr_settings = {
             **settings,
             "frame_format": "rgba16f",
@@ -5320,11 +5767,15 @@ class App:
             "host_backend": "v2",
             "host_auto_fallback": False,
         }
+        if process_width * process_height > 3840 * 2160:
+            hdr_settings['host_in_flight'] = 1
         reader = None
         writer = None
         live = None
+        sr_live = None
         completed = False
         dlss_seconds = 0.0
+        super_resolution_seconds = 0.0
         written = 0
         try:
             ffmpeg = find_ffmpeg()
@@ -5332,16 +5783,20 @@ class App:
                 source_path, width, height, color_info, ffmpeg=ffmpeg,
             )
             writer = FFmpegVideoWriter(
-                out_path, width, height, fps, audio_source=source_path,
+                out_path, process_width, process_height, fps, audio_source=source_path,
                 nvenc_preset=export_settings['nvenc_preset'], hdr_metadata=color_info,
                 rate_control=export_settings['rate_control'],
                 quality_profile=export_settings['quality_profile'],
                 video_bitrate_mbps=export_settings['video_bitrate_mbps'],
-                output_size=export_settings.get('output_size'),
+                output_size=None if scale > 1 else export_settings.get('output_size'),
             )
-            live = ProcessLive(width, height, hdr_settings)
+            if scale > 1:
+                sr_live = ProcessSuperResolution(width, height, scale, is_hdr=True)
+            live = ProcessLive(process_width, process_height, hdr_settings)
             self.logln(
-                f"[HDR] {color_info.get('label')} → RGBA16F Feature 18 → "
+                f"[HDR] {color_info.get('label')} → "
+                + (f"10-bit RTX VSR {scale}× → " if scale > 1 else "")
+                + "RGBA16F Feature 18 → "
                 f"{writer.encoder_name}"
             )
             self.logln(
@@ -5373,8 +5828,12 @@ class App:
                 frame = reader.read()
                 if frame is None:
                     break
+                if sr_live is not None:
+                    sr_started = time.perf_counter()
+                    frame = sr_live.process(frame)
+                    super_resolution_seconds += time.perf_counter() - sr_started
                 started = time.perf_counter()
-                if live.supports_async:
+                if live.supports_async and sr_live is None:
                     if not live.enqueue(frame, reset=(index == 0)):
                         raise RuntimeError(f"HDR DLSS 异步提交第 {index} 帧失败")
                     dlss_seconds += time.perf_counter() - started
@@ -5400,6 +5859,7 @@ class App:
             return {
                 "frames": written,
                 "dlss_seconds": dlss_seconds,
+                "super_resolution_seconds": super_resolution_seconds,
                 "encoder": writer.encoder_name,
                 "audio_mode": writer.audio_mode,
                 "host_backend": live.backend,
@@ -5410,6 +5870,8 @@ class App:
                 reader.close()
             if live is not None:
                 live.close()
+            if sr_live is not None:
+                sr_live.close()
             if writer is not None and not completed:
                 writer.abort()
 
@@ -5457,16 +5919,38 @@ class App:
                 "success": False, "cancelled": False, "error": error,
                 "output_path": out_path or "", "frames": 0,
             }
-        output_width, output_height = _resolve_output_size(
-            w, h, export_settings['output_resolution'],
-            export_settings['custom_output_width'], export_settings['custom_output_height'],
+        super_resolution_scale = normalize_scale(
+            export_settings.get('super_resolution_scale', 1)
         )
+        settings['super_resolution_scale'] = super_resolution_scale
+        if super_resolution_scale > 1:
+            output_width, output_height = super_resolution_target_size(
+                w, h, super_resolution_scale,
+            )
+        else:
+            output_width, output_height = _resolve_output_size(
+                w, h, export_settings['output_resolution'],
+                export_settings['custom_output_width'], export_settings['custom_output_height'],
+            )
         if output_width <= 0 or output_height <= 0:
             output_width, output_height = w, h
         export_settings['output_size'] = (
             (output_width, output_height)
-            if (output_width, output_height) != (w, h) else None
+            if super_resolution_scale == 1 and (output_width, output_height) != (w, h)
+            else None
         )
+        hdr_active = bool(export_settings['hdr_mode'] and color_info.get('is_hdr'))
+        if not self._confirm_super_resolution_export(
+            w, h, super_resolution_scale, is_hdr=hdr_active, notify=notify,
+        ):
+            return {
+                "success": False, "cancelled": True, "error": "用户取消超分导出",
+                "output_path": out_path or "", "frames": 0,
+            }
+        if super_resolution_scale > 1:
+            self._wait_play_dlss(timeout=3.0)
+            self._close_super_resolution()
+            self._close_live()
         view = settings['output_view']; mix = float(settings['output_mix'])
         live = None; writer = None
         default_out_path = os.path.splitext(source_path)[0] + "_dlss" + output_extension
@@ -5475,14 +5959,17 @@ class App:
             out_path = self._unique_target_path(out_path)
         if out_path != default_out_path and notify:
             self.logln("[导出] 目标文件已存在，自动改名为: " + os.path.basename(out_path))
-        self._begin_export_ui("正在流水线导出（CPU 解码 + GPU DLSS/NVENC）...")
+        pipeline_name = (
+            "RTX超分 + GPU DLSS/NVENC" if super_resolution_scale > 1
+            else "CPU 解码 + GPU DLSS/NVENC"
+        )
+        self._begin_export_ui(f"正在流水线导出（{pipeline_name}）...")
         success = False
         cancelled = False
         started_at = self._export_t0
         dlss_seconds = 0.0
         exported_frames = 0
-        hdr_active = bool(export_settings['hdr_mode'] and color_info.get('is_hdr'))
-        if hdr_active:
+        if hdr_active or super_resolution_scale > 1:
             export_settings['mode'] = 'single'
         error_message = ""
         try:
@@ -5507,6 +5994,7 @@ class App:
                 )
                 exported_frames = result['frames']
                 dlss_seconds = result['dlss_seconds']
+                super_resolution_seconds = result.get('super_resolution_seconds', 0.0)
                 success = True
                 self.logln(f"[导出] 编码器: {result['encoder']}")
                 self.logln(
@@ -5518,7 +6006,29 @@ class App:
                 throughput = exported_frames / elapsed if elapsed > 0 else 0.0
                 self.logln(
                     f"[性能] HDR {exported_frames} 帧 / {elapsed:.1f} 秒 = "
-                    f"{throughput:.2f} fps；DLSS {dlss_seconds:.1f} 秒"
+                    f"{throughput:.2f} fps；"
+                    + (
+                        f"超分 {super_resolution_seconds:.1f} 秒；"
+                        if super_resolution_scale > 1 else ""
+                    )
+                    + f"DLSS {dlss_seconds:.1f} 秒"
+                )
+            elif super_resolution_scale > 1:
+                result = self._export_sdr_upscaled_video(
+                    source_path, color_info, out_path, n, fps, w, h,
+                    settings, export_settings, view, mix,
+                )
+                exported_frames = result['frames']
+                dlss_seconds = result['dlss_seconds']
+                success = True
+                self.logln(f"[导出] 编码器: {result['encoder']}")
+                self.logln(f"[导出] 音频: {result['audio_mode']}")
+                elapsed = time.perf_counter() - started_at
+                throughput = exported_frames / elapsed if elapsed > 0 else 0.0
+                self.logln(
+                    f"[性能] 超分+DLSS {exported_frames} 帧 / {elapsed:.1f} 秒 = "
+                    f"{throughput:.2f} fps；超分 {result['super_resolution_seconds']:.1f} 秒；"
+                    f"DLSS {dlss_seconds:.1f} 秒"
                 )
             elif export_settings['mode'] == 'parallel':
                 self.logln(
@@ -5724,6 +6234,39 @@ class App:
 
 
 def main():
+    if "--vsr-selftest" in sys.argv:
+        try:
+            source = np.zeros((180, 320, 4), np.uint8)
+            source[..., 0] = np.linspace(0, 255, 320, dtype=np.uint8)
+            source[..., 1] = np.linspace(0, 255, 180, dtype=np.uint8)[:, None]
+            source[..., 2:] = 255
+            with ProcessSuperResolution(320, 180, 2, is_hdr=False) as sr:
+                upscaled = sr.process(source)
+            settings = {
+                'host_backend': 'v2', 'host_auto_fallback': False,
+                'host_submission': 'merged', 'host_persistent_buffers': True,
+                'host_zero_fast_path': True, 'host_in_flight': 1,
+                'style': 0, 'intensity': 1.0, 'local_tone': 1.0,
+                'local_struct': 1.0, 'skin_struct': 0.5, 'use_auto_mask': False,
+            }
+            live = ProcessLive(640, 360, settings)
+            try:
+                enhanced = live.process(upscaled, reset=True)
+            finally:
+                live.close()
+            result = (
+                f"VSR_DLSS_OK {enhanced.dtype} {enhanced.shape}"
+                if enhanced is not None else "VSR_DLSS_FAIL no output"
+            )
+        except Exception as exception:
+            result = "VSR_DLSS_FAIL " + repr(exception)[:1000]
+        try:
+            outdir = os.path.dirname(os.path.abspath(sys.argv[0]))
+            with open(os.path.join(outdir, "_vsr_selftest.txt"), "w", encoding="utf-8") as handle:
+                handle.write(result)
+        except Exception:
+            pass
+        return
     if "--selftest" in sys.argv:
         # headless DLSS sanity check (writes a result file; used to verify the frozen exe
         # can load the host/runtime DLLs from _MEIPASS and actually run Feature 18).

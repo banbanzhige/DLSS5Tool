@@ -19,6 +19,7 @@ import numpy as np
 
 from app_version import APP_VERSION
 import dlss_engine
+import super_resolution
 
 
 _CREATE_NO_WINDOW = getattr(subprocess, "CREATE_NO_WINDOW", 0)
@@ -34,7 +35,7 @@ _KNOWN_RUNTIMES = {
 }
 _UI_LOG_MARKERS = (
     "dlss", "ngx", "d3d12", "主机", "后端", "失败", "错误", "异常",
-    "hdr", "编码器", "性能", "色彩检测", "preview",
+    "hdr", "编码器", "性能", "色彩检测", "preview", "vsr", "超分",
 )
 _MEDIA_PATH_PATTERN = re.compile(
     r"(?i)(?:[A-Z]:[\\/]|\\\\)[^\r\n<>|\"]+?\."
@@ -355,6 +356,8 @@ def write_diagnostic_report(output_path, context=None):
         "nvngx_dlssnr.dll": describe_file(dlss_engine.DLSSNR_DLL),
         "dlssnr_host_v2.dll": describe_file(dlss_engine.HOST_DLL_V2),
         "dlssnr_host.dll": describe_file(dlss_engine.HOST_DLL_LEGACY),
+        "nvngx_vsr.dll": describe_file(super_resolution.VSR_RUNTIME_DLL),
+        "vsr_host.dll": describe_file(super_resolution.VSR_HOST_DLL),
     }
     gpu = _command_output([
         "nvidia-smi",

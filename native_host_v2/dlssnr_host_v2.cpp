@@ -58,7 +58,10 @@ struct HostConfig
     bool persistent_buffers = true;
     bool merged_submission = true;
     bool auto_fallback = true;
+    bool tiled_subrects = false;
     int in_flight = 2;
+    int tile_width = 6000;
+    int tile_height = 3000;
 };
 
 struct Options
@@ -131,6 +134,8 @@ bool g_initialized = false;
 bool g_ready = false;
 UINT g_width = 0;
 UINT g_height = 0;
+UINT g_feature_width = 0;
+UINT g_feature_height = 0;
 int g_slot_count = 1;
 FrameFormat g_frame_format = FrameFormat::Rgba8;
 ColorProfile g_color_profile = ColorProfile::Srgb;
@@ -581,8 +586,10 @@ void SetCreateParameters()
 {
     const int width = static_cast<int>(g_width);
     const int height = static_cast<int>(g_height);
-    g_params->Set("DLSSNR.Width", width);
-    g_params->Set("DLSSNR.Height", height);
+    const int feature_width = static_cast<int>(g_feature_width);
+    const int feature_height = static_cast<int>(g_feature_height);
+    g_params->Set("DLSSNR.Width", feature_width);
+    g_params->Set("DLSSNR.Height", feature_height);
     g_params->Set("DLSSNR.InputWidth", width);
     g_params->Set("DLSSNR.InputHeight", height);
     g_params->Set("DLSSNR.OutputWidth", width);
@@ -606,7 +613,9 @@ void SetCreateParameters()
         IsHdrProfile() ? static_cast<int>(NVSDK_NGX_DLSS_Feature_Flags_IsHDR) : 0);
 }
 
-void SetEvaluationParameters(Slot &slot, bool reset)
+void SetEvaluationParameters(
+    Slot &slot, bool reset, UINT base_x = 0, UINT base_y = 0,
+    UINT rect_width = 0, UINT rect_height = 0)
 {
     ID3D12Resource *motion = g_config.zero_guidance_fast_path ? g_zero_motion : slot.motion;
     ID3D12Resource *depth = g_config.zero_guidance_fast_path ? g_zero_depth : slot.depth;
@@ -628,12 +637,16 @@ void SetEvaluationParameters(Slot &slot, bool reset)
         {"DLSSNR.MVecSubrectBaseX", "DLSSNR.MVecSubrectBaseY", "DLSSNR.MVecSubrectWidth", "DLSSNR.MVecSubrectHeight"},
         {"DLSSNR.DepthSubrectBaseX", "DLSSNR.DepthSubrectBaseY", "DLSSNR.DepthSubrectWidth", "DLSSNR.DepthSubrectHeight"},
     };
+    if (rect_width == 0)
+        rect_width = g_width;
+    if (rect_height == 0)
+        rect_height = g_height;
     for (const auto &item : keys)
     {
-        g_params->Set(item.x, 0);
-        g_params->Set(item.y, 0);
-        g_params->Set(item.width, static_cast<int>(g_width));
-        g_params->Set(item.height, static_cast<int>(g_height));
+        g_params->Set(item.x, static_cast<int>(base_x));
+        g_params->Set(item.y, static_cast<int>(base_y));
+        g_params->Set(item.width, static_cast<int>(rect_width));
+        g_params->Set(item.height, static_cast<int>(rect_height));
     }
 
     g_params->Set("DLSSNR.MVecScaleX", g_options.motion_scale_x);
@@ -715,7 +728,7 @@ bool InitializeZeroTextures()
 
 bool CreateFrameResources()
 {
-    g_slot_count = (g_config.merged_submission && g_config.persistent_buffers)
+    g_slot_count = (!g_config.tiled_subrects && g_config.merged_submission && g_config.persistent_buffers)
         ? std::clamp(g_config.in_flight, 1, kMaxSlots)
         : 1;
     for (int index = 0; index < g_slot_count; ++index)
@@ -768,6 +781,8 @@ void ReleaseFeatureResources()
     Release(g_zero_motion);
     Release(g_zero_depth);
     g_ready = false;
+    g_feature_width = 0;
+    g_feature_height = 0;
 }
 
 bool SubmitUploadImmediate(
@@ -865,6 +880,53 @@ bool ProcessCompatibility(
     return SubmitReadbackImmediate(slot, output);
 }
 
+bool ProcessTiledSubrects(
+    const void *color, const float *motion, const float *depth, void *output)
+{
+    Slot &slot = g_slots[0];
+    if (!SubmitUploadImmediate(
+            slot, slot.color, g_config.persistent_buffers ? &slot.color_upload : nullptr,
+            color, FrameRowPitch()))
+        return false;
+    if (!g_config.zero_guidance_fast_path)
+    {
+        if (!SubmitMotionImmediate(slot, motion) || !SubmitDepthImmediate(slot, depth))
+            return false;
+    }
+
+    const UINT tile_width = std::max(g_feature_width, 1u);
+    const UINT tile_height = std::max(g_feature_height, 1u);
+    const UINT columns = (g_width + tile_width - 1) / tile_width;
+    const UINT rows = (g_height + tile_height - 1) / tile_height;
+    Log("Feature 18 tiled evaluation: frame=%ux%u tile=%ux%u grid=%ux%u",
+        g_width, g_height, tile_width, tile_height, columns, rows);
+
+    for (UINT y = 0; y < g_height; y += tile_height)
+    {
+        const UINT height = std::min(tile_height, g_height - y);
+        for (UINT x = 0; x < g_width; x += tile_width)
+        {
+            const UINT width = std::min(tile_width, g_width - x);
+            if (!BeginCommands(slot))
+                return false;
+            // Each rectangle is an independent still-image region. Resetting prevents
+            // temporal history from one spatial tile contaminating the next one.
+            SetEvaluationParameters(slot, true, x, y, width, height);
+            const NVSDK_NGX_Result evaluated = SafeEvaluate(slot.list);
+            if (!NgxSucceeded(evaluated))
+            {
+                Log("EvaluateFeature tiled rect=%u,%u %ux%u -> 0x%08X",
+                    x, y, width, height, evaluated);
+                AbortCommands(slot);
+                return false;
+            }
+            if (!SubmitCommands(slot, true))
+                return false;
+        }
+    }
+    return SubmitReadbackImmediate(slot, output);
+}
+
 bool ProcessMergedTransient(
     const void *color, const float *motion, const float *depth, void *output, bool reset)
 {
@@ -924,7 +986,7 @@ cleanup:
 
 bool EnqueueFrame(const void *color, const float *motion, const float *depth, bool reset)
 {
-    if (!g_ready || !g_config.merged_submission || !g_config.persistent_buffers ||
+    if (!g_ready || g_config.tiled_subrects || !g_config.merged_submission || !g_config.persistent_buffers ||
         color == nullptr || g_pending_count >= g_slot_count)
         return false;
     const int index = g_enqueue_cursor;
@@ -988,6 +1050,12 @@ bool CreateFeatureResources(UINT width, UINT height, int preset)
     ReleaseFeatureResources();
     g_width = width;
     g_height = height;
+    g_feature_width = g_config.tiled_subrects
+        ? std::min(width, static_cast<UINT>(std::max(g_config.tile_width, 1)))
+        : width;
+    g_feature_height = g_config.tiled_subrects
+        ? std::min(height, static_cast<UINT>(std::max(g_config.tile_height, 1)))
+        : height;
     g_options.preset = static_cast<unsigned int>(std::max(preset, 0));
     if (!CreateFrameResources())
     {
@@ -1025,9 +1093,10 @@ bool CreateFeatureResources(UINT width, UINT height, int preset)
     g_ready = true;
     g_needs_recreate = false;
     ResetPending();
-    Log("Feature 18 ready: merged=%d persistent=%d zero_fast=%d in_flight=%d",
+    Log("Feature 18 ready: merged=%d persistent=%d zero_fast=%d in_flight=%d tiled=%d core=%ux%u",
         g_config.merged_submission, g_config.persistent_buffers,
-        g_config.zero_guidance_fast_path, g_slot_count);
+        g_config.zero_guidance_fast_path, g_slot_count,
+        g_config.tiled_subrects, g_feature_width, g_feature_height);
     return true;
 }
 
@@ -1140,7 +1209,7 @@ extern "C" __declspec(dllexport) void dlssnr_configure(
     int zero_guidance_fast_path, int persistent_buffers, int merged_submission,
     int in_flight, int auto_fallback)
 {
-    HostConfig next;
+    HostConfig next = g_config;
     next.zero_guidance_fast_path = zero_guidance_fast_path != 0;
     next.persistent_buffers = persistent_buffers != 0;
     next.merged_submission = merged_submission != 0;
@@ -1155,6 +1224,23 @@ extern "C" __declspec(dllexport) void dlssnr_configure(
     if (changed && g_ready)
         g_needs_recreate = true;
     g_config = next;
+}
+
+extern "C" __declspec(dllexport) void dlssnr_configure_tiling(
+    int enabled, int tile_width, int tile_height)
+{
+    const bool next_enabled = enabled != 0;
+    const int next_width = std::clamp(tile_width, 64, 8192);
+    const int next_height = std::clamp(tile_height, 64, 8192);
+    const bool changed =
+        next_enabled != g_config.tiled_subrects ||
+        next_width != g_config.tile_width ||
+        next_height != g_config.tile_height;
+    if (changed && g_ready)
+        g_needs_recreate = true;
+    g_config.tiled_subrects = next_enabled;
+    g_config.tile_width = next_width;
+    g_config.tile_height = next_height;
 }
 
 extern "C" __declspec(dllexport) void dlssnr_configure_format(
@@ -1175,8 +1261,10 @@ extern "C" __declspec(dllexport) void dlssnr_configure_format(
 extern "C" __declspec(dllexport) int dlssnr_capabilities()
 {
     int result = 1; // v2 host
-    if (g_config.merged_submission && g_config.persistent_buffers)
+    if (!g_config.tiled_subrects && g_config.merged_submission && g_config.persistent_buffers)
         result |= 2; // asynchronous enqueue/dequeue
+    if (g_config.tiled_subrects)
+        result |= 4; // Feature 18 subrect tiling
     return result;
 }
 
@@ -1308,7 +1396,11 @@ extern "C" __declspec(dllexport) int dlssnr_process(
         return 0;
 
     bool ok = false;
-    if (g_config.merged_submission && g_config.persistent_buffers)
+    if (g_config.tiled_subrects)
+        ok = ProcessTiledSubrects(
+            color_rgba8, static_cast<const float *>(motion_float2),
+            static_cast<const float *>(depth_float), output_rgba8);
+    else if (g_config.merged_submission && g_config.persistent_buffers)
         ok = EnqueueFrame(
                  color_rgba8, static_cast<const float *>(motion_float2),
                  static_cast<const float *>(depth_float), reset != 0) &&
@@ -1322,7 +1414,8 @@ extern "C" __declspec(dllexport) int dlssnr_process(
             color_rgba8, static_cast<const float *>(motion_float2),
             static_cast<const float *>(depth_float), output_rgba8, reset != 0);
 
-    if (!ok && g_config.auto_fallback && g_config.merged_submission && g_pending_count == 0)
+    if (!ok && !g_config.tiled_subrects && g_config.auto_fallback &&
+        g_config.merged_submission && g_pending_count == 0)
     {
         Log("merged path failed; retrying current frame with compatibility submission");
         ok = ProcessCompatibility(

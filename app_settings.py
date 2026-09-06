@@ -35,6 +35,7 @@ DEFAULTS = {
     "nvenc_preset": "p7",
     "output_container": "mp4",
     "output_resolution": "source",
+    "super_resolution_scale": 1,
     "custom_output_width": 1920,
     "custom_output_height": 1080,
     "rate_control": "quality",
@@ -129,6 +130,12 @@ def validate(values):
         "source", "2160p", "1440p", "1080p", "720p", "custom",
     }:
         result["output_resolution"] = source["output_resolution"]
+    super_resolution_scale = _clamp_int(
+        source.get("super_resolution_scale", result["super_resolution_scale"]), 1, 4
+    )
+    result["super_resolution_scale"] = (
+        super_resolution_scale if super_resolution_scale in {1, 2, 4} else 1
+    )
     result["custom_output_width"] = _clamp_int(
         source.get("custom_output_width", result["custom_output_width"]), 2, 8192
     )

@@ -28,6 +28,8 @@ _libraries = {}
 FRAME_FORMAT_RGBA8 = "rgba8"
 FRAME_FORMAT_RGBA16F = "rgba16f"
 COLOR_PROFILES = {"srgb": 0, "scrgb": 1, "hdr10_pq": 2, "hdr10_hlg": 3}
+DEFAULT_TILE_WIDTH = 6000
+DEFAULT_TILE_HEIGHT = 3000
 
 
 def frame_dtype(settings=None):
@@ -84,6 +86,9 @@ def _bind_library(lib):
         lib.dlssnr_dequeue.restype = ctypes.c_int
         lib.dlssnr_pending.argtypes = []
         lib.dlssnr_pending.restype = ctypes.c_int
+    if hasattr(lib, "dlssnr_configure_tiling"):
+        lib.dlssnr_configure_tiling.argtypes = [ctypes.c_int] * 3
+        lib.dlssnr_configure_tiling.restype = None
     if hasattr(lib, "dlssnr_configure_format"):
         lib.dlssnr_configure_format.argtypes = [ctypes.c_int, ctypes.c_int]
         lib.dlssnr_configure_format.restype = None
@@ -120,15 +125,27 @@ def _host_config(settings):
         str(s.get("host_submission", "merged")) == "merged",
         max(1, min(3, int(s.get("host_in_flight", 2)))),
         bool(s.get("host_auto_fallback", True)),
+        bool(s.get("host_tiled_mode", False)),
+        max(64, min(8192, int(s.get("host_tile_width", DEFAULT_TILE_WIDTH)))),
+        max(64, min(8192, int(s.get("host_tile_height", DEFAULT_TILE_HEIGHT)))),
     )
 
 
 def _configure_host(lib, settings):
     if hasattr(lib, "dlssnr_configure"):
-        zero_fast, persistent, merged, in_flight, fallback = _host_config(settings)
+        zero_fast, persistent, merged, in_flight, fallback, *_ = _host_config(settings)
         lib.dlssnr_configure(
             int(zero_fast), int(persistent), int(merged),
             in_flight, int(fallback),
+        )
+    tiled = bool((settings or {}).get("host_tiled_mode", False))
+    if tiled and not hasattr(lib, "dlssnr_configure_tiling"):
+        raise RuntimeError("当前 DLSS 主机不支持大图分区处理，请重新编译 v2 主机")
+    if hasattr(lib, "dlssnr_configure_tiling"):
+        lib.dlssnr_configure_tiling(
+            int(tiled),
+            max(64, min(8192, int((settings or {}).get("host_tile_width", DEFAULT_TILE_WIDTH)))),
+            max(64, min(8192, int((settings or {}).get("host_tile_height", DEFAULT_TILE_HEIGHT)))),
         )
     format_id, profile_id = frame_contract(settings)
     if format_id == 1:
@@ -156,6 +173,14 @@ def _set_options(lib, s):
         int(s.get('depth_convention', 2)), # inert (depth ignored)
         float(s.get('motion_scale_x', 1.0)),
         float(s.get('motion_scale_y', 1.0)))
+
+
+def _read_log_tail(path, limit=800):
+    try:
+        with open(path, encoding="utf-8", errors="replace") as handle:
+            return handle.read()[-max(int(limit), 0):]
+    except OSError:
+        return ""
 
 
 def _apply_output_view(processed, color, view, mix, w, h):
@@ -209,7 +234,7 @@ class Live:
         if not self._lib.dlssnr_init(self._w, self._h, int(s.get('preset', 1)), DLSSNR_DLL, LOG_PATH):
             raise RuntimeError("dlssnr_init failed (D3D12/gate). See dlss_run.log")
         if not self._lib.dlssnr_create_feature(self._w, self._h, int(s.get('preset', 1))):
-            log = open(LOG_PATH).read() if os.path.exists(LOG_PATH) else ""
+            log = _read_log_tail(LOG_PATH)
             raise RuntimeError("Feature 18 create failed.\n" + log[-800:])
         self._config = _host_config(s)
         self._refresh_capabilities()
@@ -234,7 +259,8 @@ class Live:
             if hasattr(self._lib, "dlssnr_capabilities") else 0
         )
         requested = max(1, min(3, int(self.settings.get("host_in_flight", 2))))
-        self.max_in_flight = requested if capabilities & 2 else 1
+        self.tiled = bool(capabilities & 4)
+        self.max_in_flight = requested if capabilities & 2 and not self.tiled else 1
         self.supports_async = self.max_in_flight > 1
 
     def update(self, settings):
@@ -266,7 +292,7 @@ class Live:
         self.settings['preset'] = preset
         _set_options(self._lib, self.settings)
         if not self._lib.dlssnr_resize(w, h, preset):
-            log = open(LOG_PATH).read() if os.path.exists(LOG_PATH) else ""
+            log = _read_log_tail(LOG_PATH)
             raise RuntimeError("Feature 18 resize failed.\n" + log[-800:])
         self._w, self._h = w, h
         self._config = _host_config(self.settings)
