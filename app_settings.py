@@ -52,6 +52,8 @@ DEFAULTS = {
     "ui_export_open": True,
     "ui_host_open": True,
     "ui_preview_open": True,
+    "ui_theme": "dark",
+    "inspector_width": 360,
     "preview_detached": False,
     "preview_window_geometry": "",
     "queue_output_dir": "",
@@ -176,6 +178,11 @@ def validate(values):
         "ui_export_open", "ui_host_open", "ui_preview_open", "preview_detached",
     ):
         result[name] = _as_bool(source.get(name, result[name]), result[name])
+    theme = str(source.get("ui_theme", result["ui_theme"])).strip().lower()
+    result["ui_theme"] = "light" if theme == "light" else "dark"
+    result["inspector_width"] = _clamp_int(
+        source.get("inspector_width", result["inspector_width"]), 320, 480,
+    )
     result["preview_window_geometry"] = _as_window_geometry(
         source.get("preview_window_geometry", result["preview_window_geometry"])
     )

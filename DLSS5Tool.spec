@@ -40,6 +40,13 @@ for filename in ("LICENSE", "README.md", "THIRD_PARTY_NOTICES.md"):
     if os.path.isfile(source):
         datas.append((source, "."))
 
+app_icon = os.path.join(project_root, "assets", "app.ico")
+app_icon_png = os.path.join(project_root, "assets", "app.png")
+for required_icon in (app_icon, app_icon_png):
+    if not os.path.isfile(required_icon):
+        raise SystemExit(f"Missing required application icon: {required_icon}")
+    datas.append((required_icon, "assets"))
+
 a = Analysis(
     [os.path.join(project_root, "gui.py")],
     pathex=[project_root],
@@ -79,6 +86,7 @@ exe = EXE(
     codesign_identity=None,
     entitlements_file=None,
     version=os.path.join(project_root, "DLSS5Tool.version.txt"),
+    icon=app_icon,
 )
 
 coll = COLLECT(

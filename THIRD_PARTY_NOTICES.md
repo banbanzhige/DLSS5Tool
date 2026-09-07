@@ -55,7 +55,52 @@ RTX Video SDK 1.1 或兼容版本。公开或商业发布前，发行者仍需�
 ## Python 与媒体组件
 
 运行时依赖由 PyPI 单独安装，当前清单位于 `requirements.txt`：NumPy、OpenCV Python、
-imageio-ffmpeg 和 tkinterdnd2。它们不受本项目 MIT 许可证重新许可。
+imageio-ffmpeg、Pillow 和 tkinterdnd2。它们不受本项目 MIT 许可证重新许可。
+
+## Lucide icons
+
+- 上游：[lucide](https://github.com/lucide-icons/lucide)
+- 许可证：ISC；下列 Feather 衍生图标同时遵循 MIT
+- 版权：Copyright (c) 2026 Lucide Icons and Contributors
+- 在本项目中的用途：`ui_icons.py` 内嵌的 24×24 描边图标，由 Pillow 栅格化后用于播放条与队列工具按钮
+
+### Lucide ISC License
+
+Copyright (c) 2026 Lucide Icons and Contributors
+
+Permission to use, copy, modify, and/or distribute this software for any purpose with or
+without fee is hereby granted, provided that the above copyright notice and this permission
+notice appear in all copies.
+
+THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES WITH REGARD TO
+THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS. IN NO EVENT
+SHALL THE AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR
+ANY DAMAGES WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF
+CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE
+OR PERFORMANCE OF THIS SOFTWARE.
+
+### Feather-derived icons — MIT License
+
+Lucide identifies several icons used here, including chevrons, minus, plus, trash and
+more-horizontal, as derived from the Feather project.
+
+Copyright (c) 2013-present Cole Bemis
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of this software
+and associated documentation files (the "Software"), to deal in the Software without
+restriction, including without limitation the rights to use, copy, modify, merge, publish,
+distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the
+Software is furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all copies or
+substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
+INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR
+PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE
+FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+DEALINGS IN THE SOFTWARE.
 
 `imageio-ffmpeg` 或系统 FFmpeg 可能包含受 LGPL、GPL 及编解码器专利条款约束的组件，
 具体取决于使用的构建。二进制发行者有责任审查实际随包提供的 FFmpeg 构建及目标地区要求。

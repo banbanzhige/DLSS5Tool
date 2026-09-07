@@ -12,6 +12,12 @@ import app_settings
 import diagnostics
 import updater
 from app_version import APP_VERSION
+import ui_icons
+import ui_theme
+from ui_widgets import (
+    AccentSlider, CheckToggle, ChipGroup, ChromeButton, ChromeCombobox,
+    ProgressRule, StudioNotebook,
+)
 from gui import (
     App, TimelineBar,
     PREVIEW_BACKGROUND_TICK_MS, PREVIEW_INTERACTION_IDLE_MS, PREVIEW_WORKER_POLL_MS,
@@ -21,6 +27,7 @@ from gui import (
     _is_image_path, _is_video_path, _play_target_frame, _read_image_bgr,
     _clamp_window_geometry, _normalize_slider_input, _preview_viewport,
     _preview_control_layout, _write_image_bgr, compose_preview_frame,
+    _studio_window_layout,
     effective_skin_settings, effective_slider,
 )
 from preview_audio import frame_to_ms, ms_to_frame
@@ -28,6 +35,155 @@ from video_export import compose_output_frame
 
 
 class PlayerHelperTests(unittest.TestCase):
+    def test_studio_window_layout_stays_inside_work_area(self):
+        geometry, minimum = _studio_window_layout(1.5, (0, 0, 1920, 1040))
+        self.assertRegex(geometry, r"^1848x968\+36\+36$")
+        self.assertLessEqual(minimum[0], 1848)
+        self.assertLessEqual(minimum[1], 968)
+
+        geometry, minimum = _studio_window_layout(2.0, (0, 0, 800, 600))
+        self.assertEqual(geometry, "704x504+48+48")
+        self.assertEqual(minimum, (704, 504))
+
+    def test_variable_traces_are_removed_when_custom_widgets_are_destroyed(self):
+        import tkinter as tk
+
+        root = tk.Tk()
+        root.withdraw()
+        errors = []
+        root.report_callback_exception = lambda *error: errors.append(error)
+        try:
+            text = tk.StringVar(value="A")
+            checked = tk.BooleanVar(value=False)
+            number = tk.DoubleVar(value=0.0)
+            widgets = (
+                ChipGroup(root, text, ["A", "B"], ui=ui_theme.tokens("dark")),
+                CheckToggle(root, "开关", checked, ui=ui_theme.tokens("dark")),
+                AccentSlider(root, variable=number),
+            )
+            for widget in widgets:
+                widget.destroy()
+            text.set("B")
+            checked.set(True)
+            number.set(1.0)
+            root.update_idletasks()
+            self.assertEqual(errors, [])
+            self.assertEqual(text.trace_info(), [])
+            self.assertEqual(checked.trace_info(), [])
+            self.assertEqual(number.trace_info(), [])
+        finally:
+            root.destroy()
+
+    def test_rounded_chrome_live_images_remain_bounded_across_redraws(self):
+        import tkinter as tk
+
+        root = tk.Tk()
+        root.withdraw()
+        try:
+            variable = tk.StringVar(value="A")
+            widget = ChipGroup(
+                root, variable, ["A", "B", "C"], ui=ui_theme.tokens("dark"),
+            )
+            widget.pack()
+            root.update_idletasks()
+            for index in range(100):
+                variable.set(("A", "B", "C")[index % 3])
+            self.assertLessEqual(len(widget._chrome_surfaces), 48)
+            self.assertLessEqual(len(widget._chrome_live), 4)
+        finally:
+            root.destroy()
+
+    def test_progress_rule_stays_idle_until_value(self):
+        import tkinter as tk
+
+        root = tk.Tk()
+        root.withdraw()
+        try:
+            bar = ProgressRule(root, ui=ui_theme.tokens("light"))
+            bar.pack(fill="x")
+            root.update_idletasks()
+            self.assertEqual(bar["value"], 0)
+            self.assertEqual(bar._ratio(), 0.0)
+            bar["maximum"] = 10
+            bar["value"] = 4
+            self.assertEqual(bar["value"], 4)
+            self.assertAlmostEqual(bar._ratio(), 0.4)
+            bar["value"] = 0
+            self.assertEqual(bar._ratio(), 0.0)
+        finally:
+            root.destroy()
+
+    def test_chrome_button_centers_when_hidden_tab_is_shown(self):
+        import tkinter as tk
+
+        root = tk.Tk()
+        root.withdraw()
+        try:
+            ui_theme.configure_fonts(root)
+            ui = ui_theme.tokens("light")
+            notebook = StudioNotebook(root, ui=ui)
+            notebook.pack(fill="both", expand=True)
+            first = tk.Frame(notebook.content)
+            queue = tk.Frame(notebook.content)
+            notebook.add(first, text="调参")
+            notebook.add(queue, text="队列")
+            row = tk.Frame(queue)
+            row.pack(fill="x", padx=12)
+            for column in range(2):
+                row.columnconfigure(column, weight=1, uniform="queue_actions")
+            load = ChromeButton(row, text="载入预览", variant="ghost", ui=ui)
+            apply = ChromeButton(row, text="应用参数", variant="ghost", ui=ui)
+            load.grid(row=0, column=0, sticky="ew", padx=(0, 4))
+            apply.grid(row=0, column=1, sticky="ew", padx=(4, 0))
+            start = ChromeButton(
+                row, text="开始队列", variant="accent", ui=ui, icon="play",
+            )
+            start.grid(row=1, column=0, columnspan=2, sticky="ew")
+            load.state(["disabled"])
+            apply.state(["disabled"])
+            start.state(["disabled"])
+            start.config(text="开始队列", icon="play")
+            root.geometry("400x240+0+0")
+            root.deiconify()
+            root.update()
+            notebook.select(queue)
+            root.update()
+            self.assertGreater(load.winfo_width(), 80)
+            self.assertGreater(apply.winfo_width(), 80)
+            self.assertGreater(start.winfo_width(), load.winfo_width())
+            for button, label in (
+                (load, "载入预览"),
+                (apply, "应用参数"),
+            ):
+                width = button.winfo_width()
+                self.assertEqual(button._drawn_size[0], width, label)
+                texts = [
+                    item for item in button.find_all() if button.type(item) == "text"
+                ]
+                self.assertTrue(texts, label)
+                x = button.coords(texts[-1])[0]
+                self.assertAlmostEqual(x, width / 2, delta=2, msg=label)
+            self.assertEqual(start._drawn_size[0], start.winfo_width())
+        finally:
+            root.destroy()
+
+    def test_icon_only_buttons_use_larger_optical_size(self):
+        import tkinter as tk
+
+        root = tk.Tk()
+        root.withdraw()
+        try:
+            ui_theme.configure_fonts(root)
+            ui = ui_theme.tokens("light")
+            icon_only = ChromeButton(
+                root, text="播放", icon="play", icon_only=True, ui=ui,
+            )
+            with_text = ChromeButton(root, text="播放", icon="play", ui=ui)
+            self.assertEqual(icon_only._icon_size, ui_theme.scale_px(root, 18))
+            self.assertEqual(with_text._icon_size, ui_theme.scale_px(root, 16))
+        finally:
+            root.destroy()
+
     def test_clamp_frame(self):
         self.assertEqual(_clamp_frame(-3, 10), 0)
         self.assertEqual(_clamp_frame(3.9, 10), 3)
@@ -85,6 +241,11 @@ class PlayerHelperTests(unittest.TestCase):
         self.assertEqual(_decode_plan(12, 15), ("skip", 3))
         self.assertEqual(_decode_plan(12, 40), ("seek", 0))
         self.assertEqual(_decode_plan(12, 5), ("seek", 0))
+
+    def test_fit_and_fullscreen_icons_are_distinct(self):
+        self.assertNotEqual(ui_icons.LUCIDE["fit"], ui_icons.LUCIDE["fullscreen"])
+        for name in ("retry", "clear-done", "up", "down", "cancel"):
+            self.assertIn(name, ui_icons.LUCIDE)
 
     def test_realtime_preview_size_downscales_4k_but_preserves_smaller_sources(self):
         self.assertEqual(_fit_preview_size(3840, 2160, 1920), (1920, 1080))
@@ -203,6 +364,99 @@ class PlayerHelperTests(unittest.TestCase):
         self.assertEqual(ms_to_frame(99999, 24, 242), 242)
 
 
+def _iter_widgets(root):
+    stack = [root]
+    seen = set()
+    while stack:
+        widget = stack.pop()
+        key = str(widget)
+        if key in seen:
+            continue
+        seen.add(key)
+        yield widget
+        try:
+            stack.extend(widget.winfo_children())
+        except Exception:
+            pass
+
+
+class ChromeComboboxTests(unittest.TestCase):
+    def _open(self):
+        import tkinter as tk
+
+        root = tk.Tk()
+        root.withdraw()
+        ui = ui_theme.tokens("light")
+        ui_theme.apply_ttk(root, ui)
+        choice = tk.StringVar(value="MP4（推荐）")
+        values = ["MP4（推荐）", "MKV", "MOV"]
+        combo = ChromeCombobox(
+            root, ui=ui, textvariable=choice, values=values, state="readonly",
+        )
+        combo.pack()
+        other = tk.Entry(root)
+        other.pack()
+        root.update_idletasks()
+        return root, choice, combo, other
+
+    def test_mousewheel_does_not_change_value(self):
+        root, choice, combo, _other = self._open()
+        try:
+            combo.combo.focus_set()
+            root.update()
+            self.assertEqual(str(root.bind_class("TCombobox", "<MouseWheel>")), "")
+            combo.combo.event_generate("<MouseWheel>", delta=-120)
+            combo.combo.event_generate("<MouseWheel>", delta=120)
+            root.update()
+            self.assertEqual(choice.get(), "MP4（推荐）")
+            self.assertEqual(combo.combo.current(), 0)
+        finally:
+            root.destroy()
+
+    def test_focus_out_clears_inverted_selection(self):
+        root, choice, combo, other = self._open()
+        try:
+            combo.combo.selection_range(0, "end")
+            self.assertTrue(combo.combo.selection_present())
+            combo.combo.event_generate("<FocusOut>")
+            other.focus_set()
+            root.update()
+            self.assertFalse(combo.combo.selection_present())
+            self.assertEqual(choice.get(), "MP4（推荐）")
+        finally:
+            root.destroy()
+
+    def test_selecting_an_item_commits_without_leaving_selection(self):
+        root, choice, combo, _other = self._open()
+        try:
+            combo.combo.current(1)
+            combo.combo.selection_range(0, "end")
+            combo.combo.event_generate("<<ComboboxSelected>>")
+            root.update()
+            self.assertEqual(choice.get(), "MKV")
+            self.assertFalse(combo.combo.selection_present())
+        finally:
+            root.destroy()
+
+    def test_readonly_select_colors_match_the_field(self):
+        from tkinter import ttk
+
+        root, _choice, _combo, _other = self._open()
+        try:
+            style = ttk.Style(root)
+            ui = ui_theme.tokens("light")
+            self.assertEqual(
+                style.lookup("Chrome.TCombobox", "selectbackground", ("readonly",)),
+                ui["entry_bg"],
+            )
+            self.assertEqual(
+                style.lookup("Chrome.TCombobox", "selectforeground", ("readonly",)),
+                ui["entry_fg"],
+            )
+        finally:
+            root.destroy()
+
+
 class ImageIoTests(unittest.TestCase):
     def test_path_kind(self):
         self.assertTrue(_is_image_path("a.PNG"))
@@ -273,6 +527,7 @@ class SettingsPanelPersistenceTests(unittest.TestCase):
             "ui_preview_open": True,
             "ui_export_open": True,
             "ui_host_open": True,
+            "ui_theme": "dark",
             "preview_detached": False,
             "preview_window_geometry": "",
         }
@@ -303,6 +558,15 @@ class SettingsPanelPersistenceTests(unittest.TestCase):
             self.assertTrue(loaded["preview_detached"])
             self.assertEqual(loaded["preview_window_geometry"], "1280x720-1200+80")
             self.assertTrue(app_settings.validate({})["ui_preview_open"])
+            self.assertEqual(app_settings.validate({})["ui_theme"], "dark")
+            self.assertEqual(app_settings.validate({"ui_theme": "LIGHT"})["ui_theme"], "light")
+            self.assertEqual(ui_theme.normalize_theme_name("Light"), "light")
+            self.assertNotEqual(
+                ui_theme.tokens("light")["panel"], ui_theme.tokens("dark")["panel"],
+            )
+            self.assertNotEqual(
+                ui_theme.tokens("light")["canvas"], ui_theme.tokens("dark")["canvas"],
+            )
             self.assertEqual(
                 app_settings.validate({"preview_window_geometry": "off screen"})[
                     "preview_window_geometry"
@@ -1112,13 +1376,70 @@ class WidgetSmokeTests(unittest.TestCase):
             os.environ["DLSS5TOOL_QUEUE_PATH"] = queue_path
             root = tk.Tk()
             root.withdraw()
+            callback_errors = []
+            root.report_callback_exception = lambda *error: callback_errors.append(error)
             try:
                 app = App(root)
                 self.assertEqual(app._frame, 0)
                 self.assertFalse(app._fullscreen)
                 self.assertEqual(str(app.fs_btn.cget("text")), "全屏")
-                self.assertEqual(str(app.detach_btn.cget("text")), "分离预览")
+                self.assertEqual(str(app.fs_btn.cget("icon")), "fullscreen")
+                self.assertEqual(str(app.detach_btn.cget("text")), "分离")
+                self.assertEqual(str(app.play_btn.cget("icon")), "play")
+                app._draw_empty(640, 400)
+                empty_text = " ".join(
+                    str(app.canvas.itemcget(item, "text"))
+                    for item in app.canvas.find_withtag("empty")
+                    if app.canvas.type(item) == "text"
+                )
+                self.assertIn("拖入视频或图片", empty_text)
+                self.assertIn("选择文件", empty_text)
+                self.assertNotIn("预览工作台", empty_text)
+                self.assertNotIn("开始你的画质创作", empty_text)
+                self.assertNotIn("也可以点击导入", empty_text)
+                imports = []
+                app.import_media = lambda: imports.append("import")
+                x0, y0, x1, y1 = app._empty_import_geom
+                app.on_canvas_press(type("Event", (), {
+                    "x": (x0 + x1) / 2, "y": (y0 + y1) / 2, "state": 0,
+                })())
+                self.assertEqual(imports, ["import"])
+                imports.clear()
+                app.on_canvas_press(type("Event", (), {"x": 12, "y": 12, "state": 0})())
+                self.assertEqual(imports, [])
+                self.assertEqual(str(app.export_btn.cget("text")), "导出 DLSS")
+                self.assertFalse(hasattr(app, "queue_more_btn"))
+                self.assertEqual(str(app.queue_retry_btn.cget("text")), "重试")
+                self.assertEqual(str(app.queue_retry_btn.cget("icon")), "retry")
+                self.assertEqual(str(app.queue_clear_done_btn.cget("icon")), "clear-done")
+                self.assertEqual(str(app.queue_move_up_btn.cget("icon")), "up")
+                self.assertEqual(str(app.queue_move_down_btn.cget("icon")), "down")
+                self.assertTrue(app._log_open)
+                self.assertEqual(str(app.log_btn.cget("text")), "收起日志")
+                self.assertEqual(str(app.log.winfo_manager()), "pack")
                 self.assertEqual(str(app.zoom_reset_btn.cget("text")), "适应")
+                self.assertEqual(str(app.zoom_reset_btn.cget("icon")), "fit")
+                self.assertNotEqual(
+                    str(app.zoom_reset_btn.cget("icon")),
+                    str(app.fs_btn.cget("icon")),
+                )
+                app._layout_queue_run_controls(True)
+                pause_info = app.queue_pause_btn.grid_info()
+                cancel_info = app.queue_cancel_btn.grid_info()
+                self.assertEqual(int(pause_info["column"]), 0)
+                self.assertEqual(int(cancel_info["column"]), 1)
+                self.assertEqual(str(pause_info["sticky"]), "ew")
+                self.assertEqual(str(cancel_info["sticky"]), "ew")
+                self.assertEqual(str(app.queue_start_btn.winfo_manager()), "")
+                self.assertEqual(str(app.queue_pause_btn.winfo_manager()), "grid")
+                self.assertEqual(str(app.queue_cancel_btn.winfo_manager()), "grid")
+                self.assertNotEqual(
+                    app.queue_start_btn.winfo_manager(),
+                    app.queue_pause_btn.winfo_manager(),
+                )
+                app._layout_queue_run_controls(False)
+                self.assertEqual(str(app.queue_start_btn.winfo_manager()), "grid")
+                self.assertEqual(str(app.queue_pause_btn.winfo_manager()), "")
                 self.assertTrue(app.zoom_in_btn.instate(["disabled"]))
                 self.assertTrue(app.zoom_out_btn.instate(["disabled"]))
                 docked_canvas = app.canvas
@@ -1129,6 +1450,7 @@ class WidgetSmokeTests(unittest.TestCase):
                 app.timeline.set_range(0, 20)
                 app.timeline.set(7)
                 app.timeline.set_cache_ranges([(1, 4)], [(5, 8)])
+                theme_widget_count = len(app._theme_widgets)
                 app.detach_preview()
                 root.update_idletasks()
                 self.assertTrue(app._preview_detached)
@@ -1136,8 +1458,12 @@ class WidgetSmokeTests(unittest.TestCase):
                 self.assertIsNot(app.canvas, docked_canvas)
                 self.assertIs(app.canvas.winfo_toplevel(), app._detached_preview_window)
                 self.assertIs(app.canvas, app._detached_preview_pane["canvas"])
+                self.assertAlmostEqual(
+                    ui_theme.studio_scale(app.canvas),
+                    getattr(root, "_studio_scale", 1.0),
+                )
                 self.assertEqual(app.timeline.on_seek, app._on_timeline_seek)
-                self.assertEqual(str(app.detach_btn.cget("text")), "停靠主窗")
+                self.assertEqual(str(app.detach_btn.cget("text")), "停靠")
                 self.assertEqual(app.timeline.get(), 7)
                 self.assertEqual(app.timeline._rendered_ranges, [(1, 4)])
                 detached_settings = app._collect_persisted_settings()
@@ -1153,8 +1479,19 @@ class WidgetSmokeTests(unittest.TestCase):
                 self.assertIs(app.canvas, docked_canvas)
                 self.assertIs(app.timeline, docked_timeline)
                 self.assertEqual(app.timeline.get(), 7)
-                self.assertEqual(str(app.detach_btn.cget("text")), "分离预览")
+                self.assertEqual(str(app.detach_btn.cget("text")), "分离")
                 self.assertFalse(app._collect_persisted_settings()["preview_detached"])
+                self.assertEqual(len(app._theme_widgets), theme_widget_count + 1)
+                app.view_var.set("DLSS")
+                root.update_idletasks()
+                self.assertEqual(callback_errors, [])
+                stable_theme_widget_count = len(app._theme_widgets)
+                app.detach_preview()
+                root.update_idletasks()
+                app.dock_preview()
+                root.update_idletasks()
+                self.assertEqual(len(app._theme_widgets), stable_theme_widget_count)
+                self.assertEqual(callback_errors, [])
                 self.assertTrue(hasattr(app, "import_btn"))
                 self.assertTrue(hasattr(app, "clear_btn"))
                 self.assertTrue(hasattr(app, "cancel_export_btn"))
@@ -1239,6 +1576,9 @@ class WidgetSmokeTests(unittest.TestCase):
                 app._update_action_labels()
                 self.assertTrue(app.export_btn.instate(["disabled"]))
                 self.assertTrue(app.cancel_export_btn.instate(["!disabled"]))
+                self.assertEqual(str(app.export_btn.winfo_manager()), "")
+                self.assertEqual(str(app.cancel_export_btn.winfo_manager()), "grid")
+                self.assertEqual(int(app.cancel_export_btn.grid_info()["columnspan"]), 2)
                 app.cancel_export()
                 self.assertTrue(app._export_cancel_event.is_set())
                 self.assertEqual(str(app.cancel_export_btn.cget("text")), "取消中…")
@@ -1255,6 +1595,9 @@ class WidgetSmokeTests(unittest.TestCase):
                     str(app.eta_label.cget("text")),
                     "导出已取消，未完成文件已清理",
                 )
+                self.assertEqual(str(app.export_btn.winfo_manager()), "grid")
+                self.assertEqual(str(app.cancel_export_btn.winfo_manager()), "")
+                self.assertEqual(str(app._progress_rule.winfo_manager()), "pack")
                 app.view_var.set("对比")
                 app._hold_original = False
                 app._split_nw, app._split_nh = 100, 50
@@ -1291,17 +1634,63 @@ class WidgetSmokeTests(unittest.TestCase):
                 self.assertFalse(app._export_section.collapsed)
                 self.assertFalse(app._host_section.collapsed)
                 packed = list(app.root.pack_slaves())
-                self.assertIn(app.workspace_tabs, packed)
+                self.assertIn(app._studio, packed)
+                self.assertIn(app._progress_rule, packed)
+                self.assertIn(app.log.frame, packed)
+                self.assertIn(app._status_bar, packed)
+                self.assertLess(packed.index(app._studio), packed.index(app._progress_rule))
+                self.assertLess(packed.index(app._progress_rule), packed.index(app.log.frame))
+                self.assertLess(packed.index(app.log.frame), packed.index(app._status_bar))
+                self.assertEqual(str(app.pbar.winfo_manager()), "pack")
+                self.assertIs(app.pbar, app._progress_rule)
+                self.assertIsInstance(app.pbar, ProgressRule)
+                self.assertFalse(hasattr(app, "queue_progress"))
+                self.assertFalse(hasattr(app, "queue_status_label"))
+                self.assertEqual(str(app.export_btn.winfo_manager()), "grid")
+                self.assertEqual(str(app.cancel_export_btn.winfo_manager()), "")
+                self.assertIn(app.workspace_tabs, app._inspector.pack_slaves())
                 preview_packed = list(app.preview_tab.pack_slaves())
+                self.assertIn(app._settings_frame, preview_packed)
+                export_packed = list(app._export_section.master.pack_slaves())
                 self.assertEqual(
-                    preview_packed,
-                    [
-                        app._settings_frame, app._preview_section,
-                        app._export_section, app._host_section,
-                        app._export_row,
-                    ],
+                    export_packed,
+                    [app._preview_section, app._export_section, app._host_section],
                 )
-                self.assertIs(packed[-1], getattr(app.log, "frame", app.log))
+                combos = [
+                    widget for widget in _iter_widgets(app.root)
+                    if isinstance(widget, ChromeCombobox)
+                ]
+                self.assertGreaterEqual(len(combos), 8)
+                self.assertEqual(str(app.root.bind_class("TCombobox", "<MouseWheel>")), "")
+                snapshot = [combo.get() for combo in combos]
+                for combo in combos:
+                    combo.combo.event_generate("<MouseWheel>", delta=-120)
+                app.root.update()
+                self.assertEqual([combo.get() for combo in combos], snapshot)
+                sample = combos[0]
+                sample.combo.selection_range(0, "end")
+                sample.combo.event_generate("<FocusOut>")
+                app.root.update()
+                self.assertFalse(sample.combo.selection_present())
+                self.assertEqual(str(app.workspace_tabs.tab(0, "text")), "调参")
+                self.assertEqual(app._ui_theme_name, "dark")
+                app.toggle_ui_theme()
+                self.assertEqual(app._ui_theme_name, "light")
+                self.assertEqual(app._collect_persisted_settings()["ui_theme"], "light")
+                self.assertEqual(
+                    str(app.canvas.cget("bg")).lower(),
+                    ui_theme.tokens("light")["canvas"].lower(),
+                )
+                self.assertNotEqual(
+                    ui_theme.tokens("light")["canvas"],
+                    ui_theme.tokens("dark")["canvas"],
+                )
+                app.toggle_ui_theme()
+                self.assertEqual(app._ui_theme_name, "dark")
+                self.assertEqual(
+                    str(app.canvas.cget("bg")).lower(),
+                    ui_theme.tokens("dark")["canvas"].lower(),
+                )
                 self.assertEqual(app.queue_tree.get_children(""), ())
                 self.assertTrue(app.queue_start_btn.instate(["disabled"]))
                 source = os.path.join(tmp, "queued.mp4")
@@ -1444,6 +1833,110 @@ class WidgetSmokeTests(unittest.TestCase):
                 else:
                     os.environ["DLSS5TOOL_QUEUE_PATH"] = old_queue
 
+    def test_queue_resume_after_stop_and_stable_export_chrome(self):
+        import tkinter as tk
+
+        with tempfile.TemporaryDirectory() as tmp:
+            settings_path = os.path.join(tmp, "dlss5_settings.json")
+            queue_path = os.path.join(tmp, "dlss5_queue.json")
+            old = os.environ.get("DLSS5TOOL_SETTINGS_PATH")
+            old_queue = os.environ.get("DLSS5TOOL_QUEUE_PATH")
+            os.environ["DLSS5TOOL_SETTINGS_PATH"] = settings_path
+            os.environ["DLSS5TOOL_QUEUE_PATH"] = queue_path
+            root = tk.Tk()
+            root.withdraw()
+            try:
+                app = App(root)
+                source = os.path.join(tmp, "clip.mp4")
+                open(source, "wb").close()
+                app._probe_queue_video = lambda _path: (
+                    {"frames": 24, "fps": 24.0, "width": 1280, "height": 720},
+                    {"is_hdr": False, "label": "SDR / sRGB"},
+                )
+                self.assertEqual(app._add_paths_to_queue([source], switch_tab=False), 1)
+                job = app._queue_jobs[0]
+                job.state = "cancelled"
+                job.error = "用户取消了当前任务。"
+                job.progress_done = 4
+                job.progress_total = 24
+                job.export_settings["super_resolution_scale"] = 2
+                app._queue_last_summary = "paused"
+                app._refresh_queue_tree()
+                self.assertTrue(app.queue_start_btn.instate(["!disabled"]))
+                self.assertEqual(str(app.queue_start_btn.cget("text")), "继续队列")
+                app._confirm_super_resolution_export = lambda *args, **kwargs: False
+                app.start_export_queue()
+                self.assertEqual(job.state, "cancelled")
+                self.assertEqual(job.error, "用户取消了当前任务。")
+                self.assertEqual(job.progress_done, 4)
+                self.assertFalse(app._queue_running)
+
+                job.export_settings["super_resolution_scale"] = 1
+                scheduled = []
+                app.root.after_idle = lambda callback: scheduled.append(callback)
+                app.start_export_queue()
+                self.assertEqual(job.state, "pending")
+                self.assertTrue(app._queue_running)
+                self.assertEqual(scheduled, [app._run_next_queue_job])
+                app._queue_running = False
+                app._queue_last_summary = "paused"
+                app._update_queue_action_states()
+
+                job.state = "failed"
+                job.error = "simulated failure"
+                app._queue_last_summary = None
+                app._refresh_queue_tree()
+                self.assertTrue(app.queue_start_btn.instate(["disabled"]))
+                self.assertEqual(job.state, "failed")
+                app._prepare_queue_jobs_for_start()
+                self.assertEqual(job.state, "failed")
+
+                job.state = "running"
+                app._queue_running = True
+                app._queue_active_job_id = job.job_id
+                app._exporting = True
+                app._source_kind = "video"
+                app._update_queue_action_states()
+                app.cancel_current_queue_job()
+                self.assertTrue(app._queue_pause_requested)
+                self.assertTrue(app._export_cancel_event.is_set())
+
+                app._exporting = False
+                app._queue_running = False
+                app._export_cancel_event.clear()
+                app._update_action_labels()
+                self.assertEqual(str(app.export_btn.winfo_manager()), "grid")
+                self.assertEqual(str(app.cancel_export_btn.winfo_manager()), "")
+                app._layout_export_run_controls(True)
+                self.assertEqual(str(app.export_btn.winfo_manager()), "")
+                self.assertEqual(str(app.cancel_export_btn.winfo_manager()), "grid")
+                self.assertEqual(int(app.cancel_export_btn.grid_info()["columnspan"]), 2)
+                app._layout_export_run_controls(False)
+                self.assertEqual(str(app.export_btn.winfo_manager()), "grid")
+
+                self.assertEqual(str(app._progress_rule.winfo_manager()), "pack")
+                app.set_progress(6, 24, "导出")
+                self.assertEqual(int(float(app.pbar["value"])), 6)
+                self.assertEqual(int(float(app.pbar["maximum"])), 24)
+                self.assertEqual(str(app._progress_rule.winfo_manager()), "pack")
+                app.toggle_log_panel()
+                self.assertEqual(str(app.log.frame.winfo_manager()), "")
+                packed = list(app.root.pack_slaves())
+                self.assertEqual(packed[-2:], [app._progress_rule, app._status_bar])
+                app._cancel_after("_settings_save_after")
+            finally:
+                for after_id in root.tk.call("after", "info"):
+                    root.after_cancel(after_id)
+                root.destroy()
+                if old is None:
+                    os.environ.pop("DLSS5TOOL_SETTINGS_PATH", None)
+                else:
+                    os.environ["DLSS5TOOL_SETTINGS_PATH"] = old
+                if old_queue is None:
+                    os.environ.pop("DLSS5TOOL_QUEUE_PATH", None)
+                else:
+                    os.environ["DLSS5TOOL_QUEUE_PATH"] = old_queue
+
     def test_closed_switch_sends_zero_and_remembers(self):
         import tkinter as tk
 
@@ -1492,13 +1985,22 @@ class WidgetSmokeTests(unittest.TestCase):
                 self.assertEqual(float(app._settings["w_intensity"].cget("to")), 1.0)
                 self.assertEqual(float(app._settings["w_intensity"].cget("resolution")), 0.01)
                 self.assertTrue(app._settings["w_intensity_value"].instate(["disabled"]))
+                dark = ui_theme.tokens("dark")
                 self.assertEqual(
                     str(app._settings["w_intensity"].cget("troughcolor")).lower(),
-                    "#e6e6e6",
+                    dark["slider_trough_off"].lower(),
                 )
                 self.assertEqual(
                     str(app._settings["w_local_tone"].cget("troughcolor")).lower(),
-                    "#5b8fad",
+                    dark["slider_trough_on"].lower(),
+                )
+                self.assertEqual(
+                    str(app._settings["w_local_tone"]._trackcolor).lower(),
+                    dark["slider_trough_off"].lower(),
+                )
+                self.assertNotEqual(
+                    str(app._settings["w_local_tone"]._trackcolor).lower(),
+                    str(app._settings["w_local_tone"].cget("troughcolor")).lower(),
                 )
                 root.update_idletasks()
                 intensity_w = app._settings["w_intensity"].master.winfo_width()
@@ -1545,7 +2047,7 @@ class WidgetSmokeTests(unittest.TestCase):
                 self.assertTrue(app._settings["w_intensity_value"].instate(["!disabled"]))
                 self.assertEqual(
                     str(app._settings["w_intensity"].cget("troughcolor")).lower(),
-                    "#5b8fad",
+                    dark["slider_trough_on"].lower(),
                 )
                 app._settings["w_intensity_value"].set("75%")
                 live = app._collect_settings()

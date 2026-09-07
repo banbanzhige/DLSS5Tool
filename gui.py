@@ -47,6 +47,12 @@ from video_export import (
     compose_output_frame, find_ffmpeg, output_container_extension,
     probe_video_stream, resolve_output_container, tone_map_hdr_preview,
 )
+import ui_theme
+from ui_widgets import (
+    AccentSlider, CheckToggle, ChipGroup, ChromeButton, ChromeCombobox,
+    ChromeEntry, ChromeSpinbox, CollapsibleSection, ProgressRule, SegmentedBar,
+    StatusPills, StudioNotebook, TimelineBar, Tooltip, round_rect,
+)
 
 try:
     from tkinterdnd2 import DND_FILES, TkinterDnD
@@ -141,6 +147,7 @@ QUEUE_STATE_NAMES = {
     "cancelled": "已取消",
     "interrupted": "被中断",
 }
+QUEUE_STARTABLE_STATES = {"pending", "cancelled", "interrupted"}
 IMAGE_ENCODE_EXTS = {".png", ".jpg", ".jpeg", ".bmp", ".webp", ".tif", ".tiff"}
 CANVAS_BG = "#161616"
 CANVAS_DROP_BG = "#24405C"
@@ -159,6 +166,7 @@ SCALE_ENABLED = {
     "highlightbackground": "#c8c8c8",
 }
 APP_TITLE = f"DLSS5Tool {APP_VERSION}"
+APP_CREDIT = "B站：板板之歌"
 SCALE_DISABLED = {
     "troughcolor": "#e6e6e6",
     "background": "#d0d0d0",
@@ -203,6 +211,22 @@ def _clamp_frame(frame, last):
     return max(0, min(frame, max(int(last), 0)))
 
 
+def _lerp_hex(start, end, amount):
+    amount = max(0.0, min(1.0, float(amount)))
+    def channels(value):
+        text = str(value or "").lstrip("#")
+        if len(text) != 6:
+            return (0, 0, 0)
+        return int(text[0:2], 16), int(text[2:4], 16), int(text[4:6], 16)
+    r0, g0, b0 = channels(start)
+    r1, g1, b1 = channels(end)
+    return "#{:02x}{:02x}{:02x}".format(
+        int(r0 + (r1 - r0) * amount),
+        int(g0 + (g1 - g0) * amount),
+        int(b0 + (b1 - b0) * amount),
+    )
+
+
 def _format_timecode(frame, fps):
     fps = float(fps) if fps else 30.0
     if fps <= 0:
@@ -235,6 +259,53 @@ def _virtual_screen_bounds(root=None):
         except Exception:
             pass
     return 0, 0, 1920, 1080
+
+
+def _primary_work_area(root=None):
+    """Return the primary monitor work area, excluding the taskbar when possible."""
+    if sys.platform == "win32":
+        class RECT(ctypes.Structure):
+            _fields_ = [
+                ("left", ctypes.c_long), ("top", ctypes.c_long),
+                ("right", ctypes.c_long), ("bottom", ctypes.c_long),
+            ]
+
+        rect = RECT()
+        try:
+            if ctypes.windll.user32.SystemParametersInfoW(
+                0x0030, 0, ctypes.byref(rect), 0,
+            ):
+                return (
+                    int(rect.left), int(rect.top),
+                    max(int(rect.right - rect.left), 1),
+                    max(int(rect.bottom - rect.top), 1),
+                )
+        except (AttributeError, OSError):
+            pass
+    if root is not None:
+        try:
+            return 0, 0, int(root.winfo_screenwidth()), int(root.winfo_screenheight())
+        except Exception:
+            pass
+    return 0, 0, 1280, 720
+
+
+def _studio_window_layout(scale, work_area):
+    """Choose a DPI-aware initial size that remains inside the work area."""
+    left, top, work_width, work_height = (int(value) for value in work_area)
+    scale = max(1.0, min(float(scale or 1.0), 3.0))
+    margin = max(16, round(24 * scale))
+    max_width = max(min(work_width, 640), work_width - margin * 2)
+    max_height = max(min(work_height, 480), work_height - margin * 2)
+    width = min(round(1280 * scale), max_width)
+    height = min(round(840 * scale), max_height)
+    x = left + max((work_width - width) // 2, 0)
+    y = top + max((work_height - height) // 2, 0)
+    minimum = (
+        min(round(980 * scale), width),
+        min(round(680 * scale), height),
+    )
+    return f"{width}x{height}{x:+d}{y:+d}", minimum
 
 
 def _clamp_window_geometry(value, bounds, fallback=(1100, 700, 48, 48)):
@@ -588,207 +659,31 @@ def compose_preview_frame(original, processed, output_view=0, output_mix=1.0):
     return compose_output_frame(original, processed, view=0, mix=mix)
 
 
-class Tooltip:
-    def __init__(self, widget, text):
-        self.widget = widget
-        self.text = text
-        self.tip = None
-        widget.bind("<Enter>", self._show, add="+")
-        widget.bind("<Leave>", self._hide, add="+")
-        widget.bind("<ButtonPress>", self._hide, add="+")
-
-    def _show(self, event=None):
-        if not self.text or self.tip is not None:
-            return
-        x = self.widget.winfo_rootx() + 16
-        y = self.widget.winfo_rooty() + self.widget.winfo_height() + 6
-        tip = tk.Toplevel(self.widget)
-        tip.wm_overrideredirect(True)
-        tip.wm_geometry(f"+{x}+{y}")
-        label = tk.Label(
-            tip, text=self.text, justify="left", background="#ffffe8",
-            foreground="#222", relief="solid", borderwidth=1,
-            font=("Microsoft YaHei", 9), wraplength=380, padx=7, pady=5,
-        )
-        label.pack()
-        self.tip = tip
-
-    def _hide(self, event=None):
-        if self.tip is not None:
-            self.tip.destroy()
-            self.tip = None
-
-
-class CollapsibleSection(ttk.Frame):
-    def __init__(self, parent, title, collapsed=True, on_toggle=None, tooltip=None):
-        super().__init__(parent)
-        self._title = title
-        self._collapsed = bool(collapsed)
-        self._on_toggle = on_toggle
-        header = ttk.Frame(self)
-        header.pack(fill="x")
-        self._btn = ttk.Button(
-            header, text=self._header_text(), style="Toolbutton",
-            command=self.toggle,
-        )
-        self._btn.pack(side="left")
-        if tooltip:
-            Tooltip(self._btn, tooltip)
-        self.body = ttk.Frame(self)
-        if not self._collapsed:
-            self.body.pack(fill="x", padx=(12, 0), pady=(0, 4))
-
-    @property
-    def collapsed(self):
-        return self._collapsed
-
-    def _header_text(self):
-        return ("▸  " if self._collapsed else "▾  ") + self._title
-
-    def toggle(self):
-        self._collapsed = not self._collapsed
-        if self._collapsed:
-            self.body.pack_forget()
-        else:
-            self.body.pack(fill="x", padx=(12, 0), pady=(0, 4))
-        self._btn.config(text=self._header_text())
-        if self._on_toggle:
-            self._on_toggle()
-
-
-class TimelineBar(tk.Canvas):
-    def __init__(self, master, height=18, **kwargs):
-        super().__init__(
-            master, height=height, bg=TIMELINE_BG, highlightthickness=0,
-            cursor="hand2", **kwargs,
-        )
-        self._min = 0
-        self._max = 0
-        self._value = 0
-        self._dragging = False
-        self._rendered_ranges = []
-        self._queued_ranges = []
-        self.on_seek = None
-        self.bind("<Configure>", lambda e: self._redraw())
-        self.bind("<Button-1>", self._on_down)
-        self.bind("<B1-Motion>", self._on_drag)
-        self.bind("<ButtonRelease-1>", self._on_up)
-
-    def set_range(self, minimum, maximum):
-        self._min = int(minimum)
-        self._max = max(int(maximum), self._min)
-        self._value = max(self._min, min(self._value, self._max))
-        self._redraw()
-
-    def set(self, value):
-        value = _clamp_frame(value, self._max)
-        if value == self._value:
-            return
-        self._value = value
-        self._redraw()
-
-    def get(self):
-        return self._value
-
-    def set_cache_ranges(self, rendered=(), queued=()):
-        rendered = list(rendered)
-        queued = list(queued)
-        if rendered == self._rendered_ranges and queued == self._queued_ranges:
-            return
-        self._rendered_ranges = rendered
-        self._queued_ranges = queued
-        self._redraw()
-
-    def _frac(self):
-        span = self._max - self._min
-        if span <= 0:
-            return 0.0
-        return (self._value - self._min) / span
-
-    def _value_from_x(self, x):
-        pad = 8
-        width = max(self.winfo_width() - pad * 2, 1)
-        frac = max(0.0, min(1.0, (x - pad) / width))
-        span = self._max - self._min
-        return int(round(self._min + frac * span))
-
-    def _x_from_value(self, value, pad, width):
-        span = self._max - self._min
-        if span <= 0:
-            return pad
-        frac = (max(self._min, min(int(value), self._max)) - self._min) / span
-        return pad + frac * width
-
-    def _emit(self, phase):
-        if self.on_seek:
-            self.on_seek(self._value, phase)
-
-    def _on_down(self, event):
-        self._dragging = True
-        self.set(self._value_from_x(event.x))
-        self._emit("start")
-
-    def _on_drag(self, event):
-        if not self._dragging:
-            return
-        self.set(self._value_from_x(event.x))
-        self._emit("move")
-
-    def _on_up(self, event):
-        if not self._dragging:
-            return
-        self._dragging = False
-        self.set(self._value_from_x(event.x))
-        self._emit("end")
-
-    def _redraw(self):
-        self.delete("all")
-        w = max(self.winfo_width(), 2)
-        h = max(self.winfo_height(), 2)
-        pad = 8
-        y = h // 2
-        x1 = w - pad
-        span_width = max(x1 - pad, 1)
-        self.create_line(pad, y, x1, y, fill=TIMELINE_TRACK, width=4, capstyle="round")
-        cache_y = max(y - 5, 2)
-        for start, end in self._queued_ranges:
-            self.create_line(
-                self._x_from_value(start, pad, span_width), cache_y,
-                self._x_from_value(end + 1, pad, span_width), cache_y,
-                fill=TIMELINE_QUEUED, width=2,
-            )
-        for start, end in self._rendered_ranges:
-            self.create_line(
-                self._x_from_value(start, pad, span_width), cache_y,
-                self._x_from_value(end + 1, pad, span_width), cache_y,
-                fill=TIMELINE_RENDERED, width=2,
-            )
-        x = pad + self._frac() * max(x1 - pad, 1)
-        if self._max > self._min:
-            self.create_line(pad, y, x, y, fill=TIMELINE_FILL, width=4, capstyle="round")
-        r = 6
-        self.create_oval(x - r, y - r, x + r, y + r, fill=TIMELINE_THUMB, outline="#111", width=1)
-
 
 class App:
     def __init__(self, root):
         self.root = root
-        root.title(f"{APP_TITLE} — 实时预览 + 导出")
-        root.geometry("1000x820")
-        try:
-            style = ttk.Style()
-            style.configure("Toolbutton", padding=(8, 2))
-            style.configure("SliderValue.TSpinbox", padding=(2, 1))
-            style.map(
-                "SliderValue.TSpinbox",
-                foreground=[
-                    ("disabled", SCALE_VALUE_OFF),
-                    ("!disabled", SCALE_VALUE_ON),
-                ],
-            )
-        except Exception:
-            pass
         self._saved_settings = app_settings.load()
+        self._ui_theme_name = ui_theme.normalize_theme_name(
+            self._saved_settings.get("ui_theme", "dark")
+        )
+        self._ui = ui_theme.tokens(self._ui_theme_name)
+        self._log_open = True
+        self._drop_hover = False
+        self._empty_btn_hover = 0.0
+        self._empty_btn_target = 0.0
+        self._empty_btn_after = None
+        self._empty_import_geom = None
+        Tooltip.set_palette(self._ui)
+        ui_theme.apply_ttk(root, self._ui)
+        root.title(f"{APP_TITLE} — {APP_CREDIT}")
+        ui_theme.apply_app_icon(root, default=True)
+        ui_scale = getattr(root, "_studio_scale", 1.0)
+        initial_geometry, minimum_size = _studio_window_layout(
+            ui_scale, _primary_work_area(root),
+        )
+        root.geometry(initial_geometry)
+        root.minsize(*minimum_size)
         self._settings_save_after = None
         self.video = None
         self.nframes = 0
@@ -896,26 +791,51 @@ class App:
         self._queue_active_job_id = None
         self._queue_last_summary = None
         self.view_var = tk.StringVar(value=self._saved_settings["preview_view"])
+        self._theme_widgets = []
 
-        # ---- preview canvas + transport ----
-        # A detached preview gets its own widgets, but these active references keep
-        # playback, cache, zoom, and comparison state single-sourced on App.
-        self._docked_preview_pane = self._create_preview_pane(root, detached=False)
+        # Studio: left monitor + fixed 360px inspector (matches the mockup).
+        self._studio = ttk.Frame(root, style="Workspace.TFrame")
+        self._studio.pack(fill="both", expand=True)
+        self._inspector_width = max(
+            ui_theme.INSPECTOR_MIN,
+            min(ui_theme.INSPECTOR_MAX, int(self._saved_settings.get("inspector_width", 360))),
+        )
+        self._inspector = ttk.Frame(
+            self._studio, style="Panel.TFrame", width=round(self._inspector_width * ui_scale),
+        )
+        self._inspector.pack(side="right", fill="y")
+        self._inspector.pack_propagate(False)
+        self._inspector_grip = tk.Frame(
+            self._inspector, width=4, cursor="sb_h_double_arrow",
+            bg=self._ui.get("line", "#2a3540"), bd=0, highlightthickness=0,
+        )
+        self._inspector_grip.pack(side="left", fill="y")
+        self._inspector_grip.bind("<Button-1>", self._on_inspector_grip_start)
+        self._inspector_grip.bind("<B1-Motion>", self._on_inspector_grip_drag)
+        self._inspector_grip.bind("<ButtonRelease-1>", self._on_inspector_grip_end)
+        self._preview_host = ttk.Frame(self._studio, style="Stage.TFrame")
+        self._preview_host.pack(side="left", fill="both", expand=True)
+
+        self._docked_preview_pane = self._create_preview_pane(
+            self._preview_host, detached=False,
+        )
         self._activate_preview_pane(self._docked_preview_pane)
 
-        # ---- preview/settings and batch queue tabs ----
-        self.workspace_tabs = ttk.Notebook(root)
-        self.workspace_tabs.pack(fill="both", expand=True, padx=8, pady=(0, 2))
-        self._preview_page = ttk.Frame(self.workspace_tabs)
-        self.queue_tab = ttk.Frame(self.workspace_tabs)
-        self.workspace_tabs.add(self._preview_page, text="预览与调参")
-        self.workspace_tabs.add(self.queue_tab, text="导出队列")
+        self.workspace_tabs = StudioNotebook(self._inspector, ui=self._ui)
+        self.workspace_tabs.pack(fill="both", expand=True)
+        self._theme_widgets.append(self.workspace_tabs)
+        self._preview_page = ttk.Frame(self.workspace_tabs.content, style="Panel.TFrame")
+        self._export_page = ttk.Frame(self.workspace_tabs.content, style="Panel.TFrame")
+        self.queue_tab = ttk.Frame(self.workspace_tabs.content, style="Panel.TFrame")
+        self.workspace_tabs.add(self._preview_page, text="调参")
+        self.workspace_tabs.add(self._export_page, text="导出")
+        self.workspace_tabs.add(self.queue_tab, text="队列", badge="0")
 
         self._preview_page.grid_rowconfigure(0, weight=1)
+        self._preview_page.grid_rowconfigure(1, weight=0)
         self._preview_page.grid_columnconfigure(0, weight=1)
-        preview_bg = ttk.Style().lookup("TFrame", "background") or root.cget("background")
         self._preview_canvas = tk.Canvas(
-            self._preview_page, height=340, background=preview_bg,
+            self._preview_page, background=self._ui["panel"],
             highlightthickness=0, borderwidth=0,
         )
         self._preview_canvas.grid(row=0, column=0, sticky="nsew")
@@ -926,7 +846,7 @@ class App:
         self._preview_scrollbar.grid_remove()
         self._preview_scrollbar_visible = False
         self._preview_canvas.configure(yscrollcommand=self._preview_scrollbar.set)
-        self.preview_tab = ttk.Frame(self._preview_canvas)
+        self.preview_tab = ttk.Frame(self._preview_canvas, style="Panel.TFrame")
         self._preview_window = self._preview_canvas.create_window(
             (0, 0), window=self.preview_tab, anchor="nw",
         )
@@ -934,10 +854,9 @@ class App:
         self._preview_canvas.bind("<Configure>", self._resize_preview_content)
         self.root.bind_all("<MouseWheel>", self._on_workspace_mousewheel, add="+")
 
-        # ---- DLSS settings ----
-        sf = ttk.LabelFrame(self.preview_tab, text="DLSS 设置")
+        sf = ttk.Frame(self.preview_tab, style="Panel.TFrame")
         self._settings_frame = sf
-        sf.pack(fill="x", padx=4, pady=4)
+        sf.pack(fill="x", padx=16, pady=(12, 8))
         self._settings = self._build_settings(sf)
         Tooltip(
             sf,
@@ -945,100 +864,144 @@ class App:
             "皮肤蒙版数值为 0 时等同关闭；大于 0 时才启用自动蒙版。",
         )
 
+        self._export_quick = ttk.Frame(self.preview_tab, style="Panel.TFrame")
+        self._export_quick.pack(fill="x", padx=16, pady=(2, 6))
+
+        e = ttk.Frame(self._preview_page, style="Panel.TFrame")
+        e.grid(row=1, column=0, columnspan=2, sticky="ew", padx=16, pady=(8, 16))
+        self._export_row = e
+        actions = ttk.Frame(e, style="Panel.TFrame")
+        actions.pack(fill="x")
+        for column in range(3):
+            actions.columnconfigure(column, weight=1, uniform="actions")
+        self.import_btn = ChromeButton(
+            actions, text="导入", variant="ghost", command=self.import_media,
+            ui=self._ui, width=88,
+        )
+        self.import_btn.grid(row=0, column=0, sticky="ew", padx=(0, 4))
+        self._theme_widgets.append(self.import_btn)
+        self.clear_btn = ChromeButton(
+            actions, text="清空", variant="ghost", command=self.clear_media,
+            ui=self._ui, width=88,
+        )
+        self.clear_btn.grid(row=0, column=1, sticky="ew", padx=4)
+        self._theme_widgets.append(self.clear_btn)
+        Tooltip(self.clear_btn, "卸下当前视频/图片，释放解码、音轨和 DLSS 主机占用。")
+        self.add_queue_btn = ChromeButton(
+            actions, text="加入队列", variant="default", command=self.add_current_to_queue,
+            ui=self._ui, width=108,
+        )
+        self.add_queue_btn.grid(row=0, column=2, sticky="ew", padx=(4, 0))
+        self._theme_widgets.append(self.add_queue_btn)
+        Tooltip(self.add_queue_btn, "使用当前处理与导出参数，把当前视频或图片加入导出队列。")
+        run_bar = ttk.Frame(e, style="Panel.TFrame")
+        run_bar.pack(fill="x", pady=(8, 0))
+        for column in range(2):
+            run_bar.columnconfigure(column, weight=1, uniform="export_run")
+        self._export_run_bar = run_bar
+        self.export_btn = ChromeButton(
+            run_bar, text="导出 DLSS", variant="accent", command=self.export_dlss, ui=self._ui,
+        )
+        self.export_btn.grid(row=0, column=0, columnspan=2, sticky="ew")
+        self._theme_widgets.append(self.export_btn)
+        self.cancel_export_btn = ChromeButton(
+            run_bar, text="取消导出", variant="danger", command=self.cancel_export,
+            ui=self._ui, icon="cancel", primary=True,
+        )
+        self._theme_widgets.append(self.cancel_export_btn)
+        Tooltip(self.cancel_export_btn, "停止当前视频导出，并清理本次未完成的输出文件。")
+        self.cancel_export_btn.grid(row=0, column=0, columnspan=2, sticky="ew")
+        self.cancel_export_btn.grid_remove()
+        self._export_run_layout = "export"
+
+        self._export_page.grid_rowconfigure(0, weight=1)
+        self._export_page.grid_columnconfigure(0, weight=1)
+        self._export_canvas = tk.Canvas(
+            self._export_page, background=self._ui["panel"],
+            highlightthickness=0, borderwidth=0,
+        )
+        self._export_canvas.grid(row=0, column=0, sticky="nsew")
+        self._export_scrollbar = ttk.Scrollbar(
+            self._export_page, orient="vertical", command=self._export_canvas.yview,
+        )
+        self._export_scrollbar.grid(row=0, column=1, sticky="ns")
+        self._export_scrollbar.grid_remove()
+        self._export_scrollbar_visible = False
+        self._export_canvas.configure(yscrollcommand=self._export_scrollbar.set)
+        export_inner = ttk.Frame(self._export_canvas, style="Panel.TFrame")
+        self._export_window = self._export_canvas.create_window(
+            (0, 0), window=export_inner, anchor="nw",
+        )
+        export_inner.bind("<Configure>", self._sync_export_scrollregion)
+        self._export_canvas.bind("<Configure>", self._resize_export_content)
         self._preview_section = CollapsibleSection(
-            self.preview_tab, "预览性能",
+            export_inner, "预览性能",
             collapsed=not self._saved_settings.get("ui_preview_open", False),
             on_toggle=self._on_panels_toggle,
             tooltip=(
                 "播放质量只影响实时播放；暂停、逐帧和拖动松手后仍生成原始分辨率精确帧。\n"
                 "缓存窗口越大越占内存。"
             ),
+            ui=self._ui,
         )
-        self._preview_section.pack(fill="x", padx=4, pady=2)
+        self._theme_widgets.append(self._preview_section)
+        self._preview_section.pack(fill="x", padx=8, pady=(8, 2))
         self._preview_settings = self._build_preview_settings(self._preview_section.body)
         self._preview_runtime_settings = self._collect_preview_settings()
         self.root.after_idle(self._update_preview_memory_hint)
 
         self._export_section = CollapsibleSection(
-            self.preview_tab, "导出设置",
+            export_inner, "导出设置",
             collapsed=not self._saved_settings.get("ui_export_open", False),
             on_toggle=self._on_panels_toggle,
             tooltip=(
                 "设置输出分辨率、编码质量或目标码率，以及导出性能。"
                 "并行模式保持视觉质量，但不保证逐像素时序一致。"
             ),
+            ui=self._ui,
         )
-        self._export_section.pack(fill="x", padx=4, pady=2)
+        self._theme_widgets.append(self._export_section)
+        self._export_section.pack(fill="x", padx=8, pady=2)
         self._export_settings = self._build_export_settings(self._export_section.body)
 
         self._host_section = CollapsibleSection(
-            self.preview_tab, "高级主机优化",
+            export_inner, "高级主机优化",
             collapsed=not self._saved_settings.get("ui_host_open", False),
             on_toggle=self._on_panels_toggle,
             tooltip="后端在隔离进程中热切换，无需重启 GUI。导出期间为保持时序会锁定这些选项。",
+            ui=self._ui,
         )
-        self._host_section.pack(fill="x", padx=4, pady=2)
+        self._theme_widgets.append(self._host_section)
+        self._host_section.pack(fill="x", padx=8, pady=2)
         self._host_settings = self._build_host_settings(self._host_section.body)
 
-        # ---- import / export action, just above the log ----
-        e = ttk.Frame(self.preview_tab)
-        e.pack(fill="x", padx=4, pady=(6, 4))
-        self._export_row = e
-        actions = ttk.Frame(e)
-        actions.pack(fill="x")
-        self.import_btn = ttk.Button(actions, text="导入", command=self.import_media)
-        self.import_btn.pack(side="left")
-        self.clear_btn = ttk.Button(actions, text="清空", command=self.clear_media)
-        self.clear_btn.pack(side="left", padx=(6, 0))
-        Tooltip(self.clear_btn, "卸下当前视频/图片，释放解码、音轨和 DLSS 主机占用。")
-        self.export_btn = ttk.Button(actions, text="导出 DLSS", command=self.export_dlss)
-        self.export_btn.pack(side="left", padx=(6, 0))
-        self.add_queue_btn = ttk.Button(
-            actions, text="加入队列", command=self.add_current_to_queue,
-        )
-        self.add_queue_btn.pack(side="left", padx=(6, 0))
-        Tooltip(self.add_queue_btn, "使用当前处理与导出参数，把当前视频或图片加入导出队列。")
-        self.cancel_export_btn = ttk.Button(
-            actions, text="取消导出", command=self.cancel_export,
-        )
-        self.cancel_export_btn.pack(side="left", padx=(6, 0))
-        Tooltip(self.cancel_export_btn, "停止当前视频导出，并清理本次未完成的输出文件。")
-        utility_actions = actions
-        self.diagnostic_btn = ttk.Button(
-            utility_actions, text="一键诊断", width=10,
-            command=self.export_diagnostics,
-        )
-        self.diagnostic_btn.pack(side="right")
-        Tooltip(
-            self.diagnostic_btn,
-            "无需导入素材。检测 GPU/驱动、实际 DLL、当前设置和 Feature 18 宿主，"
-            "导出一个可直接发送给维护者的日志。",
-        )
-        self.update_btn = ttk.Button(
-            utility_actions, text="检查更新", width=10,
-            command=lambda: self.check_for_updates(manual=True),
-        )
-        self.update_btn.pack(side="right", padx=(0, 6))
-        Tooltip(
-            self.update_btn,
-            "从项目 GitHub Releases 检查正式版本；确认后自动下载完整的 win64 便携包。",
-        )
-        self.pbar = ttk.Progressbar(e, maximum=100)
-        self.pbar.pack(fill="x", pady=(4, 0))
-        self.eta_label = ttk.Label(e, text="", anchor="w")
-        self.eta_label.pack(fill="x", pady=(2, 0))
-
         self._build_queue_tab(self.queue_tab)
+        self._build_export_quick(self._export_quick)
+        self._build_status_bar(root)
+        self._build_progress_rule(root)
 
-        self.log = scrolledtext.ScrolledText(root, height=4, state="disabled", font=("Consolas", 9))
-        self.log.pack(fill="both", expand=False, padx=8, pady=4)
+        self.log = scrolledtext.ScrolledText(
+            root, height=5, state="disabled",
+            font=ui_theme.UI_MONO,
+            bg=self._ui["log_bg"], fg=self._ui["log_fg"],
+            insertbackground=self._ui["text"],
+            relief="flat", borderwidth=0, highlightthickness=0,
+        )
+        self._sync_log_panel()
 
         self._bind_player_keys()
         self.root.protocol("WM_DELETE_WINDOW", self._on_close)
         self._setup_drag_and_drop()
+        self._apply_ui_theme(self._ui_theme_name, persist=False)
+        self.root.after_idle(
+            lambda: ui_theme.apply_native_titlebar(
+                self.root, self._ui, self._ui_theme_name == "dark",
+            )
+        )
         self._update_action_labels()
         self._refresh_queue_tree()
         self._save_queue_state()
+        self._refresh_status_chips()
         self.root.after_idle(self._draw_empty)
         if self._saved_settings.get("preview_detached", False):
             self.root.after_idle(self.detach_preview)
@@ -1048,114 +1011,135 @@ class App:
             # Start exactly one non-blocking check during application startup.
             # Up-to-date, newer local builds, and network failures stay silent.
             self.check_for_updates(manual=False)
-        root.minsize(880, 680)
 
     def _create_preview_pane(self, parent, detached=False):
         """Build one visual player surface backed by the shared App state."""
-        canvas = tk.Canvas(parent, bg=CANVAS_BG, highlightthickness=0)
-        canvas.pack(fill="both", expand=True, padx=8, pady=(8, 4))
+        theme_widgets = []
+        canvas = tk.Canvas(
+            parent, bg=self._ui_color("canvas", CANVAS_BG), highlightthickness=0,
+        )
+        canvas.pack(fill="both", expand=True)
         canvas.bind("<Configure>", self._on_canvas_configure)
         canvas.bind("<Button-1>", self.on_canvas_press)
         canvas.bind("<B1-Motion>", self.on_canvas_drag)
         canvas.bind("<ButtonRelease-1>", self.on_canvas_release)
         canvas.bind("<Motion>", self.on_canvas_hover)
         canvas.bind("<Double-Button-1>", self.on_canvas_double)
-        canvas.bind("<Leave>", lambda _event, widget=canvas: widget.config(cursor=""))
+        canvas.bind("<Leave>", self._on_canvas_leave)
         canvas.bind("<MouseWheel>", self._on_canvas_wheel)
 
-        transport = ttk.Frame(parent)
-        transport.pack(fill="x", padx=8, pady=(0, 6 if detached else 4))
-        timeline = TimelineBar(transport)
-        timeline.pack(fill="x", pady=(0, 4))
+        transport = ttk.Frame(parent, style="Transport.TFrame")
+        transport.pack(fill="x", padx=10, pady=(0, 10))
+        timeline = TimelineBar(transport, height=10)
+        timeline.apply_theme(self._ui)
+        timeline.pack(fill="x", padx=10, pady=(8, 6))
         timeline.on_seek = self._on_timeline_seek
         timeline.bind("<MouseWheel>", self._on_wheel_step)
         Tooltip(timeline, "浅青：当前设置下已渲染；灰青：已解码并等待渲染。")
 
-        ctrl = ttk.Frame(transport)
-        ctrl.pack(fill="x")
-        left = ttk.Frame(ctrl)
+        ctrl = ttk.Frame(transport, style="Transport.TFrame")
+        ctrl.pack(fill="x", padx=8, pady=(0, 8))
+        left = ttk.Frame(ctrl, style="Transport.TFrame")
         left.pack(side="left")
-        playback_bar = ttk.Frame(left)
+        playback_bar = ttk.Frame(left, style="Transport.TFrame")
         playback_bar.pack(side="left")
-        prev_btn = ttk.Button(
-            playback_bar, text="⟨", width=3, command=lambda: self.step_frame(-1),
+        prev_btn = ChromeButton(
+            playback_bar, text="上一帧", icon="prev", icon_only=True,
+            variant="tool", width=36, command=lambda: self.step_frame(-1), ui=self._ui,
         )
         prev_btn.pack(side="left")
         Tooltip(prev_btn, "上一帧（←）")
-        play_btn = ttk.Button(
-            playback_bar, text="▶ 播放", width=8, command=self.toggle_play,
+        play_btn = ChromeButton(
+            playback_bar, text="播放", icon="play", icon_only=True,
+            variant="tool", width=36, command=self.toggle_play, ui=self._ui,
         )
         play_btn.pack(side="left", padx=(4, 0))
         Tooltip(play_btn, "播放 / 暂停（空格）。播完停在最后一帧。")
-        next_btn = ttk.Button(
-            playback_bar, text="⟩", width=3, command=lambda: self.step_frame(1),
+        next_btn = ChromeButton(
+            playback_bar, text="下一帧", icon="next", icon_only=True,
+            variant="tool", width=36, command=lambda: self.step_frame(1), ui=self._ui,
         )
         next_btn.pack(side="left", padx=(4, 0))
         Tooltip(next_btn, "下一帧（→）")
-        mute_btn = ttk.Button(
-            playback_bar, text="音", width=3, command=self.toggle_mute,
+        mute_btn = ChromeButton(
+            playback_bar, text="声音", icon="volume", icon_only=True,
+            variant="tool", width=36, command=self.toggle_mute, ui=self._ui,
         )
         mute_btn.pack(side="left", padx=(4, 0))
         Tooltip(mute_btn, "预览播放原视频声音。点击静音/取消静音。")
 
-        position_bar = ttk.Frame(left)
+        position_bar = ttk.Frame(left, style="Transport.TFrame")
         position_bar.pack(side="left")
         time_label = ttk.Label(
             position_bar, text="0:00.00 / 0:00.00", width=18, anchor="w",
+            style="Transport.TLabel", font=ui_theme.UI_MONO,
         )
         time_label.pack(side="left", padx=(10, 6))
-        ttk.Label(position_bar, text="帧").pack(side="left")
-        fentry = tk.Entry(position_bar, width=6)
+        ttk.Label(position_bar, text="帧", style="Transport.TLabel").pack(side="left")
+        fentry = ChromeEntry(
+            position_bar, ui=self._ui, width=6, justify="right",
+        )
         fentry.pack(side="left", padx=3)
         fentry.insert(0, "0")
         fentry.bind("<Return>", self.on_frame_entry)
         fentry.bind("<FocusOut>", lambda _event: self.sync_frame_entry())
-        ftotal = ttk.Label(position_bar, text="/ 0")
+        self._theme_widgets.append(fentry)
+        theme_widgets.append(fentry)
+        ftotal = ttk.Label(
+            position_bar, text="/ 0", style="Transport.TLabel",
+            font=ui_theme.UI_MONO,
+        )
         ftotal.pack(side="left")
 
-        right = ttk.Frame(ctrl)
+        right = ttk.Frame(ctrl, style="Transport.TFrame")
         right.pack(side="right")
-        view_bar = ttk.Frame(right)
+        view_bar = SegmentedBar(
+            right, self.view_var, VIEWS, command=self.on_view_change, ui=self._ui,
+        )
         view_bar.pack(side="left", padx=(0, 8))
-        for name in VIEWS:
-            ttk.Radiobutton(
-                view_bar, text=name, value=name, variable=self.view_var,
-                style="Toolbutton", command=self.on_view_change,
-            ).pack(side="left", padx=1)
+        self._theme_widgets.append(view_bar)
+        theme_widgets.append(view_bar)
         Tooltip(
             view_bar,
             "1 原图  ·  2 DLSS  ·  3 对比。滚轮缩放；放大后拖动画面；"
             "对比模式拖动分界线；按住 Alt 查看纯原图。",
         )
-        zoom_bar = ttk.Frame(right)
+        zoom_bar = ttk.Frame(right, style="Transport.TFrame")
         zoom_bar.pack(side="left", padx=(0, 8))
-        zoom_out_btn = ttk.Button(
-            zoom_bar, text="−", width=3, command=lambda: self._step_zoom(-1),
+        zoom_out_btn = ChromeButton(
+            zoom_bar, text="缩小", icon="minus", icon_only=True,
+            variant="tool", width=36, command=lambda: self._step_zoom(-1), ui=self._ui,
         )
         zoom_out_btn.pack(side="left")
-        zoom_reset_btn = ttk.Button(
-            zoom_bar, text="适应", width=7, command=self.reset_preview_zoom,
+        zoom_reset_btn = ChromeButton(
+            zoom_bar, text="适应", icon="fit", icon_only=True,
+            variant="tool", width=36, command=self.reset_preview_zoom, ui=self._ui,
         )
         zoom_reset_btn.pack(side="left", padx=2)
-        zoom_in_btn = ttk.Button(
-            zoom_bar, text="+", width=3, command=lambda: self._step_zoom(1),
+        zoom_in_btn = ChromeButton(
+            zoom_bar, text="放大", icon="plus", icon_only=True,
+            variant="tool", width=36, command=lambda: self._step_zoom(1), ui=self._ui,
         )
         zoom_in_btn.pack(side="left")
         Tooltip(zoom_out_btn, "缩小预览（-）")
         Tooltip(zoom_reset_btn, "恢复适应窗口（0）")
         Tooltip(zoom_in_btn, "放大预览（+）")
-        detach_btn = ttk.Button(
+        detach_btn = ChromeButton(
             right,
-            text="停靠主窗" if detached else "分离预览",
-            width=8,
-            command=self.toggle_detached_preview,
+            text="停靠" if detached else "分离",
+            icon="dock" if detached else "detach",
+            icon_only=True, variant="tool", width=36,
+            command=self.toggle_detached_preview, ui=self._ui,
         )
         detach_btn.pack(side="left", padx=(0, 4))
         Tooltip(
             detach_btn,
             "将预览停靠回主窗口" if detached else "在可自由缩放的独立窗口中预览",
         )
-        fs_btn = ttk.Button(right, text="全屏", width=6, command=self.toggle_fullscreen)
+        fs_btn = ChromeButton(
+            right, text="全屏", icon="fullscreen", icon_only=True,
+            variant="tool", width=36, command=self.toggle_fullscreen, ui=self._ui,
+        )
         fs_btn.pack(side="left")
         Tooltip(fs_btn, "全屏预览（F11 或双击画面，Esc 退出）")
 
@@ -1171,6 +1155,13 @@ class App:
             ),
             add="+",
         )
+
+        for widget in (
+            prev_btn, play_btn, next_btn, mute_btn,
+            zoom_out_btn, zoom_reset_btn, zoom_in_btn, detach_btn, fs_btn,
+        ):
+            self._theme_widgets.append(widget)
+            theme_widgets.append(widget)
 
         return {
             "canvas": canvas,
@@ -1188,6 +1179,7 @@ class App:
             "zoom_in_btn": zoom_in_btn,
             "detach_btn": detach_btn,
             "fs_btn": fs_btn,
+            "theme_widgets": tuple(theme_widgets),
         }
 
     @staticmethod
@@ -1231,7 +1223,283 @@ class App:
 
     def _activate_preview_pane(self, pane):
         for name, widget in pane.items():
+            if name == "theme_widgets":
+                continue
             setattr(self, name, widget)
+
+    def _ui_color(self, key, fallback=""):
+        ui = getattr(self, "_ui", None) or {}
+        return ui.get(key, fallback)
+
+    def _on_inspector_grip_start(self, event):
+        self._inspector_drag = (event.x_root, self._inspector_width)
+
+    def _on_inspector_grip_drag(self, event):
+        start = getattr(self, "_inspector_drag", None)
+        if not start:
+            return
+        scale = getattr(self.root, "_studio_scale", 1.0)
+        width = start[1] + (start[0] - event.x_root) / scale
+        width = max(ui_theme.INSPECTOR_MIN, min(ui_theme.INSPECTOR_MAX, int(width)))
+        self._inspector_width = width
+        self._inspector.configure(width=round(width * scale))
+
+    def _on_inspector_grip_end(self, _event=None):
+        self._inspector_drag = None
+        self._schedule_settings_save()
+
+    def _popup_more(self):
+        menu = tk.Menu(self.root, tearoff=0)
+        menu.add_command(label=str(self.log_btn.cget("text")), command=self.toggle_log_panel)
+        menu.add_command(
+            label=str(self.update_btn.cget("text")),
+            command=lambda: self.check_for_updates(manual=True),
+        )
+        menu.add_command(
+            label=str(self.diagnostic_btn.cget("text")), command=self.export_diagnostics,
+        )
+        menu.add_separator()
+        menu.add_command(label=str(self.theme_btn.cget("text")), command=self.toggle_ui_theme)
+        try:
+            menu.tk_popup(
+                self.more_btn.winfo_rootx(),
+                self.more_btn.winfo_rooty() + self.more_btn.winfo_height(),
+            )
+        finally:
+            menu.grab_release()
+
+    def _build_status_bar(self, parent):
+        bar = ttk.Frame(parent, style="Status.TFrame")
+        self._status_bar = bar
+        bar.pack(fill="x")
+        dot = ui_theme.scale_px(parent, 10)
+        self._status_dot = tk.Canvas(
+            bar, width=dot, height=dot, highlightthickness=0, bg=self._ui["surface"],
+        )
+        self._status_dot.pack(side="left", padx=(12, 0), pady=8)
+        self._status_host = ttk.Label(bar, text="宿主已就绪", style="Status.TLabel")
+        self._status_host.pack(side="left", padx=(6, 8), pady=6)
+        self._status_chips = StatusPills(bar, ui=self._ui)
+        self._status_chips.pack(side="left", padx=(8, 8))
+        self._theme_widgets.append(self._status_chips)
+        self._status_chip_labels = []
+        self.eta_label = ttk.Label(bar, text="", style="Status.TLabel", anchor="w")
+        self.eta_label.pack(side="left", fill="x", expand=True)
+        utility = ttk.Frame(bar, style="Status.TFrame")
+        utility.pack(side="right", padx=8, pady=4)
+        self.theme_btn = ttk.Button(
+            utility, text="浅色皮肤", width=8, command=self.toggle_ui_theme,
+        )
+        self.diagnostic_btn = ttk.Button(
+            utility, text="一键诊断", width=10, command=self.export_diagnostics,
+        )
+        self.update_btn = ttk.Button(
+            utility, text="检查更新", width=10,
+            command=lambda: self.check_for_updates(manual=True),
+        )
+        self.log_btn = ttk.Button(
+            utility, text="日志", width=6, command=self.toggle_log_panel,
+        )
+        self._status_metric = ttk.Label(utility, text="等待导入", style="Status.TLabel")
+        self._status_metric.pack(side="left", padx=(0, 10))
+        self.more_btn = ChromeButton(
+            utility, text="更多", variant="ghost", width=36,
+            icon="more", icon_only=True, command=self._popup_more, ui=self._ui,
+        )
+        self.more_btn.pack(side="right")
+        self._theme_widgets.append(self.more_btn)
+        Tooltip(self.more_btn, "日志、检查更新、一键诊断和皮肤。")
+
+    def _build_progress_rule(self, parent):
+        rule = ProgressRule(parent, ui=self._ui)
+        self._progress_rule = rule
+        self.pbar = rule
+        self._theme_widgets.append(rule)
+        rule.pack(fill="x", before=self._status_bar)
+
+    def toggle_ui_theme(self):
+        self._apply_ui_theme(
+            "light" if self._ui_theme_name != "light" else "dark",
+        )
+
+    def toggle_log_panel(self):
+        self._log_open = not self._log_open
+        self._sync_log_panel()
+
+    def _sync_log_panel(self):
+        if self._log_open:
+            options = {"fill": "x", "padx": 0, "pady": 0}
+            if getattr(self, "_progress_rule", None) is not None:
+                options["after"] = self._progress_rule
+            elif getattr(self, "_status_bar", None) is not None:
+                options["before"] = self._status_bar
+            self.log.pack(**options)
+            self.log_btn.configure(text="收起日志")
+        else:
+            self.log.pack_forget()
+            self.log_btn.configure(text="日志")
+
+    def _restack_bottom_chrome(self):
+        try:
+            self._status_bar.pack(fill="x")
+        except Exception:
+            pass
+        try:
+            self._progress_rule.pack(fill="x", before=self._status_bar)
+        except Exception:
+            pass
+        if hasattr(self, "log"):
+            self._sync_log_panel()
+
+    def _apply_ui_theme(self, name=None, persist=True):
+        if name is not None:
+            self._ui_theme_name = ui_theme.normalize_theme_name(name)
+        self._ui = ui_theme.tokens(self._ui_theme_name)
+        Tooltip.set_palette(self._ui)
+        ui_theme.apply_ttk(self.root, self._ui)
+        themed_windows = [self.root]
+        if self._detached_preview_window is not None:
+            themed_windows.append(self._detached_preview_window)
+        for window in themed_windows:
+            try:
+                window.update_idletasks()
+                ui_theme.apply_native_titlebar(
+                    window, self._ui, self._ui_theme_name == "dark",
+                )
+            except Exception:
+                pass
+        try:
+            self._inspector_grip.configure(bg=self._ui.get("line", "#2a3540"))
+        except Exception:
+            pass
+        try:
+            self.theme_btn.configure(
+                text="暗色皮肤" if self._ui_theme_name == "light" else "浅色皮肤",
+            )
+        except Exception:
+            pass
+        try:
+            self.log.configure(
+                bg=self._ui["log_bg"], fg=self._ui["log_fg"],
+                insertbackground=self._ui["text"],
+            )
+        except Exception:
+            pass
+        try:
+            self._preview_canvas.configure(bg=self._ui["panel"])
+        except Exception:
+            pass
+        try:
+            self._export_canvas.configure(bg=self._ui["panel"])
+        except Exception:
+            pass
+        panes = [self._docked_preview_pane]
+        if self._detached_preview_pane is not None:
+            panes.append(self._detached_preview_pane)
+        for pane in panes:
+            try:
+                pane["canvas"].configure(bg=self._ui["canvas"])
+            except Exception:
+                pass
+            try:
+                pane["timeline"].apply_theme(self._ui)
+            except Exception:
+                pass
+            try:
+                apply_fentry = getattr(pane["fentry"], "apply_theme", None)
+                if apply_fentry:
+                    apply_fentry(self._ui)
+            except Exception:
+                pass
+        try:
+            self.queue_tree.tag_configure("failed", foreground=self._ui["failed"])
+            self.queue_tree.tag_configure("interrupted", foreground=self._ui["interrupted"])
+            self.queue_tree.tag_configure("completed", foreground=self._ui["completed"])
+        except Exception:
+            pass
+        try:
+            self._queue_tree_shell.configure(bg=self._ui.get("line", "#2a3540"))
+        except Exception:
+            pass
+        for widget in list(getattr(self, "_theme_widgets", ())):
+            apply = getattr(widget, "apply_theme", None)
+            if apply is None:
+                continue
+            try:
+                apply(self._ui)
+            except Exception:
+                pass
+        if hasattr(self, "_settings"):
+            self._update_dlss_control_states()
+        if hasattr(self, "_export_settings"):
+            self._update_export_control_states()
+        self._refresh_status_chips()
+        if persist:
+            self._schedule_settings_save()
+        if not self.video:
+            try:
+                self._draw_empty()
+            except Exception:
+                pass
+        else:
+            self._refresh_preview_surface()
+
+    def _refresh_status_chips(self):
+        if not hasattr(self, "_status_chips"):
+            return
+        for label in getattr(self, "_status_chip_labels", ()):
+            try:
+                label.destroy()
+            except Exception:
+                pass
+        self._status_chip_labels = []
+        host = "等待导入"
+        if self._exporting:
+            host = "正在导出"
+        elif self._queue_running:
+            host = "队列处理中"
+        elif self.video:
+            host = "预渲染就绪" if not self.playing else "播放中"
+        else:
+            host = "宿主已就绪"
+        try:
+            self._status_host.configure(text=host)
+        except Exception:
+            pass
+        try:
+            self._status_dot.delete("all")
+            color = self._ui.get("ok", "#7dcea0")
+            size = ui_theme.scale_px(self._status_dot, 10)
+            pad = max(1, size // 5)
+            self._status_dot.configure(
+                bg=self._ui.get("surface", "#12181e"), width=size, height=size,
+            )
+            self._status_dot.create_oval(
+                pad, pad, size - pad, size - pad, fill=color, outline=color,
+            )
+        except Exception:
+            pass
+        pills = [("v2", "ok"), ("零引导", "")]
+        color = getattr(self, "_video_color_info", None) or {}
+        if color.get("label"):
+            pills.append((color.get("label"), "warn" if color.get("is_hdr") else ""))
+        elif self.video:
+            pills.append(("SDR · sRGB", ""))
+        if self._media_w and self._media_h:
+            pills.append((f"{self._media_w}×{self._media_h}", ""))
+        if self.video and self.nframes:
+            pills.append((f"{self.nframes} 帧", ""))
+        settings = getattr(self, "_preview_runtime_settings", None)
+        if settings and self.video:
+            pills.append((f"缓存 {settings.get('preview_cache_mb', 0)} MiB", "ok"))
+        try:
+            self._status_chips.set_pills(pills)
+        except Exception:
+            pass
+        try:
+            self._status_metric.configure(text="" if self.video else "等待导入")
+        except Exception:
+            pass
 
     @staticmethod
     def _timeline_snapshot(timeline):
@@ -1252,7 +1520,10 @@ class App:
         self._sync_transport_labels()
         self._set_play_btn(self.playing)
         try:
-            self.mute_btn.config(text="静" if self._audio.muted else "音")
+            self.mute_btn.config(
+                text="静音" if self._audio.muted else "声音",
+                icon="volume-off" if self._audio.muted else "volume",
+            )
         except Exception:
             pass
         self._update_zoom_controls()
@@ -1261,7 +1532,10 @@ class App:
 
     def _set_detach_btn(self, detached):
         try:
-            self.detach_btn.config(text="停靠主窗" if detached else "分离预览")
+            self.detach_btn.config(
+                text="停靠" if detached else "分离",
+                icon="dock" if detached else "detach",
+            )
         except Exception:
             pass
 
@@ -1283,7 +1557,7 @@ class App:
 
     def _sync_window_titles(self):
         filename = os.path.basename(self.video) if self.video else None
-        main_suffix = filename or "实时预览 + 导出"
+        main_suffix = filename or APP_CREDIT
         self.root.title(f"{APP_TITLE} — {main_suffix}")
         window = self._detached_preview_window
         if window is not None:
@@ -1322,19 +1596,24 @@ class App:
 
     def _show_detached_placeholder(self):
         if self._detached_preview_placeholder is None:
-            placeholder = ttk.Frame(self.root, padding=(10, 6))
+            placeholder = ttk.Frame(self.root, padding=(10, 6), style="Status.TFrame")
             ttk.Label(
                 placeholder,
                 text="预览已在独立窗口中打开",
+                style="Status.TLabel",
             ).pack(side="left")
-            ttk.Button(
-                placeholder,
-                text="停靠回来",
-                command=self.dock_preview,
-            ).pack(side="left", padx=(10, 0))
+            dock_btn = ChromeButton(
+                placeholder, text="停靠回来", command=self.dock_preview,
+                variant="ghost", ui=self._ui, width=88,
+            )
+            dock_btn.pack(side="left", padx=(10, 0))
+            self._theme_widgets.append(dock_btn)
             self._detached_preview_placeholder = placeholder
+        self._preview_host.pack_forget()
+        self._inspector.pack_configure(side="right", fill="both", expand=True)
+        self._inspector.pack_propagate(True)
         self._detached_preview_placeholder.pack(
-            fill="x", padx=8, pady=(8, 4), before=self.workspace_tabs,
+            fill="x", before=self._studio,
         )
 
     def _hide_detached_placeholder(self):
@@ -1386,6 +1665,7 @@ class App:
         timeline_state = self._timeline_snapshot(self.timeline)
         window = tk.Toplevel(self.root)
         window.withdraw()
+        ui_theme.apply_app_icon(window)
         window.resizable(True, True)
         bounds = _virtual_screen_bounds(self.root)
         window.minsize(min(320, bounds[2]), min(240, bounds[3]))
@@ -1394,9 +1674,13 @@ class App:
         window.bind("<Configure>", self._on_detached_configure)
         window.bind("<FocusOut>", self._on_root_focus_out)
         pane = self._create_preview_pane(window, detached=True)
+        ui_theme.apply_native_titlebar(
+            window, self._ui, self._ui_theme_name == "dark",
+        )
 
         self._docked_preview_pane["canvas"].pack_forget()
         self._docked_preview_pane["transport"].pack_forget()
+        self._preview_host.pack_forget()
         self._detached_preview_window = window
         self._detached_preview_pane = pane
         self._preview_detached = True
@@ -1430,19 +1714,27 @@ class App:
         self._preview_detached = False
         self._activate_preview_pane(self._docked_preview_pane)
         self._sync_preview_chrome(timeline_state)
+        detached_pane = self._detached_preview_pane
         self._detached_preview_window = None
         self._detached_preview_pane = None
+        if detached_pane is not None:
+            stale_ids = {
+                id(widget) for widget in detached_pane.get("theme_widgets", ())
+            }
+            self._theme_widgets = [
+                widget for widget in self._theme_widgets if id(widget) not in stale_ids
+            ]
         try:
+            ui_theme.release_app_icon(window)
             window.destroy()
         except Exception:
             pass
         self._hide_detached_placeholder()
-        self.canvas.pack(
-            fill="both", expand=True, padx=8, pady=(8, 4), before=self.workspace_tabs,
-        )
-        self.transport.pack(
-            fill="x", padx=8, pady=(0, 4), before=self.workspace_tabs,
-        )
+        self._inspector.pack_configure(side="right", fill="y", expand=False)
+        self._inspector.pack_propagate(False)
+        self._preview_host.pack(side="left", fill="both", expand=True, before=self._inspector)
+        self.canvas.pack(fill="both", expand=True)
+        self.transport.pack(fill="x", padx=10, pady=(0, 10))
         self._sync_window_titles()
         self._schedule_settings_save()
         self._focus_preview_host()
@@ -1474,81 +1766,163 @@ class App:
             self._preview_canvas.yview_moveto(0.0)
             self._preview_scrollbar.grid_remove()
 
+    def _resize_export_content(self, event=None):
+        width = max(getattr(event, "width", self._export_canvas.winfo_width()), 1)
+        self._export_canvas.itemconfigure(self._export_window, width=width)
+        self.root.after_idle(self._sync_export_scrollregion)
+
+    def _sync_export_scrollregion(self, event=None):
+        if not hasattr(self, "_export_canvas"):
+            return
+        inner = self._export_section.master
+        self._export_canvas.update_idletasks()
+        content_height = inner.winfo_reqheight()
+        viewport_height = self._export_canvas.winfo_height()
+        self._export_canvas.configure(
+            scrollregion=(0, 0, self._export_canvas.winfo_width(), content_height),
+        )
+        needs_scrollbar = content_height > viewport_height + 2
+        if needs_scrollbar == getattr(self, "_export_scrollbar_visible", False):
+            return
+        self._export_scrollbar_visible = needs_scrollbar
+        if needs_scrollbar:
+            self._export_scrollbar.grid()
+        else:
+            self._export_canvas.yview_moveto(0.0)
+            self._export_scrollbar.grid_remove()
+
     def _on_workspace_mousewheel(self, event):
-        """Scroll the settings page when the pointer is anywhere inside it."""
+        """Scroll inspector pages when the pointer is over them."""
         widget = getattr(event, "widget", None)
-        while widget is not None and widget is not self._preview_page:
-            widget = getattr(widget, "master", None)
-        if (
-            widget is not self._preview_page
-            or not getattr(self, "_preview_scrollbar_visible", False)
-        ):
+        target = None
+        cursor = widget
+        while cursor is not None:
+            if cursor is self._preview_page and getattr(self, "_preview_scrollbar_visible", False):
+                target = self._preview_canvas
+                break
+            if cursor is self._export_page and getattr(self, "_export_scrollbar_visible", False):
+                target = self._export_canvas
+                break
+            cursor = getattr(cursor, "master", None)
+        if target is None:
             return None
         delta = getattr(event, "delta", 0)
         if not delta:
             return None
-        self._preview_canvas.yview_scroll(-3 if delta > 0 else 3, "units")
+        target.yview_scroll(-3 if delta > 0 else 3, "units")
         return "break"
 
     # ---------- batch export queue ----------
+    def _chrome_button(
+        self, parent, text, command, variant="default", width=None,
+        icon="", icon_only=False, primary=None,
+    ):
+        button = ChromeButton(
+            parent, text=text, command=command, variant=variant, ui=self._ui,
+            width=width, icon=icon, icon_only=icon_only, primary=primary,
+        )
+        self._theme_widgets.append(button)
+        return button
+
+    def _chrome_combo(self, parent, variable, values, **kwargs):
+        kwargs.setdefault("state", "readonly")
+        widget = ChromeCombobox(
+            parent, ui=self._ui, textvariable=variable, values=values, **kwargs,
+        )
+        self._theme_widgets.append(widget)
+        return widget
+
+    def _chrome_spin(self, parent, **kwargs):
+        widget = ChromeSpinbox(parent, ui=self._ui, **kwargs)
+        self._theme_widgets.append(widget)
+        return widget
+
     def _build_queue_tab(self, parent):
-        toolbar = ttk.Frame(parent)
-        toolbar.pack(fill="x", padx=4, pady=(6, 4))
-        self.queue_add_files_btn = ttk.Button(
-            toolbar, text="添加文件", command=self.add_queue_files,
+        toolbar = ttk.Frame(parent, style="Panel.TFrame")
+        toolbar.pack(fill="x", padx=12, pady=(10, 6))
+        self.queue_add_files_btn = self._chrome_button(
+            toolbar, "添加文件", self.add_queue_files, width=36,
+            icon="file-plus", icon_only=True,
         )
         self.queue_add_files_btn.pack(side="left")
-        self.queue_add_folder_btn = ttk.Button(
-            toolbar, text="添加文件夹", command=self.add_queue_folder,
+        Tooltip(self.queue_add_files_btn, "添加文件")
+        self.queue_add_folder_btn = self._chrome_button(
+            toolbar, "添加文件夹", self.add_queue_folder, width=36,
+            icon="folder-plus", icon_only=True,
         )
-        self.queue_add_folder_btn.pack(side="left", padx=(6, 0))
-        self.queue_remove_btn = ttk.Button(
-            toolbar, text="移除", command=self.remove_selected_queue_jobs,
+        self.queue_add_folder_btn.pack(side="left", padx=(4, 0))
+        Tooltip(self.queue_add_folder_btn, "添加文件夹")
+        self.queue_remove_btn = self._chrome_button(
+            toolbar, "移除", self.remove_selected_queue_jobs, variant="ghost", width=36,
+            icon="trash", icon_only=True,
         )
-        self.queue_remove_btn.pack(side="left", padx=(12, 0))
-        self.queue_retry_btn = ttk.Button(
-            toolbar, text="重试", command=self.retry_selected_queue_jobs,
+        self.queue_remove_btn.pack(side="left", padx=(8, 0))
+        Tooltip(self.queue_remove_btn, "移除所选任务")
+        self.queue_clear_btn = self._chrome_button(
+            toolbar, "清空队列", self.clear_queue_jobs, variant="ghost", width=36,
+            icon="clear", icon_only=True,
         )
-        self.queue_retry_btn.pack(side="left", padx=(6, 0))
-        self.queue_clear_done_btn = ttk.Button(
-            toolbar, text="清理已完成", command=self.clear_completed_queue_jobs,
+        self.queue_clear_btn.pack(side="left", padx=(4, 0))
+        Tooltip(self.queue_clear_btn, "清空队列")
+        self.queue_retry_btn = self._chrome_button(
+            toolbar, "重试", self.retry_selected_queue_jobs, variant="ghost",
+            width=36, icon="retry", icon_only=True,
         )
-        self.queue_clear_done_btn.pack(side="left", padx=(6, 0))
-        self.queue_move_down_btn = ttk.Button(
-            toolbar, text="下移", width=5, command=lambda: self.move_selected_queue_job(1),
+        self.queue_retry_btn.pack(side="left", padx=(8, 0))
+        Tooltip(self.queue_retry_btn, "重试所选失败任务")
+        self.queue_clear_done_btn = self._chrome_button(
+            toolbar, "清理已完成", self.clear_completed_queue_jobs, variant="ghost",
+            width=36, icon="clear-done", icon_only=True,
+        )
+        self.queue_clear_done_btn.pack(side="left", padx=(4, 0))
+        Tooltip(self.queue_clear_done_btn, "清理已完成任务")
+        self.queue_move_down_btn = self._chrome_button(
+            toolbar, "下移", lambda: self.move_selected_queue_job(1), variant="ghost",
+            width=36, icon="down", icon_only=True,
         )
         self.queue_move_down_btn.pack(side="right")
-        self.queue_move_up_btn = ttk.Button(
-            toolbar, text="上移", width=5, command=lambda: self.move_selected_queue_job(-1),
+        Tooltip(self.queue_move_down_btn, "下移所选任务")
+        self.queue_move_up_btn = self._chrome_button(
+            toolbar, "上移", lambda: self.move_selected_queue_job(-1), variant="ghost",
+            width=36, icon="up", icon_only=True,
         )
-        self.queue_move_up_btn.pack(side="right", padx=(0, 6))
+        self.queue_move_up_btn.pack(side="right", padx=(0, 4))
+        Tooltip(self.queue_move_up_btn, "上移所选任务")
 
-        output_row = ttk.Frame(parent)
-        output_row.pack(fill="x", padx=4, pady=(0, 4))
-        ttk.Label(output_row, text="输出目录:").pack(side="left")
+        output_row = ttk.Frame(parent, style="Panel.TFrame")
+        output_row.pack(fill="x", padx=12, pady=(0, 6))
+        ttk.Label(output_row, text="输出目录").pack(side="left")
         self.queue_output_dir_var = tk.StringVar(
             value=self._saved_settings.get("queue_output_dir", "")
         )
-        self.queue_output_entry = ttk.Entry(
-            output_row, textvariable=self.queue_output_dir_var,
+        self.queue_output_entry = ChromeEntry(
+            output_row, ui=self._ui, textvariable=self.queue_output_dir_var,
         )
         self.queue_output_entry.pack(side="left", fill="x", expand=True, padx=(6, 6))
+        self._theme_widgets.append(self.queue_output_entry)
         self.queue_output_entry.bind("<FocusOut>", self._on_queue_output_dir_change)
         self.queue_output_entry.bind("<Return>", self._on_queue_output_dir_change)
-        self.queue_output_browse_btn = ttk.Button(
-            output_row, text="浏览…", command=self.choose_queue_output_dir,
+        self.queue_output_browse_btn = self._chrome_button(
+            output_row, "浏览…", self.choose_queue_output_dir, variant="ghost",
+            width=36, icon="folder-open", icon_only=True,
         )
         self.queue_output_browse_btn.pack(side="left")
+        Tooltip(self.queue_output_browse_btn, "选择输出目录")
         Tooltip(
             self.queue_output_entry,
             "仅影响之后添加的任务。留空时输出到各源媒体所在目录；队列会自动避免覆盖已有文件。",
         )
 
-        tree_frame = ttk.Frame(parent)
-        tree_frame.pack(fill="both", expand=True, padx=4, pady=(0, 4))
+        tree_frame = ttk.Frame(parent, style="Panel.TFrame")
+        tree_frame.pack(fill="both", expand=True, padx=12, pady=(0, 6))
+        self._queue_tree_shell = tk.Frame(
+            tree_frame, bg=self._ui.get("line", "#2a3540"), highlightthickness=0, bd=0,
+        )
+        self._queue_tree_shell.grid(row=0, column=0, sticky="nsew")
         columns = ("state", "source", "info", "settings", "output", "progress")
         self.queue_tree = ttk.Treeview(
-            tree_frame, columns=columns, show="headings", height=8, selectmode="extended",
+            self._queue_tree_shell, columns=columns, show="headings", height=8,
+            selectmode="extended", displaycolumns=("state", "source", "progress"),
         )
         headings = {
             "state": "状态", "source": "文件", "info": "素材信息",
@@ -1564,60 +1938,77 @@ class App:
                 name, width=widths[name], minwidth=60,
                 stretch=name in {"source", "output"}, anchor="w",
             )
+        self.queue_tree.pack(fill="both", expand=True, padx=1, pady=1)
         queue_y = ttk.Scrollbar(tree_frame, orient="vertical", command=self.queue_tree.yview)
-        queue_x = ttk.Scrollbar(tree_frame, orient="horizontal", command=self.queue_tree.xview)
-        self.queue_tree.configure(yscrollcommand=queue_y.set, xscrollcommand=queue_x.set)
-        self.queue_tree.grid(row=0, column=0, sticky="nsew")
+        self.queue_tree.configure(yscrollcommand=queue_y.set)
         queue_y.grid(row=0, column=1, sticky="ns")
-        queue_x.grid(row=1, column=0, sticky="ew")
+        def fit_queue_columns(event):
+            width = max(event.width, 1)
+            self.queue_tree.column("state", width=48, minwidth=40, stretch=False)
+            self.queue_tree.column("progress", width=64, minwidth=48, stretch=False)
+            self.queue_tree.column("source", width=max(60, width - 114), minwidth=60, stretch=True)
+        self.queue_tree.bind("<Configure>", fit_queue_columns, add="+")
         tree_frame.rowconfigure(0, weight=1)
         tree_frame.columnconfigure(0, weight=1)
-        self.queue_tree.tag_configure("failed", foreground="#a12622")
-        self.queue_tree.tag_configure("interrupted", foreground="#8a5a00")
-        self.queue_tree.tag_configure("completed", foreground="#226b32")
+        self.queue_tree.tag_configure("failed", foreground=self._ui_color("failed", "#a12622"))
+        self.queue_tree.tag_configure("interrupted", foreground=self._ui_color("interrupted", "#8a5a00"))
+        self.queue_tree.tag_configure("completed", foreground=self._ui_color("completed", "#226b32"))
         self.queue_tree.bind("<<TreeviewSelect>>", self._on_queue_tree_select)
         self.queue_tree.bind("<Double-Button-1>", lambda event: self.load_selected_queue_job())
 
-        details_row = ttk.Frame(parent)
-        details_row.pack(fill="x", padx=4, pady=(0, 4))
+        details_row = ttk.Frame(parent, style="Panel.TFrame")
+        details_row.pack(fill="x", padx=12, pady=(0, 6))
         self.queue_details = ttk.Label(
-            details_row, text="选择任务可查看完整输入、输出和错误信息。",
-            anchor="w", justify="left", wraplength=690,
+            details_row, text="选择任务查看详情。",
+            anchor="w", justify="left", wraplength=280, style="Hint.TLabel",
         )
-        self.queue_details.pack(side="left", fill="x", expand=True)
-        self.queue_apply_settings_btn = ttk.Button(
-            details_row, text="应用当前参数", command=self.apply_current_settings_to_queue,
-        )
-        self.queue_apply_settings_btn.pack(side="right", padx=(6, 0))
-        self.queue_load_btn = ttk.Button(
-            details_row, text="载入预览", command=self.load_selected_queue_job,
-        )
-        self.queue_load_btn.pack(side="right")
+        self.queue_details.pack(side="top", fill="x", pady=(4, 8))
         details_row.bind(
             "<Configure>",
-            lambda event: self.queue_details.config(wraplength=max(event.width - 250, 260)),
+            lambda event: self.queue_details.config(wraplength=max(event.width - 12, 160)),
         )
 
-        footer = ttk.Frame(parent)
-        footer.pack(fill="x", padx=4, pady=(0, 6))
-        actions = ttk.Frame(footer)
+        footer = ttk.Frame(parent, style="Panel.TFrame")
+        footer.pack(fill="x", padx=12, pady=(0, 10))
+        actions = ttk.Frame(footer, style="Panel.TFrame")
         actions.pack(fill="x")
-        self.queue_start_btn = ttk.Button(
-            actions, text="开始队列", command=self.start_export_queue,
+        for column in range(2):
+            actions.columnconfigure(column, weight=1, uniform="queue_actions")
+        self.queue_load_btn = self._chrome_button(
+            actions, "载入预览", self.load_selected_queue_job, variant="ghost",
         )
-        self.queue_start_btn.pack(side="left")
-        self.queue_pause_btn = ttk.Button(
-            actions, text="当前项后暂停", command=self.pause_export_queue_after_current,
+        self.queue_load_btn.grid(row=0, column=0, sticky="ew", padx=(0, 4), pady=(0, 6))
+        self.queue_apply_settings_btn = self._chrome_button(
+            actions, "应用参数", self.apply_current_settings_to_queue, variant="ghost",
         )
-        self.queue_pause_btn.pack(side="left", padx=(6, 0))
-        self.queue_cancel_btn = ttk.Button(
-            actions, text="取消当前项", command=self.cancel_current_queue_job,
+        self.queue_apply_settings_btn.grid(row=0, column=1, sticky="ew", padx=(4, 0), pady=(0, 6))
+        Tooltip(self.queue_apply_settings_btn, "把当前调参和导出设置应用到所选任务")
+        run_bar = ttk.Frame(actions, style="Panel.TFrame")
+        run_bar.grid(row=1, column=0, columnspan=2, sticky="ew", pady=(0, 6))
+        for column in range(2):
+            run_bar.columnconfigure(column, weight=1, uniform="queue_run")
+        self._queue_run_bar = run_bar
+        self.queue_start_btn = self._chrome_button(
+            run_bar, "开始队列", self.start_export_queue, variant="accent",
+            icon="play",
         )
-        self.queue_cancel_btn.pack(side="left", padx=(6, 0))
-        self.queue_status_label = ttk.Label(actions, text="", anchor="e")
-        self.queue_status_label.pack(side="right", fill="x", expand=True, padx=(12, 0))
-        self.queue_progress = ttk.Progressbar(footer, maximum=100)
-        self.queue_progress.pack(fill="x", pady=(4, 0))
+        self.queue_pause_btn = self._chrome_button(
+            run_bar, "暂停", self.pause_export_queue_after_current,
+            variant="outline", icon="pause", primary=True,
+        )
+        Tooltip(self.queue_pause_btn, "当前项完成后暂停队列")
+        self.queue_cancel_btn = self._chrome_button(
+            run_bar, "取消", self.cancel_current_queue_job,
+            variant="danger", icon="cancel", primary=True,
+        )
+        Tooltip(self.queue_cancel_btn, "取消当前任务并暂停队列，未完成文件会清理")
+        self.queue_pause_btn.grid(row=0, column=0, sticky="ew", padx=(0, 4))
+        self.queue_cancel_btn.grid(row=0, column=1, sticky="ew", padx=(4, 0))
+        self.queue_pause_btn.grid_remove()
+        self.queue_cancel_btn.grid_remove()
+        self.queue_start_btn.grid(row=0, column=0, columnspan=2, sticky="ew")
+        self._queue_details_tip = Tooltip(self.queue_details, "")
+        self._queue_run_layout = False
 
     def _save_queue_state(self):
         try:
@@ -1682,6 +2073,32 @@ class App:
         )
 
     @staticmethod
+    def _queue_details_summary(job):
+        settings = job.settings or {}
+        export = job.export_settings or {}
+        style = STYLE_NAMES.get(settings.get("style"), "默认")
+        scale = normalize_scale(
+            export.get("super_resolution_scale", settings.get("super_resolution_scale", 1))
+        )
+        bits = [style]
+        if job.media_kind == "image":
+            image_format = os.path.splitext(job.output_path or job.source_path)[1].upper().lstrip(".") or "PNG"
+            bits.extend((image_format, "原尺寸"))
+        else:
+            if export.get("rate_control") == "bitrate":
+                try:
+                    bitrate = float(export.get("video_bitrate_mbps", 20))
+                except (TypeError, ValueError, OverflowError):
+                    bitrate = 20.0
+                bits.append(f"{bitrate:g} Mbps")
+            else:
+                bits.append(QUALITY_PROFILE_NAMES.get(export.get("quality_profile"), "均衡"))
+            bits.append("严格单会话" if export.get("mode", "single") == "single" else "并行分段")
+        if scale > 1:
+            bits.append(f"{scale}×超分")
+        return " · ".join(bits)
+
+    @staticmethod
     def _queue_progress_text(job):
         if job.state == "completed":
             return "100%"
@@ -1730,50 +2147,22 @@ class App:
         if restored:
             self.queue_tree.selection_set(restored)
         failed = sum(job.state in {"failed", "interrupted"} for job in self._queue_jobs)
-        suffix = f" ({len(self._queue_jobs)})" if self._queue_jobs else ""
+        badge = str(len(self._queue_jobs))
         if failed:
-            suffix = f" ({len(self._queue_jobs)} / {failed} 失败)"
+            badge = f"{len(self._queue_jobs)}!"
         try:
-            self.workspace_tabs.tab(self.queue_tab, text="导出队列" + suffix)
+            self.workspace_tabs.tab(self.queue_tab, text="队列")
+            self.workspace_tabs.set_badge(self.queue_tab, badge)
         except Exception:
             pass
-        self._refresh_queue_overall_progress()
         self._update_queue_action_states()
         self._on_queue_tree_select()
-
-    def _refresh_queue_overall_progress(self):
-        if not hasattr(self, "queue_progress"):
-            return
-        total = len(self._queue_jobs)
-        terminal = sum(
-            job.state in {"completed", "failed", "cancelled", "interrupted"}
-            for job in self._queue_jobs
-        )
-        partial = 0.0
-        active = self._queue_job(self._queue_active_job_id)
-        if active is not None and active.progress_total > 0:
-            partial = min(active.progress_done / active.progress_total, 1.0)
-        self.queue_progress["maximum"] = max(total, 1)
-        self.queue_progress["value"] = min(terminal + partial, max(total, 1))
-        pending = sum(job.state == "pending" for job in self._queue_jobs)
-        completed = sum(job.state == "completed" for job in self._queue_jobs)
-        failed = sum(job.state in {"failed", "interrupted"} for job in self._queue_jobs)
-        if total:
-            text = f"完成 {completed}/{total} · 等待 {pending}"
-            if failed:
-                text += f" · 失败 {failed}"
-        else:
-            text = "队列为空"
-        if self._queue_pause_requested and self._queue_running:
-            text += " · 将在当前项后暂停"
-        self.queue_status_label.config(text=text)
 
     def _update_queue_action_states(self):
         if not hasattr(self, "queue_start_btn"):
             return
         selected = self._selected_queue_jobs()
         editable = not self._queue_running and not self._exporting and not self._diagnosing
-        pending = any(job.state == "pending" for job in self._queue_jobs)
         retryable = any(
             job.state in {"failed", "cancelled", "interrupted"} for job in selected
         )
@@ -1784,6 +2173,9 @@ class App:
         ):
             self._set_ttk_enabled(widget, editable)
         self._set_ttk_enabled(self.queue_remove_btn, editable and bool(selected))
+        self._set_ttk_enabled(
+            self.queue_clear_btn, editable and bool(self._queue_jobs),
+        )
         self._set_ttk_enabled(self.queue_retry_btn, editable and retryable)
         self._set_ttk_enabled(self.queue_clear_done_btn, editable and completed)
         self._set_ttk_enabled(self.queue_move_up_btn, editable and len(selected) == 1)
@@ -1793,7 +2185,9 @@ class App:
             self.queue_apply_settings_btn,
             editable and bool(selected) and all(job.state != "completed" for job in selected),
         )
-        self._set_ttk_enabled(self.queue_start_btn, editable and pending)
+        self._layout_queue_run_controls(self._queue_running)
+        startable = any(job.state in QUEUE_STARTABLE_STATES for job in self._queue_jobs)
+        self._set_ttk_enabled(self.queue_start_btn, editable and startable)
         self._set_ttk_enabled(self.queue_pause_btn, self._queue_running)
         active_job = self._queue_job(self._queue_active_job_id)
         self._set_ttk_enabled(
@@ -1803,42 +2197,56 @@ class App:
             and active_job.media_kind == "video"
             and self._exporting,
         )
-        self.queue_start_btn.config(text="继续队列" if pending and self._queue_last_summary == "paused" else "开始队列")
-        self.queue_pause_btn.config(
-            text="将在当前项后暂停" if self._queue_pause_requested else "当前项后暂停"
+        resume = startable and self._queue_last_summary == "paused"
+        self.queue_start_btn.config(
+            text="继续队列" if resume else "开始队列",
+            icon="play",
         )
+        self.queue_pause_btn.config(
+            text="将暂停" if self._queue_pause_requested else "暂停",
+        )
+
+    def _layout_queue_run_controls(self, running):
+        running = bool(running)
+        if running:
+            self.queue_start_btn.grid_remove()
+            self.queue_pause_btn.grid(row=0, column=0, sticky="ew", padx=(0, 4))
+            self.queue_cancel_btn.grid(row=0, column=1, sticky="ew", padx=(4, 0))
+            try:
+                self.queue_pause_btn.lift()
+                self.queue_cancel_btn.lift()
+            except tk.TclError:
+                pass
+        else:
+            self.queue_pause_btn.grid_remove()
+            self.queue_cancel_btn.grid_remove()
+            self.queue_start_btn.grid(row=0, column=0, columnspan=2, sticky="ew")
+        self._queue_run_layout = running
 
     def _on_queue_tree_select(self, event=None):
         selected = self._selected_queue_jobs()
         if not selected:
             text = (
-                "队列为空，可添加文件、文件夹或拖入多个图片与视频。"
+                "添加文件、文件夹或拖入素材。"
                 if not self._queue_jobs else
-                "选择任务可查看完整输入、输出和错误信息。"
+                "选择任务查看详情。"
             )
         elif len(selected) > 1:
             text = f"已选择 {len(selected)} 个任务。"
         else:
             job = selected[0]
-            text = (
-                f"输入：{job.source_path}\n输出：{job.output_path}"
-                f"\n参数：{self._queue_settings_text(job)}"
-            )
-            if job.media_kind == "image":
-                text += "\n实际输出：图片保持源格式 · SDR · 原尺寸"
-            else:
-                export = job.export_settings or {}
-                container = resolve_output_container(
-                    job.source_path, export.get("output_container", "mp4")
-                )
-                hdr_active = bool(
-                    export.get("hdr_mode") and (job.color_info or {}).get("is_hdr")
-                )
-                codec = "HEVC Main10 · 10-bit HDR" if hdr_active else "H.264 · 8-bit SDR"
-                mode = "严格单会话" if export.get("mode", "single") == "single" else "并行分段"
-                text += f"\n实际输出：{OUTPUT_CONTAINER_LABELS[container]} · {codec} · {mode}"
+            src = os.path.basename(job.source_path)
+            out = os.path.basename(job.output_path or "")
+            text = f"{src}  →  {out}\n{self._queue_details_summary(job)}"
             if job.error:
                 text += "\n错误：" + job.error
+            tip = getattr(self, "_queue_details_tip", None)
+            if tip is not None:
+                tip.text = f"输入：{job.source_path}\n输出：{job.output_path or ''}"
+        if not selected or len(selected) > 1:
+            tip = getattr(self, "_queue_details_tip", None)
+            if tip is not None:
+                tip.text = ""
         if hasattr(self, "queue_details"):
             self.queue_details.config(text=text)
         self._update_queue_action_states()
@@ -2057,7 +2465,6 @@ class App:
             note += f"，跳过 {duplicates} 个重复项"
         if invalid:
             note += f"，{invalid} 个需要修复或重试"
-        self.queue_status_label.config(text=note)
         self.logln("[队列] " + note)
         return added
 
@@ -2075,6 +2482,18 @@ class App:
         if self._queue_running or self._exporting:
             return
         self._queue_jobs = [job for job in self._queue_jobs if job.state != "completed"]
+        self._save_queue_state()
+        self._refresh_queue_tree(keep_selection=False)
+
+    def clear_queue_jobs(self):
+        if self._queue_running or self._exporting:
+            return
+        if not self._queue_jobs:
+            return
+        count = len(self._queue_jobs)
+        if not messagebox.askyesno("清空队列", f"移除全部 {count} 个任务？"):
+            return
+        self._queue_jobs = []
         self._save_queue_state()
         self._refresh_queue_tree(keep_selection=False)
 
@@ -2144,17 +2563,28 @@ class App:
         if self._load_media(job.source_path):
             self.workspace_tabs.select(self._preview_page)
 
+    def _prepare_queue_jobs_for_start(self):
+        changed = False
+        for job in self._queue_jobs:
+            if job.state in {"cancelled", "interrupted"}:
+                job.reset_for_retry()
+                changed = True
+        if changed:
+            self._save_queue_state()
+            self._refresh_queue_tree()
+        return changed
+
     def start_export_queue(self):
         if self._queue_running or self._exporting:
             return
-        if not any(job.state == "pending" for job in self._queue_jobs):
-            self.queue_status_label.config(text="没有等待处理的任务")
+        if not any(job.state in QUEUE_STARTABLE_STATES for job in self._queue_jobs):
+            self.logln("[队列] 没有等待处理的任务")
             return
         plans = []
         risk_order = {"low": 0, "unknown": 1, "medium": 2, "high": 3, "extreme": 4}
         gpu_memory = query_gpu_memory(cache_seconds=0)
         for job in self._queue_jobs:
-            if job.state != "pending":
+            if job.state not in QUEUE_STARTABLE_STATES:
                 continue
             export = job.export_settings or {}
             settings = job.settings or {}
@@ -2183,12 +2613,12 @@ class App:
             if not self._confirm_super_resolution_export(
                 width, height, scale, is_hdr=is_hdr, notify=True,
             ):
-                self.queue_status_label.config(text="已取消启动队列")
                 return
             for _rank, plan_width, plan_height, plan_scale, plan_hdr in plans:
                 self._confirmed_super_resolution_plans.add(
                     (plan_width, plan_height, plan_scale, plan_hdr)
                 )
+        self._prepare_queue_jobs_for_start()
         self.pause()
         self._queue_running = True
         self._queue_pause_requested = False
@@ -2198,6 +2628,10 @@ class App:
         self._update_action_labels()
         self._update_host_control_states()
         self._update_queue_action_states()
+        try:
+            self.root.update_idletasks()
+        except Exception:
+            pass
         self.root.after_idle(self._run_next_queue_job)
 
     def _run_next_queue_job(self):
@@ -2237,9 +2671,6 @@ class App:
             self._refresh_queue_tree()
             self.queue_tree.selection_set(job.job_id)
             self.queue_tree.see(job.job_id)
-            self.queue_status_label.config(
-                text=f"正在准备 {os.path.basename(job.source_path)}"
-            )
             self.logln(f"[队列] 开始: {job.source_path}")
             if job.media_kind == "image":
                 image_settings = dict(job.settings)
@@ -2304,7 +2735,6 @@ class App:
             message = "队列已暂停，可稍后继续。"
         else:
             message = f"队列处理结束：完成 {completed}，失败 {failed}，取消 {cancelled}。"
-        self.queue_status_label.config(text=message)
         self.logln("[队列] " + message)
         if not paused:
             messagebox.showinfo("导出队列", message)
@@ -2313,14 +2743,16 @@ class App:
         if not self._queue_running:
             return
         self._queue_pause_requested = True
-        self._refresh_queue_overall_progress()
         self._update_queue_action_states()
 
     def cancel_current_queue_job(self):
-        if self._queue_running and self._queue_active_job_id is not None:
-            self.cancel_export()
+        if not self._queue_running or self._queue_active_job_id is None:
+            return
+        self._queue_pause_requested = True
+        self.cancel_export()
+        self._update_queue_action_states()
 
-    def _update_active_queue_progress(self, done, total, label="", status_text=""):
+    def _update_active_queue_progress(self, done, total, label=""):
         job = self._queue_job(self._queue_active_job_id)
         if job is None:
             return
@@ -2328,12 +2760,6 @@ class App:
         job.progress_total = max(int(total), 0)
         job.progress_label = str(label or "")
         self._update_queue_job_row(job)
-        self._refresh_queue_overall_progress()
-        if status_text:
-            pause_note = " · 将在当前项后暂停" if self._queue_pause_requested else ""
-            self.queue_status_label.config(
-                text=f"{os.path.basename(job.source_path)} · {status_text}{pause_note}"
-            )
 
     # ---------- helpers ----------
     def set_status(self, msg):
@@ -2358,8 +2784,9 @@ class App:
             if not total:
                 self.root.update_idletasks()
                 return
-            self.pbar["maximum"] = total
-            self.pbar["value"] = i
+            if hasattr(self, "pbar"):
+                self.pbar["maximum"] = total
+                self.pbar["value"] = i
             elapsed = 0.0
             if self._export_t0:
                 elapsed = max(0.0, time.perf_counter() - self._export_t0)
@@ -2385,7 +2812,7 @@ class App:
                     if stats else
                     f"{label}  {i}/{total} ({pct:.0f}%)"
                 )
-            self._update_active_queue_progress(i, total, label, stats)
+            self._update_active_queue_progress(i, total, label)
             try:
                 self.eta_label.config(text=stats)
             except Exception:
@@ -2417,6 +2844,7 @@ class App:
                 active_job.media_kind == "video" if active_job is not None
                 else not self._is_image
             )
+            self._layout_export_run_controls(self._exporting and cancellable_export)
             self._set_ttk_enabled(self.import_btn, not busy)
             self._set_ttk_enabled(self.clear_btn, has and not busy)
             self._set_ttk_enabled(self.export_btn, has and not busy)
@@ -2448,13 +2876,30 @@ class App:
             else:
                 update_text = "检查更新"
             self.update_btn.config(text=update_text)
-            if self._is_image:
+            if not has:
+                self.export_btn.config(text="导出 DLSS")
+            elif self._is_image:
                 self.export_btn.config(text="导出 DLSS 图片")
             else:
                 self.export_btn.config(text="导出 DLSS 视频")
             self._update_zoom_controls()
+            self._refresh_status_chips()
         except Exception:
             pass
+
+    def _layout_export_run_controls(self, show_cancel):
+        show_cancel = bool(show_cancel)
+        if show_cancel:
+            self.export_btn.grid_remove()
+            self.cancel_export_btn.grid(row=0, column=0, columnspan=2, sticky="ew")
+            try:
+                self.cancel_export_btn.lift()
+            except tk.TclError:
+                pass
+        else:
+            self.cancel_export_btn.grid_remove()
+            self.export_btn.grid(row=0, column=0, columnspan=2, sticky="ew")
+        self._export_run_layout = "cancel" if show_cancel else "export"
 
     def _read_frame(self, frame):
         if self._is_image:
@@ -2503,60 +2948,31 @@ class App:
         d['v_outview'] = tk.StringVar(value=OUTVIEW_NAMES.get(saved['output_view'], "处理"))
         d['v_outmix'] = tk.DoubleVar(value=saved['output_mix'])
         d['v_use_output_mix'] = tk.BooleanVar(value=saved['use_output_mix'])
-        body = ttk.Frame(parent)
-        body.pack(fill="x", padx=4, pady=2)
+        body = ttk.Frame(parent, style="Panel.TFrame")
+        body.pack(fill="x", padx=0, pady=2)
 
-        top = ttk.Frame(body)
-        top.pack(fill="x", padx=8, pady=(6, 2))
-        ttk.Label(top, text="风格").pack(side="left")
-        style_cb = ttk.Combobox(
-            top, textvariable=d['v_style'], values=list(STYLE_CHOICES),
-            state="readonly", width=10,
+        ttk.Label(body, text="风格", style="Kicker.TLabel").pack(
+            fill="x", pady=(0, 6),
         )
-        style_cb.pack(side="left", padx=(6, 20))
-        ttk.Label(top, text="输出视图").pack(side="left")
-        outview_cb = ttk.Combobox(
-            top, textvariable=d['v_outview'], values=list(OUTVIEW_CHOICES),
-            state="readonly", width=10,
+        style_chips = ChipGroup(
+            body, d['v_style'], list(STYLE_CHOICES),
+            command=self.on_settings_change, ui=self._ui,
         )
-        outview_cb.pack(side="left", padx=(6, 20))
-        enable_5x = ttk.Checkbutton(
-            top, text="允许 5× 实验范围", variable=d['v_enable_5x'],
-            command=self._on_5x_toggle,
-        )
-        enable_5x.pack(side="left")
-        d['w_enable_5x'] = enable_5x
-        Tooltip(
-            enable_5x,
-            "默认关闭：全部强度参数和输出混合限制在 0%–100%。"
-            "开启后允许输入 0%–500%；高于 100% 可能产生饱和、伪影或过度处理。",
-        )
-        Tooltip(
-            outview_cb,
-            "导出视图只影响导出构图；上方预览始终使用「处理」构图。\n"
-            "处理：DLSS/对比预览和导出都会按输出混合与原图融合。\n"
-            "差异×10：仅导出，把 DLSS 与原图的差值放大 10 倍，灰色=几乎没改，亮/暗=改动大。\n"
-            "左右对比：仅导出，左半原图、右半 DLSS，中间用白线分隔。",
-        )
-        style_cb.bind("<<ComboboxSelected>>", lambda e: self.on_settings_change())
-        outview_cb.bind("<<ComboboxSelected>>", lambda e: self.on_output_settings_change())
+        style_chips.pack(anchor="w", pady=(0, 12))
+        self._theme_widgets.append(style_chips)
 
-        ttk.Separator(body, orient="horizontal").pack(fill="x", padx=8, pady=(2, 2))
-
-        grid = ttk.Frame(body)
-        grid.pack(fill="x")
-        for col in range(3):
-            grid.columnconfigure(col, weight=1, uniform="dlss_slider")
         slider_max = (
             app_settings.DLSS_SLIDER_MAX
             if d['v_enable_5x'].get() else app_settings.DLSS_STANDARD_MAX
         )
+        sliders = ttk.Frame(body, style="Panel.TFrame")
+        sliders.pack(fill="x")
         _, d['w_intensity'], d['w_intensity_value'] = self._add_toggle_slider(
-            grid, 0, 0, "强度", d['v_intensity'], d['v_use_intensity'],
+            sliders, 0, 0, "强度", d['v_intensity'], d['v_use_intensity'],
             "关闭时按 0 处理。开启后使用记忆的强度。", slider_max=slider_max,
         )
         d['w_use_output_mix'], d['w_outmix'], d['w_outmix_value'] = self._add_toggle_slider(
-            grid, 0, 1, "输出混合", d['v_outmix'], d['v_use_output_mix'],
+            sliders, 1, 0, "输出混合", d['v_outmix'], d['v_use_output_mix'],
             "仅「处理」有效。0=原图，1=完整 DLSS，超过 1 会放大处理残差；"
             "DLSS/对比预览与导出同步生效。\n"
             "关闭时按 0（原图），开启后使用记忆的混合比例。",
@@ -2564,26 +2980,53 @@ class App:
             slider_max=slider_max,
         )
         _, d['w_local_tone'], d['w_local_tone_value'] = self._add_toggle_slider(
-            grid, 1, 0, "本地色调", d['v_local_tone'], d['v_use_local_tone'],
+            sliders, 2, 0, "本地色调", d['v_local_tone'], d['v_use_local_tone'],
             "关闭时按 0 处理。开启后使用记忆的本地色调。", slider_max=slider_max,
         )
         _, d['w_local_struct'], d['w_local_struct_value'] = self._add_toggle_slider(
-            grid, 1, 1, "本地结构", d['v_local_struct'], d['v_use_local_struct'],
+            sliders, 3, 0, "本地结构", d['v_local_struct'], d['v_use_local_struct'],
             "关闭时按 0 处理。开启后使用记忆的本地结构。", slider_max=slider_max,
         )
         _, d['w_skin_struct'], d['w_skin_struct_value'] = self._add_toggle_slider(
-            grid, 1, 2, "皮肤蒙版", d['v_skin_struct'], d['v_auto_mask'],
+            sliders, 4, 0, "皮肤蒙版", d['v_skin_struct'], d['v_auto_mask'],
             "关闭时皮肤结构按 0 处理。开启且数值大于 0 时使用自动蒙版保护皮肤纹理；"
             "数值为 0 时等同关闭。",
             slider_max=slider_max,
         )
-        range_hint = ttk.Label(
-            body,
-            text="",
-            foreground="#6a6a6a", wraplength=820, justify="left",
+
+        enable_5x = CheckToggle(
+            body, "允许 5× 实验范围", d['v_enable_5x'],
+            command=self._on_5x_toggle, ui=self._ui,
         )
-        range_hint.pack(fill="x", padx=24, pady=(0, 6))
+        enable_5x.pack(anchor="w", pady=(8, 0))
+        self._theme_widgets.append(enable_5x)
+        d['w_enable_5x'] = enable_5x
+        Tooltip(
+            enable_5x,
+            "默认关闭：全部强度参数和输出混合限制在 0%–100%。"
+            "开启后允许输入 0%–500%；高于 100% 可能产生饱和、伪影或过度处理。",
+        )
+        range_hint = ttk.Label(
+            body, text="", style="Hint.TLabel", wraplength=320, justify="left",
+        )
         d['w_range_hint'] = range_hint
+
+        ttk.Label(body, text="输出预览", style="Kicker.TLabel").pack(
+            fill="x", pady=(4, 6),
+        )
+        outview_chips = ChipGroup(
+            body, d['v_outview'], list(OUTVIEW_CHOICES),
+            command=self.on_output_settings_change, ui=self._ui,
+        )
+        outview_chips.pack(anchor="w")
+        self._theme_widgets.append(outview_chips)
+        Tooltip(
+            outview_chips,
+            "导出视图只影响导出构图；上方预览始终使用「处理」构图。\n"
+            "处理：DLSS/对比预览和导出都会按输出混合与原图融合。\n"
+            "差异×10：仅导出，把 DLSS 与原图的差值放大 10 倍，灰色=几乎没改，亮/暗=改动大。\n"
+            "左右对比：仅导出，左半原图、右半 DLSS，中间用白线分隔。",
+        )
         self._settings = d
         self._update_dlss_control_states()
         return d
@@ -2593,15 +3036,15 @@ class App:
         tooltip=None, on_change=None, slider_max=app_settings.DLSS_STANDARD_MAX,
     ):
         on_change = on_change or self.on_settings_change
-        cell = ttk.Frame(parent)
-        cell.grid(row=row, column=column, sticky="nsew", padx=16, pady=(4, 8))
-        header = ttk.Frame(cell)
+        cell = ttk.Frame(parent, style="Panel.TFrame")
+        cell.pack(fill="x", pady=(0, 10))
+        header = ttk.Frame(cell, style="Panel.TFrame")
         header.pack(fill="x")
-        checkbox = ttk.Checkbutton(
-            header, text=text, variable=enabled_var,
-            command=on_change,
+        checkbox = CheckToggle(
+            header, text, enabled_var, command=on_change, ui=self._ui,
         )
         checkbox.pack(side="left")
+        self._theme_widgets.append(checkbox)
         value_text = tk.StringVar()
 
         def refresh_input(*_args):
@@ -2626,32 +3069,32 @@ class App:
             if notify:
                 on_change()
 
-        value_input = ttk.Spinbox(
-            header,
+        value_input = ChromeSpinbox(
+            header, ui=self._ui,
             from_=app_settings.DLSS_SLIDER_MIN,
             to=slider_max,
             increment=app_settings.DLSS_SLIDER_STEP,
             format="%.2f",
             textvariable=value_text,
             width=6,
-            justify="right",
             command=commit_input,
-            style="SliderValue.TSpinbox",
         )
         value_input.pack(side="right")
+        self._theme_widgets.append(value_input)
         value_input.bind("<Return>", commit_input)
         value_input.bind("<KP_Enter>", commit_input)
         value_input.bind("<FocusOut>", commit_input)
         self._slider_committers.append(lambda: commit_input(notify=False))
 
-        scale = tk.Scale(
+        colors = ui_theme.slider_colors(self._ui, False)
+        colors["background"] = self._ui_color("panel", "#161d24")
+        scale = AccentSlider(
             cell,
             from_=app_settings.DLSS_SLIDER_MIN,
             to=slider_max,
             resolution=app_settings.DLSS_SLIDER_STEP,
-            orient="horizontal",
-            showvalue=False, variable=value_var, length=160,
-            sliderlength=16, highlightthickness=0, **SCALE_DISABLED,
+            variable=value_var, length=220,
+            **colors,
         )
         scale.pack(fill="x")
         scale.config(command=lambda e: on_change())
@@ -2695,7 +3138,7 @@ class App:
         self.on_settings_change()
 
     def _set_slider_enabled(self, scale, value_input, enabled):
-        colors = SCALE_ENABLED if enabled else SCALE_DISABLED
+        colors = ui_theme.slider_colors(self._ui, enabled)
         scale.config(state="normal" if enabled else "disabled", **colors)
         if value_input is not None:
             value_input.config(state="normal" if enabled else "disabled")
@@ -2714,11 +3157,14 @@ class App:
         ):
             d[scale_key].config(to=limit)
             d[input_key].config(to=limit)
-        d['w_range_hint'].config(text=(
-            "5× 实验范围已开启：可使用 0%–500%；超过 100% 可能造成饱和、伪影或过度处理。"
-            if limit > app_settings.DLSS_STANDARD_MAX else
-            "标准范围：0%–100%。如需实验增强，请开启上方「允许 5× 实验范围」。"
-        ))
+        hint = d['w_range_hint']
+        if limit > app_settings.DLSS_STANDARD_MAX:
+            hint.config(text="已开启 0%–500%，超过 100% 可能过曝。")
+            if not hint.winfo_manager():
+                hint.pack(fill="x", pady=(2, 8), after=d['w_enable_5x'])
+        else:
+            hint.config(text="")
+            hint.pack_forget()
         self._set_slider_enabled(
             d['w_intensity'], d['w_intensity_value'], d['v_use_intensity'].get(),
         )
@@ -2751,48 +3197,56 @@ class App:
         }
 
         parent.grid_columnconfigure(0, weight=1)
-        preview_group = ttk.LabelFrame(parent, text="播放与缓存", padding=(8, 6, 8, 8))
-        preview_group.grid(row=0, column=0, sticky="ew", padx=(6, 8), pady=(2, 4))
-        cells = []
-        for column in range(4):
-            preview_group.grid_columnconfigure(column, weight=2 if column == 0 else 1)
-            cell = ttk.Frame(preview_group)
-            cell.grid(row=0, column=column, sticky="ew", padx=(4, 8))
-            cells.append(cell)
-
-        ttk.Label(cells[0], text="播放质量:", anchor="e", width=8).pack(side="left")
-        quality = ttk.Combobox(
-            cells[0], textvariable=d['v_quality'], values=list(PREVIEW_QUALITY_CHOICES),
-            state="readonly", width=12,
+        preview_group = ttk.Frame(parent, style="Panel.TFrame")
+        ttk.Label(preview_group, text="播放与缓存", style="Kicker.TLabel").grid(
+            row=0, column=0, columnspan=2, sticky="w", pady=(0, 6),
         )
-        quality.pack(side="left", fill="x", expand=True, padx=(3, 0))
+        preview_group.grid(row=0, column=0, sticky="ew", padx=(6, 8), pady=(2, 4))
+        preview_group.grid_columnconfigure(1, weight=1)
+
+        quality = self._chrome_combo(
+            preview_group, d['v_quality'], list(PREVIEW_QUALITY_CHOICES),
+        )
+        ttk.Label(preview_group, text="播放质量").grid(row=1, column=0, sticky="w", pady=3)
+        quality.grid(row=1, column=1, sticky="ew", pady=3)
         Tooltip(quality, "自动模式会把 4K 级素材降到 1080p 实时处理；暂停后恢复原始分辨率。")
 
-        ttk.Label(cells[1], text="缓存预算:", anchor="e", width=8).pack(side="left")
-        cache_mb = ttk.Spinbox(
-            cells[1], from_=256, to=32768, increment=256,
+        cache_row = ttk.Frame(preview_group, style="Panel.TFrame")
+        cache_mb = self._chrome_spin(
+            cache_row, from_=256, to=32768, increment=256,
             textvariable=d['v_cache_mb'], width=7,
         )
-        cache_mb.pack(side="left", padx=(3, 0))
-        ttk.Label(cells[1], text="MiB").pack(side="left", padx=(3, 0))
-
-        ttk.Label(cells[2], text="启动缓冲:", anchor="e", width=8).pack(side="left")
-        ttk.Label(cells[2], text=f"{PREVIEW_BUFFER_SECONDS:.1f} 秒").pack(
-            side="left", padx=(3, 0),
+        cache_mb.pack(side="left")
+        ttk.Label(cache_row, text="MiB", font=ui_theme.UI_MONO).pack(
+            side="left", padx=(6, 0),
         )
+        ttk.Label(preview_group, text="缓存预算").grid(row=2, column=0, sticky="w", pady=3)
+        cache_row.grid(row=2, column=1, sticky="w", pady=3)
 
-        ttk.Label(cells[3], text="拖动后生成:", anchor="e", width=8).pack(side="left")
-        scrub = ttk.Spinbox(cells[3], from_=0, to=400, textvariable=d['v_scrub_ms'], width=6)
-        scrub.pack(side="left", padx=(3, 0))
+        ttk.Label(preview_group, text="启动缓冲").grid(row=3, column=0, sticky="w", pady=3)
+        ttk.Label(
+            preview_group, text=f"{PREVIEW_BUFFER_SECONDS:.1f} 秒",
+            font=ui_theme.UI_MONO,
+        ).grid(row=3, column=1, sticky="w", pady=3)
+
+        scrub_row = ttk.Frame(preview_group, style="Panel.TFrame")
+        scrub = self._chrome_spin(
+            scrub_row, from_=0, to=400, textvariable=d['v_scrub_ms'], width=6,
+        )
+        scrub.pack(side="left")
+        ttk.Label(scrub_row, text="ms", font=ui_theme.UI_MONO).pack(
+            side="left", padx=(6, 0),
+        )
+        ttk.Label(preview_group, text="拖动后生成").grid(row=4, column=0, sticky="w", pady=3)
+        scrub_row.grid(row=4, column=1, sticky="w", pady=3)
         Tooltip(scrub, "停止拖动或跳转后等待这段时间，再生成精确预览并从当前帧向后预渲染。")
-        ttk.Label(cells[3], text="ms").pack(side="left", padx=(3, 0))
         d.update({
             'w_quality': quality, 'w_cache_mb': cache_mb, 'w_scrub_ms': scrub,
         })
         cache_hint = ttk.Label(
-            preview_group, text="", foreground="#666666", justify="left", wraplength=880,
+            preview_group, text="", style="Hint.TLabel", justify="left", wraplength=320,
         )
-        cache_hint.grid(row=1, column=0, columnspan=4, sticky="w", padx=4, pady=(7, 0))
+        cache_hint.grid(row=5, column=0, columnspan=2, sticky="w", pady=(7, 0))
         d['w_cache_hint'] = cache_hint
         quality.bind("<<ComboboxSelected>>", self._on_preview_settings_change)
         for widget in (cache_mb, scrub):
@@ -2918,134 +3372,122 @@ class App:
         # eight-column grid let wide comboboxes and short spinboxes pull every row
         # onto a different visual rhythm as the window width or DPI changed.
         parent.grid_columnconfigure(0, weight=1)
-        output_group = ttk.LabelFrame(parent, text="输出与编码", padding=(8, 6, 8, 8))
+        output_group = ttk.Frame(parent, style="Panel.TFrame")
         output_group.grid(row=0, column=0, sticky="ew", padx=(6, 8), pady=(2, 4))
-        performance_group = ttk.LabelFrame(parent, text="性能参数", padding=(8, 6, 8, 8))
+        ttk.Label(output_group, text="输出与编码", style="Kicker.TLabel").grid(
+            row=0, column=0, columnspan=2, sticky="w", pady=(0, 6),
+        )
+        performance_group = ttk.Frame(parent, style="Panel.TFrame")
         performance_group.grid(row=1, column=0, sticky="ew", padx=(6, 8), pady=(0, 4))
-        for column in (1, 3, 5, 7):
-            output_group.grid_columnconfigure(column, weight=1)
+        ttk.Label(performance_group, text="性能参数", style="Kicker.TLabel").grid(
+            row=0, column=0, columnspan=2, sticky="w", pady=(0, 6),
+        )
+        output_group.grid_columnconfigure(1, weight=1)
+        performance_group.grid_columnconfigure(1, weight=1)
 
-        ttk.Label(output_group, text="输出容器:", anchor="e", width=10).grid(
-            row=0, column=0, sticky="e", padx=(4, 3), pady=4,
+        container = self._chrome_combo(
+            output_group, d['v_output_container'], list(OUTPUT_CONTAINER_CHOICES),
         )
-        container = ttk.Combobox(
-            output_group, textvariable=d['v_output_container'],
-            values=list(OUTPUT_CONTAINER_CHOICES), state="readonly", width=15,
-        )
-        container.grid(row=0, column=1, sticky="ew", padx=(0, 10), pady=4)
+        ttk.Label(output_group, text="输出容器").grid(row=1, column=0, sticky="w", pady=3)
+        container.grid(row=1, column=1, sticky="ew", pady=3)
 
-        ttk.Label(output_group, text="输出分辨率:", anchor="e", width=10).grid(
-            row=0, column=2, sticky="e", padx=(4, 3), pady=4,
+        resolution = self._chrome_combo(
+            output_group, d['v_output_resolution'], list(OUTPUT_RESOLUTION_CHOICES),
         )
-        resolution = ttk.Combobox(
-            output_group, textvariable=d['v_output_resolution'],
-            values=list(OUTPUT_RESOLUTION_CHOICES), state="readonly", width=15,
-        )
-        resolution.grid(row=0, column=3, sticky="ew", padx=(0, 10), pady=4)
+        ttk.Label(output_group, text="输出分辨率").grid(row=2, column=0, sticky="w", pady=3)
+        resolution.grid(row=2, column=1, sticky="ew", pady=3)
 
-        ttk.Label(output_group, text="码率控制:", anchor="e", width=10).grid(
-            row=0, column=4, sticky="e", padx=(4, 3), pady=4,
-        )
-        rate_control = ttk.Combobox(
-            output_group, textvariable=d['v_rate_control'], values=list(RATE_CONTROL_CHOICES),
-            state="readonly", width=12,
-        )
-        rate_control.grid(row=0, column=5, sticky="ew", padx=(0, 10), pady=4)
-
-        quality_label = ttk.Label(output_group, text="编码质量:", anchor="e", width=10)
-        quality_label.grid(row=0, column=6, sticky="e", padx=(4, 3), pady=4)
-        quality = ttk.Combobox(
-            output_group, textvariable=d['v_quality_profile'],
-            values=list(QUALITY_PROFILE_CHOICES), state="readonly", width=12,
-        )
-        quality.grid(row=0, column=7, sticky="ew", padx=(0, 4), pady=4)
-
-        bitrate_label = ttk.Label(output_group, text="目标码率:", anchor="e", width=10)
-        bitrate_label.grid(row=1, column=4, sticky="e", padx=(4, 3), pady=4)
-        bitrate = ttk.Spinbox(
-            output_group, from_=0.5, to=500.0, increment=0.5,
-            textvariable=d['v_video_bitrate'], width=7,
-        )
-        bitrate.grid(row=1, column=5, sticky="ew", padx=(0, 10), pady=4)
-
-        custom_label = ttk.Label(output_group, text="自定义上限:", anchor="e", width=10)
-        custom_label.grid(row=1, column=0, sticky="e", padx=(4, 3), pady=4)
-        custom_frame = ttk.Frame(output_group)
-        custom_frame.grid(row=1, column=1, sticky="w", padx=(0, 10), pady=4)
-        custom_width = ttk.Spinbox(
+        custom_label = ttk.Label(output_group, text="自定义上限")
+        custom_label.grid(row=3, column=0, sticky="w", pady=3)
+        custom_frame = ttk.Frame(output_group, style="Panel.TFrame")
+        custom_frame.grid(row=3, column=1, sticky="w", pady=3)
+        custom_width = self._chrome_spin(
             custom_frame, from_=2, to=8192, increment=2,
             textvariable=d['v_custom_width'], width=6,
         )
         custom_width.pack(side="left")
         ttk.Label(custom_frame, text="×").pack(side="left", padx=4)
-        custom_height = ttk.Spinbox(
+        custom_height = self._chrome_spin(
             custom_frame, from_=2, to=8192, increment=2,
             textvariable=d['v_custom_height'], width=6,
         )
         custom_height.pack(side="left")
 
-        ttk.Label(output_group, text="编码速度:", anchor="e", width=10).grid(
-            row=1, column=2, sticky="e", padx=(4, 3), pady=4,
+        rate_control = self._chrome_combo(
+            output_group, d['v_rate_control'], list(RATE_CONTROL_CHOICES),
         )
-        preset = ttk.Combobox(
-            output_group, textvariable=d['v_nvenc_preset'], values=list(NVENC_PRESET_CHOICES),
-            state="readonly", width=12,
-        )
-        preset.grid(row=1, column=3, sticky="ew", padx=(0, 10), pady=4)
+        ttk.Label(output_group, text="码率控制").grid(row=4, column=0, sticky="w", pady=3)
+        rate_control.grid(row=4, column=1, sticky="ew", pady=3)
 
-        ttk.Label(output_group, text="AI 超分:", anchor="e", width=10).grid(
-            row=2, column=0, sticky="e", padx=(4, 3), pady=4,
+        quality_label = ttk.Label(output_group, text="编码质量")
+        quality_label.grid(row=5, column=0, sticky="w", pady=3)
+        quality = self._chrome_combo(
+            output_group, d['v_quality_profile'], list(QUALITY_PROFILE_CHOICES),
         )
-        super_resolution = ttk.Combobox(
-            output_group, textvariable=d['v_super_resolution'],
-            values=list(SUPER_RESOLUTION_CHOICES), state="readonly", width=15,
-        )
-        super_resolution.grid(row=2, column=1, sticky="ew", padx=(0, 10), pady=4)
+        quality.grid(row=5, column=1, sticky="ew", pady=3)
 
-        hdr = ttk.Checkbutton(
-            output_group, text="HDR10 / HLG 高精度处理", variable=d['v_hdr'],
-            command=self._on_export_settings_change,
+        bitrate_label = ttk.Label(output_group, text="目标码率")
+        bitrate_label.grid(row=6, column=0, sticky="w", pady=3)
+        bitrate = self._chrome_spin(
+            output_group, from_=0.5, to=500.0, increment=0.5,
+            textvariable=d['v_video_bitrate'], width=8,
         )
-        hdr.grid(row=2, column=2, columnspan=4, sticky="w", padx=(4, 4), pady=4)
+        bitrate.grid(row=6, column=1, sticky="w", pady=3)
+
+        preset = self._chrome_combo(
+            output_group, d['v_nvenc_preset'], list(NVENC_PRESET_CHOICES),
+        )
+        ttk.Label(output_group, text="编码速度").grid(row=7, column=0, sticky="w", pady=3)
+        preset.grid(row=7, column=1, sticky="ew", pady=3)
+
+        super_resolution = self._chrome_combo(
+            output_group, d['v_super_resolution'], list(SUPER_RESOLUTION_CHOICES),
+        )
+        ttk.Label(output_group, text="AI 超分").grid(row=8, column=0, sticky="w", pady=3)
+        super_resolution.grid(row=8, column=1, sticky="ew", pady=3)
+
+        hdr = CheckToggle(
+            output_group, "HDR10 / HLG 高精度处理", d['v_hdr'],
+            command=self._on_export_settings_change, ui=self._ui,
+        )
+        hdr.grid(row=9, column=0, columnspan=2, sticky="w", pady=(6, 2))
+        self._theme_widgets.append(hdr)
 
         hint = ttk.Label(
             output_group,
-            text="导入 PQ/HLG 视频后自动使用 RGBA16F 与 HEVC Main10。",
-            foreground="#555555", wraplength=880, justify="left",
+            text="PQ/HLG 自动 HEVC Main10。",
+            style="Hint.TLabel", wraplength=320, justify="left",
         )
-        hint.grid(row=3, column=0, columnspan=8, sticky="w", padx=4, pady=(4, 0))
-
-        performance_cells = []
-        for column in range(4):
-            performance_group.grid_columnconfigure(column, weight=2 if column == 0 else 1)
-            cell = ttk.Frame(performance_group)
-            cell.grid(row=0, column=column, sticky="ew", padx=(4, 8))
-            performance_cells.append(cell)
-
-        ttk.Label(performance_cells[0], text="导出模式:", anchor="e", width=8).pack(side="left")
-        mode = ttk.Combobox(
-            performance_cells[0], textvariable=d['v_mode'], values=list(EXPORT_MODE_CHOICES),
-            state="readonly", width=14,
+        hint.grid(row=10, column=0, columnspan=2, sticky="ew", pady=(2, 0))
+        Tooltip(
+            hdr,
+            "导入 PQ/HLG 后使用 RGBA16F 进入 Feature 18，导出 HEVC Main10。"
+            "关闭时先 tone-map 到 SDR 再按 H.264 处理。",
         )
-        mode.pack(side="left", fill="x", expand=True, padx=(3, 0))
 
-        ttk.Label(performance_cells[1], text="并行进程:", anchor="e", width=8).pack(side="left")
-        workers = ttk.Spinbox(
-            performance_cells[1], from_=2, to=4, textvariable=d['v_workers'], width=7,
+        mode = self._chrome_combo(
+            performance_group, d['v_mode'], list(EXPORT_MODE_CHOICES),
         )
-        workers.pack(side="left", padx=(3, 0))
+        ttk.Label(performance_group, text="导出模式").grid(row=1, column=0, sticky="w", pady=3)
+        mode.grid(row=1, column=1, sticky="ew", pady=3)
 
-        ttk.Label(performance_cells[2], text="预热帧:", anchor="e", width=8).pack(side="left")
-        warmup = ttk.Spinbox(
-            performance_cells[2], from_=0, to=120, textvariable=d['v_warmup'], width=7,
+        workers = self._chrome_spin(
+            performance_group, from_=2, to=4, textvariable=d['v_workers'], width=7,
         )
-        warmup.pack(side="left", padx=(3, 0))
+        ttk.Label(performance_group, text="并行进程").grid(row=2, column=0, sticky="w", pady=3)
+        workers.grid(row=2, column=1, sticky="w", pady=3)
 
-        ttk.Label(performance_cells[3], text="解码缓存:", anchor="e", width=8).pack(side="left")
-        decode = ttk.Spinbox(
-            performance_cells[3], from_=1, to=8, textvariable=d['v_decode_buffer'], width=7,
+        warmup = self._chrome_spin(
+            performance_group, from_=0, to=120, textvariable=d['v_warmup'], width=7,
         )
-        decode.pack(side="left", padx=(3, 0))
+        ttk.Label(performance_group, text="预热帧").grid(row=3, column=0, sticky="w", pady=3)
+        warmup.grid(row=3, column=1, sticky="w", pady=3)
+
+        decode = self._chrome_spin(
+            performance_group, from_=1, to=8, textvariable=d['v_decode_buffer'], width=7,
+        )
+        ttk.Label(performance_group, text="解码缓存").grid(row=4, column=0, sticky="w", pady=3)
+        decode.grid(row=4, column=1, sticky="w", pady=3)
         d.update({
             'w_output_container': container,
             'w_mode': mode,
@@ -3056,6 +3498,7 @@ class App:
             'w_output_resolution': resolution,
             'w_super_resolution': super_resolution,
             'w_custom_label': custom_label,
+            'w_custom_frame': custom_frame,
             'w_custom_width': custom_width,
             'w_custom_height': custom_height,
             'w_rate_control': rate_control,
@@ -3099,6 +3542,40 @@ class App:
         self.root.after_idle(self._update_export_control_states)
         return d
 
+    def _build_export_quick(self, parent):
+        d = self._export_settings
+        ttk.Label(parent, text="这次导出", style="Kicker.TLabel").pack(anchor="w", pady=(4, 6))
+        fields = (
+            ("容器", d["v_output_container"], list(OUTPUT_CONTAINER_CHOICES),
+             "w_output_container", lambda _event: self._on_export_settings_change()),
+            ("尺寸", d["v_output_resolution"], list(OUTPUT_RESOLUTION_CHOICES),
+             "w_output_resolution", lambda _event: self._on_export_settings_change()),
+            ("超分", d["v_super_resolution"], list(SUPER_RESOLUTION_CHOICES),
+             "w_super_resolution", lambda _event: self._on_super_resolution_change()),
+        )
+        self._export_quick_fields = {}
+        for label, variable, values, key, command in fields:
+            row = ttk.Frame(parent, style="Panel.TFrame")
+            row.pack(fill="x", pady=3)
+            ttk.Label(row, text=label, width=4, style="Panel.TLabel").pack(side="left")
+            combo = self._chrome_combo(row, variable, values)
+            combo.pack(side="left", fill="x", expand=True)
+            combo.bind("<<ComboboxSelected>>", command)
+            self._export_quick_fields[key] = combo
+        self._export_summary = ttk.Label(
+            parent, text="", style="Hint.TLabel", wraplength=320, justify="left",
+        )
+        self._export_summary.pack(fill="x", pady=(6, 0))
+
+    def _set_grid_visible(self, widget, visible):
+        try:
+            if visible:
+                widget.grid()
+            else:
+                widget.grid_remove()
+        except tk.TclError:
+            pass
+
     def _build_host_settings(self, parent):
         saved = self._saved_settings
         d = {
@@ -3113,56 +3590,50 @@ class App:
         }
 
         parent.grid_columnconfigure(0, weight=1)
-        host_group = ttk.LabelFrame(parent, text="主机与提交", padding=(8, 6, 8, 8))
-        host_group.grid(row=0, column=0, sticky="ew", padx=(6, 8), pady=(2, 4))
-        for column in range(3):
-            host_group.grid_columnconfigure(column, weight=1, uniform="host_field")
-        host_cells = []
-        for column in range(3):
-            cell = ttk.Frame(host_group)
-            cell.grid(row=0, column=column, sticky="ew", padx=(4, 8), pady=(0, 6))
-            host_cells.append(cell)
-
-        ttk.Label(host_cells[0], text="后端:", anchor="e", width=10).pack(side="left")
-        backend = ttk.Combobox(
-            host_cells[0], textvariable=d['v_backend'], values=list(HOST_BACKEND_CHOICES),
-            state="readonly", width=17,
+        host_wrap = ttk.Frame(parent, style="Panel.TFrame")
+        host_wrap.grid(row=0, column=0, sticky="ew", padx=(6, 8), pady=(2, 4))
+        ttk.Label(host_wrap, text="主机与提交", style="Kicker.TLabel").pack(
+            anchor="w", pady=(0, 6),
         )
-        backend.pack(side="left", fill="x", expand=True, padx=(3, 0))
+        host_group = ttk.Frame(host_wrap, style="Panel.TFrame")
+        host_group.pack(fill="x")
+        host_group.grid_columnconfigure(1, weight=1)
 
-        ttk.Label(host_cells[1], text="提交方式:", anchor="e", width=10).pack(side="left")
-        submission = ttk.Combobox(
-            host_cells[1], textvariable=d['v_submission'], values=list(HOST_SUBMISSION_CHOICES),
-            state="readonly", width=17,
+        backend = self._chrome_combo(
+            host_group, d['v_backend'], list(HOST_BACKEND_CHOICES),
         )
-        submission.pack(side="left", fill="x", expand=True, padx=(3, 0))
+        ttk.Label(host_group, text="后端").grid(row=0, column=0, sticky="w", pady=3)
+        backend.grid(row=0, column=1, sticky="ew", pady=3)
 
-        ttk.Label(host_cells[2], text="GPU 队列帧:", anchor="e", width=10).pack(side="left")
-        in_flight = ttk.Spinbox(
-            host_cells[2], from_=1, to=3, textvariable=d['v_in_flight'], width=7,
+        submission = self._chrome_combo(
+            host_group, d['v_submission'], list(HOST_SUBMISSION_CHOICES),
+        )
+        ttk.Label(host_group, text="提交方式").grid(row=1, column=0, sticky="w", pady=3)
+        submission.grid(row=1, column=1, sticky="ew", pady=3)
+
+        in_flight = self._chrome_spin(
+            host_group, from_=1, to=3, textvariable=d['v_in_flight'], width=7,
             command=self._on_host_settings_change,
         )
-        in_flight.pack(side="left", padx=(3, 0))
+        ttk.Label(host_group, text="GPU 队列帧").grid(row=2, column=0, sticky="w", pady=3)
+        in_flight.grid(row=2, column=1, sticky="w", pady=3)
 
-        ttk.Separator(host_group, orient="horizontal").grid(
-            row=1, column=0, columnspan=3, sticky="ew", padx=4, pady=(0, 6),
+        zero_fast = CheckToggle(
+            host_group, "零引导快路径", d['v_zero_fast'],
+            command=self._on_host_settings_change, ui=self._ui,
         )
-
-        zero_fast = ttk.Checkbutton(
-            host_group, text="零引导快路径", variable=d['v_zero_fast'],
-            command=self._on_host_settings_change,
+        zero_fast.grid(row=3, column=0, columnspan=2, sticky="w", pady=(8, 2))
+        persistent = CheckToggle(
+            host_group, "持久上传/回读缓冲", d['v_persistent'],
+            command=self._on_host_settings_change, ui=self._ui,
         )
-        zero_fast.grid(row=2, column=0, sticky="w", padx=(4, 8))
-        persistent = ttk.Checkbutton(
-            host_group, text="持久上传/回读缓冲", variable=d['v_persistent'],
-            command=self._on_host_settings_change,
+        persistent.grid(row=4, column=0, columnspan=2, sticky="w", pady=2)
+        fallback = CheckToggle(
+            host_group, "优化路径失败时自动回退", d['v_fallback'],
+            command=self._on_host_settings_change, ui=self._ui,
         )
-        persistent.grid(row=2, column=1, sticky="w", padx=(4, 8))
-        fallback = ttk.Checkbutton(
-            host_group, text="优化路径失败时自动回退", variable=d['v_fallback'],
-            command=self._on_host_settings_change,
-        )
-        fallback.grid(row=2, column=2, sticky="w", padx=(4, 8))
+        fallback.grid(row=5, column=0, columnspan=2, sticky="w", pady=2)
+        self._theme_widgets.extend((zero_fast, persistent, fallback))
         d.update({
             'w_backend': backend,
             'w_submission': submission,
@@ -3434,107 +3905,85 @@ class App:
         bitrate_enabled = video_controls_enabled and export['rate_control'] == 'bitrate'
         for key in ('w_custom_label', 'w_custom_width', 'w_custom_height'):
             self._set_ttk_enabled(self._export_settings[key], custom_enabled)
+        self._set_grid_visible(self._export_settings['w_custom_label'], custom_enabled)
+        self._set_grid_visible(self._export_settings['w_custom_frame'], custom_enabled)
         self._set_ttk_enabled(self._export_settings['w_quality_label'], quality_enabled)
         self._export_settings['w_quality_profile'].config(
             state="readonly" if quality_enabled else "disabled"
         )
+        self._set_grid_visible(self._export_settings['w_quality_label'], quality_enabled)
+        self._set_grid_visible(self._export_settings['w_quality_profile'], quality_enabled)
         self._set_ttk_enabled(self._export_settings['w_bitrate_label'], bitrate_enabled)
         self._set_ttk_enabled(self._export_settings['w_video_bitrate'], bitrate_enabled)
+        self._set_grid_visible(self._export_settings['w_bitrate_label'], bitrate_enabled)
+        self._set_grid_visible(self._export_settings['w_video_bitrate'], bitrate_enabled)
+        parts = []
+        source_width, source_height = self._source_size()
         if self._is_image:
             image_ext = os.path.splitext(self.video or "")[1].upper().lstrip(".") or "PNG"
-            source_width, source_height = self._source_size()
             image_width, image_height = super_resolution_target_size(
                 source_width, source_height, super_resolution_scale,
             )
-            size_note = (
-                f"{image_width}×{image_height}"
-                if image_width > 0 and image_height > 0 else "导入后确定尺寸"
-            )
-            text = (
-                f"实际输出：{image_ext} · SDR 图片 · {size_note}；保持源图片格式。"
-                "视频容器、编码、码率与HDR参数不参与。"
-            )
-        elif color.get('is_hdr'):
-            container = resolve_output_container(
-                self.video, export.get('output_container', 'mp4')
-            )
-            container_label = OUTPUT_CONTAINER_LABELS[container]
-            if export['hdr_mode']:
-                hdr_processing = (
-                    "10-bit超分后以RGBA16F神经渲染"
-                    if super_resolution_enabled
-                    else "RGBA16F神经渲染"
-                )
-                text = (
-                    f"实际输出：{container_label} · HEVC Main10 · 10-bit {color.get('label', 'HDR')}；"
-                    f"{hdr_processing}，"
-                    "预览仅作 SDR 映射，HDR 导出固定使用严格单会话。"
-                )
-            else:
-                text = (
-                    f"实际输出：{container_label} · H.264 · 8-bit SDR；"
-                    "检测到 HDR 源，但高精度处理已关闭，将先 tone-map 到 SDR。"
-                )
-        elif self.video:
-            container = resolve_output_container(
-                self.video, export.get('output_container', 'mp4')
-            )
-            text = (
-                f"实际输出：{OUTPUT_CONTAINER_LABELS[container]} · H.264 · 8-bit SDR；"
-                "音轨兼容时直通，否则转换为 AAC。"
-            )
+            parts.append(image_ext)
+            if image_width > 0 and image_height > 0:
+                parts.append(f"{image_width}×{image_height}")
         else:
-            if export.get('output_container') == 'source':
-                container_note = "容器将在导入后跟随 MP4/MKV/MOV；M4V 视为 MP4，AVI/WebM 回退 MP4"
+            container = resolve_output_container(
+                self.video or "", export.get("output_container", "mp4"),
+            )
+            parts.append(OUTPUT_CONTAINER_LABELS.get(container, "MP4"))
+            if color.get("is_hdr") and export["hdr_mode"]:
+                parts.append("HEVC Main10")
             else:
-                container = resolve_output_container("", export.get('output_container', 'mp4'))
-                container_note = f"输出容器 {OUTPUT_CONTAINER_LABELS[container]}"
-            text = f"{container_note}；导入 PQ/HLG 视频后自动使用 HEVC Main10。"
-        if not self._is_image:
-            source_width, source_height = self._source_size()
+                parts.append("H.264")
             if super_resolution_enabled:
                 output_width, output_height = super_resolution_target_size(
                     source_width, source_height, super_resolution_scale,
                 )
             else:
                 output_width, output_height = _resolve_output_size(
-                    source_width, source_height, export['output_resolution'],
-                    export['custom_output_width'], export['custom_output_height'],
+                    source_width, source_height, export["output_resolution"],
+                    export["custom_output_width"], export["custom_output_height"],
                 )
             if output_width > 0 and output_height > 0:
-                output_note = f"输出 {output_width}×{output_height}"
+                parts.append(f"{output_width}×{output_height}")
+            if export["rate_control"] == "quality":
+                parts.append(QUALITY_PROFILE_NAMES.get(export["quality_profile"], "均衡"))
             else:
-                output_note = "输出尺寸将在导入视频后显示"
-            if export['rate_control'] == 'quality':
-                quality_name = QUALITY_PROFILE_NAMES.get(
-                    export['quality_profile'], "高质量（推荐）"
-                )
-                encoding_note = f"按画质：{quality_name}，文件大小随内容变化"
-            else:
-                duration = self.nframes / max(float(self.fps), 1.0) if self.nframes else 0.0
-                estimated = _estimate_output_size_mb(
-                    duration, export['video_bitrate_mbps']
-                )
-                estimate_note = f"，预计约 {estimated:.0f} MB" if estimated > 0 else ""
-                parallel_note = "；并行模式为近似目标" if export['mode'] == 'parallel' else ""
-                encoding_note = (
-                    f"目标 {export['video_bitrate_mbps']:g} Mbps{estimate_note}{parallel_note}"
-                )
-            text += f"\n{output_note}；{encoding_note}。"
-        source_width, source_height = self._source_size()
+                parts.append(f"{export['video_bitrate_mbps']:g} Mbps")
+            if super_resolution_enabled:
+                parts.append(f"{super_resolution_scale}×超分")
+        if not self.video:
+            parts = ["PQ/HLG 自动 HEVC Main10"]
+        elif color.get("is_hdr") and not export["hdr_mode"]:
+            parts.append("将 tone-map 到 SDR")
         if super_resolution_enabled:
             status = super_resolution_runtime_status()
-            if source_width > 0 and source_height > 0:
-                resource_estimate = estimate_resources(
-                    source_width, source_height, super_resolution_scale,
-                    is_hdr=effective_hdr,
-                )
-                text += "\nRTX超分：" + format_resource_hint(resource_estimate) + "。"
+            if not status["available"]:
+                parts.append("缺超分组件")
+        self._export_settings["w_hdr_hint"].config(text=" · ".join(parts))
+        if hasattr(self, "_export_summary"):
+            if export.get("rate_control") == "bitrate":
+                current = f"{export.get('video_bitrate_mbps', 20):g} Mbps"
             else:
-                text += f"\nRTX超分：{super_resolution_scale}×；资源需求将在导入素材后显示。"
-            if not status['available']:
-                text += " 缺少运行组件：" + "、".join(status['missing']) + "。"
-        self._export_settings['w_hdr_hint'].config(text=text)
+                current = QUALITY_PROFILE_NAMES.get(
+                    export.get("quality_profile"), "均衡",
+                )
+            preset_name = NVENC_PRESET_NAMES.get(
+                export.get("nvenc_preset"), "p7 最慢",
+            )
+            try:
+                self._export_summary.config(text=f"{current} · {preset_name}")
+            except Exception:
+                pass
+        for key, widget in getattr(self, "_export_quick_fields", {}).items():
+            main = self._export_settings.get(key)
+            if main is None:
+                continue
+            try:
+                widget.config(state=str(main.cget("state")))
+            except Exception:
+                pass
 
     def _on_super_resolution_change(self):
         scale = self._super_resolution_scale()
@@ -3595,6 +4044,8 @@ class App:
             "ui_preview_open": bool(
                 getattr(self, "_preview_section", None) and not self._preview_section.collapsed
             ),
+            "ui_theme": self._ui_theme_name,
+            "inspector_width": int(getattr(self, "_inspector_width", 360)),
             "preview_detached": bool(self._detached_preview_window),
             "preview_window_geometry": self._detached_geometry_for_save(),
             "queue_output_dir": (
@@ -3624,6 +4075,8 @@ class App:
             pass
         if hasattr(self, "_preview_canvas"):
             self.root.after_idle(self._sync_preview_scrollregion)
+        if hasattr(self, "_export_canvas"):
+            self.root.after_idle(self._sync_export_scrollregion)
         self._schedule_settings_save()
 
     def _cancel_after(self, name):
@@ -3670,6 +4123,9 @@ class App:
         self._video_color_info = None
         self._close_live()
         self._close_super_resolution()
+        if self._detached_preview_window is not None:
+            ui_theme.release_app_icon(self._detached_preview_window)
+        ui_theme.release_app_icon(self.root)
         self.root.destroy()
 
     def _parallel_progress(self, done, total, label):
@@ -4049,11 +4505,48 @@ class App:
         self._video_geom = None
         self._navigator_geom = None
         self.canvas.delete("all")
+        self.canvas._chrome_live = []
+        ui = self._ui
+        scale = getattr(self.root, "_studio_scale", 1.0)
+        compact = cw < 460 * scale or ch < 400 * scale
+        cx, cy = cw // 2, ch // 2
+        card_w, card_h = min(440 * scale, cw - 32), min(318 * scale, ch - 32)
+        left, top = cx - card_w / 2, cy - card_h / 2
+        if not compact:
+            round_rect(self.canvas, left, top + 3, left + card_w, top + card_h + 3,
+                       16, fill=ui["empty_shadow"], tags="empty")
+            round_rect(self.canvas, left, top, left + card_w, top + card_h, 16,
+                       fill=ui["empty_card"], outline=ui["accent_dim"] if self._drop_hover else ui["line"],
+                       tags="empty")
+            iy = cy - 92 * scale
+            round_rect(self.canvas, cx - 25 * scale, iy - 25 * scale,
+                       cx + 25 * scale, iy + 25 * scale, 12,
+                       fill=ui["select_bg"], tags="empty")
+            # A small line icon, not a font-dependent Unicode arrow/emoji.
+            self.canvas.create_line(cx, iy - 10 * scale, cx, iy + 7 * scale,
+                                    fill=ui["accent"], width=2, tags="empty")
+            self.canvas.create_line(cx - 6 * scale, iy + scale, cx, iy + 7 * scale,
+                                    cx + 6 * scale, iy + scale, fill=ui["accent"], width=2, tags="empty")
+            self.canvas.create_line(cx - 12 * scale, iy + 9 * scale, cx - 12 * scale, iy + 14 * scale,
+                                    cx + 12 * scale, iy + 14 * scale, cx + 12 * scale, iy + 9 * scale,
+                                    fill=ui["accent"], width=2, tags="empty")
+        title_y = cy - (24 if not compact else 30) * scale
         self.canvas.create_text(
-            cw // 2, ch // 2,
-            text="导入",
-            fill="#b0b0b0", font=("Microsoft YaHei", 13),
+            cx, title_y, text="松开以导入素材" if self._drop_hover else "拖入视频或图片",
+            fill=ui["hud"], font=ui_theme.UI_FONT_TITLE,
+            width=max(cw - 48, 100),
+            tags="empty",
         )
+        if not compact:
+            self.canvas.create_text(
+            cx, cy + 108 * scale, text="MP4 · MOV · MKV · WebM · PNG · JPEG · WebP · TIFF",
+            fill=ui["faint"], font=ui_theme.UI_FONT_SMALL,
+            tags="empty",
+            )
+        bw, bh = min(184 * scale, cw - 48), ui_theme.control_height(self.root, primary=True)
+        bx1, by1 = cx - bw // 2, cy + (20 if not compact else 16) * scale
+        self._empty_import_geom = (bx1, by1, bx1 + bw, by1 + bh)
+        self._paint_empty_button()
 
     def display_view(self, quality="full"):
         if getattr(self, "_exporting", False):
@@ -4084,12 +4577,15 @@ class App:
             self.canvas.delete("all")
             msg = f"{view}：帧 {frame} 读取失败" if view == "原图" else f"DLSS：帧 {frame} 生成失败"
             self.canvas.create_text(
-                cw // 2, ch // 2, text=msg, fill="#888888", font=("Microsoft YaHei", 11),
+                cw // 2, ch // 2, text=msg, fill=self._ui_color("muted", "#888888"),
+                font=ui_theme.UI_FONT,
             )
             return
         self._draw_fit(img, cw, ch, badge=badge)
 
-    def _canvas_shadow_text(self, x, y, text, fill=HUD_FILL, shadow="#000000", **kwargs):
+    def _canvas_shadow_text(self, x, y, text, fill=None, shadow="#000000", **kwargs):
+        if fill is None:
+            fill = self._ui_color("overlay", HUD_FILL)
         self.canvas.create_text(
             x + 1, y + 1, text=text, fill=shadow, **kwargs,
         )
@@ -4177,7 +4673,7 @@ class App:
         )
         self.canvas.create_rectangle(
             vx0, vy0, vx1, vy1,
-            outline=SPLIT_LINE, width=2, tags=("navigator", "navigator_view"),
+            outline=self._ui_color("split", SPLIT_LINE), width=2, tags=("navigator", "navigator_view"),
         )
 
     def _draw_pending_status(self, cw, ch):
@@ -4186,8 +4682,8 @@ class App:
         nav = getattr(self, "_navigator_geom", None)
         y = nav[1] - 8 if nav is not None else ch - 10
         self.canvas.create_text(
-            cw - 10, y, text="DLSS…", fill="#aaaaaa", anchor="se",
-            font=("Microsoft YaHei", 9),
+            cw - 10, y, text="DLSS…", fill=self._ui_color("muted", "#aaaaaa"), anchor="se",
+            font=ui_theme.UI_FONT_SMALL,
         )
 
     def _draw_fit(self, img, cw, ch, badge=None):
@@ -4202,8 +4698,8 @@ class App:
         self.canvas.create_image(ox, oy, anchor="nw", image=self._photo)
         if badge:
             self._canvas_shadow_text(
-                ox + 10, oy + 14, badge, fill=HUD_FILL, anchor="w",
-                font=("Microsoft YaHei", 9),
+                ox + 10, oy + 14, badge, fill=self._ui_color("hud", HUD_FILL), anchor="w",
+                font=ui_theme.UI_FONT_SMALL,
             )
         self._draw_navigator(img, cw, ch)
         self._draw_pending_status(cw, ch)
@@ -4220,8 +4716,9 @@ class App:
             if orig is None:
                 self.canvas.delete("all")
                 self.canvas.create_text(
-                    cw // 2, ch // 2, text=f"帧 {frame} 读取失败", fill="#888888",
-                    font=("Microsoft YaHei", 11),
+                    cw // 2, ch // 2, text=f"帧 {frame} 读取失败",
+                    fill=self._ui_color("muted", "#888888"),
+                    font=ui_theme.UI_FONT,
                 )
                 return
             self._split_orig = orig
@@ -4290,27 +4787,29 @@ class App:
         if show_divider:
             sx_abs = ox + int(self.split_x * nw)
             self.canvas.create_line(
-                sx_abs, oy, sx_abs, oy + nh, fill=SPLIT_LINE, width=2, tags=("split",),
+                sx_abs, oy, sx_abs, oy + nh, fill=self._ui_color("split", SPLIT_LINE), width=2, tags=("split",),
             )
             handle_y = oy + nh // 2
             self.canvas.create_oval(
                 sx_abs - 5, handle_y - 5, sx_abs + 5, handle_y + 5,
-                fill=SPLIT_LINE, outline=CANVAS_BG, width=1, tags=("split",),
+                fill=self._ui_color("split", SPLIT_LINE),
+                outline=self._ui_color("canvas", CANVAS_BG),
+                width=1, tags=("split",),
             )
             self._canvas_shadow_text(
-                ox + 10, oy + 14, "原图", fill=HUD_FILL, anchor="w",
-                font=("Microsoft YaHei", 9),
+                ox + 10, oy + 14, "原图", anchor="w",
+                font=ui_theme.UI_FONT_SMALL,
             )
             self._canvas_shadow_text(
                 ox + nw - 10, oy + 14,
                 "DLSS 生成中…" if self._dlss_pending else "DLSS",
-                fill=HUD_FILL, anchor="e",
-                font=("Microsoft YaHei", 9),
+                anchor="e",
+                font=ui_theme.UI_FONT_SMALL,
             )
         elif self._hold_original:
             self._canvas_shadow_text(
-                ox + 10, oy + 14, "原图（按住 Alt）", fill=HUD_FILL, anchor="w",
-                font=("Microsoft YaHei", 9),
+                ox + 10, oy + 14, "原图（按住 Alt）", anchor="w",
+                font=ui_theme.UI_FONT_SMALL,
             )
         navigator_image = self._split_dlss if self._split_dlss is not None else self._split_orig
         self._draw_navigator(navigator_image, cw, ch)
@@ -4387,8 +4886,86 @@ class App:
         self._preview_pan_y = max(0.0, min(1.0, (event.y - oy) / max(nh, 1)))
         self._refresh_viewport_display()
 
+    def _empty_button_hit(self, x, y):
+        geom = getattr(self, "_empty_import_geom", None)
+        if not geom or self.video:
+            return False
+        x0, y0, x1, y1 = geom
+        return x0 <= x <= x1 and y0 <= y <= y1
+
+    def _cancel_empty_btn_anim(self):
+        after_id = getattr(self, "_empty_btn_after", None)
+        if after_id is not None:
+            try:
+                self.root.after_cancel(after_id)
+            except Exception:
+                pass
+            self._empty_btn_after = None
+
+    def _set_empty_btn_hover(self, hover):
+        target = 1.0 if hover else 0.0
+        if abs(getattr(self, "_empty_btn_target", 0.0) - target) < 1e-6 and (
+            self._empty_btn_after is None
+        ):
+            return
+        self._empty_btn_target = target
+        self._tick_empty_btn_anim()
+
+    def _tick_empty_btn_anim(self):
+        self._cancel_empty_btn_anim()
+        current = float(getattr(self, "_empty_btn_hover", 0.0) or 0.0)
+        target = float(getattr(self, "_empty_btn_target", 0.0) or 0.0)
+        nxt = current + (target - current) * 0.28
+        if abs(nxt - target) < 0.02:
+            nxt = target
+        self._empty_btn_hover = nxt
+        if not self.video:
+            self._paint_empty_button()
+        if nxt != target:
+            self._empty_btn_after = self.root.after(16, self._tick_empty_btn_anim)
+
+    def _paint_empty_button(self):
+        geom = getattr(self, "_empty_import_geom", None)
+        if geom is None:
+            return
+        try:
+            self.canvas.delete("empty_pick")
+        except tk.TclError:
+            return
+        ui = self._ui
+        hover = float(getattr(self, "_empty_btn_hover", 0.0) or 0.0)
+        x0, y0, x1, y1 = geom
+        lift = 2 * hover
+        bx1, by1 = x0, y0 - lift
+        bx2, by2 = x1, y1 - lift
+        fill = _lerp_hex(ui["primary_bg"], ui.get("primary_active", ui["primary_bg"]), hover)
+        round_rect(
+            self.canvas, bx1, by1, bx2, by2, ui_theme.RADIUS_CONTROL,
+            fill=fill, outline=ui.get("primary_highlight", ui["accent_dim"]), width=1,
+            tags=("empty", "empty_pick"), smooth=False,
+        )
+        if hover > 0.15:
+            self.canvas.create_line(
+                bx1 + 10, by1 + 2, bx2 - 10, by1 + 2,
+                fill=ui.get("primary_highlight", fill), width=1,
+                tags=("empty", "empty_pick"),
+            )
+        self.canvas.create_text(
+            (bx1 + bx2) / 2, (by1 + by2) / 2, text="选择文件",
+            fill=ui["primary_fg"], font=ui_theme.UI_FONT_BOLD,
+            tags=("empty", "empty_pick"),
+        )
+
     def on_canvas_press(self, event):
         if not self.video or self._exporting:
+            if (
+                not self.video
+                and not self._exporting
+                and not self._queue_running
+                and not self._diagnosing
+                and self._empty_button_hit(event.x, event.y)
+            ):
+                self.import_media()
             return
         self._focus_preview_host()
         if self._hold_original and not _alt_is_down():
@@ -4495,14 +5072,27 @@ class App:
         if self._drag_split:
             self.canvas.config(cursor="sb_h_double_arrow")
             return
+        if not self.video:
+            hit = self._empty_button_hit(event.x, event.y)
+            self.canvas.config(cursor="hand2" if hit else "")
+            self._set_empty_btn_hover(hit)
+            return
         if self._point_in_navigator(event.x, event.y):
             self.canvas.config(cursor="hand2")
-        elif self.video and self._near_split(event.x):
+        elif self._near_split(event.x):
             self.canvas.config(cursor="sb_h_double_arrow")
-        elif self.video and self._preview_zoom > 1.0 and self._point_in_video(event.x, event.y):
+        elif self._preview_zoom > 1.0 and self._point_in_video(event.x, event.y):
             self.canvas.config(cursor="fleur")
         else:
             self.canvas.config(cursor="")
+
+    def _on_canvas_leave(self, event=None):
+        try:
+            self.canvas.config(cursor="")
+        except tk.TclError:
+            pass
+        if not self.video:
+            self._set_empty_btn_hover(False)
 
     def on_canvas_double(self, event):
         if self._point_in_navigator(event.x, event.y):
@@ -4530,7 +5120,10 @@ class App:
 
     def _set_fs_btn(self, fullscreen):
         try:
-            self.fs_btn.config(text="退出" if fullscreen else "全屏")
+            self.fs_btn.config(
+                text="退出" if fullscreen else "全屏",
+                icon="fullscreen-exit" if fullscreen else "fullscreen",
+            )
         except Exception:
             pass
 
@@ -4545,17 +5138,26 @@ class App:
         self._fs_hidden = []
         if target is self.root:
             for widget in (
-                self.workspace_tabs, self.log,
+                self._status_bar, self.log, self._progress_rule,
+                self._detached_preview_placeholder,
             ):
+                if widget is None:
+                    continue
                 try:
                     info = widget.pack_info()
                 except Exception:
                     continue
                 self._fs_hidden.append((widget, info))
                 widget.pack_forget()
+            try:
+                info = self._inspector.pack_info()
+                self._fs_hidden.append((self._inspector, info))
+                self._inspector.pack_forget()
+            except Exception:
+                pass
         try:
             self.canvas.pack_configure(padx=0, pady=0)
-            self.transport.pack_configure(padx=12, pady=(0, 10))
+            self.transport.pack_configure(padx=0, pady=0)
         except Exception:
             pass
         try:
@@ -4586,11 +5188,8 @@ class App:
             except Exception:
                 pass
         try:
-            self.canvas.pack_configure(padx=8, pady=(8, 4))
-            self.transport.pack_configure(
-                padx=8,
-                pady=(0, 6 if target is self._detached_preview_window else 4),
-            )
+            self.canvas.pack_configure(padx=0, pady=0)
+            self.transport.pack_configure(padx=0, pady=0)
         except Exception:
             pass
         for widget, info in self._fs_hidden:
@@ -4599,6 +5198,7 @@ class App:
             except Exception:
                 pass
         self._fs_hidden = []
+        self._restack_bottom_chrome()
         if target is self._detached_preview_window and self._fs_geom:
             self._detached_preview_geometry = self._fs_geom
         self._fs_window = None
@@ -4744,9 +5344,14 @@ class App:
 
     def _update_zoom_controls(self):
         zoom = max(PREVIEW_ZOOM_MIN, min(self._preview_zoom, PREVIEW_ZOOM_MAX))
-        text = "适应" if abs(zoom - 1.0) < 0.005 else f"{int(round(zoom * 100))}%"
+        fitted = abs(zoom - 1.0) < 0.005
+        text = "适应" if fitted else f"{int(round(zoom * 100))}%"
         try:
-            self.zoom_reset_btn.config(text=text)
+            self.zoom_reset_btn.config(
+                text=text,
+                icon="fit" if fitted else "",
+                icon_only=fitted,
+            )
             enabled = bool(self.video) and not self._exporting
             self._set_ttk_enabled(
                 self.zoom_out_btn, enabled and zoom > PREVIEW_ZOOM_MIN + 1e-6,
@@ -4873,7 +5478,9 @@ class App:
 
     def sync_frame_entry(self):
         try:
-            if self.root.focus_get() is self.fentry:
+            focus = self.root.focus_get()
+            entry = self.fentry
+            if focus is entry or focus is getattr(entry, "inner", None) or focus is getattr(entry, "entry", None):
                 return
             txt = str(int(self._frame))
             if self.fentry.get().strip() != txt:
@@ -4975,18 +5582,15 @@ class App:
 
     def _preview_tab_selected(self):
         window = self._detached_preview_window
-        if window is not None:
-            focused = self.root.focus_get()
-            if focused is None:
-                return False
-            try:
-                return focused.winfo_toplevel() is window
-            except Exception:
-                return False
-        try:
-            return self.workspace_tabs.select() == str(self._preview_page)
-        except Exception:
+        if window is None:
             return True
+        focused = self.root.focus_get()
+        if focused is None:
+            return False
+        try:
+            return focused.winfo_toplevel() is window
+        except Exception:
+            return False
 
     def _bind_player_keys(self):
         self.root.bind_all("<space>", self.on_space)
@@ -5127,10 +5731,11 @@ class App:
     def _set_play_btn(self, playing):
         try:
             if playing and self._buffering:
-                text = "停止等待"
+                self.play_btn.config(text="停止等待", icon="stop")
+            elif playing:
+                self.play_btn.config(text="暂停", icon="pause")
             else:
-                text = "⏸ 暂停" if playing else "▶ 播放"
-            self.play_btn.config(text=text)
+                self.play_btn.config(text="播放", icon="play")
         except Exception:
             pass
 
@@ -5138,7 +5743,11 @@ class App:
         self._focus_preview_host()
         self._audio.set_muted(not self._audio.muted)
         try:
-            self.mute_btn.config(text="静" if self._audio.muted else "音")
+            muted = self._audio.muted
+            self.mute_btn.config(
+                text="静音" if muted else "声音",
+                icon="volume-off" if muted else "volume",
+            )
         except Exception:
             pass
         if self.playing and not self._buffering and not self._audio.muted:
@@ -6103,7 +6712,8 @@ class App:
         try:
             for widget in (
                 self.root, self.import_btn, self.canvas,
-                self.queue_tab, self.queue_tree,
+                self.queue_tab, self.queue_tree, self._inspector,
+                self._preview_host,
             ):
                 widget.drop_target_register(DND_FILES)
                 widget.dnd_bind("<<DropEnter>>", self._on_drop_enter)
@@ -6115,19 +6725,26 @@ class App:
     def _on_drop_enter(self, event):
         if not self._exporting and not self._queue_running and not self._diagnosing:
             self._freeze_preview_cache(resume_ms=None)
-            self.canvas.config(bg=CANVAS_DROP_BG)
+            self._drop_hover = True
+            self.canvas.config(bg=self._ui_color("canvas_drop", CANVAS_DROP_BG))
+            if not self.video:
+                self._draw_empty()
             self.set_status("松开鼠标以导入；多个媒体文件会加入队列")
         return getattr(event, "action", None)
 
     def _on_drop_leave(self, event):
-        self.canvas.config(bg=CANVAS_BG)
+        self._drop_hover = False
+        self.canvas.config(bg=self._ui_color("canvas", CANVAS_BG))
+        if not self.video:
+            self._draw_empty()
         if not self._exporting and not self._queue_running and not self._diagnosing:
             self.set_status("就绪")
             self._schedule_preview_cache_resume()
         return getattr(event, "action", None)
 
     def _on_drop(self, event):
-        self.canvas.config(bg=CANVAS_BG)
+        self._drop_hover = False
+        self.canvas.config(bg=self._ui_color("canvas", CANVAS_BG))
         if self._exporting or self._queue_running or self._diagnosing:
             message = (
                 "正在生成诊断报告，请完成后再导入。"
@@ -6466,6 +7083,10 @@ class App:
             self.logln("已导出: " + out_path)
             if notify:
                 messagebox.showinfo("导出", done_message or ("已导出:\n" + out_path))
+            try:
+                self.pbar["value"] = 0
+            except Exception:
+                pass
         else:
             self.pbar["value"] = 0
             try:
@@ -6499,8 +7120,6 @@ class App:
         self._update_action_labels()
         self._update_queue_action_states()
         self.set_status("正在取消导出…")
-        if self._queue_active_job_id is not None:
-            self.queue_status_label.config(text="正在取消当前队列任务…")
         self.logln("[导出] 用户请求取消，正在停止导出流水线…")
 
     def _raise_if_export_cancelled(self):
@@ -7274,6 +7893,8 @@ def main():
         except Exception:
             pass
         return
+    ui_theme.claim_app_identity()
+    ui_theme.enable_dpi_awareness()
     root = TkinterDnD.Tk() if TkinterDnD else tk.Tk()
     App(root)
     root.mainloop()
