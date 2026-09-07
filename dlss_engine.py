@@ -232,7 +232,11 @@ class Live:
         except Exception:
             pass
         if not self._lib.dlssnr_init(self._w, self._h, int(s.get('preset', 1)), DLSSNR_DLL, LOG_PATH):
-            raise RuntimeError("dlssnr_init failed (D3D12/gate). See dlss_run.log")
+            log = _read_log_tail(LOG_PATH)
+            detail = "dlssnr_init failed (D3D12/gate). See dlss_run.log"
+            if log:
+                detail += "\nNGX 日志末尾：\n" + log
+            raise RuntimeError(detail)
         if not self._lib.dlssnr_create_feature(self._w, self._h, int(s.get('preset', 1))):
             log = _read_log_tail(LOG_PATH)
             raise RuntimeError("Feature 18 create failed.\n" + log[-800:])

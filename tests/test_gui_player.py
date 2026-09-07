@@ -4,7 +4,7 @@ import tempfile
 import threading
 import time
 import unittest
-from tkinter import filedialog, messagebox
+from tkinter import filedialog, messagebox, ttk
 
 import numpy as np
 
@@ -25,6 +25,7 @@ from gui import (
     _clamp_frame, _decode_plan, _first_image, _format_duration, _format_timecode,
     _fit_preview_size, _frame_ranges, _large_image_host_settings, _realtime_preview_size,
     _is_image_path, _is_video_path, _play_target_frame, _read_image_bgr,
+    _dlss_runtime_guidance, _is_dlss_runtime_unsupported,
     _clamp_window_geometry, _normalize_slider_input, _preview_viewport,
     _preview_control_layout, _write_image_bgr, compose_preview_frame,
     _studio_window_layout,
@@ -35,6 +36,18 @@ from video_export import compose_output_frame
 
 
 class PlayerHelperTests(unittest.TestCase):
+    def test_dlss_feature_not_supported_has_actionable_release_guidance(self):
+        error = "Init_with_ProjectID -> 0xBAD00001\ncaller/static initialization failed"
+        self.assertTrue(_is_dlss_runtime_unsupported(error))
+        guidance = _dlss_runtime_guidance(error)
+        self.assertIn("FeatureNotSupported", guidance)
+        self.assertIn("30系.zip", guidance)
+        self.assertIn("_internal\\nvngx_dlssnr.dll", guidance)
+        self.assertIn("高性能（NVIDIA GPU）", guidance)
+        self.assertIn("更多 → 一键诊断", guidance)
+        self.assertIn(updater.RELEASES_URL, guidance)
+        self.assertFalse(_is_dlss_runtime_unsupported("0xBAD00002"))
+
     def test_studio_window_layout_stays_inside_work_area(self):
         geometry, minimum = _studio_window_layout(1.5, (0, 0, 1920, 1040))
         self.assertRegex(geometry, r"^1848x968\+36\+36$")
@@ -71,6 +84,27 @@ class PlayerHelperTests(unittest.TestCase):
             self.assertEqual(text.trace_info(), [])
             self.assertEqual(checked.trace_info(), [])
             self.assertEqual(number.trace_info(), [])
+        finally:
+            root.destroy()
+
+    def test_chip_group_separates_stable_values_from_localized_labels(self):
+        import tkinter as tk
+
+        root = tk.Tk()
+        root.withdraw()
+        try:
+            selected = tk.StringVar(value="original")
+            widget = ChipGroup(
+                root,
+                selected,
+                {"original": "Original", "compare": "Compare"},
+                ui=ui_theme.tokens("dark"),
+            )
+            widget.pack()
+            root.update_idletasks()
+            self.assertEqual(selected.get(), "original")
+            self.assertEqual(widget._nudge(1), "break")
+            self.assertEqual(selected.get(), "compare")
         finally:
             root.destroy()
 
@@ -223,11 +257,14 @@ class PlayerHelperTests(unittest.TestCase):
         )
 
     def test_preview_controls_wrap_at_narrow_widths(self):
-        self.assertEqual(_preview_control_layout(900), "wide")
-        self.assertEqual(_preview_control_layout(805), "wide")
-        self.assertEqual(_preview_control_layout(804), "stacked")
-        self.assertEqual(_preview_control_layout(420), "stacked")
-        self.assertEqual(_preview_control_layout(419), "compact")
+        self.assertEqual(_preview_control_layout(900, "zh_CN"), "wide")
+        self.assertEqual(_preview_control_layout(805, "zh_CN"), "wide")
+        self.assertEqual(_preview_control_layout(804, "zh_CN"), "stacked")
+        self.assertEqual(_preview_control_layout(420, "zh_CN"), "stacked")
+        self.assertEqual(_preview_control_layout(419, "zh_CN"), "compact")
+        self.assertEqual(_preview_control_layout(959, "en_US"), "stacked")
+        self.assertEqual(_preview_control_layout(960, "en_US"), "wide")
+        self.assertEqual(_preview_control_layout(519, "en_US"), "compact")
 
     def test_play_target_skips_ahead_and_stops_at_last(self):
         self.assertEqual(_play_target_frame(0, 0, 24, 242), 0)
@@ -491,7 +528,7 @@ class SettingsPanelPersistenceTests(unittest.TestCase):
     def test_release_defaults_match_recommended_profile(self):
         defaults = app_settings.validate({})
         expected = {
-            "preview_view": "原图",
+            "preview_view": "original",
             "style": 0,
             "enable_5x": False,
             "intensity": 1.0,
@@ -554,7 +591,7 @@ class SettingsPanelPersistenceTests(unittest.TestCase):
             loaded = app_settings.load(path)
             self.assertTrue(loaded["ui_export_open"])
             self.assertTrue(loaded["ui_host_open"])
-            self.assertEqual(loaded["preview_view"], "DLSS")
+            self.assertEqual(loaded["preview_view"], "dlss")
             self.assertTrue(loaded["preview_detached"])
             self.assertEqual(loaded["preview_window_geometry"], "1280x720-1200+80")
             self.assertTrue(app_settings.validate({})["ui_preview_open"])
@@ -1073,7 +1110,7 @@ class PreviewQueueTests(unittest.TestCase):
         app.video = "video.mp4"
         app._exporting = False
         app.playing = False
-        app.view_var = type("FakeVar", (), {"get": lambda _self: "对比"})()
+        app.view_var = type("FakeVar", (), {"get": lambda _self: "compare"})()
         app._update_split_from_event = lambda _event: events.append("split")
         app.toggle_play = lambda: events.append("play")
         app._schedule_preview_cache_resume = lambda *a, **k: events.append("resume")
@@ -1086,7 +1123,7 @@ class PreviewQueueTests(unittest.TestCase):
     def test_preview_timeline_status_skips_work_while_frozen(self):
         app = App.__new__(App)
         app.video = "video.mp4"
-        app.view_var = type("FakeVar", (), {"get": lambda _self: "DLSS"})()
+        app.view_var = type("FakeVar", (), {"get": lambda _self: "dlss"})()
         app._preview_cache_frozen = True
         app._preview_status_at = 0.0
         app.timeline = type(
@@ -1140,7 +1177,7 @@ class PreviewQueueTests(unittest.TestCase):
         app._source_kind = "video"
         app._hold_original = False
         app._frame = 12
-        app.view_var = type("FakeVar", (), {"get": lambda _self: "DLSS"})()
+        app.view_var = type("FakeVar", (), {"get": lambda _self: "dlss"})()
         app._precise_preview_size = lambda: (1920, 1080)
         app._cached_dlss = lambda frame, size: None
         app.display_view = lambda quality="full": events.append(("display", quality))
@@ -1173,7 +1210,7 @@ class PreviewQueueTests(unittest.TestCase):
 
         class FakeVar:
             def get(self):
-                return "DLSS"
+                return "dlss"
 
         app.playing = False
         app.video = "video.mp4"
@@ -1482,7 +1519,7 @@ class WidgetSmokeTests(unittest.TestCase):
                 self.assertEqual(str(app.detach_btn.cget("text")), "分离")
                 self.assertFalse(app._collect_persisted_settings()["preview_detached"])
                 self.assertEqual(len(app._theme_widgets), theme_widget_count + 1)
-                app.view_var.set("DLSS")
+                app.view_var.set("dlss")
                 root.update_idletasks()
                 self.assertEqual(callback_errors, [])
                 stable_theme_widget_count = len(app._theme_widgets)
@@ -1598,7 +1635,7 @@ class WidgetSmokeTests(unittest.TestCase):
                 self.assertEqual(str(app.export_btn.winfo_manager()), "grid")
                 self.assertEqual(str(app.cancel_export_btn.winfo_manager()), "")
                 self.assertEqual(str(app._progress_rule.winfo_manager()), "pack")
-                app.view_var.set("对比")
+                app.view_var.set("compare")
                 app._hold_original = False
                 app._split_nw, app._split_nh = 100, 50
                 app._split_orig = np.zeros((50, 100, 3), np.uint8)
@@ -1637,6 +1674,8 @@ class WidgetSmokeTests(unittest.TestCase):
                 self.assertIn(app._studio, packed)
                 self.assertIn(app._progress_rule, packed)
                 self.assertIn(app.log.frame, packed)
+                self.assertIsInstance(app.log.vbar, ttk.Scrollbar)
+                self.assertEqual(app.log.vbar.winfo_class(), "TScrollbar")
                 self.assertIn(app._status_bar, packed)
                 self.assertLess(packed.index(app._studio), packed.index(app._progress_rule))
                 self.assertLess(packed.index(app._progress_rule), packed.index(app.log.frame))

@@ -29,6 +29,7 @@ import cv2
 import numpy as np
 
 import app_settings
+import i18n
 from app_version import APP_VERSION
 import diagnostics
 import dlss_engine
@@ -60,34 +61,56 @@ except ImportError:
     DND_FILES = None
     TkinterDnD = None
 
-VIEWS = ["原图", "DLSS", "对比"]
-STYLE_CHOICES = {"默认": 0, "自然": 1, "电影": 2}
-OUTVIEW_CHOICES = {"处理": 0, "差异×10": 1, "左右对比": 2}
+_STARTUP_SETTINGS = app_settings.load()
+i18n.set_language(
+    os.environ.get("DLSS5TOOL_LANG") or _STARTUP_SETTINGS.get("ui_language")
+)
+tr = i18n.tr
+
+VIEWS = {
+    "original": tr("view.original"),
+    "dlss": tr("view.dlss"),
+    "compare": tr("view.compare"),
+}
+STYLE_CHOICES = {
+    tr("style.default"): 0,
+    tr("style.natural"): 1,
+    tr("style.cinema"): 2,
+}
+OUTVIEW_CHOICES = {
+    tr("output_view.processed"): 0,
+    tr("output_view.difference"): 1,
+    tr("output_view.side_by_side"): 2,
+}
 STYLE_NAMES = {value: name for name, value in STYLE_CHOICES.items()}
 OUTVIEW_NAMES = {value: name for name, value in OUTVIEW_CHOICES.items()}
-EXPORT_MODE_CHOICES = {"严格时序（单会话）": "single", "视觉无损（并行分段）": "parallel"}
+EXPORT_MODE_CHOICES = {
+    tr("export_mode.single"): "single",
+    tr("export_mode.parallel"): "parallel",
+}
 EXPORT_MODE_NAMES = {value: name for name, value in EXPORT_MODE_CHOICES.items()}
 NVENC_PRESET_CHOICES = {
-    "p1 最快": "p1", "p3 快速": "p3", "p5 较慢（推荐）": "p5", "p7 最慢": "p7",
+    tr("preset.p1"): "p1", tr("preset.p3"): "p3",
+    tr("preset.p5"): "p5", tr("preset.p7"): "p7",
 }
 NVENC_PRESET_NAMES = {value: name for name, value in NVENC_PRESET_CHOICES.items()}
 OUTPUT_CONTAINER_CHOICES = {
-    "MP4（推荐）": "mp4",
+    tr("container.mp4"): "mp4",
     "MKV": "mkv",
     "MOV": "mov",
-    "跟随输入": "source",
+    tr("container.source"): "source",
 }
 OUTPUT_CONTAINER_NAMES = {
     value: name for name, value in OUTPUT_CONTAINER_CHOICES.items()
 }
 OUTPUT_CONTAINER_LABELS = {"mp4": "MP4", "mkv": "MKV", "mov": "MOV"}
 OUTPUT_RESOLUTION_CHOICES = {
-    "跟随源视频（推荐）": "source",
+    tr("resolution.source"): "source",
     "2160p": "2160p",
     "1440p": "1440p",
     "1080p": "1080p",
     "720p": "720p",
-    "自定义上限": "custom",
+    tr("resolution.custom"): "custom",
 }
 OUTPUT_RESOLUTION_NAMES = {
     value: name for name, value in OUTPUT_RESOLUTION_CHOICES.items()
@@ -95,31 +118,35 @@ OUTPUT_RESOLUTION_NAMES = {
 OUTPUT_RESOLUTION_MAX_EDGES = {
     "2160p": 3840, "1440p": 2560, "1080p": 1920, "720p": 1280,
 }
-SUPER_RESOLUTION_CHOICES = {"关闭": 1, "2×": 2, "4×": 4}
+SUPER_RESOLUTION_CHOICES = {tr("common.off"): 1, "2×": 2, "4×": 4}
 SUPER_RESOLUTION_NAMES = {value: name for name, value in SUPER_RESOLUTION_CHOICES.items()}
 RATE_CONTROL_CHOICES = {
-    "按画质（推荐）": "quality",
-    "目标码率": "bitrate",
+    tr("rate.quality"): "quality",
+    tr("rate.bitrate"): "bitrate",
 }
 RATE_CONTROL_NAMES = {value: name for name, value in RATE_CONTROL_CHOICES.items()}
 QUALITY_PROFILE_CHOICES = {
-    "极高质量": "maximum",
-    "高质量（推荐）": "high",
-    "均衡": "balanced",
-    "小体积": "compact",
+    tr("quality.maximum"): "maximum",
+    tr("quality.high"): "high",
+    tr("quality.balanced"): "balanced",
+    tr("quality.compact"): "compact",
 }
 QUALITY_PROFILE_NAMES = {value: name for name, value in QUALITY_PROFILE_CHOICES.items()}
 HOST_BACKEND_CHOICES = {
-    "自动（优先 v2）": "auto", "v2 优化主机": "v2", "旧版兼容主机": "legacy",
+    tr("backend.auto"): "auto", tr("backend.v2"): "v2",
+    tr("backend.legacy"): "legacy",
 }
 HOST_BACKEND_NAMES = {value: name for name, value in HOST_BACKEND_CHOICES.items()}
-HOST_SUBMISSION_CHOICES = {"合并提交（快速）": "merged", "兼容提交（保守）": "compatibility"}
+HOST_SUBMISSION_CHOICES = {
+    tr("submission.merged"): "merged",
+    tr("submission.compatibility"): "compatibility",
+}
 HOST_SUBMISSION_NAMES = {value: name for name, value in HOST_SUBMISSION_CHOICES.items()}
 PREVIEW_QUALITY_CHOICES = {
-    "自动（推荐）": "auto",
+    tr("common.auto_recommended"): "auto",
     "1080p": "1080p",
     "1440p": "1440p",
-    "原始分辨率": "original",
+    tr("preview_quality.original"): "original",
 }
 PREVIEW_QUALITY_NAMES = {value: name for name, value in PREVIEW_QUALITY_CHOICES.items()}
 PREVIEW_MAX_EDGES = {"1080p": 1920, "1440p": 2560}
@@ -134,23 +161,41 @@ LARGE_IMAGE_TILE_HEIGHT = 3000
 VIDEO_EXTENSIONS = {".mp4", ".avi", ".mov", ".mkv", ".m4v", ".webm"}
 IMAGE_EXTENSIONS = {".png", ".jpg", ".jpeg", ".webp", ".bmp", ".tif", ".tiff"}
 VIDEO_FILETYPES = [
-    ("媒体", "*.mp4 *.avi *.mov *.mkv *.m4v *.webm *.png *.jpg *.jpeg *.webp *.bmp *.tif *.tiff"),
-    ("视频", "*.mp4 *.avi *.mov *.mkv *.m4v *.webm"),
-    ("图片", "*.png *.jpg *.jpeg *.webp *.bmp *.tif *.tiff"),
-    ("所有文件", "*.*"),
+    (tr("common.media"), "*.mp4 *.avi *.mov *.mkv *.m4v *.webm *.png *.jpg *.jpeg *.webp *.bmp *.tif *.tiff"),
+    (tr("common.video"), "*.mp4 *.avi *.mov *.mkv *.m4v *.webm"),
+    (tr("common.image"), "*.png *.jpg *.jpeg *.webp *.bmp *.tif *.tiff"),
+    (tr("common.all_files"), "*.*"),
 ]
 QUEUE_STATE_NAMES = {
-    "pending": "等待",
-    "running": "处理中",
-    "completed": "完成",
-    "failed": "失败",
-    "cancelled": "已取消",
-    "interrupted": "被中断",
+    "pending": tr("queue.pending"),
+    "running": tr("queue.running"),
+    "completed": tr("queue.completed"),
+    "failed": tr("queue.failed"),
+    "cancelled": tr("queue.cancelled"),
+    "interrupted": tr("queue.interrupted"),
 }
 QUEUE_STARTABLE_STATES = {"pending", "cancelled", "interrupted"}
 IMAGE_ENCODE_EXTS = {".png", ".jpg", ".jpeg", ".bmp", ".webp", ".tif", ".tiff"}
 CANVAS_BG = "#161616"
 CANVAS_DROP_BG = "#24405C"
+
+
+def _is_dlss_runtime_unsupported(error):
+    """Recognize NGX's FeatureNotSupported result without hiding raw diagnostics."""
+    text = str(error or "")
+    return bool(
+        re.search(r"0xBAD00001", text, re.IGNORECASE)
+        or re.search(r"FeatureNotSupported", text, re.IGNORECASE)
+    )
+
+
+def _dlss_runtime_guidance(error):
+    if not _is_dlss_runtime_unsupported(error):
+        return ""
+    return tr(
+        "message.dlss_runtime_unsupported",
+        releases_url=updater.RELEASES_URL,
+    )
 HUD_FILL = "#d8d8d8"
 SPLIT_LINE = "#7FE8E8"
 TIMELINE_BG = "#1a1a1a"
@@ -166,7 +211,7 @@ SCALE_ENABLED = {
     "highlightbackground": "#c8c8c8",
 }
 APP_TITLE = f"DLSS5Tool {APP_VERSION}"
-APP_CREDIT = "B站：板板之歌"
+APP_CREDIT = tr("app.credit")
 SCALE_DISABLED = {
     "troughcolor": "#e6e6e6",
     "background": "#d0d0d0",
@@ -327,12 +372,15 @@ def _clamp_window_geometry(value, bounds, fallback=(1100, 700, 48, 48)):
     return f"{width}x{height}{x:+d}{y:+d}"
 
 
-def _preview_control_layout(width):
+def _preview_control_layout(width, language=None):
     """Choose a player-toolbar layout that never dictates a wide preview window."""
     width = max(int(width), 0)
-    if width >= 805:
+    language = i18n.normalize_language(language or i18n.get_language())
+    wide_min = 960 if language == "en_US" else 805
+    stacked_min = 520 if language == "en_US" else 420
+    if width >= wide_min:
         return "wide"
-    if width >= 420:
+    if width >= stacked_min:
         return "stacked"
     return "compact"
 
@@ -395,7 +443,7 @@ def _write_image_bgr(path, bgr):
         path = os.path.splitext(path)[0] + ext
         ok, buf = cv2.imencode(ext, bgr)
     if not ok:
-        raise RuntimeError("无法编码图片")
+        raise RuntimeError(tr("message.image_encode_failed"))
     buf.tofile(path)
     return path
 
@@ -664,6 +712,10 @@ class App:
     def __init__(self, root):
         self.root = root
         self._saved_settings = app_settings.load()
+        self._ui_language = i18n.get_language()
+        self._preferred_ui_language = self._saved_settings.get(
+            "ui_language", self._ui_language,
+        )
         self._ui_theme_name = ui_theme.normalize_theme_name(
             self._saved_settings.get("ui_theme", "dark")
         )
@@ -797,8 +849,9 @@ class App:
         # Studio: left monitor + fixed 360px inspector (matches the mockup).
         self._studio = ttk.Frame(root, style="Workspace.TFrame")
         self._studio.pack(fill="both", expand=True)
+        language_min_width = 420 if self._ui_language == "en_US" else ui_theme.INSPECTOR_MIN
         self._inspector_width = max(
-            ui_theme.INSPECTOR_MIN,
+            language_min_width,
             min(ui_theme.INSPECTOR_MAX, int(self._saved_settings.get("inspector_width", 360))),
         )
         self._inspector = ttk.Frame(
@@ -828,9 +881,9 @@ class App:
         self._preview_page = ttk.Frame(self.workspace_tabs.content, style="Panel.TFrame")
         self._export_page = ttk.Frame(self.workspace_tabs.content, style="Panel.TFrame")
         self.queue_tab = ttk.Frame(self.workspace_tabs.content, style="Panel.TFrame")
-        self.workspace_tabs.add(self._preview_page, text="调参")
-        self.workspace_tabs.add(self._export_page, text="导出")
-        self.workspace_tabs.add(self.queue_tab, text="队列", badge="0")
+        self.workspace_tabs.add(self._preview_page, text=tr("tab.adjust"))
+        self.workspace_tabs.add(self._export_page, text=tr("tab.export"))
+        self.workspace_tabs.add(self.queue_tab, text=tr("tab.queue"), badge="0")
 
         self._preview_page.grid_rowconfigure(0, weight=1)
         self._preview_page.grid_rowconfigure(1, weight=0)
@@ -861,8 +914,7 @@ class App:
         self._settings = self._build_settings(sf)
         Tooltip(
             sf,
-            "每个滑条的开关关闭时按 0 处理，开启后使用记忆的数值。\n"
-            "皮肤蒙版数值为 0 时等同关闭；大于 0 时才启用自动蒙版。",
+            tr("tooltip.settings"),
         )
 
         self._export_quick = ttk.Frame(self.preview_tab, style="Panel.TFrame")
@@ -876,41 +928,41 @@ class App:
         for column in range(3):
             actions.columnconfigure(column, weight=1, uniform="actions")
         self.import_btn = ChromeButton(
-            actions, text="导入", variant="ghost", command=self.import_media,
+            actions, text=tr("action.import"), variant="ghost", command=self.import_media,
             ui=self._ui, width=88,
         )
         self.import_btn.grid(row=0, column=0, sticky="ew", padx=(0, 4))
         self._theme_widgets.append(self.import_btn)
         self.clear_btn = ChromeButton(
-            actions, text="清空", variant="ghost", command=self.clear_media,
+            actions, text=tr("action.clear"), variant="ghost", command=self.clear_media,
             ui=self._ui, width=88,
         )
         self.clear_btn.grid(row=0, column=1, sticky="ew", padx=4)
         self._theme_widgets.append(self.clear_btn)
-        Tooltip(self.clear_btn, "卸下当前视频/图片，释放解码、音轨和 DLSS 主机占用。")
+        Tooltip(self.clear_btn, tr("tooltip.clear_media"))
         self.add_queue_btn = ChromeButton(
-            actions, text="加入队列", variant="default", command=self.add_current_to_queue,
+            actions, text=tr("action.add_queue"), variant="default", command=self.add_current_to_queue,
             ui=self._ui, width=108,
         )
         self.add_queue_btn.grid(row=0, column=2, sticky="ew", padx=(4, 0))
         self._theme_widgets.append(self.add_queue_btn)
-        Tooltip(self.add_queue_btn, "使用当前处理与导出参数，把当前视频或图片加入导出队列。")
+        Tooltip(self.add_queue_btn, tr("tooltip.add_queue"))
         run_bar = ttk.Frame(e, style="Panel.TFrame")
         run_bar.pack(fill="x", pady=(8, 0))
         for column in range(2):
             run_bar.columnconfigure(column, weight=1, uniform="export_run")
         self._export_run_bar = run_bar
         self.export_btn = ChromeButton(
-            run_bar, text="导出 DLSS", variant="accent", command=self.export_dlss, ui=self._ui,
+            run_bar, text=tr("action.export_dlss"), variant="accent", command=self.export_dlss, ui=self._ui,
         )
         self.export_btn.grid(row=0, column=0, columnspan=2, sticky="ew")
         self._theme_widgets.append(self.export_btn)
         self.cancel_export_btn = ChromeButton(
-            run_bar, text="取消导出", variant="danger", command=self.cancel_export,
+            run_bar, text=tr("action.cancel_export"), variant="danger", command=self.cancel_export,
             ui=self._ui, icon="cancel", primary=True,
         )
         self._theme_widgets.append(self.cancel_export_btn)
-        Tooltip(self.cancel_export_btn, "停止当前视频导出，并清理本次未完成的输出文件。")
+        Tooltip(self.cancel_export_btn, tr("tooltip.cancel_export"))
         self.cancel_export_btn.grid(row=0, column=0, columnspan=2, sticky="ew")
         self.cancel_export_btn.grid_remove()
         self._export_run_layout = "export"
@@ -936,12 +988,11 @@ class App:
         export_inner.bind("<Configure>", self._sync_export_scrollregion)
         self._export_canvas.bind("<Configure>", self._resize_export_content)
         self._preview_section = CollapsibleSection(
-            export_inner, "预览性能",
+            export_inner, tr("section.preview_performance"),
             collapsed=not self._saved_settings.get("ui_preview_open", False),
             on_toggle=self._on_panels_toggle,
             tooltip=(
-                "播放质量只影响实时播放；暂停、逐帧和拖动松手后仍生成原始分辨率精确帧。\n"
-                "缓存窗口越大越占内存。"
+                tr("tooltip.preview_performance")
             ),
             ui=self._ui,
         )
@@ -952,12 +1003,11 @@ class App:
         self.root.after_idle(self._update_preview_memory_hint)
 
         self._export_section = CollapsibleSection(
-            export_inner, "导出设置",
+            export_inner, tr("section.export_settings"),
             collapsed=not self._saved_settings.get("ui_export_open", False),
             on_toggle=self._on_panels_toggle,
             tooltip=(
-                "设置输出分辨率、编码质量或目标码率，以及导出性能。"
-                "并行模式保持视觉质量，但不保证逐像素时序一致。"
+                tr("tooltip.export_settings")
             ),
             ui=self._ui,
         )
@@ -966,10 +1016,10 @@ class App:
         self._export_settings = self._build_export_settings(self._export_section.body)
 
         self._host_section = CollapsibleSection(
-            export_inner, "高级主机优化",
+            export_inner, tr("section.advanced_host"),
             collapsed=not self._saved_settings.get("ui_host_open", False),
             on_toggle=self._on_panels_toggle,
-            tooltip="后端在隔离进程中热切换，无需重启 GUI。导出期间为保持时序会锁定这些选项。",
+            tooltip=tr("tooltip.advanced_host"),
             ui=self._ui,
         )
         self._theme_widgets.append(self._host_section)
@@ -988,6 +1038,7 @@ class App:
             insertbackground=self._ui["text"],
             relief="flat", borderwidth=0, highlightthickness=0,
         )
+        ui_theme.install_ttk_scrolledtext_scrollbar(self.log)
         self._sync_log_panel()
 
         self._bind_player_keys()
@@ -1036,7 +1087,7 @@ class App:
         timeline.pack(fill="x", padx=10, pady=(8, 6))
         timeline.on_seek = self._on_timeline_seek
         timeline.bind("<MouseWheel>", self._on_wheel_step)
-        Tooltip(timeline, "浅青：当前设置下已渲染；灰青：已解码并等待渲染。")
+        Tooltip(timeline, tr("tooltip.timeline"))
 
         ctrl = ttk.Frame(transport, style="Transport.TFrame")
         ctrl.pack(fill="x", padx=8, pady=(0, 8))
@@ -1045,29 +1096,29 @@ class App:
         playback_bar = ttk.Frame(left, style="Transport.TFrame")
         playback_bar.pack(side="left")
         prev_btn = ChromeButton(
-            playback_bar, text="上一帧", icon="prev", icon_only=True,
+            playback_bar, text=tr("action.previous_frame"), icon="prev", icon_only=True,
             variant="tool", width=36, command=lambda: self.step_frame(-1), ui=self._ui,
         )
         prev_btn.pack(side="left")
-        Tooltip(prev_btn, "上一帧（←）")
+        Tooltip(prev_btn, tr("tooltip.previous_frame"))
         play_btn = ChromeButton(
-            playback_bar, text="播放", icon="play", icon_only=True,
+            playback_bar, text=tr("action.play"), icon="play", icon_only=True,
             variant="tool", width=36, command=self.toggle_play, ui=self._ui,
         )
         play_btn.pack(side="left", padx=(4, 0))
-        Tooltip(play_btn, "播放 / 暂停（空格）。播完停在最后一帧。")
+        Tooltip(play_btn, tr("tooltip.play"))
         next_btn = ChromeButton(
-            playback_bar, text="下一帧", icon="next", icon_only=True,
+            playback_bar, text=tr("action.next_frame"), icon="next", icon_only=True,
             variant="tool", width=36, command=lambda: self.step_frame(1), ui=self._ui,
         )
         next_btn.pack(side="left", padx=(4, 0))
-        Tooltip(next_btn, "下一帧（→）")
+        Tooltip(next_btn, tr("tooltip.next_frame"))
         mute_btn = ChromeButton(
-            playback_bar, text="声音", icon="volume", icon_only=True,
+            playback_bar, text=tr("action.audio"), icon="volume", icon_only=True,
             variant="tool", width=36, command=self.toggle_mute, ui=self._ui,
         )
         mute_btn.pack(side="left", padx=(4, 0))
-        Tooltip(mute_btn, "预览播放原视频声音。点击静音/取消静音。")
+        Tooltip(mute_btn, tr("tooltip.audio"))
 
         position_bar = ttk.Frame(left, style="Transport.TFrame")
         position_bar.pack(side="left")
@@ -1076,7 +1127,7 @@ class App:
             style="Transport.TLabel", font=ui_theme.UI_MONO,
         )
         time_label.pack(side="left", padx=(10, 6))
-        ttk.Label(position_bar, text="帧", style="Transport.TLabel").pack(side="left")
+        ttk.Label(position_bar, text=tr("label.frame"), style="Transport.TLabel").pack(side="left")
         fentry = ChromeEntry(
             position_bar, ui=self._ui, width=6, justify="right",
         )
@@ -1102,32 +1153,31 @@ class App:
         theme_widgets.append(view_bar)
         Tooltip(
             view_bar,
-            "1 原图  ·  2 DLSS  ·  3 对比。滚轮缩放；放大后拖动画面；"
-            "对比模式拖动分界线；按住 Alt 查看纯原图。",
+            tr("tooltip.views"),
         )
         zoom_bar = ttk.Frame(right, style="Transport.TFrame")
         zoom_bar.pack(side="left", padx=(0, 8))
         zoom_out_btn = ChromeButton(
-            zoom_bar, text="缩小", icon="minus", icon_only=True,
+            zoom_bar, text=tr("action.zoom_out"), icon="minus", icon_only=True,
             variant="tool", width=36, command=lambda: self._step_zoom(-1), ui=self._ui,
         )
         zoom_out_btn.pack(side="left")
         zoom_reset_btn = ChromeButton(
-            zoom_bar, text="适应", icon="fit", icon_only=True,
+            zoom_bar, text=tr("action.fit"), icon="fit", icon_only=True,
             variant="tool", width=36, command=self.reset_preview_zoom, ui=self._ui,
         )
         zoom_reset_btn.pack(side="left", padx=2)
         zoom_in_btn = ChromeButton(
-            zoom_bar, text="放大", icon="plus", icon_only=True,
+            zoom_bar, text=tr("action.zoom_in"), icon="plus", icon_only=True,
             variant="tool", width=36, command=lambda: self._step_zoom(1), ui=self._ui,
         )
         zoom_in_btn.pack(side="left")
-        Tooltip(zoom_out_btn, "缩小预览（-）")
-        Tooltip(zoom_reset_btn, "恢复适应窗口（0）")
-        Tooltip(zoom_in_btn, "放大预览（+）")
+        Tooltip(zoom_out_btn, tr("tooltip.zoom_out"))
+        Tooltip(zoom_reset_btn, tr("tooltip.fit"))
+        Tooltip(zoom_in_btn, tr("tooltip.zoom_in"))
         detach_btn = ChromeButton(
             right,
-            text="停靠" if detached else "分离",
+            text=tr("action.dock") if detached else tr("action.detach"),
             icon="dock" if detached else "detach",
             icon_only=True, variant="tool", width=36,
             command=self.toggle_detached_preview, ui=self._ui,
@@ -1135,14 +1185,14 @@ class App:
         detach_btn.pack(side="left", padx=(0, 4))
         Tooltip(
             detach_btn,
-            "将预览停靠回主窗口" if detached else "在可自由缩放的独立窗口中预览",
+            tr("tooltip.dock") if detached else tr("tooltip.detach"),
         )
         fs_btn = ChromeButton(
-            right, text="全屏", icon="fullscreen", icon_only=True,
+            right, text=tr("action.fullscreen"), icon="fullscreen", icon_only=True,
             variant="tool", width=36, command=self.toggle_fullscreen, ui=self._ui,
         )
         fs_btn.pack(side="left")
-        Tooltip(fs_btn, "全屏预览（F11 或双击画面，Esc 退出）")
+        Tooltip(fs_btn, tr("tooltip.fullscreen"))
 
         layout_state = {"mode": "wide"}
         ctrl.bind(
@@ -1261,6 +1311,15 @@ class App:
         )
         menu.add_separator()
         menu.add_command(label=str(self.theme_btn.cget("text")), command=self.toggle_ui_theme)
+        language_menu = tk.Menu(menu, tearoff=0)
+        selected_language = tk.StringVar(value=self._preferred_ui_language)
+        for code in i18n.SUPPORTED_LANGUAGES:
+            language_menu.add_radiobutton(
+                label=tr(f"language.{code}"), value=code,
+                variable=selected_language,
+                command=lambda value=code: self._select_ui_language(value),
+            )
+        menu.add_cascade(label=tr("language.menu"), menu=language_menu)
         try:
             menu.tk_popup(
                 self.more_btn.winfo_rootx(),
@@ -1268,6 +1327,24 @@ class App:
             )
         finally:
             menu.grab_release()
+
+    def _select_ui_language(self, language):
+        language = i18n.normalize_language(language)
+        if language == self._preferred_ui_language:
+            return
+        previous = self._preferred_ui_language
+        self._preferred_ui_language = language
+        values = self._collect_persisted_settings()
+        try:
+            self._saved_settings = app_settings.save(values)
+        except Exception as ex:
+            self._preferred_ui_language = previous
+            self.logln(tr("log.settings_save_failed", error=ex))
+            return
+        messagebox.showinfo(
+            tr("language.saved_title"),
+            tr("language.saved_message", language=language),
+        )
 
     def _build_status_bar(self, parent):
         bar = ttk.Frame(parent, style="Status.TFrame")
@@ -1278,7 +1355,7 @@ class App:
             bar, width=dot, height=dot, highlightthickness=0, bg=self._ui["surface"],
         )
         self._status_dot.pack(side="left", padx=(12, 0), pady=8)
-        self._status_host = ttk.Label(bar, text="宿主已就绪", style="Status.TLabel")
+        self._status_host = ttk.Label(bar, text=tr("status.host_ready"), style="Status.TLabel")
         self._status_host.pack(side="left", padx=(6, 8), pady=6)
         self._status_chips = StatusPills(bar, ui=self._ui)
         self._status_chips.pack(side="left", padx=(8, 8))
@@ -1289,27 +1366,27 @@ class App:
         utility = ttk.Frame(bar, style="Status.TFrame")
         utility.pack(side="right", padx=8, pady=4)
         self.theme_btn = ttk.Button(
-            utility, text="浅色皮肤", width=8, command=self.toggle_ui_theme,
+            utility, text=tr("action.light_theme"), width=12, command=self.toggle_ui_theme,
         )
         self.diagnostic_btn = ttk.Button(
-            utility, text="一键诊断", width=10, command=self.export_diagnostics,
+            utility, text=tr("action.diagnostics"), width=16, command=self.export_diagnostics,
         )
         self.update_btn = ttk.Button(
-            utility, text="检查更新", width=10,
+            utility, text=tr("action.check_updates"), width=16,
             command=lambda: self.check_for_updates(manual=True),
         )
         self.log_btn = ttk.Button(
-            utility, text="日志", width=6, command=self.toggle_log_panel,
+            utility, text=tr("action.log"), width=8, command=self.toggle_log_panel,
         )
-        self._status_metric = ttk.Label(utility, text="等待导入", style="Status.TLabel")
+        self._status_metric = ttk.Label(utility, text=tr("status.waiting_import"), style="Status.TLabel")
         self._status_metric.pack(side="left", padx=(0, 10))
         self.more_btn = ChromeButton(
-            utility, text="更多", variant="ghost", width=36,
+            utility, text=tr("action.more"), variant="ghost", width=36,
             icon="more", icon_only=True, command=self._popup_more, ui=self._ui,
         )
         self.more_btn.pack(side="right")
         self._theme_widgets.append(self.more_btn)
-        Tooltip(self.more_btn, "日志、检查更新、一键诊断和皮肤。")
+        Tooltip(self.more_btn, tr("tooltip.more"))
 
     def _build_progress_rule(self, parent):
         rule = ProgressRule(parent, ui=self._ui)
@@ -1335,10 +1412,10 @@ class App:
             elif getattr(self, "_status_bar", None) is not None:
                 options["before"] = self._status_bar
             self.log.pack(**options)
-            self.log_btn.configure(text="收起日志")
+            self.log_btn.configure(text=tr("action.hide_log"))
         else:
             self.log.pack_forget()
-            self.log_btn.configure(text="日志")
+            self.log_btn.configure(text=tr("action.log"))
 
     def _restack_bottom_chrome(self):
         try:
@@ -1375,7 +1452,8 @@ class App:
             pass
         try:
             self.theme_btn.configure(
-                text="暗色皮肤" if self._ui_theme_name == "light" else "浅色皮肤",
+                text=(tr("action.dark_theme") if self._ui_theme_name == "light"
+                      else tr("action.light_theme")),
             )
         except Exception:
             pass
@@ -1454,15 +1532,15 @@ class App:
             except Exception:
                 pass
         self._status_chip_labels = []
-        host = "等待导入"
+        host = tr("status.waiting_import")
         if self._exporting:
-            host = "正在导出"
+            host = tr("status.exporting")
         elif self._queue_running:
-            host = "队列处理中"
+            host = tr("status.queue_processing")
         elif self.video:
-            host = "预渲染就绪" if not self.playing else "播放中"
+            host = tr("status.prerender_ready") if not self.playing else tr("status.playing")
         else:
-            host = "宿主已就绪"
+            host = tr("status.host_ready")
         try:
             self._status_host.configure(text=host)
         except Exception:
@@ -1480,7 +1558,7 @@ class App:
             )
         except Exception:
             pass
-        pills = [("v2", "ok"), ("零引导", "")]
+        pills = [("v2", "ok"), (tr("status.zero_guidance"), "")]
         color = getattr(self, "_video_color_info", None) or {}
         if color.get("label"):
             pills.append((color.get("label"), "warn" if color.get("is_hdr") else ""))
@@ -1489,16 +1567,20 @@ class App:
         if self._media_w and self._media_h:
             pills.append((f"{self._media_w}×{self._media_h}", ""))
         if self.video and self.nframes:
-            pills.append((f"{self.nframes} 帧", ""))
+            pills.append((tr("status.frames_count", frames=self.nframes), ""))
         settings = getattr(self, "_preview_runtime_settings", None)
         if settings and self.video:
-            pills.append((f"缓存 {settings.get('preview_cache_mb', 0)} MiB", "ok"))
+            pills.append((tr(
+                "status.cache_mib", value=settings.get('preview_cache_mb', 0)
+            ), "ok"))
         try:
             self._status_chips.set_pills(pills)
         except Exception:
             pass
         try:
-            self._status_metric.configure(text="" if self.video else "等待导入")
+            self._status_metric.configure(
+                text="" if self.video else tr("status.waiting_import")
+            )
         except Exception:
             pass
 
@@ -1522,7 +1604,7 @@ class App:
         self._set_play_btn(self.playing)
         try:
             self.mute_btn.config(
-                text="静音" if self._audio.muted else "声音",
+                text=tr("action.muted") if self._audio.muted else tr("action.audio"),
                 icon="volume-off" if self._audio.muted else "volume",
             )
         except Exception:
@@ -1534,7 +1616,7 @@ class App:
     def _set_detach_btn(self, detached):
         try:
             self.detach_btn.config(
-                text="停靠" if detached else "分离",
+                text=tr("action.dock") if detached else tr("action.detach"),
                 icon="dock" if detached else "detach",
             )
         except Exception:
@@ -1563,7 +1645,15 @@ class App:
         window = self._detached_preview_window
         if window is not None:
             try:
-                preview_suffix = f"预览 — {filename}" if filename else "独立预览"
+                if filename:
+                    preview_suffix = (
+                        f"Preview — {filename}" if self._ui_language == "en_US"
+                        else f"预览 — {filename}"
+                    )
+                else:
+                    preview_suffix = (
+                        "Detached preview" if self._ui_language == "en_US" else "独立预览"
+                    )
                 window.title(f"{APP_TITLE} — {preview_suffix}")
             except Exception:
                 pass
@@ -1600,11 +1690,11 @@ class App:
             placeholder = ttk.Frame(self.root, padding=(10, 6), style="Status.TFrame")
             ttk.Label(
                 placeholder,
-                text="预览已在独立窗口中打开",
+                text=tr("status.detached_preview"),
                 style="Status.TLabel",
             ).pack(side="left")
             dock_btn = ChromeButton(
-                placeholder, text="停靠回来", command=self.dock_preview,
+                placeholder, text=tr("action.dock_back"), command=self.dock_preview,
                 variant="ghost", ui=self._ui, width=88,
             )
             dock_btn.pack(side="left", padx=(10, 0))
@@ -1643,7 +1733,7 @@ class App:
             widget.dnd_bind("<<DropLeave>>", self._on_drop_leave)
             widget.dnd_bind("<<Drop>>", self._on_drop)
         except Exception as ex:
-            self.logln("[拖拽] 独立预览注册失败，仍可点击导入: " + str(ex))
+            self.logln(tr("log.detached_drop_failed", error=ex))
 
     def toggle_detached_preview(self):
         if self._detached_preview_window is None:
@@ -1842,57 +1932,57 @@ class App:
         toolbar = ttk.Frame(parent, style="Panel.TFrame")
         toolbar.pack(fill="x", padx=12, pady=(10, 6))
         self.queue_add_files_btn = self._chrome_button(
-            toolbar, "添加文件", self.add_queue_files, width=36,
+            toolbar, tr("action.add_files"), self.add_queue_files, width=36,
             icon="file-plus", icon_only=True,
         )
         self.queue_add_files_btn.pack(side="left")
-        Tooltip(self.queue_add_files_btn, "添加文件")
+        Tooltip(self.queue_add_files_btn, tr("action.add_files"))
         self.queue_add_folder_btn = self._chrome_button(
-            toolbar, "添加文件夹", self.add_queue_folder, width=36,
+            toolbar, tr("action.add_folder"), self.add_queue_folder, width=36,
             icon="folder-plus", icon_only=True,
         )
         self.queue_add_folder_btn.pack(side="left", padx=(4, 0))
-        Tooltip(self.queue_add_folder_btn, "添加文件夹")
+        Tooltip(self.queue_add_folder_btn, tr("action.add_folder"))
         self.queue_remove_btn = self._chrome_button(
-            toolbar, "移除", self.remove_selected_queue_jobs, variant="ghost", width=36,
+            toolbar, tr("action.remove"), self.remove_selected_queue_jobs, variant="ghost", width=36,
             icon="trash", icon_only=True,
         )
         self.queue_remove_btn.pack(side="left", padx=(8, 0))
-        Tooltip(self.queue_remove_btn, "移除所选任务")
+        Tooltip(self.queue_remove_btn, tr("tooltip.remove_jobs"))
         self.queue_clear_btn = self._chrome_button(
-            toolbar, "清空队列", self.clear_queue_jobs, variant="ghost", width=36,
+            toolbar, tr("action.clear_queue"), self.clear_queue_jobs, variant="ghost", width=36,
             icon="clear", icon_only=True,
         )
         self.queue_clear_btn.pack(side="left", padx=(4, 0))
-        Tooltip(self.queue_clear_btn, "清空队列")
+        Tooltip(self.queue_clear_btn, tr("action.clear_queue"))
         self.queue_retry_btn = self._chrome_button(
-            toolbar, "重试", self.retry_selected_queue_jobs, variant="ghost",
+            toolbar, tr("action.retry"), self.retry_selected_queue_jobs, variant="ghost",
             width=36, icon="retry", icon_only=True,
         )
         self.queue_retry_btn.pack(side="left", padx=(8, 0))
-        Tooltip(self.queue_retry_btn, "重试所选失败任务")
+        Tooltip(self.queue_retry_btn, tr("action.retry"))
         self.queue_clear_done_btn = self._chrome_button(
-            toolbar, "清理已完成", self.clear_completed_queue_jobs, variant="ghost",
+            toolbar, tr("action.clear_completed"), self.clear_completed_queue_jobs, variant="ghost",
             width=36, icon="clear-done", icon_only=True,
         )
         self.queue_clear_done_btn.pack(side="left", padx=(4, 0))
-        Tooltip(self.queue_clear_done_btn, "清理已完成任务")
+        Tooltip(self.queue_clear_done_btn, tr("action.clear_completed"))
         self.queue_move_down_btn = self._chrome_button(
-            toolbar, "下移", lambda: self.move_selected_queue_job(1), variant="ghost",
+            toolbar, tr("action.move_down"), lambda: self.move_selected_queue_job(1), variant="ghost",
             width=36, icon="down", icon_only=True,
         )
         self.queue_move_down_btn.pack(side="right")
-        Tooltip(self.queue_move_down_btn, "下移所选任务")
+        Tooltip(self.queue_move_down_btn, tr("action.move_down"))
         self.queue_move_up_btn = self._chrome_button(
-            toolbar, "上移", lambda: self.move_selected_queue_job(-1), variant="ghost",
+            toolbar, tr("action.move_up"), lambda: self.move_selected_queue_job(-1), variant="ghost",
             width=36, icon="up", icon_only=True,
         )
         self.queue_move_up_btn.pack(side="right", padx=(0, 4))
-        Tooltip(self.queue_move_up_btn, "上移所选任务")
+        Tooltip(self.queue_move_up_btn, tr("action.move_up"))
 
         output_row = ttk.Frame(parent, style="Panel.TFrame")
         output_row.pack(fill="x", padx=12, pady=(0, 6))
-        ttk.Label(output_row, text="输出目录").pack(side="left")
+        ttk.Label(output_row, text=tr("label.output_folder")).pack(side="left")
         self.queue_output_dir_var = tk.StringVar(
             value=self._saved_settings.get("queue_output_dir", "")
         )
@@ -1904,14 +1994,14 @@ class App:
         self.queue_output_entry.bind("<FocusOut>", self._on_queue_output_dir_change)
         self.queue_output_entry.bind("<Return>", self._on_queue_output_dir_change)
         self.queue_output_browse_btn = self._chrome_button(
-            output_row, "浏览…", self.choose_queue_output_dir, variant="ghost",
+            output_row, tr("action.browse"), self.choose_queue_output_dir, variant="ghost",
             width=36, icon="folder-open", icon_only=True,
         )
         self.queue_output_browse_btn.pack(side="left")
-        Tooltip(self.queue_output_browse_btn, "选择输出目录")
+        Tooltip(self.queue_output_browse_btn, tr("tooltip.choose_output"))
         Tooltip(
             self.queue_output_entry,
-            "仅影响之后添加的任务。留空时输出到各源媒体所在目录；队列会自动避免覆盖已有文件。",
+            tr("tooltip.queue_output"),
         )
 
         tree_frame = ttk.Frame(parent, style="Panel.TFrame")
@@ -1926,8 +2016,9 @@ class App:
             selectmode="extended", displaycolumns=("state", "source", "progress"),
         )
         headings = {
-            "state": "状态", "source": "文件", "info": "素材信息",
-            "settings": "参数", "output": "输出", "progress": "进度",
+            "state": tr("label.status"), "source": tr("label.file"),
+            "info": tr("label.media_info"), "settings": tr("common.settings"),
+            "output": tr("common.output"), "progress": tr("label.progress"),
         }
         widths = {
             "state": 76, "source": 220, "info": 155,
@@ -1945,9 +2036,14 @@ class App:
         queue_y.grid(row=0, column=1, sticky="ns")
         def fit_queue_columns(event):
             width = max(event.width, 1)
-            self.queue_tree.column("state", width=48, minwidth=40, stretch=False)
-            self.queue_tree.column("progress", width=64, minwidth=48, stretch=False)
-            self.queue_tree.column("source", width=max(60, width - 114), minwidth=60, stretch=True)
+            state_width = 64 if self._ui_language == "en_US" else 48
+            progress_width = 82 if self._ui_language == "en_US" else 64
+            self.queue_tree.column("state", width=state_width, minwidth=40, stretch=False)
+            self.queue_tree.column("progress", width=progress_width, minwidth=48, stretch=False)
+            self.queue_tree.column(
+                "source", width=max(60, width - state_width - progress_width - 2),
+                minwidth=60, stretch=True,
+            )
         self.queue_tree.bind("<Configure>", fit_queue_columns, add="+")
         tree_frame.rowconfigure(0, weight=1)
         tree_frame.columnconfigure(0, weight=1)
@@ -1960,7 +2056,7 @@ class App:
         details_row = ttk.Frame(parent, style="Panel.TFrame")
         details_row.pack(fill="x", padx=12, pady=(0, 6))
         self.queue_details = ttk.Label(
-            details_row, text="选择任务查看详情。",
+            details_row, text=tr("status.select_job"),
             anchor="w", justify="left", wraplength=280, style="Hint.TLabel",
         )
         self.queue_details.pack(side="top", fill="x", pady=(4, 8))
@@ -1976,33 +2072,33 @@ class App:
         for column in range(2):
             actions.columnconfigure(column, weight=1, uniform="queue_actions")
         self.queue_load_btn = self._chrome_button(
-            actions, "载入预览", self.load_selected_queue_job, variant="ghost",
+            actions, tr("action.load_preview"), self.load_selected_queue_job, variant="ghost",
         )
         self.queue_load_btn.grid(row=0, column=0, sticky="ew", padx=(0, 4), pady=(0, 6))
         self.queue_apply_settings_btn = self._chrome_button(
-            actions, "应用参数", self.apply_current_settings_to_queue, variant="ghost",
+            actions, tr("action.apply_settings"), self.apply_current_settings_to_queue, variant="ghost",
         )
         self.queue_apply_settings_btn.grid(row=0, column=1, sticky="ew", padx=(4, 0), pady=(0, 6))
-        Tooltip(self.queue_apply_settings_btn, "把当前调参和导出设置应用到所选任务")
+        Tooltip(self.queue_apply_settings_btn, tr("tooltip.apply_settings"))
         run_bar = ttk.Frame(actions, style="Panel.TFrame")
         run_bar.grid(row=1, column=0, columnspan=2, sticky="ew", pady=(0, 6))
         for column in range(2):
             run_bar.columnconfigure(column, weight=1, uniform="queue_run")
         self._queue_run_bar = run_bar
         self.queue_start_btn = self._chrome_button(
-            run_bar, "开始队列", self.start_export_queue, variant="accent",
+            run_bar, tr("action.start_queue"), self.start_export_queue, variant="accent",
             icon="play",
         )
         self.queue_pause_btn = self._chrome_button(
-            run_bar, "暂停", self.pause_export_queue_after_current,
+            run_bar, tr("action.pause"), self.pause_export_queue_after_current,
             variant="outline", icon="pause", primary=True,
         )
-        Tooltip(self.queue_pause_btn, "当前项完成后暂停队列")
+        Tooltip(self.queue_pause_btn, tr("tooltip.pause_queue"))
         self.queue_cancel_btn = self._chrome_button(
-            run_bar, "取消", self.cancel_current_queue_job,
+            run_bar, tr("action.cancel"), self.cancel_current_queue_job,
             variant="danger", icon="cancel", primary=True,
         )
-        Tooltip(self.queue_cancel_btn, "取消当前任务并暂停队列，未完成文件会清理")
+        Tooltip(self.queue_cancel_btn, tr("tooltip.cancel_queue"))
         self.queue_pause_btn.grid(row=0, column=0, sticky="ew", padx=(0, 4))
         self.queue_cancel_btn.grid(row=0, column=1, sticky="ew", padx=(4, 0))
         self.queue_pause_btn.grid_remove()
@@ -2036,21 +2132,24 @@ class App:
             fps = float(meta.get("fps", 0.0) or 0.0)
         except (TypeError, ValueError, OverflowError):
             width, height, fps = 0, 0, 0.0
-        size = f"{width}×{height}" if width and height else "尺寸未知"
+        size = f"{width}×{height}" if width and height else tr("common.unknown_dimensions")
         if job.media_kind == "image":
-            return f"图片 · {size} · SDR"
-        color = (job.color_info or {}).get("label", "待检测")
-        return f"视频 · {size} · {fps:g} fps · {color}" if fps else f"视频 · {size} · {color}"
+            return tr("queue.image_info", size=size)
+        color = (job.color_info or {}).get("label", tr("common.not_checked"))
+        return (
+            tr("queue.video_info_fps", size=size, fps=fps, color=color)
+            if fps else tr("queue.video_info", size=size, color=color)
+        )
 
     @staticmethod
     def _queue_settings_text(job):
         settings = job.settings or {}
         export = job.export_settings or {}
-        style = STYLE_NAMES.get(settings.get("style"), "默认")
+        style = STYLE_NAMES.get(settings.get("style"), tr("style.default"))
         scale = normalize_scale(
             export.get("super_resolution_scale", settings.get("super_resolution_scale", 1))
         )
-        scale_note = f" · RTX超分{scale}×" if scale > 1 else ""
+        scale_note = tr("queue.scale_note", scale=scale) if scale > 1 else ""
         if job.media_kind == "image":
             image_format = os.path.splitext(job.output_path)[1].upper().lstrip(".") or "PNG"
             return f"{style} · {image_format}{scale_note}"
@@ -2061,8 +2160,8 @@ class App:
                 bitrate = 20.0
             quality = f"{bitrate:g} Mbps"
         else:
-            quality = QUALITY_PROFILE_NAMES.get(export.get("quality_profile"), "高质量（推荐）")
-        mode = "严格" if export.get("mode", "single") == "single" else "并行"
+            quality = QUALITY_PROFILE_NAMES.get(export.get("quality_profile"), tr("quality.high"))
+        mode = tr("queue.mode_strict") if export.get("mode", "single") == "single" else tr("queue.mode_parallel")
         container = resolve_output_container(
             job.source_path, export.get("output_container", "mp4")
         )
@@ -2077,14 +2176,14 @@ class App:
     def _queue_details_summary(job):
         settings = job.settings or {}
         export = job.export_settings or {}
-        style = STYLE_NAMES.get(settings.get("style"), "默认")
+        style = STYLE_NAMES.get(settings.get("style"), tr("style.default"))
         scale = normalize_scale(
             export.get("super_resolution_scale", settings.get("super_resolution_scale", 1))
         )
         bits = [style]
         if job.media_kind == "image":
             image_format = os.path.splitext(job.output_path or job.source_path)[1].upper().lstrip(".") or "PNG"
-            bits.extend((image_format, "原尺寸"))
+            bits.extend((image_format, tr("common.original_size")))
         else:
             if export.get("rate_control") == "bitrate":
                 try:
@@ -2093,10 +2192,13 @@ class App:
                     bitrate = 20.0
                 bits.append(f"{bitrate:g} Mbps")
             else:
-                bits.append(QUALITY_PROFILE_NAMES.get(export.get("quality_profile"), "均衡"))
-            bits.append("严格单会话" if export.get("mode", "single") == "single" else "并行分段")
+                bits.append(QUALITY_PROFILE_NAMES.get(export.get("quality_profile"), tr("quality.balanced")))
+            bits.append(
+                tr("queue.mode_single") if export.get("mode", "single") == "single"
+                else tr("queue.mode_segments")
+            )
         if scale > 1:
-            bits.append(f"{scale}×超分")
+            bits.append(tr("queue.upscale", scale=scale))
         return " · ".join(bits)
 
     @staticmethod
@@ -2106,8 +2208,8 @@ class App:
         if job.state in {"failed", "cancelled", "interrupted"}:
             if job.progress_total > 0:
                 pct = 100.0 * min(job.progress_done, job.progress_total) / job.progress_total
-                return f"{pct:.0f}% · 可重试"
-            return "可重试"
+                return tr("queue.retry_percent", percent=pct)
+            return tr("queue.retry_available")
         if job.progress_total > 0:
             pct = 100.0 * min(job.progress_done, job.progress_total) / job.progress_total
             return f"{pct:.0f}% · {job.progress_done}/{job.progress_total}"
@@ -2152,7 +2254,7 @@ class App:
         if failed:
             badge = f"{len(self._queue_jobs)}!"
         try:
-            self.workspace_tabs.tab(self.queue_tab, text="队列")
+            self.workspace_tabs.tab(self.queue_tab, text=tr("tab.queue"))
             self.workspace_tabs.set_badge(self.queue_tab, badge)
         except Exception:
             pass
@@ -2200,11 +2302,11 @@ class App:
         )
         resume = startable and self._queue_last_summary == "paused"
         self.queue_start_btn.config(
-            text="继续队列" if resume else "开始队列",
+            text=tr("action.resume_queue") if resume else tr("action.start_queue"),
             icon="play",
         )
         self.queue_pause_btn.config(
-            text="将暂停" if self._queue_pause_requested else "暂停",
+            text=tr("action.pause_pending") if self._queue_pause_requested else tr("action.pause"),
         )
 
     def _layout_queue_run_controls(self, running):
@@ -2228,22 +2330,25 @@ class App:
         selected = self._selected_queue_jobs()
         if not selected:
             text = (
-                "添加文件、文件夹或拖入素材。"
+                tr("status.add_media_prompt")
                 if not self._queue_jobs else
-                "选择任务查看详情。"
+                tr("status.select_job")
             )
         elif len(selected) > 1:
-            text = f"已选择 {len(selected)} 个任务。"
+            text = tr("status.selected_jobs", count=len(selected))
         else:
             job = selected[0]
             src = os.path.basename(job.source_path)
             out = os.path.basename(job.output_path or "")
             text = f"{src}  →  {out}\n{self._queue_details_summary(job)}"
             if job.error:
-                text += "\n错误：" + job.error
+                text += tr("queue.error", error=job.error)
             tip = getattr(self, "_queue_details_tip", None)
             if tip is not None:
-                tip.text = f"输入：{job.source_path}\n输出：{job.output_path or ''}"
+                tip.text = tr(
+                    "queue.paths", source=job.source_path,
+                    output=job.output_path or "",
+                )
         if not selected or len(selected) > 1:
             tip = getattr(self, "_queue_details_tip", None)
             if tip is not None:
@@ -2330,13 +2435,13 @@ class App:
         cap = cv2.VideoCapture(path)
         try:
             if not cap.isOpened():
-                raise RuntimeError("无法打开视频，请检查文件是否损坏或编码是否受支持。")
+                raise RuntimeError(tr("message.video_unreadable"))
             frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT)) or 0
             fps = float(cap.get(cv2.CAP_PROP_FPS)) or 30.0
             width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
             height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
             if width <= 0 or height <= 0:
-                raise RuntimeError("无法读取视频尺寸。")
+                raise RuntimeError(tr("message.video_dimensions_failed"))
         finally:
             cap.release()
         try:
@@ -2354,12 +2459,12 @@ class App:
         if _is_image_path(path):
             image = _read_image_bgr(path)
             if image is None or image.size == 0:
-                raise RuntimeError("无法读取图片，请检查文件是否损坏。")
+                raise RuntimeError(tr("message.image_unreadable"))
             height, width = image.shape[:2]
             return {
                 "frames": 1, "fps": 0.0, "width": width, "height": height,
                 "duration": 0.0,
-            }, {"is_hdr": False, "profile": "srgb", "label": "SDR 图片"}
+            }, {"is_hdr": False, "profile": "srgb", "label": tr("queue.sdr_image")}
         return self._probe_queue_video(path)
 
     def add_queue_files(self):
@@ -2385,13 +2490,13 @@ class App:
 
     def add_current_to_queue(self):
         if not self.video:
-            messagebox.showwarning("加入队列", "请先导入一个视频或图片。")
+            messagebox.showwarning(tr("dialog.add_queue"), tr("message.import_queue_first"))
             return
         self._add_paths_to_queue([self.video])
 
     def _add_paths_to_queue(self, paths, switch_tab=True):
         if self._queue_running or self._exporting:
-            messagebox.showinfo("队列忙", "请先暂停或完成当前队列。")
+            messagebox.showinfo(tr("dialog.queue_busy"), tr("message.queue_busy"))
             return 0
         normalized = []
         for raw in paths:
@@ -2399,7 +2504,7 @@ class App:
             if os.path.isfile(path) and (_is_video_path(path) or _is_image_path(path)):
                 normalized.append(path)
         if not normalized:
-            messagebox.showwarning("添加到队列", "没有找到受支持的视频或图片文件。")
+            messagebox.showwarning(tr("dialog.add_to_queue"), tr("message.no_supported_media"))
             return 0
         existing = {os.path.normcase(job.source_path) for job in self._queue_jobs}
         settings = self._collect_settings()
@@ -2426,7 +2531,10 @@ class App:
                     }
                     color_info = dict(self._video_color_info or {})
                     if media_kind == "image":
-                        color_info = {"is_hdr": False, "profile": "srgb", "label": "SDR 图片"}
+                        color_info = {
+                            "is_hdr": False, "profile": "srgb",
+                            "label": tr("queue.sdr_image"),
+                        }
                 else:
                     metadata, color_info = self._probe_queue_media(path)
                 effective_export = dict(export_settings)
@@ -2461,11 +2569,11 @@ class App:
             self.queue_tree.see(last.job_id)
         if switch_tab:
             self.workspace_tabs.select(self.queue_tab)
-        note = f"已添加 {added} 个媒体文件"
+        note = tr("status.added_media", added=added)
         if duplicates:
-            note += f"，跳过 {duplicates} 个重复项"
+            note += tr("status.skipped_duplicates", count=duplicates)
         if invalid:
-            note += f"，{invalid} 个需要修复或重试"
+            note += tr("status.invalid_media", count=invalid)
         self.logln("[队列] " + note)
         return added
 
@@ -2492,7 +2600,9 @@ class App:
         if not self._queue_jobs:
             return
         count = len(self._queue_jobs)
-        if not messagebox.askyesno("清空队列", f"移除全部 {count} 个任务？"):
+        if not messagebox.askyesno(
+            tr("dialog.clear_queue"), tr("message.remove_all_jobs", count=count)
+        ):
             return
         self._queue_jobs = []
         self._save_queue_state()
@@ -2653,7 +2763,7 @@ class App:
             job.progress_total = max(int(job.metadata.get("frames", 0) or 0), 0)
         except (TypeError, ValueError, OverflowError):
             job.progress_total = 0
-        job.progress_label = "准备导出"
+        job.progress_label = tr("status.preparing_export")
         job.started_at = time.time()
         job.finished_at = 0.0
         try:
@@ -2700,10 +2810,10 @@ class App:
                 job.state = "completed"
                 job.progress_done = max(job.progress_total, int(result.get("frames", 0)))
                 job.progress_total = max(job.progress_done, job.progress_total)
-                job.progress_label = "完成"
+                job.progress_label = tr("common.completed")
             elif result["cancelled"]:
                 job.state = "cancelled"
-                job.error = "用户取消了当前任务。"
+                job.error = tr("message.job_cancelled")
             else:
                 job.state = "failed"
                 job.error = result.get("error") or "导出未完成，请查看日志。"
@@ -2733,12 +2843,15 @@ class App:
         failed = sum(job.state in {"failed", "interrupted"} for job in self._queue_jobs)
         cancelled = sum(job.state == "cancelled" for job in self._queue_jobs)
         if paused:
-            message = "队列已暂停，可稍后继续。"
+            message = tr("status.queue_paused")
         else:
-            message = f"队列处理结束：完成 {completed}，失败 {failed}，取消 {cancelled}。"
+            message = tr(
+                "status.queue_finished", completed=completed,
+                failed=failed, cancelled=cancelled,
+            )
         self.logln("[队列] " + message)
         if not paused:
-            messagebox.showinfo("导出队列", message)
+            messagebox.showinfo(tr("dialog.export_queue"), message)
 
     def pause_export_queue_after_current(self):
         if not self._queue_running:
@@ -2858,7 +2971,9 @@ class App:
                 and cancellable_export
                 and not cancel_requested,
             )
-            self.cancel_export_btn.config(text="取消中…" if cancel_requested else "取消导出")
+            self.cancel_export_btn.config(
+                text=tr("status.cancelling") if cancel_requested else tr("action.cancel_export")
+            )
             self._set_ttk_enabled(
                 self.diagnostic_btn,
                 not self._exporting
@@ -2866,23 +2981,28 @@ class App:
                 and not self._switching_backend
                 and not self._diagnosing,
             )
-            self.diagnostic_btn.config(text="诊断中…" if self._diagnosing else "一键诊断")
+            self.diagnostic_btn.config(
+                text=tr("status.diagnosing") if self._diagnosing else tr("action.diagnostics")
+            )
             update_busy = self._update_checking or self._update_downloading
             self._set_ttk_enabled(self.update_btn, not update_busy)
             if self._update_downloading:
                 percent = self._update_progress_percent
-                update_text = f"下载 {percent}%" if percent is not None else "下载更新…"
+                update_text = (
+                    tr("status.download_percent", percent=percent)
+                    if percent is not None else tr("status.downloading_update")
+                )
             elif self._update_checking:
-                update_text = "检查中…"
+                update_text = tr("status.checking")
             else:
-                update_text = "检查更新"
+                update_text = tr("action.check_updates")
             self.update_btn.config(text=update_text)
             if not has:
-                self.export_btn.config(text="导出 DLSS")
+                self.export_btn.config(text=tr("action.export_dlss"))
             elif self._is_image:
-                self.export_btn.config(text="导出 DLSS 图片")
+                self.export_btn.config(text=tr("action.export_image"))
             else:
-                self.export_btn.config(text="导出 DLSS 视频")
+                self.export_btn.config(text=tr("action.export_video"))
             self._update_zoom_controls()
             self._refresh_status_chips()
         except Exception:
@@ -2936,7 +3056,7 @@ class App:
         d = {}
         self._slider_committers = []
         saved = self._saved_settings
-        d['v_style'] = tk.StringVar(value=STYLE_NAMES.get(saved['style'], "默认"))
+        d['v_style'] = tk.StringVar(value=STYLE_NAMES.get(saved['style'], tr("style.default")))
         d['v_enable_5x'] = tk.BooleanVar(value=saved.get('enable_5x', False))
         d['v_intensity'] = tk.DoubleVar(value=saved['intensity'])
         d['v_use_intensity'] = tk.BooleanVar(value=saved['use_intensity'])
@@ -2946,13 +3066,15 @@ class App:
         d['v_use_local_struct'] = tk.BooleanVar(value=saved['use_local_struct'])
         d['v_auto_mask'] = tk.BooleanVar(value=saved['use_auto_mask'])
         d['v_skin_struct'] = tk.DoubleVar(value=saved['skin_struct'])
-        d['v_outview'] = tk.StringVar(value=OUTVIEW_NAMES.get(saved['output_view'], "处理"))
+        d['v_outview'] = tk.StringVar(
+            value=OUTVIEW_NAMES.get(saved['output_view'], tr("output_view.processed"))
+        )
         d['v_outmix'] = tk.DoubleVar(value=saved['output_mix'])
         d['v_use_output_mix'] = tk.BooleanVar(value=saved['use_output_mix'])
         body = ttk.Frame(parent, style="Panel.TFrame")
         body.pack(fill="x", padx=0, pady=2)
 
-        ttk.Label(body, text="风格", style="Kicker.TLabel").pack(
+        ttk.Label(body, text=tr("label.style"), style="Kicker.TLabel").pack(
             fill="x", pady=(0, 6),
         )
         style_chips = ChipGroup(
@@ -2969,34 +3091,31 @@ class App:
         sliders = ttk.Frame(body, style="Panel.TFrame")
         sliders.pack(fill="x")
         _, d['w_intensity'], d['w_intensity_value'] = self._add_toggle_slider(
-            sliders, 0, 0, "强度", d['v_intensity'], d['v_use_intensity'],
-            "关闭时按 0 处理。开启后使用记忆的强度。", slider_max=slider_max,
+            sliders, 0, 0, tr("label.strength"), d['v_intensity'], d['v_use_intensity'],
+            tr("tooltip.strength"), slider_max=slider_max,
         )
         d['w_use_output_mix'], d['w_outmix'], d['w_outmix_value'] = self._add_toggle_slider(
-            sliders, 1, 0, "输出混合", d['v_outmix'], d['v_use_output_mix'],
-            "仅「处理」有效。0=原图，1=完整 DLSS，超过 1 会放大处理残差；"
-            "DLSS/对比预览与导出同步生效。\n"
-            "关闭时按 0（原图），开启后使用记忆的混合比例。",
+            sliders, 1, 0, tr("label.output_mix"), d['v_outmix'], d['v_use_output_mix'],
+            tr("tooltip.output_mix"),
             on_change=self.on_output_settings_change,
             slider_max=slider_max,
         )
         _, d['w_local_tone'], d['w_local_tone_value'] = self._add_toggle_slider(
-            sliders, 2, 0, "本地色调", d['v_local_tone'], d['v_use_local_tone'],
-            "关闭时按 0 处理。开启后使用记忆的本地色调。", slider_max=slider_max,
+            sliders, 2, 0, tr("label.local_tone"), d['v_local_tone'], d['v_use_local_tone'],
+            tr("tooltip.local_tone"), slider_max=slider_max,
         )
         _, d['w_local_struct'], d['w_local_struct_value'] = self._add_toggle_slider(
-            sliders, 3, 0, "本地结构", d['v_local_struct'], d['v_use_local_struct'],
-            "关闭时按 0 处理。开启后使用记忆的本地结构。", slider_max=slider_max,
+            sliders, 3, 0, tr("label.local_structure"), d['v_local_struct'], d['v_use_local_struct'],
+            tr("tooltip.local_structure"), slider_max=slider_max,
         )
         _, d['w_skin_struct'], d['w_skin_struct_value'] = self._add_toggle_slider(
-            sliders, 4, 0, "皮肤蒙版", d['v_skin_struct'], d['v_auto_mask'],
-            "关闭时皮肤结构按 0 处理。开启且数值大于 0 时使用自动蒙版保护皮肤纹理；"
-            "数值为 0 时等同关闭。",
+            sliders, 4, 0, tr("label.skin_mask"), d['v_skin_struct'], d['v_auto_mask'],
+            tr("tooltip.skin_mask"),
             slider_max=slider_max,
         )
 
         enable_5x = CheckToggle(
-            body, "允许 5× 实验范围", d['v_enable_5x'],
+            body, tr("label.experimental_range"), d['v_enable_5x'],
             command=self._on_5x_toggle, ui=self._ui,
         )
         enable_5x.pack(anchor="w", pady=(8, 0))
@@ -3004,15 +3123,14 @@ class App:
         d['w_enable_5x'] = enable_5x
         Tooltip(
             enable_5x,
-            "默认关闭：全部强度参数和输出混合限制在 0%–100%。"
-            "开启后允许输入 0%–500%；高于 100% 可能产生饱和、伪影或过度处理。",
+            tr("tooltip.experimental_range"),
         )
         range_hint = ttk.Label(
             body, text="", style="Hint.TLabel", wraplength=320, justify="left",
         )
         d['w_range_hint'] = range_hint
 
-        ttk.Label(body, text="输出预览", style="Kicker.TLabel").pack(
+        ttk.Label(body, text=tr("label.output_preview"), style="Kicker.TLabel").pack(
             fill="x", pady=(4, 6),
         )
         outview_chips = ChipGroup(
@@ -3023,10 +3141,7 @@ class App:
         self._theme_widgets.append(outview_chips)
         Tooltip(
             outview_chips,
-            "导出视图只影响导出构图；上方预览始终使用「处理」构图。\n"
-            "处理：DLSS/对比预览和导出都会按输出混合与原图融合。\n"
-            "差异×10：仅导出，把 DLSS 与原图的差值放大 10 倍，灰色=几乎没改，亮/暗=改动大。\n"
-            "左右对比：仅导出，左半原图、右半 DLSS，中间用白线分隔。",
+            tr("tooltip.output_view"),
         )
         self._settings = d
         self._update_dlss_control_states()
@@ -3103,8 +3218,8 @@ class App:
             Tooltip(checkbox, tooltip)
             value_help = (
                 tooltip
-                + "\n可拖动或直接输入数值，也支持 75% 等百分比格式。"
-                + "\n默认最高 1.00（100%）；开启「允许 5× 实验范围」后最高 5.00（500%）。"
+                + tr("tooltip.slider_input")
+                + tr("tooltip.slider_range")
             )
             Tooltip(scale, value_help)
             Tooltip(value_input, value_help)
@@ -3160,7 +3275,7 @@ class App:
             d[input_key].config(to=limit)
         hint = d['w_range_hint']
         if limit > app_settings.DLSS_STANDARD_MAX:
-            hint.config(text="已开启 0%–500%，超过 100% 可能过曝。")
+            hint.config(text=tr("status.experimental_range"))
             if not hint.winfo_manager():
                 hint.pack(fill="x", pady=(2, 8), after=d['w_enable_5x'])
         else:
@@ -3175,7 +3290,7 @@ class App:
         self._set_slider_enabled(
             d['w_local_struct'], d['w_local_struct_value'], d['v_use_local_struct'].get(),
         )
-        mix_view = d['v_outview'].get() == "处理"
+        mix_view = d['v_outview'].get() == OUTVIEW_NAMES[0]
         self._set_ttk_enabled(d['w_use_output_mix'], mix_view)
         self._set_slider_enabled(
             d['w_outmix'], d['w_outmix_value'],
@@ -3189,7 +3304,9 @@ class App:
         saved = self._saved_settings
         d = {
             'v_quality': tk.StringVar(
-                value=PREVIEW_QUALITY_NAMES.get(saved.get('preview_quality', 'auto'), "自动（推荐）")
+                value=PREVIEW_QUALITY_NAMES.get(
+                    saved.get('preview_quality', 'auto'), tr("common.auto_recommended")
+                )
             ),
             'v_prefetch': tk.IntVar(value=saved.get('preview_prefetch', 24)),
             'v_cache': tk.IntVar(value=saved.get('preview_cache', 96)),
@@ -3199,7 +3316,7 @@ class App:
 
         parent.grid_columnconfigure(0, weight=1)
         preview_group = ttk.Frame(parent, style="Panel.TFrame")
-        ttk.Label(preview_group, text="播放与缓存", style="Kicker.TLabel").grid(
+        ttk.Label(preview_group, text=tr("section.playback_cache"), style="Kicker.TLabel").grid(
             row=0, column=0, columnspan=2, sticky="w", pady=(0, 6),
         )
         preview_group.grid(row=0, column=0, sticky="ew", padx=(6, 8), pady=(2, 4))
@@ -3208,9 +3325,9 @@ class App:
         quality = self._chrome_combo(
             preview_group, d['v_quality'], list(PREVIEW_QUALITY_CHOICES),
         )
-        ttk.Label(preview_group, text="播放质量").grid(row=1, column=0, sticky="w", pady=3)
+        ttk.Label(preview_group, text=tr("label.playback_quality")).grid(row=1, column=0, sticky="w", pady=3)
         quality.grid(row=1, column=1, sticky="ew", pady=3)
-        Tooltip(quality, "自动模式会把 4K 级素材降到 1080p 实时处理；暂停后恢复原始分辨率。")
+        Tooltip(quality, tr("tooltip.playback_quality"))
 
         cache_row = ttk.Frame(preview_group, style="Panel.TFrame")
         cache_mb = self._chrome_spin(
@@ -3221,12 +3338,12 @@ class App:
         ttk.Label(cache_row, text="MiB", font=ui_theme.UI_MONO).pack(
             side="left", padx=(6, 0),
         )
-        ttk.Label(preview_group, text="缓存预算").grid(row=2, column=0, sticky="w", pady=3)
+        ttk.Label(preview_group, text=tr("label.cache_budget")).grid(row=2, column=0, sticky="w", pady=3)
         cache_row.grid(row=2, column=1, sticky="w", pady=3)
 
-        ttk.Label(preview_group, text="启动缓冲").grid(row=3, column=0, sticky="w", pady=3)
+        ttk.Label(preview_group, text=tr("label.startup_buffer")).grid(row=3, column=0, sticky="w", pady=3)
         ttk.Label(
-            preview_group, text=f"{PREVIEW_BUFFER_SECONDS:.1f} 秒",
+            preview_group, text=tr("value.seconds", value=f"{PREVIEW_BUFFER_SECONDS:.1f}"),
             font=ui_theme.UI_MONO,
         ).grid(row=3, column=1, sticky="w", pady=3)
 
@@ -3238,9 +3355,9 @@ class App:
         ttk.Label(scrub_row, text="ms", font=ui_theme.UI_MONO).pack(
             side="left", padx=(6, 0),
         )
-        ttk.Label(preview_group, text="拖动后生成").grid(row=4, column=0, sticky="w", pady=3)
+        ttk.Label(preview_group, text=tr("label.render_after_scrub")).grid(row=4, column=0, sticky="w", pady=3)
         scrub_row.grid(row=4, column=1, sticky="w", pady=3)
-        Tooltip(scrub, "停止拖动或跳转后等待这段时间，再生成精确预览并从当前帧向后预渲染。")
+        Tooltip(scrub, tr("tooltip.render_after_scrub"))
         d.update({
             'w_quality': quality, 'w_cache_mb': cache_mb, 'w_scrub_ms': scrub,
         })
@@ -3307,10 +3424,10 @@ class App:
         self._schedule_settings_save()
         if self.video and not self._exporting and not self._is_image:
             self._stop_paused_prerender()
-            if self.playing and self.view_var.get() in ("DLSS", "对比"):
+            if self.playing and self.view_var.get() in ("dlss", "compare"):
                 self._start_strict_preview_buffering()
                 self._present_play_frame(self._frame)
-            elif self.view_var.get() in ("DLSS", "对比"):
+            elif self.view_var.get() in ("dlss", "compare"):
                 self._schedule_full_preview()
 
     def _update_preview_memory_hint(self):
@@ -3318,7 +3435,7 @@ class App:
         budget_mib = settings['preview_cache_mb']
         source_w, source_h = self._source_size()
         if source_w <= 0 or source_h <= 0:
-            text = f"RAM 预算 {budget_mib} MiB；按原图帧 + DLSS 帧合计管理"
+            text = tr("hint.cache_budget", budget=budget_mib)
         else:
             preview_w, preview_h = _realtime_preview_size(
                 source_w, source_h, settings['preview_quality'],
@@ -3326,10 +3443,9 @@ class App:
             pair_bytes = max((source_w * source_h + preview_w * preview_h) * 3, 1)
             frames = max(int(budget_mib * 1024 * 1024 // pair_bytes), 1)
             seconds = frames / max(float(self.fps), 1.0)
-            text = (
-                f"后台最多约 {frames} 个原图+DLSS帧（{seconds:.1f} 秒）；"
-                f"播放启动仍按 {PREVIEW_BUFFER_SECONDS:.1f} 秒；"
-                f"当前处理尺寸 {preview_w}×{preview_h}"
+            text = tr(
+                "hint.cache_estimate", frames=frames, seconds=seconds,
+                startup=PREVIEW_BUFFER_SECONDS, width=preview_w, height=preview_h,
             )
         label = (getattr(self, "_preview_settings", None) or {}).get('w_cache_hint')
         if label is not None:
@@ -3346,24 +3462,24 @@ class App:
             'v_warmup': tk.IntVar(value=saved['warmup_frames']),
             'v_decode_buffer': tk.IntVar(value=saved['decode_buffer']),
             'v_nvenc_preset': tk.StringVar(
-                value=NVENC_PRESET_NAMES.get(saved['nvenc_preset'], "p5 较慢（推荐）")
+                value=NVENC_PRESET_NAMES.get(saved['nvenc_preset'], tr("preset.p5"))
             ),
             'v_output_container': tk.StringVar(value=OUTPUT_CONTAINER_NAMES.get(
-                saved.get('output_container', 'mp4'), "MP4（推荐）"
+                saved.get('output_container', 'mp4'), tr("container.mp4")
             )),
             'v_output_resolution': tk.StringVar(value=OUTPUT_RESOLUTION_NAMES.get(
-                saved.get('output_resolution', 'source'), "跟随源视频（推荐）"
+                saved.get('output_resolution', 'source'), tr("resolution.source")
             )),
             'v_super_resolution': tk.StringVar(value=SUPER_RESOLUTION_NAMES.get(
-                normalize_scale(saved.get('super_resolution_scale', 1)), "关闭"
+                normalize_scale(saved.get('super_resolution_scale', 1)), tr("common.off")
             )),
             'v_custom_width': tk.IntVar(value=saved.get('custom_output_width', 1920)),
             'v_custom_height': tk.IntVar(value=saved.get('custom_output_height', 1080)),
             'v_rate_control': tk.StringVar(value=RATE_CONTROL_NAMES.get(
-                saved.get('rate_control', 'quality'), "按画质（推荐）"
+                saved.get('rate_control', 'quality'), tr("rate.quality")
             )),
             'v_quality_profile': tk.StringVar(value=QUALITY_PROFILE_NAMES.get(
-                saved.get('quality_profile', 'high'), "高质量（推荐）"
+                saved.get('quality_profile', 'high'), tr("quality.high")
             )),
             'v_video_bitrate': tk.DoubleVar(value=saved.get('video_bitrate_mbps', 20.0)),
             'v_hdr': tk.BooleanVar(value=saved.get('hdr_mode', True)),
@@ -3375,12 +3491,12 @@ class App:
         parent.grid_columnconfigure(0, weight=1)
         output_group = ttk.Frame(parent, style="Panel.TFrame")
         output_group.grid(row=0, column=0, sticky="ew", padx=(6, 8), pady=(2, 4))
-        ttk.Label(output_group, text="输出与编码", style="Kicker.TLabel").grid(
+        ttk.Label(output_group, text=tr("section.output_encoding"), style="Kicker.TLabel").grid(
             row=0, column=0, columnspan=2, sticky="w", pady=(0, 6),
         )
         performance_group = ttk.Frame(parent, style="Panel.TFrame")
         performance_group.grid(row=1, column=0, sticky="ew", padx=(6, 8), pady=(0, 4))
-        ttk.Label(performance_group, text="性能参数", style="Kicker.TLabel").grid(
+        ttk.Label(performance_group, text=tr("section.performance"), style="Kicker.TLabel").grid(
             row=0, column=0, columnspan=2, sticky="w", pady=(0, 6),
         )
         output_group.grid_columnconfigure(1, weight=1)
@@ -3389,16 +3505,16 @@ class App:
         container = self._chrome_combo(
             output_group, d['v_output_container'], list(OUTPUT_CONTAINER_CHOICES),
         )
-        ttk.Label(output_group, text="输出容器").grid(row=1, column=0, sticky="w", pady=3)
+        ttk.Label(output_group, text=tr("label.output_container")).grid(row=1, column=0, sticky="w", pady=3)
         container.grid(row=1, column=1, sticky="ew", pady=3)
 
         resolution = self._chrome_combo(
             output_group, d['v_output_resolution'], list(OUTPUT_RESOLUTION_CHOICES),
         )
-        ttk.Label(output_group, text="输出分辨率").grid(row=2, column=0, sticky="w", pady=3)
+        ttk.Label(output_group, text=tr("label.output_resolution")).grid(row=2, column=0, sticky="w", pady=3)
         resolution.grid(row=2, column=1, sticky="ew", pady=3)
 
-        custom_label = ttk.Label(output_group, text="自定义上限")
+        custom_label = ttk.Label(output_group, text=tr("resolution.custom"))
         custom_label.grid(row=3, column=0, sticky="w", pady=3)
         custom_frame = ttk.Frame(output_group, style="Panel.TFrame")
         custom_frame.grid(row=3, column=1, sticky="w", pady=3)
@@ -3417,17 +3533,17 @@ class App:
         rate_control = self._chrome_combo(
             output_group, d['v_rate_control'], list(RATE_CONTROL_CHOICES),
         )
-        ttk.Label(output_group, text="码率控制").grid(row=4, column=0, sticky="w", pady=3)
+        ttk.Label(output_group, text=tr("label.rate_control")).grid(row=4, column=0, sticky="w", pady=3)
         rate_control.grid(row=4, column=1, sticky="ew", pady=3)
 
-        quality_label = ttk.Label(output_group, text="编码质量")
+        quality_label = ttk.Label(output_group, text=tr("label.encoding_quality"))
         quality_label.grid(row=5, column=0, sticky="w", pady=3)
         quality = self._chrome_combo(
             output_group, d['v_quality_profile'], list(QUALITY_PROFILE_CHOICES),
         )
         quality.grid(row=5, column=1, sticky="ew", pady=3)
 
-        bitrate_label = ttk.Label(output_group, text="目标码率")
+        bitrate_label = ttk.Label(output_group, text=tr("label.target_bitrate"))
         bitrate_label.grid(row=6, column=0, sticky="w", pady=3)
         bitrate = self._chrome_spin(
             output_group, from_=0.5, to=500.0, increment=0.5,
@@ -3438,17 +3554,17 @@ class App:
         preset = self._chrome_combo(
             output_group, d['v_nvenc_preset'], list(NVENC_PRESET_CHOICES),
         )
-        ttk.Label(output_group, text="编码速度").grid(row=7, column=0, sticky="w", pady=3)
+        ttk.Label(output_group, text=tr("label.encoding_speed")).grid(row=7, column=0, sticky="w", pady=3)
         preset.grid(row=7, column=1, sticky="ew", pady=3)
 
         super_resolution = self._chrome_combo(
             output_group, d['v_super_resolution'], list(SUPER_RESOLUTION_CHOICES),
         )
-        ttk.Label(output_group, text="AI 超分").grid(row=8, column=0, sticky="w", pady=3)
+        ttk.Label(output_group, text=tr("label.ai_upscale")).grid(row=8, column=0, sticky="w", pady=3)
         super_resolution.grid(row=8, column=1, sticky="ew", pady=3)
 
         hdr = CheckToggle(
-            output_group, "HDR10 / HLG 高精度处理", d['v_hdr'],
+            output_group, tr("label.hdr_precision"), d['v_hdr'],
             command=self._on_export_settings_change, ui=self._ui,
         )
         hdr.grid(row=9, column=0, columnspan=2, sticky="w", pady=(6, 2))
@@ -3456,38 +3572,37 @@ class App:
 
         hint = ttk.Label(
             output_group,
-            text="PQ/HLG 自动 HEVC Main10。",
+            text=tr("hint.hdr_main10"),
             style="Hint.TLabel", wraplength=320, justify="left",
         )
         hint.grid(row=10, column=0, columnspan=2, sticky="ew", pady=(2, 0))
         Tooltip(
             hdr,
-            "导入 PQ/HLG 后使用 RGBA16F 进入 Feature 18，导出 HEVC Main10。"
-            "关闭时先 tone-map 到 SDR 再按 H.264 处理。",
+            tr("tooltip.hdr_precision"),
         )
 
         mode = self._chrome_combo(
             performance_group, d['v_mode'], list(EXPORT_MODE_CHOICES),
         )
-        ttk.Label(performance_group, text="导出模式").grid(row=1, column=0, sticky="w", pady=3)
+        ttk.Label(performance_group, text=tr("label.export_mode")).grid(row=1, column=0, sticky="w", pady=3)
         mode.grid(row=1, column=1, sticky="ew", pady=3)
 
         workers = self._chrome_spin(
             performance_group, from_=2, to=4, textvariable=d['v_workers'], width=7,
         )
-        ttk.Label(performance_group, text="并行进程").grid(row=2, column=0, sticky="w", pady=3)
+        ttk.Label(performance_group, text=tr("label.parallel_workers")).grid(row=2, column=0, sticky="w", pady=3)
         workers.grid(row=2, column=1, sticky="w", pady=3)
 
         warmup = self._chrome_spin(
             performance_group, from_=0, to=120, textvariable=d['v_warmup'], width=7,
         )
-        ttk.Label(performance_group, text="预热帧").grid(row=3, column=0, sticky="w", pady=3)
+        ttk.Label(performance_group, text=tr("label.warmup_frames")).grid(row=3, column=0, sticky="w", pady=3)
         warmup.grid(row=3, column=1, sticky="w", pady=3)
 
         decode = self._chrome_spin(
             performance_group, from_=1, to=8, textvariable=d['v_decode_buffer'], width=7,
         )
-        ttk.Label(performance_group, text="解码缓存").grid(row=4, column=0, sticky="w", pady=3)
+        ttk.Label(performance_group, text=tr("label.decode_buffer")).grid(row=4, column=0, sticky="w", pady=3)
         decode.grid(row=4, column=1, sticky="w", pady=3)
         d.update({
             'w_output_container': container,
@@ -3522,36 +3637,33 @@ class App:
             widget.bind("<Return>", lambda e: self._on_export_settings_change())
         Tooltip(
             container,
-            "视频可输出 MP4、MKV 或 MOV。跟随输入仅跟随这三类容器；"
-            "M4V 视为 MP4，AVI/WebM 会安全回退到 MP4。图片始终保持源格式。",
+            tr("tooltip.container"),
         )
         Tooltip(
             resolution,
-            "只控制视频输出尺寸，并保持原宽高比；不会放大低分辨率素材。"
-            "DLSS 仍以源分辨率处理，因此缩小输出不会减少神经渲染耗时。",
+            tr("tooltip.resolution"),
         )
         Tooltip(
             super_resolution,
-            "固定先用 RTX Video Super Resolution 放大，再以目标分辨率运行 DLSS 5。"
-            "支持 SDR 与 10-bit HDR；高分辨率会显著增加显存、内存和处理时间。",
+            tr("tooltip.super_resolution"),
         )
         Tooltip(
             rate_control,
-            "按画质会稳定压缩质量但文件大小浮动；目标码率便于控制体积，复杂画面可能波动。",
+            tr("tooltip.rate_control"),
         )
-        Tooltip(preset, "越慢通常压缩效率越高；它不等同于清晰度或目标码率。")
+        Tooltip(preset, tr("tooltip.preset"))
         self.root.after_idle(self._update_export_control_states)
         return d
 
     def _build_export_quick(self, parent):
         d = self._export_settings
-        ttk.Label(parent, text="这次导出", style="Kicker.TLabel").pack(anchor="w", pady=(4, 6))
+        ttk.Label(parent, text=tr("section.current_export"), style="Kicker.TLabel").pack(anchor="w", pady=(4, 6))
         fields = (
-            ("容器", d["v_output_container"], list(OUTPUT_CONTAINER_CHOICES),
+            (tr("label.container"), d["v_output_container"], list(OUTPUT_CONTAINER_CHOICES),
              "w_output_container", lambda _event: self._on_export_settings_change()),
-            ("尺寸", d["v_output_resolution"], list(OUTPUT_RESOLUTION_CHOICES),
+            (tr("label.size"), d["v_output_resolution"], list(OUTPUT_RESOLUTION_CHOICES),
              "w_output_resolution", lambda _event: self._on_export_settings_change()),
-            ("超分", d["v_super_resolution"], list(SUPER_RESOLUTION_CHOICES),
+            (tr("label.upscale"), d["v_super_resolution"], list(SUPER_RESOLUTION_CHOICES),
              "w_super_resolution", lambda _event: self._on_super_resolution_change()),
         )
         self._export_quick_fields = {}
@@ -3593,7 +3705,7 @@ class App:
         parent.grid_columnconfigure(0, weight=1)
         host_wrap = ttk.Frame(parent, style="Panel.TFrame")
         host_wrap.grid(row=0, column=0, sticky="ew", padx=(6, 8), pady=(2, 4))
-        ttk.Label(host_wrap, text="主机与提交", style="Kicker.TLabel").pack(
+        ttk.Label(host_wrap, text=tr("section.host_submission"), style="Kicker.TLabel").pack(
             anchor="w", pady=(0, 6),
         )
         host_group = ttk.Frame(host_wrap, style="Panel.TFrame")
@@ -3603,34 +3715,34 @@ class App:
         backend = self._chrome_combo(
             host_group, d['v_backend'], list(HOST_BACKEND_CHOICES),
         )
-        ttk.Label(host_group, text="后端").grid(row=0, column=0, sticky="w", pady=3)
+        ttk.Label(host_group, text=tr("label.backend")).grid(row=0, column=0, sticky="w", pady=3)
         backend.grid(row=0, column=1, sticky="ew", pady=3)
 
         submission = self._chrome_combo(
             host_group, d['v_submission'], list(HOST_SUBMISSION_CHOICES),
         )
-        ttk.Label(host_group, text="提交方式").grid(row=1, column=0, sticky="w", pady=3)
+        ttk.Label(host_group, text=tr("label.submission")).grid(row=1, column=0, sticky="w", pady=3)
         submission.grid(row=1, column=1, sticky="ew", pady=3)
 
         in_flight = self._chrome_spin(
             host_group, from_=1, to=3, textvariable=d['v_in_flight'], width=7,
             command=self._on_host_settings_change,
         )
-        ttk.Label(host_group, text="GPU 队列帧").grid(row=2, column=0, sticky="w", pady=3)
+        ttk.Label(host_group, text=tr("label.gpu_queue_frames")).grid(row=2, column=0, sticky="w", pady=3)
         in_flight.grid(row=2, column=1, sticky="w", pady=3)
 
         zero_fast = CheckToggle(
-            host_group, "零引导快路径", d['v_zero_fast'],
+            host_group, tr("label.zero_guidance_fast"), d['v_zero_fast'],
             command=self._on_host_settings_change, ui=self._ui,
         )
         zero_fast.grid(row=3, column=0, columnspan=2, sticky="w", pady=(8, 2))
         persistent = CheckToggle(
-            host_group, "持久上传/回读缓冲", d['v_persistent'],
+            host_group, tr("label.persistent_buffers"), d['v_persistent'],
             command=self._on_host_settings_change, ui=self._ui,
         )
         persistent.grid(row=4, column=0, columnspan=2, sticky="w", pady=2)
         fallback = CheckToggle(
-            host_group, "优化路径失败时自动回退", d['v_fallback'],
+            host_group, tr("label.auto_fallback"), d['v_fallback'],
             command=self._on_host_settings_change, ui=self._ui,
         )
         fallback.grid(row=5, column=0, columnspan=2, sticky="w", pady=2)
@@ -3699,7 +3811,7 @@ class App:
         if self._switching_backend:
             return
         if self._exporting or self._queue_running:
-            self.set_status("正在处理队列，完成或暂停后才能切换主机后端")
+            self.set_status(tr("status.wait_queue_backend"))
             return
         self._update_host_control_states()
         self._cache_clear()
@@ -3720,7 +3832,7 @@ class App:
                 self._switching_backend = True
                 self._update_host_control_states()
                 self.root.config(cursor="wait")
-                self.set_status("正在切换 DLSS 主机后端...")
+                self.set_status(tr("status.switching_backend"))
                 self.root.update_idletasks()
             try:
                 with self._live_lock:
@@ -3735,14 +3847,14 @@ class App:
                     self._update_host_control_states()
                 self.logln("[DLSS 后端] 设置应用失败，继续使用原后端：" + str(ex))
                 if backend_changed:
-                    self.set_status(f"后端切换失败；仍使用 {self._live.backend}")
+                    self.set_status(tr("status.backend_switch_failed", backend=self._live.backend))
                 else:
-                    self.set_status(f"主机设置应用失败；仍使用 {self._live.backend}")
+                    self.set_status(tr("status.host_apply_failed", backend=self._live.backend))
                 self._schedule_settings_save()
                 if backend_changed:
                     messagebox.showerror(
-                        "后端切换失败",
-                        "新后端初始化失败，程序仍在使用原后端。\n\n" + str(ex),
+                        tr("dialog.backend_switch_failed"),
+                        tr("message.backend_switch_failed", error=ex),
                     )
                 return
             if backend_changed:
@@ -3753,18 +3865,18 @@ class App:
                     self.logln(
                         f"[DLSS 后端] 已热切换到 {self._live.backend}（GUI 无需重启）"
                     )
-                    self.set_status(f"已切换到 {self._live.backend} 后端")
+                    self.set_status(tr("status.backend_switched", backend=self._live.backend))
                 else:
                     self.logln(
                         f"[DLSS 后端] 选择已更新；继续使用 {self._live.backend}"
                     )
-                    self.set_status(f"后端设置已应用；当前 {self._live.backend}")
+                    self.set_status(tr("status.backend_applied", backend=self._live.backend))
             else:
-                self.set_status(f"主机设置已应用；当前后端 {self._live.backend}")
-            if self.video and self.view_var.get() in ("DLSS", "对比"):
+                self.set_status(tr("status.host_applied", backend=self._live.backend))
+            if self.video and self.view_var.get() in ("dlss", "compare"):
                 self.root.after_idle(lambda: self.display_view(quality="full"))
         else:
-            self.set_status("主机设置已保存；将在首次 DLSS 预览/导出时应用")
+            self.set_status(tr("status.host_saved"))
         self._schedule_settings_save()
 
     def _remembered_dlss(self):
@@ -3949,29 +4061,29 @@ class App:
             if output_width > 0 and output_height > 0:
                 parts.append(f"{output_width}×{output_height}")
             if export["rate_control"] == "quality":
-                parts.append(QUALITY_PROFILE_NAMES.get(export["quality_profile"], "均衡"))
+                parts.append(QUALITY_PROFILE_NAMES.get(export["quality_profile"], tr("quality.balanced")))
             else:
                 parts.append(f"{export['video_bitrate_mbps']:g} Mbps")
             if super_resolution_enabled:
-                parts.append(f"{super_resolution_scale}×超分")
+                parts.append(tr("queue.upscale", scale=super_resolution_scale))
         if not self.video:
-            parts = ["PQ/HLG 自动 HEVC Main10"]
+            parts = [tr("hint.hdr_main10").rstrip("。").rstrip(".")]
         elif color.get("is_hdr") and not export["hdr_mode"]:
-            parts.append("将 tone-map 到 SDR")
+            parts.append(tr("hint.tonemap_sdr"))
         if super_resolution_enabled:
             status = super_resolution_runtime_status()
             if not status["available"]:
-                parts.append("缺超分组件")
+                parts.append(tr("hint.vsr_missing"))
         self._export_settings["w_hdr_hint"].config(text=" · ".join(parts))
         if hasattr(self, "_export_summary"):
             if export.get("rate_control") == "bitrate":
                 current = f"{export.get('video_bitrate_mbps', 20):g} Mbps"
             else:
                 current = QUALITY_PROFILE_NAMES.get(
-                    export.get("quality_profile"), "均衡",
+                    export.get("quality_profile"), tr("quality.balanced"),
                 )
             preset_name = NVENC_PRESET_NAMES.get(
-                export.get("nvenc_preset"), "p7 最慢",
+                export.get("nvenc_preset"), tr("preset.p7"),
             )
             try:
                 self._export_summary.config(text=f"{current} · {preset_name}")
@@ -4006,7 +4118,7 @@ class App:
         self._split_dlss = None
         self._update_export_control_states()
         self._schedule_settings_save()
-        if self.video and self.view_var.get() in ("DLSS", "对比"):
+        if self.video and self.view_var.get() in ("dlss", "compare"):
             self.display_view(quality="fast")
             self._schedule_preview_cache_resume()
 
@@ -4046,6 +4158,9 @@ class App:
                 getattr(self, "_preview_section", None) and not self._preview_section.collapsed
             ),
             "ui_theme": self._ui_theme_name,
+            "ui_language": getattr(
+                self, "_preferred_ui_language", i18n.get_language()
+            ),
             "inspector_width": int(getattr(self, "_inspector_width", 360)),
             "preview_detached": bool(self._detached_preview_window),
             "preview_window_geometry": self._detached_geometry_for_save(),
@@ -4067,7 +4182,7 @@ class App:
         try:
             self._saved_settings = app_settings.save(self._collect_persisted_settings())
         except Exception as ex:
-            self.logln("[设置] 保存失败: " + str(ex))
+            self.logln(tr("log.settings_save_failed", error=ex))
 
     def _on_panels_toggle(self):
         try:
@@ -4091,18 +4206,18 @@ class App:
 
     def _on_close(self):
         if self._diagnosing:
-            messagebox.showinfo("诊断中", "请等待诊断报告生成后再关闭程序。")
+            messagebox.showinfo(
+                tr("dialog.diagnosing"), tr("message.wait_diagnostics_close")
+            )
             return
         if self._exporting or self._queue_running:
             messagebox.showinfo(
-                "正在导出",
-                "请先点击“当前项后暂停”；如需立即停止，再点击“取消当前项”，待任务结束后关闭程序。",
+                tr("dialog.exporting"), tr("message.wait_export_close"),
             )
             return
         if self._update_downloading:
             if not messagebox.askyesno(
-                "正在下载更新",
-                "更新包仍在下载。是否取消下载并退出？\n\n已下载的临时文件会自动清理。",
+                tr("dialog.downloading_update"), tr("message.cancel_download_exit"),
             ):
                 return
             self._update_cancel_event.set()
@@ -4242,10 +4357,15 @@ class App:
                     self._live.update(settings)
                 return self._live
             except Exception as ex:
+                raw_error = str(ex)
+                guidance = _dlss_runtime_guidance(raw_error)
+                display_error = (
+                    raw_error + "\n\n" + guidance
+                    if guidance and guidance not in raw_error else raw_error
+                )
+                self._live_error = display_error
                 if threading.current_thread() is threading.main_thread():
-                    self.logln("[DLSS] " + str(ex))
-                else:
-                    self._live_error = str(ex)
+                    self.logln("[DLSS] " + display_error)
                 return None
 
     def _close_live(self):
@@ -4275,11 +4395,14 @@ class App:
         if width <= 0 or height <= 0:
             return
         if (width, height) == source_size:
-            suffix = " · 暂停后生成超分精确帧" if self._super_resolution_scale() > 1 else ""
-            self.set_status(f"实时预览 · 原始分辨率 {width}×{height}{suffix}")
+            suffix = tr("status.precise_upscale_suffix") if self._super_resolution_scale() > 1 else ""
+            self.set_status(tr("status.realtime_original", width=width, height=height, suffix=suffix))
         else:
-            suffix = "并生成超分精确帧" if self._super_resolution_scale() > 1 else "恢复原始分辨率"
-            self.set_status(f"实时预览 {width}×{height} · 暂停后{suffix}")
+            suffix = (
+                tr("status.precise_upscale_action") if self._super_resolution_scale() > 1
+                else tr("status.restore_original_action")
+            )
+            self.set_status(tr("status.realtime_proxy", width=width, height=height, suffix=suffix))
 
     @staticmethod
     def _cache_key(frame, size):
@@ -4363,10 +4486,10 @@ class App:
         return bgr
 
     def load_view_img(self, view, frame):
-        if view == "原图":
+        if view == "original":
             original = self._source_cache_get(frame)
             return original if original is not None else self._read_frame(frame)
-        if view == "DLSS":
+        if view == "dlss":
             original = self._source_cache_get(frame)
             if original is None:
                 original = self._read_frame(frame)
@@ -4536,7 +4659,9 @@ class App:
                                     fill=ui["accent"], width=2, tags="empty")
         title_y = cy - (24 if not compact else 30) * scale
         self.canvas.create_text(
-            cx, title_y, text="松开以导入素材" if self._drop_hover else "拖入视频或图片",
+            cx, title_y,
+            text=(tr("status.release_to_import") if self._drop_hover
+                  else tr("status.drop_media")),
             fill=ui["hud"], font=ui_theme.UI_FONT_TITLE,
             width=max(cw - 48, 100),
             tags="empty",
@@ -4565,21 +4690,26 @@ class App:
         frame = self._frame
         view = self.view_var.get()
         if self._hold_original:
-            view = "原图"
-        fast = quality == "fast" and view in ("DLSS", "对比") and self._cached_dlss(frame) is None
+            view = "original"
+        fast = quality == "fast" and view in ("dlss", "compare") and self._cached_dlss(frame) is None
         self._dlss_pending = bool(fast)
-        if view == "对比":
+        if view == "compare":
             self._draw_split(frame, cw, ch, fast=fast)
             return
         if fast:
             img = self._read_frame(frame)
-            badge = "预览原图 · 松手生成 DLSS"
+            badge = tr("status.previewing_original")
         else:
             img = self.load_view_img(view, frame)
-            badge = "原图（按住 Alt）" if self._hold_original and self.view_var.get() != "原图" else None
+            badge = tr("status.original_held") if self._hold_original and self.view_var.get() != "original" else None
         if img is None:
             self.canvas.delete("all")
-            msg = f"{view}：帧 {frame} 读取失败" if view == "原图" else f"DLSS：帧 {frame} 生成失败"
+            view_name = VIEWS.get(view, view)
+            msg = (
+                tr("status.view_read_failed", view=view_name, frame=frame)
+                if view == "original"
+                else tr("status.dlss_frame_failed", frame=frame)
+            )
             self.canvas.create_text(
                 cw // 2, ch // 2, text=msg, fill=self._ui_color("muted", "#888888"),
                 font=ui_theme.UI_FONT,
@@ -4720,7 +4850,8 @@ class App:
             if orig is None:
                 self.canvas.delete("all")
                 self.canvas.create_text(
-                    cw // 2, ch // 2, text=f"帧 {frame} 读取失败",
+                    cw // 2, ch // 2,
+                    text=tr("status.frame_read_failed", frame=frame),
                     fill=self._ui_color("muted", "#888888"),
                     font=ui_theme.UI_FONT,
                 )
@@ -4777,7 +4908,7 @@ class App:
         self._drag_nw = nw
         self._drag_offsetx = ox
         composed = original
-        show_divider = self.view_var.get() == "对比" and not self._hold_original
+        show_divider = self.view_var.get() == "compare" and not self._hold_original
         if show_divider:
             composed = original.copy()
             sx = int(self.split_x * nw)
@@ -4801,18 +4932,18 @@ class App:
                 width=1, tags=("split",),
             )
             self._canvas_shadow_text(
-                ox + 10, oy + 14, "原图", anchor="w",
+                ox + 10, oy + 14, tr("view.original"), anchor="w",
                 font=ui_theme.UI_FONT_SMALL,
             )
             self._canvas_shadow_text(
                 ox + nw - 10, oy + 14,
-                "DLSS 生成中…" if self._dlss_pending else "DLSS",
+                tr("status.generating_dlss") if self._dlss_pending else "DLSS",
                 anchor="e",
                 font=ui_theme.UI_FONT_SMALL,
             )
         elif self._hold_original:
             self._canvas_shadow_text(
-                ox + 10, oy + 14, "原图（按住 Alt）", anchor="w",
+                ox + 10, oy + 14, tr("status.original_held"), anchor="w",
                 font=ui_theme.UI_FONT_SMALL,
             )
         navigator_image = self._split_dlss if self._split_dlss is not None else self._split_orig
@@ -4827,7 +4958,7 @@ class App:
         return ox + int(self.split_x * nw)
 
     def _near_split(self, x):
-        if self.view_var.get() != "对比" or self._hold_original:
+        if self.view_var.get() != "compare" or self._hold_original:
             return False
         sx = self._split_x_abs()
         if sx is None:
@@ -4867,7 +4998,7 @@ class App:
             return
         cw, ch = self._canvas_size()
         if (
-            self.view_var.get() == "对比"
+            self.view_var.get() == "compare"
             and getattr(self, "_split_orig", None) is not None
             and getattr(self, "_split_frame", -1) == self._frame
         ):
@@ -4955,7 +5086,7 @@ class App:
                 tags=("empty", "empty_pick"),
             )
         self.canvas.create_text(
-            (bx1 + bx2) / 2, (by1 + by2) / 2, text="选择文件",
+            (bx1 + bx2) / 2, (by1 + by2) / 2, text=tr("status.choose_file"),
             fill=ui["primary_fg"], font=ui_theme.UI_FONT_BOLD,
             tags=("empty", "empty_pick"),
         )
@@ -4983,7 +5114,7 @@ class App:
             self._update_pan_from_navigator(event)
             return
         shift = bool(event.state & 0x0001)
-        if self.view_var.get() == "对比" and (self._near_split(event.x) or shift):
+        if self.view_var.get() == "compare" and (self._near_split(event.x) or shift):
             self.pause()
             self._freeze_preview_cache(resume_ms=None)
             self._drag_split = True
@@ -5004,7 +5135,7 @@ class App:
             )
             self.canvas.config(cursor="fleur")
             return
-        kind = "compare" if self.view_var.get() == "对比" else "click"
+        kind = "compare" if self.view_var.get() == "compare" else "click"
         self._canvas_press = (kind, event.x, event.y)
 
     def on_canvas_drag(self, event):
@@ -5054,7 +5185,7 @@ class App:
         if press[0] == "pan":
             moved = self._pan_moved
             self._pan_moved = False
-            if not moved and self.view_var.get() == "对比":
+            if not moved and self.view_var.get() == "compare":
                 self._update_split_from_event(event)
             elif not moved:
                 self.toggle_play()
@@ -5101,7 +5232,7 @@ class App:
     def on_canvas_double(self, event):
         if self._point_in_navigator(event.x, event.y):
             return "break"
-        if self.video and self.view_var.get() == "对比" and self._near_split(event.x):
+        if self.video and self.view_var.get() == "compare" and self._near_split(event.x):
             self.split_x = 0.5
             cw, ch = self._canvas_size()
             if getattr(self, "_split_orig", None) is not None:
@@ -5125,7 +5256,7 @@ class App:
     def _set_fs_btn(self, fullscreen):
         try:
             self.fs_btn.config(
-                text="退出" if fullscreen else "全屏",
+                text=tr("action.exit_fullscreen") if fullscreen else tr("action.fullscreen"),
                 icon="fullscreen-exit" if fullscreen else "fullscreen",
             )
         except Exception:
@@ -5263,7 +5394,7 @@ class App:
         if (
             quality == "full"
             and not self.playing
-            and self.view_var.get() in ("DLSS", "对比")
+            and self.view_var.get() in ("dlss", "compare")
             and not self._hold_original
         ):
             self._display_precise_preview()
@@ -5271,7 +5402,7 @@ class App:
             self.display_view(quality=quality)
         if (
             quality == "fast"
-            and self.view_var.get() in ("DLSS", "对比")
+            and self.view_var.get() in ("dlss", "compare")
             and not self._hold_original
             and not self.playing
         ):
@@ -5295,7 +5426,7 @@ class App:
             or self.playing or not self.video or self._exporting
         ):
             return
-        wants_dlss = self.view_var.get() in ("DLSS", "对比") and not self._hold_original
+        wants_dlss = self.view_var.get() in ("dlss", "compare") and not self._hold_original
         precise_size = self._precise_preview_size()
         if (
             wants_dlss and not self._is_image
@@ -5316,7 +5447,7 @@ class App:
         source_size = self._source_size()
         precise_size = self._precise_preview_size()
         sr_scale = self._super_resolution_scale()
-        wants_dlss = self.view_var.get() in ("DLSS", "对比") and not self._hold_original
+        wants_dlss = self.view_var.get() in ("dlss", "compare") and not self._hold_original
         if wants_dlss:
             # Playback keeps a canvas-sized split image; invalidate it so compare
             # mode uses the full-resolution cache (or generates it) after pausing.
@@ -5324,14 +5455,14 @@ class App:
             self._split_dlss = None
         if wants_dlss and self._cached_dlss(self._frame, precise_size) is None:
             if sr_scale > 1:
-                self.set_status(f"正在生成 {sr_scale}× 超分精确预览…")
+                self.set_status(tr("status.generating_upscale", scale=sr_scale))
             else:
-                self.set_status("正在生成原始分辨率精确预览…")
+                self.set_status(tr("status.generating_original"))
         self.display_view(quality="full")
         if wants_dlss and self._cached_dlss(self._frame, precise_size) is not None:
             width, height = precise_size
-            prefix = f"{sr_scale}× 超分" if sr_scale > 1 else "精确预览"
-            self.set_status(f"{prefix} · {width}×{height}")
+            key = "status.precise_upscale" if sr_scale > 1 else "status.precise_preview"
+            self.set_status(tr(key, scale=sr_scale, width=width, height=height))
 
     def _on_timeline_seek(self, frame, phase):
         if not self.video or self._exporting:
@@ -5349,7 +5480,7 @@ class App:
     def _update_zoom_controls(self):
         zoom = max(PREVIEW_ZOOM_MIN, min(self._preview_zoom, PREVIEW_ZOOM_MAX))
         fitted = abs(zoom - 1.0) < 0.005
-        text = "适应" if fitted else f"{int(round(zoom * 100))}%"
+        text = tr("action.fit") if fitted else f"{int(round(zoom * 100))}%"
         try:
             self.zoom_reset_btn.config(
                 text=text,
@@ -5498,7 +5629,7 @@ class App:
         if not self.video:
             self._draw_empty()
             return
-        if self.view_var.get() == "原图":
+        if self.view_var.get() == "original":
             self._stop_paused_prerender()
             self._cancel_after("_preview_cache_resume_after")
             self._preview_cache_frozen = False
@@ -5537,7 +5668,7 @@ class App:
         self._output_preview_after = None
         self._split_frame = -1
         self._split_dlss = None
-        if not self.video or self.view_var.get() not in ("DLSS", "对比"):
+        if not self.video or self.view_var.get() not in ("dlss", "compare"):
             return
         if self.playing:
             self._present_play_frame(self._frame)
@@ -5569,7 +5700,7 @@ class App:
             pass
         self._split_frame = -1
         self._split_dlss = None
-        if self.view_var.get() in ("DLSS", "对比"):
+        if self.view_var.get() in ("dlss", "compare"):
             self.display_view(quality="fast")
         self._schedule_preview_cache_resume()
 
@@ -5603,9 +5734,9 @@ class App:
         self.root.bind_all("<Shift-Right>", lambda e: self._on_skip_key(1))
         self.root.bind_all("<Home>", lambda e: self._on_jump_key(0))
         self.root.bind_all("<End>", lambda e: self._on_jump_key(-1))
-        self.root.bind_all("<Key-1>", lambda e: self._on_view_hotkey("原图"))
-        self.root.bind_all("<Key-2>", lambda e: self._on_view_hotkey("DLSS"))
-        self.root.bind_all("<Key-3>", lambda e: self._on_view_hotkey("对比"))
+        self.root.bind_all("<Key-1>", lambda e: self._on_view_hotkey("original"))
+        self.root.bind_all("<Key-2>", lambda e: self._on_view_hotkey("dlss"))
+        self.root.bind_all("<Key-3>", lambda e: self._on_view_hotkey("compare"))
         self.root.bind_all("<Key-0>", self._on_zoom_reset_key)
         self.root.bind_all("<KeyPress-plus>", lambda e: self._on_zoom_key(1))
         self.root.bind_all("<KeyPress-equal>", lambda e: self._on_zoom_key(1))
@@ -5734,11 +5865,11 @@ class App:
     def _set_play_btn(self, playing):
         try:
             if playing and self._buffering:
-                self.play_btn.config(text="停止等待", icon="stop")
+                self.play_btn.config(text=tr("action.stop_waiting"), icon="stop")
             elif playing:
-                self.play_btn.config(text="暂停", icon="pause")
+                self.play_btn.config(text=tr("action.pause"), icon="pause")
             else:
-                self.play_btn.config(text="播放", icon="play")
+                self.play_btn.config(text=tr("action.play"), icon="play")
         except Exception:
             pass
 
@@ -5748,7 +5879,7 @@ class App:
         try:
             muted = self._audio.muted
             self.mute_btn.config(
-                text="静音" if muted else "声音",
+                text=tr("action.muted") if muted else tr("action.audio"),
                 icon="volume-off" if muted else "volume",
             )
         except Exception:
@@ -5758,7 +5889,7 @@ class App:
 
     def play(self):
         if not self.video:
-            messagebox.showwarning("提示", "请先导入视频或图片")
+            messagebox.showwarning(tr("dialog.hint"), tr("message.import_first"))
             return
         if self._is_image or self.nframes <= 1:
             self.display_view(quality="full")
@@ -5778,7 +5909,7 @@ class App:
         self._cancel_after("_play_after")
         self._cancel_after("_preview_decode_after")
         self._cancel_after("_scrub_after")
-        if view in ("DLSS", "对比"):
+        if view in ("dlss", "compare"):
             if not self._start_strict_preview_buffering():
                 self.playing = False
                 self._set_play_btn(False)
@@ -5829,7 +5960,7 @@ class App:
             (self.playing or self._pre_rendering)
             and not getattr(self, "_preview_cache_frozen", False)
             and self.video and not self._exporting and not self._is_image
-            and self.view_var.get() in ("DLSS", "对比")
+            and self.view_var.get() in ("dlss", "compare")
         )
 
     def _schedule_preview_cache_resume(self, delay=PREVIEW_INTERACTION_IDLE_MS):
@@ -5889,12 +6020,12 @@ class App:
             return
         if self.playing:
             if (
-                self.view_var.get() in ("DLSS", "对比")
+                self.view_var.get() in ("dlss", "compare")
                 and self._preview_frame_queue is None
             ):
                 self._start_strict_preview_buffering()
             return
-        if self.view_var.get() in ("DLSS", "对比") and not self._hold_original:
+        if self.view_var.get() in ("dlss", "compare") and not self._hold_original:
             self._schedule_full_preview()
 
     def _stop_paused_prerender(self):
@@ -5911,7 +6042,7 @@ class App:
             or self.playing or not self.video or self._exporting or self._is_image
         ):
             return False
-        if self.view_var.get() not in ("DLSS", "对比") or self._hold_original:
+        if self.view_var.get() not in ("dlss", "compare") or self._hold_original:
             return False
         self._stop_paused_prerender()
         self._pre_rendering = True
@@ -6017,7 +6148,7 @@ class App:
         if (
             getattr(self, "_preview_cache_frozen", False)
             or self.playing or not self.video or self._exporting
-            or self._hold_original or self.view_var.get() not in ("DLSS", "对比")
+            or self._hold_original or self.view_var.get() not in ("dlss", "compare")
         ):
             return False
         # Full display uses the precise size. A ready playback proxy alone must
@@ -6037,7 +6168,7 @@ class App:
         return True
 
     def _update_preview_timeline_and_status(self, force=False):
-        if not self.video or self.view_var.get() not in ("DLSS", "对比"):
+        if not self.video or self.view_var.get() not in ("dlss", "compare"):
             return
         if getattr(self, "_preview_cache_frozen", False) and not force:
             return
@@ -6073,17 +6204,20 @@ class App:
         )
         if self._buffering:
             _ready, available, required = self._buffer_is_ready()
-            text = f"正在渲染第 {self._frame} 帧 · 启动缓冲 {available}/{required} 帧"
+            text = tr(
+                "status.buffering", frame=self._frame,
+                available=available, required=required,
+            )
         elif self._pre_rendering and not self.playing:
-            text = f"后台预渲染 · 前向缓存 {rendered_ahead}/{target_total} 帧"
+            text = tr("status.prerendering", rendered=rendered_ahead, total=target_total)
         elif not self.playing:
-            text = f"预渲染就绪 · 前向缓存 {rendered_ahead}/{target_total} 帧"
+            text = tr("status.prerendered", rendered=rendered_ahead, total=target_total)
         else:
-            text = f"严格同步预览 · 已渲染 {len(rendered_frames)} 帧"
+            text = tr("status.strict_preview", frames=len(rendered_frames))
         if rate > 0:
             text += f" · {rate:.1f} fps"
             if rate + 0.5 < max(float(self.fps), 1.0):
-                text += f"（低于视频 {self.fps:.1f} fps，将间歇等待）"
+                text += tr("status.slower_than_video", fps=self.fps)
         text += f" · RAM {used_mib:.0f}/{self._preview_cache_bytes() / (1024 * 1024):.0f} MiB"
         try:
             self.eta_label.config(text=text)
@@ -6145,11 +6279,11 @@ class App:
             if self._play_should_stop(target, last):
                 self._present_play_frame(last)
                 self.pause()
-                self.set_status("播放结束")
+                self.set_status(tr("status.playback_finished"))
                 return
             if target != self._frame or self._hold_original:
-                view = "原图" if self._hold_original else self.view_var.get()
-                if view in ("DLSS", "对比"):
+                view = "original" if self._hold_original else self.view_var.get()
+                if view in ("dlss", "compare"):
                     target_size = self._active_preview_size or self._playback_preview_size()
                     exact = _first_image(
                         self._cached_dlss(target, target_size),
@@ -6182,9 +6316,9 @@ class App:
             return
         self._play_orig = (frame, orig)
         cw, ch = self._canvas_size()
-        view = "原图" if self._hold_original else self.view_var.get()
-        if view == "原图" or self._hold_original:
-            badge = "原图（按住 Alt）" if self._hold_original and self.view_var.get() != "原图" else None
+        view = "original" if self._hold_original else self.view_var.get()
+        if view == "original" or self._hold_original:
+            badge = tr("status.original_held") if self._hold_original and self.view_var.get() != "original" else None
             self._dlss_pending = False
             self._draw_fit(orig, cw, ch, badge=badge)
             return
@@ -6200,12 +6334,12 @@ class App:
             orig, cached,
             settings['output_view'], settings['output_mix'],
         )
-        if view == "对比":
+        if view == "compare":
             self._blit_play_split(orig, preview, cw, ch, pending=not exact_frame)
             return
         img = preview if preview is not None else self._pending_preview_image(orig)
         self._dlss_pending = not exact_frame
-        badge = "正在渲染当前帧…" if not exact_frame else None
+        badge = tr("status.rendering_current") if not exact_frame else None
         self._draw_fit(img, cw, ch, badge=badge)
 
     @staticmethod
@@ -6227,7 +6361,7 @@ class App:
     def _start_prefetch(self, preview_size=None):
         if not self._preview_session_active():
             return False
-        if self.view_var.get() == "原图":
+        if self.view_var.get() == "original":
             return False
         previous = getattr(self, "_play_dlss_thread", None)
         if previous is not None and previous.is_alive():
@@ -6410,7 +6544,7 @@ class App:
             self._preview_frame_queue = None
             with self._cache_lock:
                 self._queued_preview_frames.clear()
-            if self.view_var.get() in ("DLSS", "对比") and not self._hold_original:
+            if self.view_var.get() in ("dlss", "compare") and not self._hold_original:
                 self._schedule_full_preview()
 
     # ---------- import ----------
@@ -6419,7 +6553,9 @@ class App:
 
     def import_media(self):
         if self._diagnosing:
-            messagebox.showinfo("诊断中", "请等待诊断报告生成后再导入素材。")
+            messagebox.showinfo(
+                tr("dialog.diagnosing"), tr("message.wait_diagnostics_import")
+            )
             return
         self._freeze_preview_cache(resume_ms=None)
         path = filedialog.askopenfilename(filetypes=VIDEO_FILETYPES)
@@ -6453,7 +6589,9 @@ class App:
         """Check GitHub without blocking Tk; startup failures stay unobtrusive."""
         if self._update_checking or self._update_downloading:
             if manual:
-                messagebox.showinfo("检查更新", "更新检查或下载已经在进行中。")
+                messagebox.showinfo(
+                    tr("dialog.check_updates"), tr("message.update_in_progress")
+                )
             return
         self._update_checking = True
         self._update_thread = None
@@ -6490,21 +6628,22 @@ class App:
         if error:
             if manual:
                 self.logln("[更新] 检查失败: " + error)
-                messagebox.showwarning("检查更新失败", error)
+                messagebox.showwarning(tr("dialog.update_failed"), error)
             return
         comparison = updater.compare_versions(release.tag, APP_VERSION)
         if comparison is None:
             if manual:
                 messagebox.showwarning(
-                    "检查更新失败", f"无法比较版本号：{APP_VERSION} / {release.tag}"
+                    tr("dialog.update_failed"),
+                    tr("message.version_compare_failed", current=APP_VERSION, latest=release.tag),
                 )
             return
         if comparison <= 0:
             if manual:
                 self.logln(f"[更新] GitHub 最新正式版本为 {release.tag}")
                 messagebox.showinfo(
-                    "已是最新版本",
-                    f"当前版本：{APP_VERSION}\nGitHub 最新正式版本：{release.tag}",
+                    tr("dialog.up_to_date"),
+                    tr("message.up_to_date", current=APP_VERSION, latest=release.tag),
                 )
             return
         self._prompt_for_update(release)
@@ -6514,23 +6653,27 @@ class App:
         notes = release.body.strip()
         if len(notes) > 900:
             notes = notes[:897].rstrip() + "…"
-        notes_text = f"\n\n更新说明：\n{notes}" if notes else ""
+        notes_text = tr("message.release_notes", notes=notes) if notes else ""
         if asset is None:
             self.logln(f"[更新] 发现 {release.tag}，但未找到完整 win64 便携包")
             if messagebox.askyesno(
-                "发现新版本",
-                f"当前版本：{APP_VERSION}\n最新版本：{release.tag}{notes_text}\n\n"
-                "此 Release 没有可识别的完整 win64 便携包。是否打开发布页？",
+                tr("dialog.new_version"),
+                tr(
+                    "message.update_no_asset", current=APP_VERSION,
+                    latest=release.tag, notes=notes_text,
+                ),
             ):
                 self._open_release_page(release.page_url)
             return
-        size_text = updater.format_size(asset.size) if asset.size else "大小未知"
+        size_text = updater.format_size(asset.size) if asset.size else tr("common.unknown_size")
         self.logln(f"[更新] 发现新版本 {release.tag}：{asset.name}（{size_text}）")
         if messagebox.askyesno(
-            "发现新版本",
-            f"当前版本：{APP_VERSION}\n最新版本：{release.tag}{notes_text}\n\n"
-            f"是否将 {asset.name}（{size_text}）自动下载到“下载”文件夹？\n"
-            "下载完成后请关闭程序、完整解压，再运行新版本。",
+            tr("dialog.new_version"),
+            tr(
+                "message.update_download", current=APP_VERSION,
+                latest=release.tag, notes=notes_text,
+                asset=asset.name, size=size_text,
+            ),
         ):
             self._start_update_download(release, asset)
 
@@ -6540,7 +6683,9 @@ class App:
             os.makedirs(directory, exist_ok=True)
             destination = updater.unique_download_path(directory, asset.name)
         except OSError as ex:
-            messagebox.showerror("无法下载更新", f"无法使用下载文件夹：\n{ex}")
+            messagebox.showerror(
+                tr("dialog.download_failed"), tr("message.download_folder_failed", error=ex)
+            )
             return
         self._update_downloading = True
         self._update_progress_percent = 0 if asset.size else None
@@ -6593,14 +6738,12 @@ class App:
                     self.logln("[更新] 下载已取消，临时文件已清理")
                 else:
                     self.logln("[更新] 下载失败: " + error)
-                    messagebox.showerror("更新下载失败", error)
+                    messagebox.showerror(tr("dialog.download_failed"), error)
                 return
             self.logln(f"[更新] {release.tag} 已下载并校验完成: {path}")
             if messagebox.askyesno(
-                "更新下载完成",
-                f"新版本已下载并校验完成：\n{path}\n\n"
-                "本程序是免安装版，不会在运行中覆盖自身。"
-                "请关闭程序后完整解压。\n\n是否打开所在文件夹？",
+                tr("dialog.download_complete"),
+                tr("message.download_complete", path=path),
             ):
                 self._open_download_directory(path)
 
@@ -6615,7 +6758,7 @@ class App:
         if self._diagnosing:
             return
         if self._exporting or self._queue_running or self._switching_backend:
-            messagebox.showinfo("忙", "请等待当前导出、队列或主机切换完成后再诊断。")
+            messagebox.showinfo(tr("dialog.busy"), tr("message.wait_diagnostics"))
             return
         initial_dir = ""
         if self.video:
@@ -6624,11 +6767,15 @@ class App:
             desktop = os.path.join(os.path.expanduser("~"), "Desktop")
             initial_dir = desktop if os.path.isdir(desktop) else os.getcwd()
         output_path = filedialog.asksaveasfilename(
-            title="保存 DLSS5Tool 诊断日志",
+            title=tr("dialog.save_diagnostics"),
             initialdir=initial_dir,
             initialfile=diagnostics.suggested_report_name(),
             defaultextension=".log",
-            filetypes=[("诊断日志", "*.log"), ("文本文件", "*.txt"), ("所有文件", "*.*")],
+            filetypes=[
+                (tr("filetype.diagnostic"), "*.log"),
+                (tr("filetype.text"), "*.txt"),
+                (tr("common.all_files"), "*.*"),
+            ],
         )
         if not output_path:
             return
@@ -6667,7 +6814,7 @@ class App:
         self._update_action_labels()
         self._update_host_control_states()
         self._update_queue_action_states()
-        self.set_status("正在诊断 GPU、DLL 与 Feature 18 主机…")
+        self.set_status(tr("status.diagnosing_host"))
         self.logln("[诊断] 开始生成一键诊断报告…")
 
         def finish(result, error):
@@ -6678,22 +6825,21 @@ class App:
             self._update_host_control_states()
             self._update_queue_action_states()
             if error:
-                self.set_status("诊断报告导出失败")
+                self.set_status(tr("status.diagnostics_export_failed"))
                 self.logln("[诊断] 导出失败: " + error)
                 messagebox.showerror(
-                    "诊断失败",
-                    "无法保存诊断报告：\n" + error + "\n\n请换一个可写目录后重试。",
+                    tr("dialog.diagnostics_failed"),
+                    tr("message.diagnostics_save_failed", error=error),
                 )
                 return
             path = result["path"]
             passed = int(result.get("passed", 0))
             total = int(result.get("total", 0))
-            self.set_status(f"诊断完成 · 宿主探针 {passed}/{total} 通过")
+            self.set_status(tr("status.diagnostics_complete", passed=passed, total=total))
             self.logln(f"[诊断] 已导出: {path}；宿主探针 {passed}/{total} 通过")
             messagebox.showinfo(
-                "诊断完成",
-                f"诊断日志已保存：\n{path}\n\n宿主探针 {passed}/{total} 通过。"
-                "无论通过或失败，都可以把这个日志直接发给维护者。",
+                tr("dialog.diagnostics_complete"),
+                tr("message.diagnostics_complete", path=path, passed=passed, total=total),
             )
 
         result_queue = queue.Queue(maxsize=1)
@@ -6724,7 +6870,7 @@ class App:
     def _setup_drag_and_drop(self):
         """Register both the window and video-facing widgets as file drop targets."""
         if DND_FILES is None:
-            self.logln("[拖拽] tkinterdnd2 未安装；仍可点击“导入”。运行 setup.bat 可启用拖拽。")
+            self.logln(tr("log.dnd_unavailable"))
             return
         try:
             for widget in (
@@ -6737,7 +6883,7 @@ class App:
                 widget.dnd_bind("<<DropLeave>>", self._on_drop_leave)
                 widget.dnd_bind("<<Drop>>", self._on_drop)
         except Exception as ex:
-            self.logln("[拖拽] 初始化失败，仍可点击导入: " + str(ex))
+            self.logln(tr("log.dnd_init_failed", error=ex))
 
     def _on_drop_enter(self, event):
         if not self._exporting and not self._queue_running and not self._diagnosing:
@@ -6746,7 +6892,7 @@ class App:
             self.canvas.config(bg=self._ui_color("canvas_drop", CANVAS_DROP_BG))
             if not self.video:
                 self._draw_empty()
-            self.set_status("松开鼠标以导入；多个媒体文件会加入队列")
+            self.set_status(tr("status.release_multi_import"))
         return getattr(event, "action", None)
 
     def _on_drop_leave(self, event):
@@ -6755,7 +6901,7 @@ class App:
         if not self.video:
             self._draw_empty()
         if not self._exporting and not self._queue_running and not self._diagnosing:
-            self.set_status("就绪")
+            self.set_status(tr("status.ready"))
             self._schedule_preview_cache_resume()
         return getattr(event, "action", None)
 
@@ -6768,7 +6914,7 @@ class App:
                 if self._diagnosing else
                 "正在处理队列，请暂停或结束后再导入。"
             )
-            messagebox.showinfo("忙", message)
+            messagebox.showinfo(tr("dialog.busy"), message)
             return getattr(event, "action", None)
         try:
             paths = list(self.root.tk.splitlist(event.data))
@@ -6841,11 +6987,11 @@ class App:
     def clear_media(self):
         if self._exporting or self._queue_running or self._diagnosing:
             message = (
-                "正在生成诊断报告，请完成后再清空。"
+                tr("message.wait_diagnostics_clear")
                 if self._diagnosing else
-                "正在处理队列，请暂停或结束后再清空。"
+                tr("message.wait_queue_clear")
             )
-            messagebox.showinfo("忙", message)
+            messagebox.showinfo(tr("dialog.busy"), message)
             return
         if not self.video and self._live is None:
             return
@@ -6871,22 +7017,24 @@ class App:
         self._update_action_labels()
         self._update_export_control_states()
         self._draw_empty()
-        self.set_status("就绪")
-        self.logln("已清空导入，解码/音轨/DLSS 主机已释放")
+        self.set_status(tr("status.ready"))
+        self.logln(tr("status.cleared"))
 
     def _load_media(self, path):
         if self._exporting or self._queue_running or self._diagnosing:
             message = (
-                "正在生成诊断报告，请完成后再导入。"
+                tr("message.wait_diagnostics_import")
                 if self._diagnosing else
-                "正在处理队列，请暂停或结束后再导入。"
+                tr("message.wait_queue_import")
             )
-            messagebox.showinfo("忙", message)
+            messagebox.showinfo(tr("dialog.busy"), message)
             return False
         path = os.path.abspath(os.path.normpath(path))
         if not os.path.isfile(path):
-            messagebox.showerror("导入失败", "找不到拖入的文件：\n" + path)
-            self.set_status("导入失败：文件不存在")
+            messagebox.showerror(
+                tr("dialog.import_failed"), tr("message.file_missing", path=path)
+            )
+            self.set_status(tr("status.import_missing"))
             return False
         if _is_image_path(path) or _is_video_path(path):
             # Freeze the current source before potentially slow media probing so
@@ -6897,22 +7045,25 @@ class App:
                 self._schedule_preview_cache_resume()
             return loaded
         messagebox.showerror(
-            "不支持的格式",
-            "请选择视频（MP4/AVI/MOV/MKV/M4V/WebM）或图片（PNG/JPG/WEBP/BMP/TIFF）。",
+            tr("dialog.unsupported_format"), tr("message.media_formats"),
         )
-        self.set_status("导入失败：不支持的格式")
+        self.set_status(tr("status.import_unsupported"))
         return False
 
     def _load_image(self, path):
         img = _read_image_bgr(path)
         if img is None or img.size == 0:
-            messagebox.showerror("导入失败", "无法读取该图片，请检查文件是否损坏。")
-            self.set_status("导入失败：无法读取图片")
+            messagebox.showerror(
+                tr("dialog.import_failed"), tr("message.image_unreadable")
+            )
+            self.set_status(tr("status.import_image_failed"))
             return False
         h, w = img.shape[:2]
         if w <= 0 or h <= 0:
-            messagebox.showerror("导入失败", "无法读取图片尺寸。")
-            self.set_status("导入失败：无法读取图片")
+            messagebox.showerror(
+                tr("dialog.import_failed"), tr("message.image_size_unreadable")
+            )
+            self.set_status(tr("status.import_image_failed"))
             return False
         self._begin_source_load()
         self.video = path
@@ -6931,34 +7082,37 @@ class App:
             self.display_view(quality="fast")
         except Exception as ex:
             self.logln(f"[preview] {ex}")
-        self.logln(f"已导入图片: {path}  ({w}×{h})")
-        self.set_status(f"图片 · {w}×{h}")
+        self.logln(tr("status.imported_image", path=f"{path}  ({w}×{h})"))
+        self.set_status(tr("status.image_summary", width=w, height=h))
         self._schedule_preview_cache_resume()
         return True
 
     def _load_video(self, path):
         """Validate and load a video from either the file dialog or drag-and-drop."""
         if self._exporting or self._queue_running:
-            messagebox.showinfo("忙", "正在处理队列，请暂停或结束后再导入。")
+            messagebox.showinfo(tr("dialog.busy"), tr("message.wait_queue_import"))
             return False
         path = os.path.abspath(os.path.normpath(path))
         if not os.path.isfile(path):
-            messagebox.showerror("导入失败", "找不到拖入的文件：\n" + path)
-            self.set_status("导入失败：文件不存在")
+            messagebox.showerror(
+                tr("dialog.import_failed"), tr("message.file_missing", path=path)
+            )
+            self.set_status(tr("status.import_missing"))
             return False
         if not _is_video_path(path):
             messagebox.showerror(
-                "不支持的格式",
-                "请选择 MP4、AVI、MOV、MKV、M4V 或 WebM 视频文件。",
+                tr("dialog.unsupported_format"), tr("message.video_formats"),
             )
-            self.set_status("导入失败：不支持的格式")
+            self.set_status(tr("status.import_unsupported"))
             return False
 
         new_cap = cv2.VideoCapture(path)
         if not new_cap.isOpened():
             new_cap.release()
-            messagebox.showerror("导入失败", "无法打开该视频，请检查文件是否损坏或编码是否受支持。")
-            self.set_status("导入失败：无法打开视频")
+            messagebox.showerror(
+                tr("dialog.import_failed"), tr("message.video_unreadable")
+            )
+            self.set_status(tr("status.import_video_open_failed"))
             return False
         n = int(new_cap.get(cv2.CAP_PROP_FRAME_COUNT)) or 0
         fps = new_cap.get(cv2.CAP_PROP_FPS) or 30.0
@@ -6966,15 +7120,17 @@ class App:
         h = int(new_cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
         if w <= 0 or h <= 0:
             new_cap.release()
-            messagebox.showerror("导入失败", "无法读取视频尺寸，请检查视频编码。")
-            self.set_status("导入失败：无法读取视频")
+            messagebox.showerror(
+                tr("dialog.import_failed"), tr("message.video_size_unreadable")
+            )
+            self.set_status(tr("status.import_video_size_failed"))
             return False
 
         try:
             color_info = probe_video_stream(find_ffmpeg(), path)
         except Exception as ex:
             color_info = {"is_hdr": False, "profile": "srgb", "label": "SDR / sRGB"}
-            self.logln("[色彩检测] 无法读取视频色彩元数据，按 SDR 处理：" + str(ex))
+            self.logln(tr("log.color_fallback", error=ex))
 
         # Keep a same-size worker for temporal continuity.  A resolution change is
         # handled by replacing only the isolated NGX process in _ensure_live().
@@ -6999,20 +7155,21 @@ class App:
             self.display_view(quality="fast")
         except Exception as ex:
             self.logln(f"[preview] {ex}")
-        self.logln(
-            f"已导入: {self.video}  ({n} 帧)；色彩 {color_info.get('label', '未知')} "
-            f"[{color_info.get('pixel_format', 'unknown')}, "
-            f"{color_info.get('color_primaries', 'unknown')}/"
-            f"{color_info.get('color_transfer', 'unknown')}]"
-        )
+        self.logln(tr(
+            "log.imported_video", path=self.video, frames=n,
+            color=color_info.get('label', tr("common.unknown")),
+            pixel_format=color_info.get('pixel_format', 'unknown'),
+            primaries=color_info.get('color_primaries', 'unknown'),
+            transfer=color_info.get('color_transfer', 'unknown'),
+        ))
         duration = n / max(float(fps) or 30.0, 1.0)
         self._audio.prepare(path, duration, callback=self._audio_ready_cb)
         self._schedule_preview_cache_resume()
         if not self._hinted_keys:
-            self.set_status("滚轮缩放 · 拖动平移 · 0 适应窗口 · ← → 逐帧 · F11 全屏")
+            self.set_status(tr("status.preview_shortcuts"))
             self._hinted_keys = True
         else:
-            self.set_status(f"{n} 帧 · {fps:.0f} fps · {w}×{h}")
+            self.set_status(tr("status.video_summary", frames=n, fps=fps, width=w, height=h))
         return True
 
     def _audio_ready_cb(self, ok, message, generation):
@@ -7027,11 +7184,14 @@ class App:
         if generation != self._audio.current_generation():
             return
         if not ok:
-            self.logln("[音频] 预览音轨准备失败: " + (message or "未知错误"))
+            self.logln(tr(
+                "log.audio_prepare_failed",
+                error=message or tr("common.unknown_error"),
+            ))
             return
         if message != "ok":
             return
-        self.logln("[音频] 预览播放将使用原视频音轨")
+        self.logln(tr("log.audio_ready"))
         if self.playing and not self._buffering and not self._audio.muted:
             self._audio.play(self._frame, self.fps)
 
@@ -7076,9 +7236,10 @@ class App:
         self.set_status(status_text)
 
     def _end_export_ui(
-        self, success, out_path, done_label="完成", done_message=None, cancelled=False,
-        completed_items=1, notify=True,
+        self, success, out_path, done_label=None, done_message=None, cancelled=False,
+        completed_items=1, notify=True, error_message="",
     ):
+        done_label = done_label or tr("common.completed")
         self._exporting = False
         self._export_cancel_event.clear()
         self._update_action_labels()
@@ -7088,18 +7249,21 @@ class App:
             removed = self._remove_partial_export(out_path)
             self.pbar["value"] = 0
             message = (
-                "导出已取消，未完成文件已清理"
+                tr("status.export_cancelled_clean")
                 if removed else
-                "导出已取消，但未完成文件无法删除，请手动清理"
+                tr("status.export_cancelled_dirty")
             )
             self.set_status(message)
-            self.logln("[导出] " + message)
+            self.logln(tr("log.export_message", message=message))
         elif success:
             completed_items = max(int(completed_items), 1)
             self.set_progress(completed_items, completed_items, done_label)
-            self.logln("已导出: " + out_path)
+            self.logln(tr("status.exported", path=out_path))
             if notify:
-                messagebox.showinfo("导出", done_message or ("已导出:\n" + out_path))
+                messagebox.showinfo(
+                    tr("tab.export"),
+                    done_message or tr("status.exported", path=out_path),
+                )
             try:
                 self.pbar["value"] = 0
             except Exception:
@@ -7110,9 +7274,20 @@ class App:
                 self.eta_label.config(text="")
             except Exception:
                 pass
-            self.set_status("导出失败，请查看日志")
+            self.set_status(tr("status.export_failed_log"))
             if notify:
-                messagebox.showerror("导出失败", "导出未完成，请查看下方日志。")
+                guidance = _dlss_runtime_guidance(error_message)
+                if guidance:
+                    if messagebox.askyesno(
+                        tr("dialog.dlss_runtime_unsupported"),
+                        guidance + tr("message.open_releases_prompt"),
+                        icon="error",
+                    ):
+                        self._open_release_page(updater.RELEASES_URL)
+                else:
+                    messagebox.showerror(
+                        tr("dialog.export_failed"), tr("message.export_incomplete")
+                    )
 
     @staticmethod
     def _remove_partial_export(out_path):
@@ -7136,8 +7311,8 @@ class App:
         self._export_cancel_event.set()
         self._update_action_labels()
         self._update_queue_action_states()
-        self.set_status("正在取消导出…")
-        self.logln("[导出] 用户请求取消，正在停止导出流水线…")
+        self.set_status(tr("status.cancelling_export"))
+        self.logln(tr("log.export_cancel_requested"))
 
     def _raise_if_export_cancelled(self):
         if self._export_cancel_event.is_set():
@@ -7149,13 +7324,13 @@ class App:
             return True
         status = super_resolution_runtime_status()
         if not status['available']:
-            message = (
-                "RTX 视频超分组件不完整：" + "、".join(status['missing']) +
-                "。\n\n请重新构建或安装包含 RTX Video SDK 运行时的版本。"
+            message = tr(
+                "message.vsr_components_missing",
+                missing=", ".join(status['missing']),
             )
             self.logln("[RTX 超分] " + message.replace("\n", " "))
             if notify:
-                messagebox.showerror("RTX 超分不可用", message)
+                messagebox.showerror(tr("dialog.rtx_unavailable"), message)
             return False
         resource_estimate = estimate_resources(width, height, scale, is_hdr=is_hdr)
         gpu_memory = query_gpu_memory(cache_seconds=0)
@@ -7167,22 +7342,26 @@ class App:
             or plan_key in self._confirmed_super_resolution_plans
         ):
             return True
-        warning = (
-            f"即将执行 {scale}× RTX 视频超分 → DLSS 5\n\n"
-            f"目标尺寸：{resource_estimate['output_width']}×{resource_estimate['output_height']}\n"
-            f"单帧：{format_bytes(resource_estimate['single_frame_bytes'])}\n"
-            f"已知显存下限：{format_bytes(resource_estimate['known_gpu_bytes'])}\n"
-            f"建议空闲显存：{format_bytes(resource_estimate['recommended_gpu_bytes'])}\n"
-            f"预计系统内存：{format_bytes(resource_estimate['recommended_ram_bytes'])}"
+        warning = tr(
+            "message.super_resolution_plan",
+            scale=scale,
+            width=resource_estimate['output_width'],
+            height=resource_estimate['output_height'],
+            frame_memory=format_bytes(resource_estimate['single_frame_bytes']),
+            gpu_minimum=format_bytes(resource_estimate['known_gpu_bytes']),
+            gpu_recommended=format_bytes(resource_estimate['recommended_gpu_bytes']),
+            ram_recommended=format_bytes(resource_estimate['recommended_ram_bytes']),
         )
         if gpu_memory:
-            warning += f"\n当前 GPU 空闲：{format_bytes(gpu_memory['free_bytes'])}"
-        if resource_estimate['output_width'] > 8192 or resource_estimate['output_height'] > 8192:
-            warning += (
-                "\n\n目标有一边超过 8192。工具不会限制，但 RTX VSR 或视频编码器可能拒绝该尺寸。"
+            warning += tr(
+                "message.gpu_free", value=format_bytes(gpu_memory['free_bytes'])
             )
-        warning += "\n\n初始化或分配失败只会终止当前处理会话。是否继续？"
-        confirmed = messagebox.askyesno("高资源超分确认", warning, icon="warning")
+        if resource_estimate['output_width'] > 8192 or resource_estimate['output_height'] > 8192:
+            warning += tr("message.over_8192")
+        warning += tr("message.super_resolution_continue")
+        confirmed = messagebox.askyesno(
+            tr("dialog.high_resource"), warning, icon="warning"
+        )
         if confirmed:
             self._confirmed_super_resolution_plans.add(plan_key)
         return confirmed
@@ -7191,7 +7370,9 @@ class App:
         settings = self._collect_settings()
         self._save_settings_now()
         if self._image_bgr is None:
-            messagebox.showwarning("提示", "请先导入图片")
+            messagebox.showwarning(
+                tr("dialog.hint"), tr("message.import_image_first")
+            )
             return
         return self._export_image_source(self.video, settings, notify=True)
 
@@ -7211,7 +7392,9 @@ class App:
                 _large_image_host_settings(width, height, settings),
             )
             if live is None:
-                return None
+                raise RuntimeError(
+                    getattr(self, "_live_error", tr("message.dlss_host_unavailable"))
+                )
             processed_rgba = live.process(rgba, reset=True)
             self._last_dlss_frame = -1
         if processed_rgba is None:
@@ -7224,10 +7407,10 @@ class App:
         settings = {**self._collect_settings(), **dict(settings or {})}
         orig = _read_image_bgr(source_path)
         if orig is None or orig.size == 0:
-            error = "无法读取图片，请检查输入文件。"
-            self.logln("导出错误: " + error)
+            error = tr("message.input_image_unreadable")
+            self.logln(tr("log.export_error", error=error))
             if notify:
-                messagebox.showerror("导出失败", error)
+                messagebox.showerror(tr("dialog.export_failed"), error)
             return {
                 "success": False, "cancelled": False, "error": error,
                 "output_path": out_path or "", "frames": 0,
@@ -7237,7 +7420,8 @@ class App:
             orig.shape[1], orig.shape[0], scale, is_hdr=False, notify=notify,
         ):
             return {
-                "success": False, "cancelled": True, "error": "用户取消超分导出",
+                "success": False, "cancelled": True,
+                "error": tr("message.super_resolution_cancelled"),
                 "output_path": out_path or "", "frames": 0,
             }
         ext = os.path.splitext(source_path)[1].lower()
@@ -7248,8 +7432,8 @@ class App:
         if not notify and os.path.exists(out_path):
             out_path = self._unique_target_path(out_path)
         if out_path != default_out and notify:
-            self.logln("[导出] 目标文件已存在，自动改名为: " + os.path.basename(out_path))
-        self._begin_export_ui("正在导出图片…")
+            self.logln(tr("log.target_renamed", name=os.path.basename(out_path)))
+        self._begin_export_ui(tr("status.exporting_image"))
         success = False
         error_message = ""
         started_at = self._export_t0
@@ -7265,15 +7449,16 @@ class App:
             success = True
             elapsed = time.perf_counter() - started_at
             h, w = composed.shape[:2]
-            self.logln(f"[导出] 图片 {w}×{h}；用时 {elapsed:.2f} 秒")
-            self.set_progress(1, 1, "完成")
+            self.logln(tr("log.image_exported", width=w, height=h, seconds=elapsed))
+            self.set_progress(1, 1, tr("common.completed"))
         except Exception as ex:
             traceback.print_exc()
             error_message = str(ex)
-            self.logln("导出错误: " + error_message)
+            self.logln(tr("log.export_error", error=error_message))
         self._end_export_ui(
-            success, out_path, "完成",
-            "已导出图片:\n" + out_path if success else None,
+            success, out_path, tr("common.completed"),
+            tr("status.exported_image", path=out_path) if success else None,
+            error_message=error_message,
             notify=notify,
         )
         return {
@@ -7347,7 +7532,10 @@ class App:
                 ))
                 written = index + 1
                 if written == 1 or written % 2 == 0 or written >= total_frames:
-                    self.set_progress(written, max(total_frames, written), "超分 → DLSS 导出")
+                    self.set_progress(
+                        written, max(total_frames, written),
+                        tr("status.upscale_dlss_export"),
+                    )
                     self.root.update()
             self._raise_if_export_cancelled()
             writer.finish()
@@ -7496,10 +7684,10 @@ class App:
 
     def export_dlss(self):
         if not self.video:
-            messagebox.showwarning("提示", "请先导入视频或图片")
+            messagebox.showwarning(tr("dialog.hint"), tr("message.import_first"))
             return
         if self._queue_running or self._exporting or (self.thread and self.thread.is_alive()):
-            messagebox.showinfo("忙", "上一个任务还没结束")
+            messagebox.showinfo(tr("dialog.busy"), tr("message.previous_running"))
             return
         if self._is_image:
             self._export_image()
@@ -7530,10 +7718,10 @@ class App:
         output_extension = output_container_extension(resolved_container)
         n, fps, w, h = self._video_info(source_path)
         if w <= 0 or h <= 0:
-            error = "无法读取视频尺寸，请检查输入文件。"
-            self.logln("导出错误: " + error)
+            error = tr("message.input_video_dimensions_failed")
+            self.logln(tr("log.export_error", error=error))
             if notify:
-                messagebox.showerror("导出失败", error)
+                messagebox.showerror(tr("dialog.export_failed"), error)
             return {
                 "success": False, "cancelled": False, "error": error,
                 "output_path": out_path or "", "frames": 0,
@@ -7577,7 +7765,7 @@ class App:
         if not notify and os.path.exists(out_path):
             out_path = self._unique_target_path(out_path)
         if out_path != default_out_path and notify:
-            self.logln("[导出] 目标文件已存在，自动改名为: " + os.path.basename(out_path))
+            self.logln(tr("log.target_renamed", name=os.path.basename(out_path)))
         pipeline_name = (
             "RTX超分 + GPU DLSS/NVENC" if super_resolution_scale > 1
             else "CPU 解码 + GPU DLSS/NVENC"
@@ -7713,7 +7901,9 @@ class App:
                         exported_frames = frame_index + 1
                         now = time.perf_counter()
                         if now - last_ui_update >= 0.1 or exported_frames >= n:
-                            self.set_progress(exported_frames, n, "流水线导出")
+                            self.set_progress(
+                                exported_frames, n, tr("status.pipeline_export")
+                            )
                             self.root.update()
                             self._raise_if_export_cancelled()
                             last_ui_update = now
@@ -7728,7 +7918,12 @@ class App:
                         if live is None:
                             live = self._ensure_live(ww, hh, settings)
                             if live is None:
-                                raise RuntimeError("DLSS 引擎初始化失败")
+                                raise RuntimeError(
+                                    getattr(
+                                        self, "_live_error",
+                                        tr("message.dlss_host_unavailable"),
+                                    )
+                                )
                             live.update(settings)
                             self.logln(
                                 f"[DLSS 主机] {live.backend}；"
@@ -7772,7 +7967,7 @@ class App:
         except Exception as ex:
             traceback.print_exc()
             error_message = str(ex)
-            self.logln("导出错误: " + error_message)
+            self.logln(tr("log.export_error", error=error_message))
         finally:
             if writer and not success:
                 writer.abort()
@@ -7781,10 +7976,11 @@ class App:
                 # that host would return stale output on the next preview/export.
                 self._close_live()
         self._end_export_ui(
-            success, out_path, "完成",
-            "已导出（含原音轨）:\n" + out_path if success else None,
+            success, out_path, tr("common.completed"),
+            tr("status.exported_audio", path=out_path) if success else None,
             cancelled=cancelled,
             completed_items=exported_frames,
+            error_message=error_message,
             notify=notify,
         )
         return {
@@ -7818,7 +8014,7 @@ class App:
             cap = cv2.VideoCapture(video_path)
             try:
                 if not cap.isOpened():
-                    raise RuntimeError("无法打开视频进行导出解码")
+                    raise RuntimeError(tr("message.export_decode_failed"))
                 index = 0
                 while not stop_event.is_set():
                     ok, frame = cap.read()

@@ -20,6 +20,7 @@ import numpy as np
 from app_version import APP_VERSION
 import dlss_engine
 import super_resolution
+import updater
 
 
 _CREATE_NO_WINDOW = getattr(subprocess, "CREATE_NO_WINDOW", 0)
@@ -259,10 +260,16 @@ def _probe_hints(probe):
         hints.append("DLL 缺少必需导出，可能拿错或损坏。")
     if "caller/static initialization failed" in combined:
         hints.append("NGX 静态初始化或调用者检查失败；核对驱动、GPU 与 DLL 代际。")
-    if re.search(r"(?:Init_with_ProjectID|runtime Init_Ext).*0xBAD", combined, re.I):
+    if re.search(r"0xBAD00001", combined, re.I):
+        hints.append(
+            "NGX 返回 0xBAD00001（FeatureNotSupported）；通常是 DLL 与 RTX "
+            "代际不匹配、驱动过旧或程序使用了核显。先在 Windows“设置 → 系统 → "
+            "显示 → 图形”中将 DLSS5Tool.exe 设为“高性能（NVIDIA GPU）”并重启；"
+            "再从 Releases 列表下载 30/40/50 系对应运行库，关闭程序后只替换 "
+            f"_internal\\nvngx_dlssnr.dll：{updater.RELEASES_URL}"
+        )
+    elif re.search(r"(?:Init_with_ProjectID|runtime Init_Ext).*0xBAD", combined, re.I):
         hints.append("NGX 初始化返回 BAD 错误；通常与驱动、默认适配器或硬件支持有关。")
-    if re.search(r"CreateFeature\(18\).*0xBAD00001", combined, re.I):
-        hints.append("Feature 18 返回 FeatureNotSupported；优先核对 DLL 与 RTX 代际是否匹配。")
     if "Feature 18 ready" in combined and probe.get("ok"):
         hints.append("Feature 18 初始化和单帧处理通过。")
     if probe.get("ok") and not hints:

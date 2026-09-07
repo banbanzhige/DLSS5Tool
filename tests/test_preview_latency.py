@@ -36,7 +36,7 @@ class PreviewLatencyTests(unittest.TestCase):
         app._prerender_target_frames = lambda: 176
         app._pre_rendering = True
         app._prefetch_stop = threading.Event()
-        app.view_var = SimpleNamespace(get=lambda: "对比")
+        app.view_var = SimpleNamespace(get=lambda: "compare")
         app.display_view = Mock()
         app._schedule_preview_decode = Mock()
         app._update_preview_timeline_and_status = Mock()

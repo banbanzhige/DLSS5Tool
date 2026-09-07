@@ -908,3 +908,23 @@ def apply_ttk(root, ui):
     )
     install_combobox_behavior(root)
     return style
+
+
+def install_ttk_scrolledtext_scrollbar(scrolled_text):
+    """Replace ScrolledText's classic scrollbar with the themed ttk variant."""
+    current = getattr(scrolled_text, "vbar", None)
+    if isinstance(current, ttk.Scrollbar):
+        return current
+
+    frame = scrolled_text.frame
+    if current is not None:
+        current.pack_forget()
+        current.destroy()
+
+    scrollbar = ttk.Scrollbar(
+        frame, orient="vertical", command=scrolled_text.yview,
+    )
+    scrollbar.pack(side="right", fill="y", before=scrolled_text._w)
+    scrolled_text.configure(yscrollcommand=scrollbar.set)
+    scrolled_text.vbar = scrollbar
+    return scrollbar

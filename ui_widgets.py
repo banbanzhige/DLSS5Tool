@@ -1429,7 +1429,12 @@ class ChipGroup(tk.Canvas):
         )
         self._variable = variable
         self._command = command
-        self._choices = list(choices)
+        # A mapping stores stable values in the variable while drawing localized
+        # labels.  Plain sequences keep the original value == label behavior.
+        self._choices = (
+            list(choices.items()) if isinstance(choices, dict)
+            else [(choice, choice) for choice in choices]
+        )
         self._hits = []
         self._hover = None
         self._trace = variable.trace_add("write", lambda *_args: self._redraw())
@@ -1483,22 +1488,23 @@ class ChipGroup(tk.Canvas):
         try:
             current = self._variable.get()
         except tk.TclError:
-            current = self._choices[0]
-        index = self._choices.index(current) if current in self._choices else 0
+            current = self._choices[0][0]
+        values = [value for value, _label in self._choices]
+        index = values.index(current) if current in values else 0
         index = max(0, min(len(self._choices) - 1, index + step))
-        name = self._choices[index]
-        if name != current:
-            self._variable.set(name)
+        value = self._choices[index][0]
+        if value != current:
+            self._variable.set(value)
             if self._command:
                 self._command()
         return "break"
 
     def _on_click(self, event):
         self.focus_set()
-        for name, x0, x1 in self._hits:
+        for value, x0, x1 in self._hits:
             if x0 <= event.x <= x1:
-                if self._variable.get() != name:
-                    self._variable.set(name)
+                if self._variable.get() != value:
+                    self._variable.set(value)
                     if self._command:
                         self._command()
                 return
@@ -1515,15 +1521,15 @@ class ChipGroup(tk.Canvas):
         font = UI_FONT
         height = control_height(self)
         sizes = []
-        for name in self._choices:
-            probe = self.create_text(0, -40, text=name, font=font)
+        for value, label in self._choices:
+            probe = self.create_text(0, -40, text=label, font=font)
             bbox = self.bbox(probe) or (0, 0, 24, 12)
             self.delete(probe)
-            sizes.append((name, max(bbox[2] - bbox[0], 12) + 20))
+            sizes.append((value, label, max(bbox[2] - bbox[0], 12) + 20))
         gap = 0 if self._connected else 8
         x = 1
         if self._connected and sizes:
-            total = sum(width for _name, width in sizes) + 2
+            total = sum(width for _value, _label, width in sizes) + 2
             round_rect(
                 self, 1, 2, total, height - 2, RADIUS_CONTROL,
                 fill=ui.get("elev", "#1c242d") if self._tone != "transport"
@@ -1533,9 +1539,9 @@ class ChipGroup(tk.Canvas):
             )
             x = 2
         self._hits = []
-        for name, width in sizes:
-            on = name == current
-            hover = name == self._hover
+        for value, label, width in sizes:
+            on = value == current
+            hover = value == self._hover
             fill = ui.get("select_bg", "#1a2d34") if on else ui.get("elev", "#1c242d")
             if hover and not on:
                 fill = ui.get("hover", fill)
@@ -1553,9 +1559,9 @@ class ChipGroup(tk.Canvas):
                     fill=fill, outline=outline, width=1,
                 )
             self.create_text(
-                x + width / 2, height / 2, text=name, fill=fg, font=font,
+                x + width / 2, height / 2, text=label, fill=fg, font=font,
             )
-            self._hits.append((name, x, x + width))
+            self._hits.append((value, x, x + width))
             x += width + gap
         super().configure(width=max(x, 40), height=height)
         # Separate chips already show selection on the active pill; a group

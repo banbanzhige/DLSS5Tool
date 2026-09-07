@@ -7,6 +7,8 @@ import os
 import re
 import sys
 
+import i18n
+
 
 DLSS_SLIDER_MIN = 0.0
 DLSS_STANDARD_MAX = 1.0
@@ -15,7 +17,7 @@ DLSS_SLIDER_STEP = 0.01
 
 
 DEFAULTS = {
-    "preview_view": "原图",
+    "preview_view": "original",
     "style": 0,
     "enable_5x": False,
     "intensity": 1.0,
@@ -53,6 +55,7 @@ DEFAULTS = {
     "ui_host_open": True,
     "ui_preview_open": True,
     "ui_theme": "dark",
+    "ui_language": i18n.DEFAULT_LANGUAGE,
     "inspector_width": 360,
     "preview_detached": False,
     "preview_window_geometry": "",
@@ -113,8 +116,13 @@ def validate(values):
     """Return a complete safe configuration, ignoring unknown/corrupt values."""
     source = values if isinstance(values, dict) else {}
     result = dict(DEFAULTS)
-    if source.get("preview_view") in {"原图", "DLSS", "对比"}:
-        result["preview_view"] = source["preview_view"]
+    preview_view = {
+        "原图": "original",
+        "DLSS": "dlss",
+        "对比": "compare",
+    }.get(source.get("preview_view"), source.get("preview_view"))
+    if preview_view in {"original", "dlss", "compare"}:
+        result["preview_view"] = preview_view
     result["style"] = _clamp_int(source.get("style", result["style"]), 0, 2)
     result["enable_5x"] = _as_bool(
         source.get("enable_5x", result["enable_5x"]), result["enable_5x"]
@@ -180,6 +188,9 @@ def validate(values):
         result[name] = _as_bool(source.get(name, result[name]), result[name])
     theme = str(source.get("ui_theme", result["ui_theme"])).strip().lower()
     result["ui_theme"] = "light" if theme == "light" else "dark"
+    result["ui_language"] = i18n.normalize_language(
+        source.get("ui_language", result["ui_language"])
+    )
     result["inspector_width"] = _clamp_int(
         source.get("inspector_width", result["inspector_width"]), 320, 480,
     )
@@ -211,11 +222,15 @@ def validate(values):
 
 def load(path=None):
     path = os.path.abspath(path or settings_path())
+    is_first_run = not os.path.isfile(path)
     try:
         with open(path, encoding="utf-8") as handle:
             return validate(json.load(handle))
     except (OSError, ValueError, TypeError):
-        return dict(DEFAULTS)
+        defaults = dict(DEFAULTS)
+        if is_first_run:
+            defaults["ui_language"] = i18n.system_language()
+        return defaults
 
 
 def save(values, path=None):

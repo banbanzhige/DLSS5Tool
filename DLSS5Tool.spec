@@ -35,10 +35,16 @@ for filename, required in (
     elif required:
         raise SystemExit(f"Missing required runtime file: {source}")
 
-for filename in ("LICENSE", "README.md", "THIRD_PARTY_NOTICES.md"):
+for filename in ("LICENSE", "README.md", "README.en.md", "THIRD_PARTY_NOTICES.md"):
     source = os.path.join(project_root, filename)
     if os.path.isfile(source):
         datas.append((source, "."))
+
+for language in ("zh_CN", "en_US"):
+    source = os.path.join(project_root, "locales", f"{language}.json")
+    if not os.path.isfile(source):
+        raise SystemExit(f"Missing localization catalog: {source}")
+    datas.append((source, "locales"))
 
 app_icon = os.path.join(project_root, "assets", "app.ico")
 app_icon_png = os.path.join(project_root, "assets", "app.png")

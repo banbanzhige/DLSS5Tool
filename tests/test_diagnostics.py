@@ -46,6 +46,13 @@ class DiagnosticHelpersTests(unittest.TestCase):
             "native_log": "CreateFeature(18) -> 0xBAD00001",
         })
         self.assertTrue(any("FeatureNotSupported" in line for line in failed))
+        self.assertTrue(any(diagnostics.updater.RELEASES_URL in line for line in failed))
+        init_failed = diagnostics._probe_hints({
+            "ok": False,
+            "native_log": "Init_with_ProjectID -> 0xBAD00001",
+        })
+        self.assertTrue(any("_internal\\nvngx_dlssnr.dll" in line for line in init_failed))
+        self.assertTrue(any("高性能（NVIDIA GPU）" in line for line in init_failed))
         passed = diagnostics._probe_hints({"ok": True, "native_log": "EvaluateFeature -> 1"})
         self.assertEqual(passed, ["宿主初始化和单帧处理通过。"])
         skipped = diagnostics._probe_hints({"skipped": True})
@@ -89,6 +96,7 @@ class DiagnosticReportTests(unittest.TestCase):
                 report = handle.read()
             self.assertIn("[宿主探针: v2]", report)
             self.assertIn("[宿主探针: legacy]", report)
+            self.assertIn(f"应用版本: {diagnostics.APP_VERSION}", report)
             self.assertIn("FeatureNotSupported", report)
             self.assertIn("RTX Test, 999.0", report)
             self.assertFalse(os.path.exists(output + ".tmp"))
