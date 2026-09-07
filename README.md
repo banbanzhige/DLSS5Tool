@@ -1,20 +1,37 @@
+<h1 align="center">
+  <img src="assets/readme-banner-v1.png" alt="DLSS5Tool — 让视频与图片，在本地获得新的质感。神经渲染 · 2× / 4× 超分 · 实时对比 · 批量导出" width="1200">
+</h1>
+
 <p align="center">
-  <img src="assets/app.png" alt="DLSS5Tool" width="128" height="128">
+  本地视频与图片增强，支持实时对比与批量导出。
 </p>
 
-# DLSS5Tool
+<p align="center">
+  <a href="https://github.com/banbanzhige/DLSS5Tool/releases/latest">下载免安装版</a> ·
+  <a href="#快速开始">快速开始</a> ·
+  <a href="CHANGELOG.md">更新日志</a>
+</p>
 
-**本地视频与图片神经渲染工具 · Windows · NVIDIA RTX**
+<p align="center">
+  <a href="CHANGELOG.md"><img src="https://img.shields.io/badge/release-v2.0.0-0E7490?style=flat&amp;labelColor=475569" alt="当前文档版本 v2.0.0" height="20"></a>
+  <a href="#快速开始"><img src="https://img.shields.io/badge/platform-Windows_x64-0369A1?style=flat&amp;labelColor=475569" alt="平台 Windows x64" height="20"></a>
+  <a href="#2-选择显卡运行库"><img src="https://img.shields.io/badge/GPU-NVIDIA_RTX-0E7490?style=flat&amp;labelColor=475569" alt="显卡 NVIDIA RTX；请按代际选择运行库" height="20"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-0369A1?style=flat&amp;labelColor=475569" alt="项目自有源码采用 MIT 许可证" height="20"></a>
+</p>
 
-将视频或图片拖进窗口，用 **DLSS 5 Neural Rendering** 进行画面增强：实时预览、分界对比、边看边调，满意后导出或加入批量队列。也可以先进行 2× / 4× RTX Video 超分，再增强目标分辨率的画面。
+<details>
+<summary>文档目录</summary>
 
-无需接入游戏引擎，也不需要提供材质、法线或深度数据；直接以现有画面作为后处理输入。推理在本机运行，免安装包自带 Python 依赖和 FFmpeg。
+- [实机演示](#实机演示) / [效果对比](#效果对比)
+- [功能概览](#功能概览)
+- [快速开始](#快速开始)
+- [操作与快捷键](#操作与快捷键)
+- [输出与画质说明](#输出与画质说明)
+- [常见问题](#常见问题)
+- [从源码运行](#从源码运行)
+- [许可证](#许可证)
 
-当前版本：**v2.0.0** — 工作台布局、浅色 / 暗色皮肤、全新应用图标。
-
-[下载免安装版](https://github.com/banbanzhige/DLSS5Tool/releases/latest) · [快速开始](#快速开始) · [操作与快捷键](#操作与快捷键) · [常见问题](#常见问题) · [更新日志](CHANGELOG.md) · [从源码运行](#从源码运行)
-
-> 这是面向现有媒体的神经后处理工具，不是游戏中的 DLSS 超分或帧生成。效果与速度取决于素材、参数、显卡和运行库；RTX 30 / 50 系需要替换对应运行库，详见下方说明。
+</details>
 
 ## 实机演示
 
@@ -22,7 +39,7 @@
   <a href="img/3.png"><img src="img/3.png" alt="DLSS5Tool 实机运行界面，显示原图与 DLSS 分界对比、参数面板和预览缓存状态" width="760"></a>
 </p>
 
-<p align="center"><sub>上图为 v1.0.3 实机截图，展示分界对比效果。v2.0.0 已改为左侧预览、右侧调参 / 导出 / 队列的工作台布局，并支持浅色与暗色皮肤。</sub></p>
+<p align="center"><sub>上图为 v2.0.0 实机截图</sub></p>
 
 ## 效果对比
 
@@ -44,6 +61,10 @@
 </table>
 
 ## 功能概览
+
+使用 **DLSS 5 Neural Rendering** 增强已有画面，可选先做 2× / 4× RTX Video 超分。推理在本机运行，无需接入游戏引擎或提供材质、法线、深度数据。免安装包自带 Python 依赖和 FFmpeg；v2.0.0 带来工作台布局、浅色 / 暗色皮肤与全新应用图标。
+
+> 这是面向现有媒体的神经后处理工具，不是游戏中的 DLSS 超分或帧生成。效果与速度取决于素材、参数、显卡和运行库；RTX 30 / 50 系需要替换对应运行库，详见[快速开始](#快速开始)。
 
 - **画面增强**：同分辨率神经后处理，提供默认 / 自然 / 电影风格，以及强度、本地色调、本地结构、输出混合和皮肤蒙版控制。
 - **可选超分**：支持 2× / 4× RTX Video 超分，固定按「超分 → DLSS 5 增强」顺序处理；关闭时保持原尺寸增强。
