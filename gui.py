@@ -749,6 +749,7 @@ class App:
         self._preview_frame_queue = None
         self._preview_worker_error = None
         self._last_shown_dlss = None
+        self._presented_preview_key = None
         self._dlss_frame_cache = {}
         self._dlss_cache_bytes = 0
         self._source_frame_cache = {}
@@ -4475,15 +4476,18 @@ class App:
                 self._source_frame_cache.pop(key, None)
                 self._source_cache_bytes -= size
 
-    def _cache_clear(self):
+    def _cache_clear(self, keep_source=False):
+        """Invalidate processed frames; only parameter edits can retain decoded sources."""
         with self._cache_lock:
             self._dlss_frame_cache.clear()
-            self._source_frame_cache.clear()
+            if not keep_source:
+                self._source_frame_cache.clear()
+                self._source_cache_bytes = 0
             self._queued_preview_frames.clear()
             self._dlss_cache_bytes = 0
-            self._source_cache_bytes = 0
             self._live_cache = None
             self._last_shown_dlss = None
+            self._presented_preview_key = None
             self._preview_processed_frames = 0
             self._preview_process_t0 = None
             self._last_super_resolution_preview = None
@@ -5550,20 +5554,19 @@ class App:
             return
         self._play_dlss_thread = None
         self._play_dlss_busy = False
-        current_source = self._source_cache_get(self._frame)
         if self._live:
             try:
                 with self._live_lock:
                     self._live.update(self._collect_settings())
             except Exception as ex:
                 self.logln("[DLSS 参数] " + str(ex))
-        self._cache_clear()
+        # DLSS parameters do not change decoded video pixels. Preserve these
+        # within the same shared RAM budget instead of seeking/decoding again.
+        self._cache_clear(keep_source=True)
         try:
             self.timeline.set_cache_ranges([], [])
         except Exception:
             pass
-        if current_source is not None:
-            self._source_cache_store(self._frame, current_source)
         self._split_frame = -1
         self._split_dlss = None
         if self.view_var.get() in ("DLSS", "对比"):
@@ -5964,6 +5967,10 @@ class App:
         self._preview_decode_after = None
         if not self._preview_session_active():
             return
+        # Presentation must precede every early return in the fill-ahead loop,
+        # including queue-full retries. A large cache must not delay this frame.
+        self._present_current_cached_preview()
+        self._update_preview_timeline_and_status()
         target_end = min(
             self._last_frame_index(),
             self._frame + self._prerender_target_frames() - 1,
@@ -5993,14 +6000,13 @@ class App:
             self._schedule_preview_decode(1)
             return
         if waiting_on_worker:
-            self._present_current_cached_preview()
-            self._update_preview_timeline_and_status()
             self._schedule_preview_decode(20)
             return
         if self._pre_rendering and not self.playing:
             self._pre_rendering = False
             self._prefetch_stop.set()
             self._preview_frame_queue = None
+            # The worker may have completed this frame during the scan above.
             self._present_current_cached_preview()
             self._update_preview_timeline_and_status(force=True)
             return
@@ -6011,12 +6017,23 @@ class App:
         if (
             getattr(self, "_preview_cache_frozen", False)
             or self.playing or not self.video or self._exporting
+            or self._hold_original or self.view_var.get() not in ("DLSS", "对比")
         ):
             return False
-        target_size = self._active_preview_size or self._precise_preview_size()
-        if self._cached_dlss(self._frame, target_size) is None:
+        # Full display uses the precise size. A ready playback proxy alone must
+        # not cause synchronous full-resolution inference on the UI thread.
+        target_size = self._precise_preview_size()
+        sk = self._settings_hash()
+        if self._cached_dlss_sk(self._frame, sk, target_size) is None:
+            return False
+        key = (self._frame, target_size, sk, self.view_var.get())
+        if (
+            getattr(self, "_presented_preview_key", None) == key
+            and not getattr(self, "_dlss_pending", False)
+        ):
             return False
         self.display_view(quality="full")
+        self._presented_preview_key = key
         return True
 
     def _update_preview_timeline_and_status(self, force=False):

@@ -280,9 +280,8 @@ class TimelineBar(tk.Canvas):
             "track": "#2a333b",
             "fill": "#3d7ea6",
             "thumb": "#e6e6e6",
-            "rendered": "#78c7d5",
-            "queued": "#557780",
         }
+        self._update_cache_colors()
         self._min = 0
         self._max = 0
         self._value = 0
@@ -301,11 +300,21 @@ class TimelineBar(tk.Canvas):
             "track": ui.get("timeline_track", "#2a333b"),
             "fill": ui.get("timeline_fill", "#3d7ea6"),
             "thumb": ui.get("timeline_thumb", "#e6e6e6"),
-            "rendered": ui.get("timeline_rendered", "#78c7d5"),
-            "queued": ui.get("timeline_queued", "#557780"),
         }
+        self._update_cache_colors()
         self.configure(bg=self._colors["bg"])
         self._redraw()
+
+    def _update_cache_colors(self):
+        # Tk Canvas has no alpha fills: composite the theme's progress color
+        # over the rail once per theme change, not on every playback repaint.
+        track = _hex_rgb(self._colors["track"])
+        fill = _hex_rgb(self._colors["fill"])
+        for state, opacity in (("rendered", 0.45), ("queued", 0.16)):
+            self._colors[state] = "#{:02x}{:02x}{:02x}".format(*(
+                round(base + (accent - base) * opacity)
+                for base, accent in zip(track, fill)
+            ))
 
     def set_range(self, minimum, maximum):
         self._min = int(minimum)
@@ -384,27 +393,28 @@ class TimelineBar(tk.Canvas):
         span_width = max(x1 - pad, 1)
         colors = self._colors
         track_w = scale_px(self, 6)
-        self.create_line(pad, y, x1, y, fill=colors["track"], width=track_w, capstyle="round")
-        cache_y = max(y - 4, 2)
-        for start, end in self._queued_ranges:
-            self.create_line(
-                self._x_from_value(start, pad, span_width), cache_y,
-                self._x_from_value(end + 1, pad, span_width), cache_y,
-                fill=colors["queued"], width=2,
-            )
-        for start, end in self._rendered_ranges:
-            self.create_line(
-                self._x_from_value(start, pad, span_width), cache_y,
-                self._x_from_value(end + 1, pad, span_width), cache_y,
-                fill=colors["rendered"], width=2,
-            )
+        self.create_line(pad, y, x1, y, fill=colors["track"], width=track_w,
+                         capstyle="round", tags="track")
+        # Share the rail's center and thickness; solid playback stays on top.
+        for state, ranges in (("queued", self._queued_ranges),
+                              ("rendered", self._rendered_ranges)):
+            for start, end in ranges:
+                left = self._x_from_value(start, pad, span_width)
+                right = self._x_from_value(end + 1, pad, span_width)
+                if right <= left:
+                    continue
+                self.create_line(
+                    left, y, right, y, fill=colors[state], width=track_w,
+                    tags=state,
+                )
         x = pad + self._frac() * max(x1 - pad, 1)
         if self._max > self._min:
-            self.create_line(pad, y, x, y, fill=colors["fill"], width=track_w, capstyle="round")
+            self.create_line(pad, y, x, y, fill=colors["fill"], width=track_w,
+                             capstyle="round", tags="played")
             r = max(4, scale_px(self, 6))
             self.create_oval(
                 x - r, y - r, x + r, y + r,
-                fill=colors["thumb"], outline=colors["bg"], width=2,
+                fill=colors["thumb"], outline=colors["bg"], width=2, tags="thumb",
             )
 
 
