@@ -27,6 +27,8 @@
 - [Screenshot and comparison](#screenshot-and-comparison)
 - [Features](#features)
 - [Quick start](#quick-start)
+- [Optional depth and optical flow](#optional-depth-and-optical-flow)
+- [Performance and current limits](#performance-and-current-limits)
 - [Controls and shortcuts](#controls-and-shortcuts)
 - [Output and quality](#output-and-quality)
 - [FAQ](#faq)
@@ -34,6 +36,8 @@
 - [License](#license)
 
 </details>
+
+> This document describes the **v2.1.1 source**: flow-input preparation optimization, updated defaults, and model checks before activation. An independent candidate component has passed local verification; existing deployed components and portable releases have not been replaced or republished by this change. Check the actual Release attachments and notes before downloading. **Hardware optical flow (NVOFA) is not integrated; this version still uses RAFT.**
 
 ## Screenshot and comparison
 
@@ -58,17 +62,18 @@ The images below use the same AI-generated source. The left side is untouched an
 
 ## Features
 
-DLSS5Tool uses **DLSS 5 Neural Rendering** to enhance existing images. It can optionally apply 2× or 4× RTX Video super resolution first. Inference runs locally and does not require a game engine, material data, normals, depth data, PyTorch, or an online service. The portable package includes its Python dependencies and FFmpeg.
+DLSS5Tool uses **DLSS 5 Neural Rendering** to enhance existing media, optionally after 2× or 4× RTX Video super resolution. Processing is local and does not require a game engine or user-supplied materials, normals, or depth data. The base portable package includes its required Python dependencies and FFmpeg, but not PyTorch or inference models. An optional, separate enhancement component supplies depth/flow models and their inference dependencies.
 
 > This is a neural post-processing tool for existing media. It is not in-game DLSS super resolution or frame generation. Quality and performance depend on the source, settings, GPU, driver, and runtime. RTX 30- and 50-series users must select the matching runtime described below.
 
 - **Image enhancement:** Default, Natural, and Cinema styles with strength, local tone, local structure, output mix, and skin-mask controls.
 - **Optional super resolution:** 2× / 4× RTX Video scaling followed by DLSS 5 enhancement; disabled means same-resolution enhancement.
-- **Interactive preview:** Original, DLSS, and draggable split comparison; 25%–800% zoom, panning, navigator, frame stepping, fullscreen, and a detachable preview window.
+- **Interactive preview:** Original/DLSS, draggable wipe and side-by-side comparison; 25%–800% zoom, panning, navigator, frame stepping, fullscreen, and a detachable preview. Model processing is not guaranteed to sustain real-time playback.
+- **Optional inference models:** Flow only, Depth only, or both; off on every launch, with readiness checks before activation. Depth and flow visualizations can be viewed and exported separately.
 - **HDR video:** Detects HDR10/PQ and HLG, uses a high-precision path, exports HEVC Main10, and preserves basic color tags.
 - **Flexible export:** MP4, MKV, or MOV video; output-resolution limits; quality profiles or a custom bitrate; source audio passthrough when compatible.
 - **Mixed batch queue:** Images and videos can be mixed, reordered, retried, and restored after restart. Each job keeps its own settings snapshot.
-- **Desktop workspace:** Light and dark themes, resizable inspector, log, diagnostics, and update checks. Inference runs in an isolated process.
+- **Desktop workspace:** Effects, Models, Settings, and Queue tabs; light/dark themes, resizable inspector, log, diagnostics, and update checks. Native processing and optional models use isolated processes.
 - **Languages:** Simplified Chinese and English. Change the language under **More → Language**; restart DLSS5Tool to apply it.
 
 Supported video extensions: `MP4 / M4V / MOV / MKV / AVI / WebM`.
@@ -106,16 +111,6 @@ mods\nvngx_dlssnr.dll
 
 Auto-detection prefers an existing custom path, then nvngx_dlssnr.dll in modules, then a unique recognized alternative, then bundled `_internal`. Multiple candidates are not guessed; select one manually or force bundled. No need to overwrite `_internal`. The modules directory defaults to mods beside the executable and can be changed; detected paths are shown. The RTX 30-series runtime is a community adaptation and is not an NVIDIA support commitment. GPU and driver combinations still require real-hardware verification.
 
-Depth/flow settings have a dedicated **Models** tab alongside Effects, Settings and Queue; Effects no longer duplicates guidance settings. Guidance is **off by default; ordinary use needs no PyTorch or models**. Extract the add-on beside the app: the archive includes `mods`, inference dependencies and architecture. No path setup or Python installation; depth size is detected automatically. Compatible `.pth` weights remain external and replaceable. Settings → Models & add-ons shows status and common actions; Replace DLL / models is a top-level section, collapsed by default without nested disclosure. FP16 and dual stream are under Settings → Performance & device. Inactive controls keep their values. See [mods instructions](mods/README.md). No models download and no installers run automatically. Guidance supports SDR, non-tiled processing; CPU inference may be slow.
-
-The Models player offers Original, Depth, Flow and Compare, with comparisons against the original. Both DLSS and guidance comparisons support a draggable wipe or synchronized side-by-side display. Guidance images reuse the current component on demand and never change export content. Flow hue indicates direction and brightness indicates magnitude; depth is normalized relative depth, not metric distance.
-
-Use the bottom **Compare ▾** menu for layout, comparison target, centering and the on-demand legend. Guidance playback holds the complete current image pair until the next pair is ready, updating the frame number and both images together.
-
-The fixed Models export area saves a complete MP4 video or the current PNG frame at source dimensions and frame rate, without audio or UI overlays. PNG contains an 8-bit visualization, not raw floating-point data. Export supports cancellation and preserves existing destination files on failure or cancellation.
-
-Analysis controls include RAFT iterations, independent flow/depth sizes, depth range stability and percentiles. Map display options affect map previews/exports only, not enhanced video. See [parameter notes](GUIDANCE_PARAMETERS.md).
-
 <details>
 <summary>Recorded runtime versions and SHA-256 values</summary>
 
@@ -139,11 +134,82 @@ A matching hash identifies the file only; it is not a licensing or compatibility
 ### 3. Import, compare, and export
 
 1. Start `DLSS5Tool.exe`, then drop media onto the left side or click **Choose a file**.
-2. Switch to **DLSS** or **Compare** and adjust the effect on the **Adjust** tab. The first launch opens the Original view; press `3` for split comparison.
-3. Configure output on the **Export** tab. Safe first-run defaults are original resolution, super resolution off, Balanced quality, Strict single session, and MP4 for video.
+2. Switch to **DLSS** or **Compare** and adjust the effect on the **Effects** tab. The first launch opens Original; press `3` for split comparison.
+3. Configure output on the **Settings** tab. First-run defaults are source resolution, super resolution off, High quality, NVENC p5, Strict single session, and MP4. Local tone and local structure default to 1.0.
 4. Export the current item, or add multiple items to the queue and process them together.
 
-Existing saved settings remain in effect and are not replaced by first-run defaults.
+Explicit saved parameters remain in effect. The exception is inference mode: every GUI launch starts with it off and requires an explicit checked activation. Saved queue jobs retain their own settings snapshots.
+
+## Optional depth and optical flow
+
+### Base package and enhancement component
+
+**Ordinary enhancement and super resolution do not require models.** The base package contains no Torch, model architectures, or weights. For guidance, extract a trusted complete enhancement add-on beside `DLSS5Tool.exe`. The archive already contains `mods`; do not create `mods/mods`.
+
+```text
+DLSS5Tool.exe
+_internal/                  # Base application runtime
+mods/
+  nvngx_dlssnr.dll           # Optional replacement runtime
+  enhancement/
+    guidance_worker.exe
+    enhancement.json
+    _internal/              # Required bundled inference dependencies
+    models/                 # Component default weights, if included
+  models/                   # User weight overrides
+```
+
+A complete component carries its dependencies; end users do not separately install Python, PyTorch, or CUDA Toolkit. Supported GPU hardware and drivers are still required. The app never automatically downloads models, installs dependencies, or runs installers. Compatible `.pth` weights are replaceable; renaming an incompatible architecture does not make it compatible. See [component layout and discovery](mods/README.md). Full-model package distribution and license archiving are managed separately from the base app; see the [packaging record](PACKAGING_INDEX.md).
+
+### Activation and recovery
+
+1. Under **Models → Analysis mode**, choose Flow only, Depth only, or Depth + Flow.
+2. Mode remains off while a background task releases the previous session, checks required files, protocol, precision, and actual device, loads weights, and processes two small synthetic frames. No imported media is needed. Flow only does not require depth weights, and vice versa.
+3. Only a successful test enables inference. Missing dependencies, damaged weights, unsupported devices, or timeouts leave it off with an inline explanation. Base processing remains available. Correct the paths, model, precision, or device, then select the mode again.
+
+**Settings → Models & add-ons** provides status, refresh, and details; “files found” is not a successful inference check. Paths are under **Replace DLL / models**; device, FP16, and dual stream are under **Performance & device**. After failure, relevant configuration remains editable, but editing alone does not enable inference.
+
+Local activation checks took about 6–11 seconds; other machines vary. This check is not repeated per frame. Passing a small input does not guarantee enough VRAM for real media. The probe currently releases its component afterward, so rendering creates another session and still incurs model-loading cost. Auto/GPU never silently falls back to CPU. CPU is an explicit choice requiring compatible precision and scheduling settings.
+
+### v2.1.1 defaults
+
+| Setting | Default |
+| --- | --- |
+| Analysis mode | Off; explicit activation on every GUI launch |
+| Flow model, analysis long edge, updates | RAFT-Large, 512 px, 6 |
+| Flow direction and precision | Current → previous frame, FP32 |
+| Depth model and analysis long edge | Large (ViT-L), 512 px; Small / Base / Auto remain selectable |
+| Depth acceleration | SDPA + FP16 (experimental) |
+| Combined execution | Dual stream; single-model modes effectively run serially |
+| Depth range stability and percentiles | 0.9, P1/P99 |
+| Flow display range and depth display | 3 px/frame, non-inverted grayscale; visualization only |
+
+Model alignment may slightly change the actual input dimensions. Larger inputs, more updates, or larger models do not guarantee better final images. Explicit saved settings are not overwritten by this table. See [parameter notes](GUIDANCE_PARAMETERS.md) and [activation verification](GUIDANCE_ACTIVATION.md).
+
+### Inspect and export maps
+
+The Models player offers Original, Depth, Flow, and Compare. The bottom **Compare ▾** menu controls wipe/side-by-side layout, target, centering, and legend. Both sides share frame position, zoom, and pan; the current complete pair remains visible while the next is pending. Flow hue represents direction and brightness magnitude; depth is normalized relative depth, not metric distance.
+
+Export a complete MP4 or the current PNG at source dimensions/frame rate, without audio or UI overlays. PNG is an 8-bit visualization, not raw floating-point data. Preview selection does not change enhanced-video export content. Export can be cancelled and preserves existing destination files on failure/cancellation.
+
+## Performance and current limits
+
+v2.1.1 optimizes **RAFT CPU input preparation** with an exact lookup derived from the original normalization and reuse of unchanged previous-frame input between consecutive pairs. Models, precision, dimensions, and update counts remain unchanged; it does not skip inference using old predictions. **This is not hardware optical flow or frame interpolation. NVOFA is not integrated into the UI or production processing path.**
+
+On an RTX 4070 SUPER at fixed 512 / 6 updates / Large / depth FP16 / dual stream, source-level comparisons of two complete clips (165 and 243 frames) produced identical per-frame flow, depth, and final-output hashes. The 165-frame frozen-component + isolated-host + encoding comparison measured:
+
+| Measurement | Previous component | Optimized candidate |
+| --- | ---: | ---: |
+| Mean process time, excluding first three frames | 173.84 ms | 149.76 ms |
+| Total including setup, decode, hashing, encoding and drain | 44.98 s | 41.38 s |
+
+This is a local single sequential A/B with background-load variation, without GUI or audio muxing—not a universal speedup or stable 30fps claim. Depth forward is unchanged and first-frame loading did not materially improve. Source and an independent candidate were verified; updating Python source does not update an old component EXE. See [verification and reproduction](FIRST_PASS_OPTIMIZATION.md).
+
+- Guidance currently requires **SDR, non-tiled processing**. HDR RGBA16F and tiled paths explicitly reject it rather than silently disabling it.
+- Flow is zero for a standalone image. The first frame, seeking, and detected scene cuts reset relevant history. Predicted relative depth is not game-engine ground truth; benefits depend on the source.
+- Original frames, DLSS frames, and raw guidance predictions dynamically share the cache budget (8192 MiB by default). There is no separate 2 GiB guidance cap. Cache does not survive application restart and cannot accelerate frames not yet inferred. The RAM readout counts registered cache arrays, not total process RAM or GPU VRAM.
+- Parallel export supports up to four workers, each loading its own models. It is not guaranteed to be faster. Large frames, combined models, and concurrency increase resource demand.
+- Out-of-memory errors do not trigger silent precision reductions, model swaps, or CPU fallback. The withdrawn `raft_final` optimization stays disabled; old settings migrate to original serial RAFT.
 
 ## Controls and shortcuts
 
@@ -203,6 +269,14 @@ Check the GPU generation, DLL path, and hash. Then use **More → Diagnostics**;
 
 Lower Playback quality under Preview performance and adjust the cache budget to available memory (the first-run default is `8192 MiB`). Validate high-resolution or 4× jobs with smaller media or 2× first, and review the resource warning. Preview zoom does not change export dimensions.
 
+**Why is inference off after restarting or after selecting a mode?**
+
+Startup preserves tuning but requires an explicit activation. The mode stays off during readiness checks; failures are shown below it. Check **Settings → Models & add-ons**, fix weights, component paths, device, or precision, and retry. Do not copy only the component EXE.
+
+**Depth/flow slows rendering. Will a larger cache help?**
+
+Per-frame models add processing time. A larger cache does not skip first-pass inference. Check the actual GPU, precision, and timing logs, then explicitly compare Flow only / Depth only / Combined for your source. Model-size or parameter changes can affect quality; judge moving detail, ghosting, and flicker through continuous playback, not only still screenshots.
+
 **How is 8K output from 4× super resolution encoded?**
 
 4× processing of 1080p produces 7680×4320. When either final output dimension exceeds 4096, export automatically uses HEVC/H.265 while keeping SDR content SDR. Smaller SDR output retains H.264; HDR uses HEVC Main10. A trial encode validates the actual size and settings before export, with CPU fallback if GPU encoding is unavailable (potentially much slower at 8K). The log identifies the selected encoder. MP4, MKV and MOV support HEVC, but playback also requires HEVC support. If export still fails, lower the final output size and include the encoder error log when reporting it.
@@ -255,7 +329,13 @@ Before building the portable package, provide `dlssnr_host_v2.dll`, `nvngx_dlssn
 .\build_release.ps1
 ```
 
-The current release is written to `dist/DLSS5Tool-v2.1.1/` and `dist/DLSS5Tool-v2.1.1-win64.zip`.
+A successful build writes `dist/DLSS5Tool-v2.1.1/` and `dist/DLSS5Tool-v2.1.1-win64.zip`; these paths do not imply that release attachments are already published.
+
+Base tests do not need Torch; model-specific tests are conditionally skipped and must also run in the separate inference build environment. Recent optimization verification: 348 base tests (340 passed, 8 skipped), additional Torch numerical/state tests, and three-mode synchronous/three-slot asynchronous candidate checks.
+
+Build the enhancement component separately with the [component builder](scripts/build_enhancement.py), matching architecture source, and licenses. Rebuilding the base EXE alone does not update it; see [maintainer build instructions](mods/README.md#maintainer-build-not-end-user-setup). Do not commit local candidates, test videos, weights, or SDK files to Git.
+
+Maintainers: see the [packaging footprint record and task index (Chinese)](PACKAGING_INDEX.md). Development environments may retain all components; user releases should include only necessary dependencies, with separate size and validation records for the base app, enhancement runtime, and models.
 
 The main portable package excludes AMD developer tools, experiment scripts/reports, test sources, and experiment outputs. These remain in the source repository; AMD testing has a separate build entry point. Runtime assets and user documents are collected explicitly, and a pre-archive check rejects development material. The enhancement component is also packaged separately; the base package includes only the instructions in `mods`.
 
