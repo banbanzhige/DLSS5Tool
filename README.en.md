@@ -37,7 +37,7 @@
 
 </details>
 
-> This document describes the **v2.1.1 source**: flow-input preparation optimization, updated defaults, and model checks before activation. An independent candidate component has passed local verification; existing deployed components and portable releases have not been replaced or republished by this change. Check the actual Release attachments and notes before downloading. **Hardware optical flow (NVOFA) is not integrated; this version still uses RAFT.**
+> This document describes **v2.1.1**: flow-input preparation optimization, updated defaults, model checks before activation, and lite / full / add-on packages. Check the actual Release attachments and notes before downloading. **Hardware optical flow (NVOFA) is not integrated; this version still uses RAFT.**
 
 ## Screenshot and comparison
 
@@ -84,7 +84,15 @@ Actual decoding support still depends on the file contents and available codecs.
 
 ### 1. Download and fully extract the package
 
-Open the [latest release](https://github.com/banbanzhige/DLSS5Tool/releases/latest) and download `DLSS5Tool-vVERSION-win64.zip`. Do not download GitHub's automatically generated “Source code” archives.
+Open the [latest release](https://github.com/banbanzhige/DLSS5Tool/releases/latest). Do not download GitHub's automatically generated “Source code” archives.
+
+| Needed | Download |
+| --- | --- |
+| Ordinary enhancement / super resolution (default) | **Lite** `DLSS5Tool-vVERSION-win64.zip`. In-app update checks also look only for this name. |
+| Ready-to-use depth / optical flow | **Full** volumes starting at `DLSS5Tool-vVERSION-win64-full.zip.001`. After downloading every part, open `.001` in 7-Zip, or run `Join-ReleaseArchive.ps1 -Edition full` in the same folder. |
+| Lite already installed, add inference only | **Add-on** volumes starting at `DLSS5Tool-vVERSION-win64-addon.zip.001`. Close the app and extract beside `DLSS5Tool.exe`; do not create `mods/mods`. |
+
+The full edition already contains the add-on. GitHub assets must stay under 2 GiB, so the full and add-on editions are split; do not mix parts from different versions.
 
 Requirements:
 
@@ -144,7 +152,7 @@ Explicit saved parameters remain in effect. The exception is inference mode: eve
 
 ### Base package and enhancement component
 
-**Ordinary enhancement and super resolution do not require models.** The base package contains no Torch, model architectures, or weights. For guidance, extract a trusted complete enhancement add-on beside `DLSS5Tool.exe`. The archive already contains `mods`; do not create `mods/mods`.
+**Ordinary enhancement and super resolution do not require models.** The lite package contains no Torch, model architectures, or weights. For guidance, download the full edition, or extract the matching add-on beside `DLSS5Tool.exe`. The archive already contains `mods`; do not create `mods/mods`.
 
 ```text
 DLSS5Tool.exe
@@ -159,7 +167,7 @@ mods/
   models/                   # User weight overrides
 ```
 
-A complete component carries its dependencies; end users do not separately install Python, PyTorch, or CUDA Toolkit. Supported GPU hardware and drivers are still required. The app never automatically downloads models, installs dependencies, or runs installers. Compatible `.pth` weights are replaceable; renaming an incompatible architecture does not make it compatible. See [component layout and discovery](mods/README.md). Full-model package distribution and license archiving are managed separately from the base app; see the [packaging record](PACKAGING_INDEX.md).
+A complete component carries its dependencies; end users do not separately install Python, PyTorch, or CUDA Toolkit. Supported GPU hardware and drivers are still required. The app never automatically downloads models, installs dependencies, or runs installers. Compatible `.pth` weights are replaceable; renaming an incompatible architecture does not make it compatible. See [component layout and discovery](mods/README.md). Full and add-on packages include Depth Anything V2 Large under CC-BY-NC-4.0 (non-commercial). Sizes, hashes, and license archives are recorded in the [packaging index (Chinese)](PACKAGING_INDEX.md).
 
 ### Activation and recovery
 
@@ -203,7 +211,7 @@ On an RTX 4070 SUPER at fixed 512 / 6 updates / Large / depth FP16 / dual stream
 | Mean process time, excluding first three frames | 173.84 ms | 149.76 ms |
 | Total including setup, decode, hashing, encoding and drain | 44.98 s | 41.38 s |
 
-This is a local single sequential A/B with background-load variation, without GUI or audio muxing—not a universal speedup or stable 30fps claim. Depth forward is unchanged and first-frame loading did not materially improve. Source and an independent candidate were verified; updating Python source does not update an old component EXE. See [verification and reproduction](FIRST_PASS_OPTIMIZATION.md).
+This is a local single sequential A/B with background-load variation, without GUI or audio muxing—not a universal speedup or stable 30fps claim. Depth forward is unchanged and first-frame loading did not materially improve. The v2.1.1 full and add-on packages use that optimized candidate; updating Python source does not update an old component EXE. See [verification and reproduction](FIRST_PASS_OPTIMIZATION.md).
 
 - Guidance currently requires **SDR, non-tiled processing**. HDR RGBA16F and tiled paths explicitly reject it rather than silently disabling it.
 - Flow is zero for a standalone image. The first frame, seeking, and detected scene cuts reset relevant history. Predicted relative depth is not game-engine ground truth; benefits depend on the source.
@@ -283,7 +291,7 @@ Per-frame models add processing time. A larger cache does not skip first-pass in
 
 **How do updates work?**
 
-The portable build checks GitHub Releases quietly at startup. You can also choose **More → Check for updates**. A prompt appears only for a newer release and asks before downloading. The running application is never replaced automatically; close it and fully extract the new package into a new folder.
+The portable build checks GitHub Releases quietly at startup. You can also choose **More → Check for updates**. A prompt appears only for a newer release and asks before downloading. The download is the lite portable app; it does not include the full or add-on packages and never replaces the running application. Close the old copy, extract the new package into a new folder, then reinstall the matching add-on or use the full edition if you still need depth/flow.
 
 ## Run from source
 
@@ -329,9 +337,9 @@ Before building the portable package, provide `dlssnr_host_v2.dll`, `nvngx_dlssn
 .\build_release.ps1
 ```
 
-A successful build writes `dist/DLSS5Tool-v2.1.1/` and `dist/DLSS5Tool-v2.1.1-win64.zip`; these paths do not imply that release attachments are already published.
+A successful base build writes `dist/DLSS5Tool-v2.1.1/` and `dist/DLSS5Tool-v2.1.1-win64.zip`. The three user editions are produced by `scripts/package_editions.py` from a verified base package, inference component, and weights into a new directory under `dist/`. These paths do not imply that GitHub attachments have been uploaded.
 
-Base tests do not need Torch; model-specific tests are conditionally skipped and must also run in the separate inference build environment. Recent optimization verification: 348 base tests (340 passed, 8 skipped), additional Torch numerical/state tests, and three-mode synchronous/three-slot asynchronous candidate checks.
+Base tests do not need Torch; model-specific tests are conditionally skipped and must also run in the separate inference build environment. Recent optimization verification: 353 base tests (345 passed, 8 skipped), additional Torch numerical/state tests, and three-mode synchronous/three-slot asynchronous candidate checks.
 
 Build the enhancement component separately with the [component builder](scripts/build_enhancement.py), matching architecture source, and licenses. Rebuilding the base EXE alone does not update it; see [maintainer build instructions](mods/README.md#maintainer-build-not-end-user-setup). Do not commit local candidates, test videos, weights, or SDK files to Git.
 
@@ -343,4 +351,4 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for development conventions and [SECURITY
 
 ## License
 
-Project-owned source code is released under the [MIT License](LICENSE). `nvngx_dlssnr.dll`, NVIDIA SDKs, FFmpeg, and bundled Python dependencies remain subject to their respective upstream licenses and are not covered by this repository's MIT license. See [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
+Project-owned source code is released under the [MIT License](LICENSE). `nvngx_dlssnr.dll`, NVIDIA SDKs, FFmpeg, and bundled Python dependencies remain subject to their respective upstream licenses and are not covered by this repository's MIT license. Depth Anything V2 Large weights in the full and add-on packages are **CC-BY-NC-4.0** and non-commercial only. See [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) and `mods/enhancement/licenses` in those packages.

@@ -37,7 +37,7 @@
 
 </details>
 
-> 本文对应 **v2.1.1 源码**：新增光流输入准备优化、默认参数调整和启用前模型检查。独立候选组件已完成本机验证，尚未替换已有部署组件或重新发布便携包；下载时以 Release 附件及其版本说明为准。**硬件光流 NVOFA 尚未接入，本版仍使用 RAFT。**
+> 本文对应 **v2.1.1**：新增光流输入准备优化、默认参数调整、启用前模型检查，并提供轻量版／完整版／推理附加包。下载时以 Release 附件及其版本说明为准。**硬件光流 NVOFA 尚未接入，本版仍使用 RAFT。**
 
 ## 实机演示
 
@@ -88,7 +88,15 @@
 
 ### 1. 下载并完整解压
 
-前往 [Releases 下载免安装包](https://github.com/banbanzhige/DLSS5Tool/releases/latest)，选择 `DLSS5Tool-v版本号-win64.zip`，不要选择 GitHub 自动生成的 `Source code` 源码压缩包。
+前往 [Releases 下载免安装包](https://github.com/banbanzhige/DLSS5Tool/releases/latest)，不要选择 GitHub 自动生成的 `Source code` 源码压缩包。
+
+| 需要 | 下载 |
+| --- | --- |
+| 普通增强／超分（默认） | **轻量版** `DLSS5Tool-v版本号-win64.zip`。应用内检查更新也只识别此文件。 |
+| 开箱即用的深度／光流 | **完整版** 分卷 `DLSS5Tool-v版本号-win64-full.zip.001` 起，下齐后用 7-Zip 打开 `.001`，或运行同目录 `Join-ReleaseArchive.ps1 -Edition full`。 |
+| 已有轻量版，只补推理 | **附加包** 分卷 `DLSS5Tool-v版本号-win64-addon.zip.001` 起；关闭程序后解压到 `DLSS5Tool.exe` 同级，不要解压成 `mods/mods`。 |
+
+完整版已经包含附加包，不必两个都下。GitHub 单个附件须小于 2 GiB，因此完整版和附加包使用分卷；不要下载未分卷的超大 ZIP，也不要混用不同版本的分卷。
 
 运行环境：
 
@@ -147,7 +155,7 @@ Get-FileHash .\_internal\nvngx_dlssnr.dll -Algorithm SHA256
 
 ### 基础包与增强组件
 
-**只做普通增强或超分，不需要安装模型。**基础包不含 Torch、模型架构或权重。需要引导时，将可信来源的完整增强附加包解压到 `DLSS5Tool.exe` 所在目录；附加包自身包含 `mods`，不要解压成 `mods/mods`。
+**只做普通增强或超分，不需要安装模型。**轻量版不含 Torch、模型架构或权重。需要引导时，下载完整版，或将同一版本的推理附加包解压到 `DLSS5Tool.exe` 所在目录；附加包自身包含 `mods`，不要解压成 `mods/mods`。
 
 ```text
 DLSS5Tool.exe
@@ -162,7 +170,7 @@ mods/
   models/                   # 用户覆盖权重
 ```
 
-完整组件自带推理依赖，用户无需另装 Python、PyTorch 或 CUDA Toolkit；仍需支持的 GPU 和驱动。软件不自动下载模型、安装依赖或执行安装器。兼容 `.pth` 权重可以外置替换，其他架构不能只换文件名使用。组件布局与查找顺序见 [mods 说明](mods/README.md)。完整模型包的公开分发状态及许可归档与基础包分开管理，见 [打包记录](PACKAGING_INDEX.md)。
+完整组件自带推理依赖，用户无需另装 Python、PyTorch 或 CUDA Toolkit；仍需支持的 GPU 和驱动。软件不自动下载模型、安装依赖或执行安装器。兼容 `.pth` 权重可以外置替换，其他架构不能只换文件名使用。组件布局与查找顺序见 [mods 说明](mods/README.md)。完整版与附加包含 Depth Anything V2 Large，受 CC-BY-NC-4.0 非商业条款约束；体积、哈希和许可归档见 [打包记录](PACKAGING_INDEX.md)。
 
 ### 启用与失败恢复
 
@@ -206,7 +214,7 @@ RTX 4070 SUPER、固定512／6次／Large／深度FP16／双Stream，两段完�
 | 平均 process 耗时（排除前三帧） | 173.84 ms | 149.76 ms |
 | 含准备、解码、哈希、编码和收尾的总时间 | 44.98 秒 | 41.38 秒 |
 
-这是本机单次顺序 A/B，存在背景负载影响，不含 GUI 和音频复用，不是通用提速承诺或稳定30fps。深度 forward 未改；首帧加载时间未明显改善。源码与独立候选组件已验证，更新源码不会自动更新旧组件 EXE。细节和复现见 [首次渲染优化](FIRST_PASS_OPTIMIZATION.md)。
+这是本机单次顺序 A/B，存在背景负载影响，不含 GUI 和音频复用，不是通用提速承诺或稳定30fps。深度 forward 未改；首帧加载时间未明显改善。v2.1.1 完整版／附加包使用上述候选优化组件；仅更新源码不会自动更新旧组件 EXE。细节和复现见 [首次渲染优化](FIRST_PASS_OPTIMIZATION.md)。
 
 - 引导目前仅支持 **SDR、非分块**。HDR RGBA16F 或分块路径会明确拒绝，不静默关闭引导。
 - 单张图片的光流为零；首帧、跳转、明显切镜会重置相关历史。预测深度不是游戏引擎提供的真实深度，收益仍需按素材判断。
@@ -286,7 +294,7 @@ RTX 4070 SUPER、固定512／6次／Large／深度FP16／双Stream，两段完�
 
 **如何更新？**
 
-免安装版启动后会在后台检查正式版更新，也可通过「更多 → 检查更新」手动触发。发现新版本才提示，下载前需要确认；下载不会自动替换正在运行的程序。关闭旧版后，将新包完整解压到新目录，再按显卡代际配置运行库。
+免安装版启动后会在后台检查正式版更新，也可通过「更多 → 检查更新」手动触发。发现新版本才提示，下载前需要确认；下载的是轻量版主程序，不会自动附带完整版或附加包，也不会替换正在运行的程序。关闭旧版后，将新包完整解压到新目录，再按显卡代际配置运行库；若仍需深度／光流，请叠加同一版本的附加包或改用完整版。
 
 ## 从源码运行
 
@@ -332,9 +340,9 @@ git clone --depth 1 https://github.com/NVIDIA/DLSS.git third_party/NVIDIA-DLSS
 .\build_release.ps1
 ```
 
-成功构建后输出至 `dist/DLSS5Tool-v2.1.1/` 和 `dist/DLSS5Tool-v2.1.1-win64.zip`；此路径说明不代表附件已发布。
+基础包构建输出至 `dist/DLSS5Tool-v2.1.1/` 和 `dist/DLSS5Tool-v2.1.1-win64.zip`。三种用户发行形态由 `scripts/package_editions.py` 从已验证的基础包、推理组件和权重生成，产物位于 `dist/` 下的独立目录，不会覆盖开发环境。此路径说明不代表附件已上传到 GitHub。
 
-基础应用测试不需要 Torch；模型专用测试在基础环境按条件跳过，应在独立推理构建环境另跑。最近优化验证：基础环境348项（340通过、8项跳过），Torch数学／状态回归及候选组件三种模式同步／三槽异步检查另行通过。
+基础应用测试不需要 Torch；模型专用测试在基础环境按条件跳过，应在独立推理构建环境另跑。最近优化验证：基础环境353项（345通过、8项跳过），Torch数学／状态回归及候选组件三种模式同步／三槽异步检查另行通过。
 
 增强组件需使用 [独立构建脚本](scripts/build_enhancement.py) 和匹配的模型源码／许可，不能靠重打基础 EXE 更新；入口说明见 [mods 维护者构建](mods/README.md#maintainer-build-not-end-user-setup)。不要将本机候选目录、测试视频、权重或 SDK 一起提交 Git。
 
@@ -346,4 +354,4 @@ git clone --depth 1 https://github.com/NVIDIA/DLSS.git third_party/NVIDIA-DLSS
 
 ## 许可证
 
-项目自有源码按 [MIT License](LICENSE) 发布。免安装版附带的 `nvngx_dlssnr.dll`、NVIDIA SDK、FFmpeg 和 Python 依赖仍受各自上游许可约束，不属于本仓库 MIT 授权范围。详见 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)。
+项目自有源码按 [MIT License](LICENSE) 发布。免安装版附带的 `nvngx_dlssnr.dll`、NVIDIA SDK、FFmpeg 和 Python 依赖仍受各自上游许可约束，不属于本仓库 MIT 授权范围。完整版与附加包中的 Depth Anything V2 Large 权重为 **CC-BY-NC-4.0**，仅供非商业使用。详见 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) 及包内 `mods/enhancement/licenses`。

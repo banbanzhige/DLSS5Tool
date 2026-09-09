@@ -91,6 +91,65 @@ class ReleaseMetadataTests(unittest.TestCase):
         selected = updater.select_portable_asset(release)
         self.assertEqual(selected.name, "DLSS5Tool-v1.2.0-win64.zip")
 
+    def test_asset_selection_prefers_canonical_zip_over_full_and_addon(self):
+        release = updater.ReleaseInfo(
+            "v2.1.1",
+            updater.RELEASES_URL,
+            "",
+            (
+                updater.ReleaseAsset(
+                    "DLSS5Tool-v2.1.1-win64-full.zip",
+                    "https://github.com/a/full.zip",
+                    4_528_978_230,
+                ),
+                updater.ReleaseAsset(
+                    "DLSS5Tool-v2.1.1-win64-addon.zip",
+                    "https://github.com/a/addon.zip",
+                    4_299_307_579,
+                ),
+                updater.ReleaseAsset(
+                    "DLSS5Tool-v2.1.1-win64-lite.zip",
+                    "https://github.com/a/lite.zip",
+                    229_675_288,
+                ),
+                updater.ReleaseAsset(
+                    "DLSS5Tool-v2.1.1-win64.zip",
+                    "https://github.com/a/win64.zip",
+                    229_675_288,
+                ),
+                updater.ReleaseAsset("30系.zip", "https://github.com/a/30.zip", 117_898_662),
+            ),
+        )
+        selected = updater.select_portable_asset(release)
+        self.assertEqual(selected.name, "DLSS5Tool-v2.1.1-win64.zip")
+
+    def test_asset_selection_falls_back_to_lite_instead_of_largest_bundle(self):
+        release = updater.ReleaseInfo(
+            "v2.1.1",
+            updater.RELEASES_URL,
+            "",
+            (
+                updater.ReleaseAsset(
+                    "DLSS5Tool-v2.1.1-win64-full.zip",
+                    "https://github.com/a/full.zip",
+                    4_528_978_230,
+                ),
+                updater.ReleaseAsset(
+                    "DLSS5Tool-v2.1.1-win64-addon.zip",
+                    "https://github.com/a/addon.zip",
+                    4_299_307_579,
+                ),
+                updater.ReleaseAsset(
+                    "DLSS5Tool-v2.1.1-win64-lite.zip",
+                    "https://github.com/a/lite.zip",
+                    229_675_288,
+                ),
+                updater.ReleaseAsset("50系.zip", "https://github.com/a/50.zip", 109_425_424),
+            ),
+        )
+        selected = updater.select_portable_asset(release)
+        self.assertEqual(selected.name, "DLSS5Tool-v2.1.1-win64-lite.zip")
+
     def test_gpu_only_release_is_not_treated_as_application_update(self):
         release = updater.ReleaseInfo(
             "v1.2.0",

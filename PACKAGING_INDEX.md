@@ -1,6 +1,6 @@
 # 打包轻量化记录与索引
 
-更新日期：2026-09-09。当前源码版本：v2.1.1（按维护者指定编号）；下文 v2.2.0 为此前实测产物的历史版本，保留原始名称、体积与哈希，不代表已重打 v2.1.1。
+更新日期：2026-09-09。当前源码版本：v2.1.1（按维护者指定编号）。下文 v2.2.0 为同日更早的实测基线，保留原始名称、体积与哈希；v2.1.1 三种发行形态见后文 E-01～E-03。
 
 ## 已确认原则
 
@@ -69,7 +69,7 @@ GPU 验证设备为 RTX 4070 SUPER，不代表其他显卡和驱动已通过。
 | PKG-005 | P0 | 将发行文件清单、体积报告和回归接入构建 | 待验证 | 本轮精简构建入口已撤回；后续如需通用发行体积记录另行实施，不自动重启裁剪 |
 | PKG-006 | P1 | 评估专用推理后端及模型转换 | 待验证 | 仅在保守裁剪不足时评估 ONNX Runtime 等；核查深度/光流、可调迭代和输入尺寸、设备行为、速度及数值一致性，不承诺目标体积 |
 | PKG-007 | P1 | 评估权重轻量化选项 | 待验证 | 小模型、FP16 或量化作为独立显式选项；另测画质/时序/性能，不冒充运行库裁剪、不静默替换默认模型 |
-| PKG-008 | P0 | 增强组件及权重的发行许可归档 | 待验证 | 补齐来源、版本、版权/许可文件和分发审查；完成前不将完整测试包标为公开发行包 |
+| PKG-008 | P0 | 增强组件及权重的发行许可归档 | 待验证 | v2.1.1 完整版／附加包已归档上游许可原文、依赖 NOTICE 和模型来源；Large 为 CC-BY-NC-4.0。本机打包通过不等于公开分发授权完成 |
 
 PKG-003/004 已放弃，不再按原裁剪路线推进；PKG-008 仍是公开分发前置条件。
 PKG-006、PKG-007 属于另行评估的改造，不是本轮记录已授权或已实施的变更。
@@ -104,6 +104,28 @@ PKG-003/004 的依赖裁剪。产物为 `dist/DLSS5Tool-v2.2.0-win64.zip`，可�
 冻结主程序的 v2 后端基础单帧诊断成功，输出哈希与上一基础包诊断一致。
 这是基础包复打，不是增强组件裁剪版，也没有重打完整模型包。
 
+## 复打记录：2026-09-09 / v2.1.1 三种发行形态
+
+按用户决定放弃运行库裁剪后，从已验证的 v2.1.1 基础包、优化推理组件和原始 Large 权重生成三种包，不下载、不替换源码部署组件、不裁剪 Torch。完整版文件清单等于轻量版叠加附加包。ZIP 为 Python ZIP_DEFLATED level 6、ZIP64。
+
+输入：基础包 `dist/DLSS5Tool-v2.1.1/`（隔离检查通过）；组件 `guidance_worker.exe` SHA-256 `ae3d29343f669f8d0741e8fe4673afe3bf49ace9135feacfa1f11e6d8d545732`；`raft_large_C_T_SKHT_V2-ff5fadd5.pth` / `depth_anything_v2_vitl.pth` 未改字节。
+
+| 编号 | 产物 | ZIP 实测 | 解压实测 | 说明 |
+| --- | --- | ---: | ---: | --- |
+| E-01 | 轻量版 `DLSS5Tool-v2.1.1-win64-lite.zip` | 229,675,288 B（219.04 MiB） | 466,374,724 B（444.77 MiB） | 1220 个文件；GitHub 默认附件名 `DLSS5Tool-v2.1.1-win64.zip`，哈希相同 |
+| E-02 | 附加包 `DLSS5Tool-v2.1.1-win64-addon.zip` | 4,299,307,579 B（4.00 GiB） | 6,122,992,988 B（5.70 GiB） | 2413 个文件，仅 `mods/`；分三卷约 1900 MiB |
+| E-03 | 完整版 `DLSS5Tool-v2.1.1-win64-full.zip` | 4,528,978,230 B（4.22 GiB） | 6,589,358,904 B（6.14 GiB） | 3632 个文件；轻量＋附加包精确叠加 |
+
+校验值（ZIP SHA-256）：
+
+| 文件 | SHA-256 |
+| --- | --- |
+| `DLSS5Tool-v2.1.1-win64.zip` / `-lite.zip` | `23a8154307e46340ff6cbcaecf6c6e3fa09e87ee1609bfcb7429fa1566453f5d` |
+| `DLSS5Tool-v2.1.1-win64-addon.zip` | `b1a6c340963e954ea9936255bbe11fcee80c7143823d64cd69068e2a12867392` |
+| `DLSS5Tool-v2.1.1-win64-full.zip` | `c32c7d38390d30105ecb30a205cb3eae06c51d62b6ee7a4fc1fc4ad972e5f4ef` |
+
+分卷与本机报告位于 `dist/v2.1.1-editions/`（产物不提交 Git）。2026-09-09 本机验证：轻量 ZIP＋附加包解压后文件清单与完整版逐文件一致；冻结轻量版在关闭推理时诊断通过、缺少组件时拒绝启用；完整版与「轻量＋附加包」诊断输出哈希均为 `E5664B85EDD2AA3AA809BADD70943228571EDAC7B73F940EB3B146A0BE654D17`；附加包在 RTX 4070 SUPER 上仅光流／仅深度／混合三种模式均能加载并产出预期非零图。这不是干净环境或全部显卡认证。公开上传前须复核 NVIDIA／CUDA／FFmpeg 条款及 Depth Anything V2 Large 的 CC-BY-NC-4.0。
+
 ## 相关文件索引
 
 | 入口 | 用途 |
@@ -111,6 +133,7 @@ PKG-003/004 的依赖裁剪。产物为 `dist/DLSS5Tool-v2.2.0-win64.zip`，可�
 | [CONTRIBUTING.md](CONTRIBUTING.md) | 开发与提交约定 |
 | [build_release.ps1](build_release.ps1)、[DLSS5Tool.spec](DLSS5Tool.spec) | 基础包构建与依赖收集 |
 | [scripts/check_release_contents.py](scripts/check_release_contents.py)、[tests/test_release_packaging.py](tests/test_release_packaging.py) | 基础发行内容隔离及打包契约测试 |
+| [scripts/package_editions.py](scripts/package_editions.py)、[scripts/verify_editions.py](scripts/verify_editions.py)、[scripts/Join-ReleaseArchive.ps1](scripts/Join-ReleaseArchive.ps1) | 轻量／完整／附加包、分卷、本机叠加验证与可选分卷合并 |
 | [scripts/build_enhancement.py](scripts/build_enhancement.py)、[GuidanceWorker.spec](GuidanceWorker.spec) | 独立增强组件构建，保留完整推理依赖 |
 | [mods/README.md](mods/README.md) | 用户组件布局、自动检测和模型替换说明 |
 | [ENHANCEMENT_PACK.md](ENHANCEMENT_PACK.md)、[GPU_GUIDANCE.md](GPU_GUIDANCE.md) | 历史组件构建与 GPU 验证记录，注意文中日期与适用范围 |

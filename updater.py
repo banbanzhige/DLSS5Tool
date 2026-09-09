@@ -185,24 +185,45 @@ def fetch_latest_release(timeout=8.0, opener=None):
     return ReleaseInfo(tag, page_url, body, tuple(assets))
 
 
+_BLOCKED_UPDATE_MARKERS = (
+    "30系", "40系", "50系", "rtx30", "rtx40", "rtx50",
+    "-full", "-addon",
+)
+
+
 def select_portable_asset(release):
-    """Choose the full Windows portable ZIP, never a GPU-only runtime ZIP."""
-    expected = f"dlss5tool-{release.tag}-win64.zip".lower()
+    """Choose the Windows portable ZIP, never GPU runtimes or model bundles.
+
+    Prefer the canonical ``DLSS5Tool-vX.Y.Z-win64.zip`` name used by older
+    builds. If that exact file is absent, accept the lite edition. Full and
+    add-on archives are excluded because a size-based fallback would otherwise
+    download multi-gigabyte model bundles as an application update.
+    """
+    tag = str(release.tag or "").lower()
+    expected = f"dlss5tool-{tag}-win64.zip"
+    lite = f"dlss5tool-{tag}-win64-lite.zip"
+    exact = lite_asset = None
     for asset in release.assets:
-        if asset.name.lower() == expected:
-            return asset
+        name = asset.name.lower()
+        if name == expected:
+            exact = asset
+        elif name == lite:
+            lite_asset = asset
+    if exact is not None:
+        return exact
+    if lite_asset is not None:
+        return lite_asset
 
     candidates = []
-    blocked = ("30系", "40系", "50系", "rtx30", "rtx40", "rtx50")
     for asset in release.assets:
         name = asset.name.lower()
         if not name.endswith(".zip") or "dlss5tool" not in name:
             continue
-        if any(marker in name for marker in blocked):
+        if any(marker in name for marker in _BLOCKED_UPDATE_MARKERS):
             continue
         score = 0
         score += 100 if "win64" in name else 0
-        score += 60 if release.tag.lower() in name else 0
+        score += 60 if tag in name else 0
         score += 20 if ("x64" in name or "windows" in name) else 0
         candidates.append((score, asset.size, asset.name.lower(), asset))
     if not candidates:
