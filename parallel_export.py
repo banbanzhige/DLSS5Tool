@@ -16,7 +16,9 @@ import cv2
 from video_export import (
     concat_video_segments,
     find_ffmpeg,
-    has_h264_nvenc,
+    resolve_encoder_size,
+    select_video_encoder,
+    video_encoder_name,
     mux_source_audio,
 )
 
@@ -61,10 +63,11 @@ def _preserve_diagnostics(temp_dir, output_dir):
 
 def _encoding_worker_args(
     nvenc_preset="p5", rate_control="quality", quality_profile="high",
-    video_bitrate_mbps=20.0, output_size=None,
+    video_bitrate_mbps=20.0, output_size=None, codec="auto",
 ):
     output_width, output_height = output_size or (0, 0)
     return [
+        "--codec", codec,
         "--nvenc-preset", str(nvenc_preset),
         "--rate-control", str(rate_control),
         "--quality-profile", str(quality_profile),
@@ -86,14 +89,22 @@ def export_parallel(
     if not cap.isOpened():
         raise RuntimeError("无法打开输入视频")
     frame_count = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+    width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+    height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+    fps = cap.get(cv2.CAP_PROP_FPS) or 30.0
     cap.release()
     workers = max(2, min(int(workers), 4, frame_count))
     warmup = max(0, min(int(warmup), 120))
     chunk = math.ceil(frame_count / workers)
     output_dir = os.path.dirname(output) or os.getcwd()
-    temp_dir = tempfile.mkdtemp(prefix=".dlss-parallel-", dir=output_dir)
     ffmpeg = find_ffmpeg()
-    use_nvenc = has_h264_nvenc(ffmpeg)
+    output_width, output_height = resolve_encoder_size(width, height, output_size)
+    codec, use_nvenc = select_video_encoder(
+        ffmpeg, output_width, output_height, fps,
+        nvenc_preset=nvenc_preset, rate_control=rate_control,
+        quality_profile=quality_profile, video_bitrate_mbps=video_bitrate_mbps,
+    )
+    temp_dir = tempfile.mkdtemp(prefix=".dlss-parallel-", dir=output_dir)
     script = os.path.join(os.path.dirname(os.path.abspath(__file__)), "parallel_export_worker.py")
     processes = []
     jobs = []
@@ -127,7 +138,7 @@ def export_parallel(
             ]
             cmd += _encoding_worker_args(
                 nvenc_preset, rate_control, quality_profile,
-                video_bitrate_mbps, output_size,
+                video_bitrate_mbps, output_size, codec=codec,
             )
             stderr_handle = open(stderr_path, "wb")
             stderr_handles.append(stderr_handle)
@@ -195,7 +206,7 @@ def export_parallel(
             "workers": workers,
             "warmup": warmup,
             "audio_mode": audio_mode,
-            "encoder": "NVIDIA NVENC (GPU)" if use_nvenc else "libx264 (CPU 回退)",
+            "encoder": video_encoder_name(codec, use_nvenc),
             "worker_results": results,
             "host_backends": sorted({
                 item.get("host_backend", "unknown") for item in results if item

@@ -7,6 +7,14 @@ import export_queue
 
 
 class ExportJobTests(unittest.TestCase):
+    def test_shared_pool_is_runtime_only(self):
+        settings={'style':2,'guidance_cache_pool':'stale-session'}
+        job=export_queue.ExportJob.create('a.mp4','b.mp4',settings,{})
+        self.assertNotIn('guidance_cache_pool',job.settings)
+        loaded=export_queue.ExportJob.from_dict({'source_path':'a.mp4','output_path':'b.mp4','settings':settings})
+        self.assertNotIn('guidance_cache_pool',loaded.settings)
+        self.assertEqual(loaded.settings['style'],2)
+
     def test_create_copies_mutable_settings(self):
         settings = {"style": 2, "nested": {"value": 1}}
         export_settings = {"mode": "parallel"}

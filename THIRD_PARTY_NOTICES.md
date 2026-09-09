@@ -3,6 +3,11 @@
 DLSS5Tool 的 MIT 许可证只覆盖本仓库的自有源码。以下组件保持其各自许可证、版权、
 商标和分发限制；本文件只是项目清单，不替代原始许可证，也不构成法律意见。
 
+## torchvision RAFT
+
+- 增强组件直接使用 torchvision 0.23 的原始 RAFT-Large 推理实现；生产路径不再包含自定义 final-only adapter。
+- 原始版权与 BSD-3-Clause 条款保留于 `licenses/torchvision-LICENSE.txt`，冻结增强组件同时保留 torchvision 的许可证元数据。
+
 ## NVIDIA DLSS / NGX SDK
 
 - 上游：[NVIDIA/DLSS](https://github.com/NVIDIA/DLSS)

@@ -55,6 +55,7 @@ def main():
     parser.add_argument("--result", required=True)
     parser.add_argument("--worker-id", type=int, required=True)
     parser.add_argument("--nvenc", type=int, default=1)
+    parser.add_argument("--codec", choices=("auto", "h264", "hevc"), default="auto")
     parser.add_argument("--nvenc-preset", default="p5")
     parser.add_argument("--rate-control", choices=("quality", "bitrate"), default="quality")
     parser.add_argument("--quality-profile", default="high")
@@ -72,6 +73,7 @@ def main():
     view = int(settings.get("output_view", 0))
     mix = float(settings.get("output_mix", 1.0))
     writer = None
+    live = None
     started = time.perf_counter()
     payload = {
         "worker_id": args.worker_id,
@@ -95,6 +97,7 @@ def main():
         writer = FFmpegVideoWriter(
             output, width, height, fps, audio_source=None,
             use_nvenc=bool(args.nvenc), nvenc_preset=args.nvenc_preset,
+            codec=args.codec,
             rate_control=args.rate_control, quality_profile=args.quality_profile,
             video_bitrate_mbps=args.video_bitrate_mbps,
             output_size=(args.output_width, args.output_height)
@@ -184,6 +187,8 @@ def main():
             "wall_seconds": time.perf_counter() - started,
         })
     _write_json(result_path, payload, required=True)
+    if live is not None:
+        live.close_guidance()
     return 0 if payload.get("ok") else 1
 
 

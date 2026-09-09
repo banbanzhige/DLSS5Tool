@@ -2,6 +2,7 @@
 #define NOMINMAX
 #include <windows.h>
 #include <d3d12.h>
+#include <DirectXPackedVector.h>
 
 #include <algorithm>
 #include <cstdarg>
@@ -12,6 +13,8 @@
 #include <vector>
 
 #include <nvsdk_ngx.h>
+#include "guidance_upload.h"
+#include "tile_blend.h"
 
 namespace {
 
@@ -482,7 +485,8 @@ void RecordUpload(
 }
 
 void RecordReadback(
-    ID3D12GraphicsCommandList *list, ID3D12Resource *texture, const Staging &staging)
+    ID3D12GraphicsCommandList *list, ID3D12Resource *texture, const Staging &staging,
+    const D3D12_BOX *box = nullptr)
 {
     auto to_copy = Transition(texture, D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_COPY_SOURCE);
     list->ResourceBarrier(1, &to_copy);
@@ -494,7 +498,7 @@ void RecordReadback(
     destination.pResource = staging.resource;
     destination.Type = D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT;
     destination.PlacedFootprint = staging.footprint;
-    list->CopyTextureRegion(&destination, 0, 0, 0, &source, nullptr);
+    list->CopyTextureRegion(&destination, 0, 0, 0, &source, box);
     auto to_common = Transition(texture, D3D12_RESOURCE_STATE_COPY_SOURCE, D3D12_RESOURCE_STATE_COMMON);
     list->ResourceBarrier(1, &to_common);
 }
@@ -537,43 +541,20 @@ void AbortCommands(Slot &slot)
         slot.list->Close();
 }
 
-uint16_t FloatToHalf(float value)
-{
-    uint32_t bits = 0;
-    memcpy(&bits, &value, sizeof(bits));
-    const uint32_t sign = (bits >> 16) & 0x8000u;
-    uint32_t mantissa = bits & 0x007FFFFFu;
-    int exponent = static_cast<int>((bits >> 23) & 0xFFu) - 127 + 15;
-    if (exponent <= 0)
-    {
-        if (exponent < -10)
-            return static_cast<uint16_t>(sign);
-        mantissa = (mantissa | 0x00800000u) >> (1 - exponent);
-        return static_cast<uint16_t>(sign | ((mantissa + 0x00001000u) >> 13));
-    }
-    if (exponent >= 31)
-        return static_cast<uint16_t>(sign | 0x7C00u);
-    return static_cast<uint16_t>(sign | (static_cast<uint32_t>(exponent) << 10) |
-                                 ((mantissa + 0x00001000u) >> 13));
-}
-
 void PrepareMotion(Staging &staging, const float *motion)
 {
-    const size_t count = static_cast<size_t>(g_width) * g_height * 2;
-    std::vector<uint16_t> half(count, 0);
-    if (motion != nullptr && (g_options.guidance_mode == 1 || g_options.guidance_mode == 3))
-        for (size_t index = 0; index < count; ++index)
-            half[index] = FloatToHalf(motion[index]);
-    CopyRowsToStaging(staging, half.data(), static_cast<size_t>(g_width) * 4);
+    const bool enabled = g_options.guidance_mode == 1 || g_options.guidance_mode == 3;
+    guidance_upload::Motion(staging.mapped + staging.footprint.Offset,
+        staging.footprint.Footprint.RowPitch, g_width, staging.rows,
+        enabled ? motion : nullptr);
 }
 
 void PrepareDepth(Staging &staging, const float *depth)
 {
-    const size_t count = static_cast<size_t>(g_width) * g_height;
-    std::vector<float> values(count, 0.0f);
-    if (depth != nullptr && (g_options.guidance_mode == 2 || g_options.guidance_mode == 3))
-        memcpy(values.data(), depth, count * sizeof(float));
-    CopyRowsToStaging(staging, values.data(), static_cast<size_t>(g_width) * 4);
+    const bool enabled = g_options.guidance_mode == 2 || g_options.guidance_mode == 3;
+    guidance_upload::Depth(staging.mapped + staging.footprint.Offset,
+        staging.footprint.Footprint.RowPitch, g_width, staging.rows,
+        enabled ? depth : nullptr);
 }
 
 int ScalingRatioCallback(NVSDK_NGX_Parameter *parameters)
@@ -894,37 +875,71 @@ bool ProcessTiledSubrects(
             return false;
     }
 
-    const UINT tile_width = std::max(g_feature_width, 1u);
-    const UINT tile_height = std::max(g_feature_height, 1u);
-    const UINT columns = (g_width + tile_width - 1) / tile_width;
-    const UINT rows = (g_height + tile_height - 1) / tile_height;
-    Log("Feature 18 tiled evaluation: frame=%ux%u tile=%ux%u grid=%ux%u",
-        g_width, g_height, tile_width, tile_height, columns, rows);
-
-    for (UINT y = 0; y < g_height; y += tile_height)
-    {
-        const UINT height = std::min(tile_height, g_height - y);
-        for (UINT x = 0; x < g_width; x += tile_width)
-        {
-            const UINT width = std::min(tile_width, g_width - x);
+    // Read back each evaluated rect before an overlapping evaluation overwrites
+    // it. The original color texture remains immutable throughout the frame.
+    Staging temporary;
+    struct Cleanup { Staging &s; ~Cleanup() { ReleaseStaging(s); } } cleanup{temporary};
+    Staging *readback = g_config.persistent_buffers ? &slot.output_readback : &temporary;
+    if (!g_config.persistent_buffers &&
+        !CreateStaging(slot.output, D3D12_HEAP_TYPE_READBACK, temporary)) return false;
+    try {
+        const auto columns = tile_blend::Plan(g_width, g_feature_width);
+        const auto rows = tile_blend::Plan(g_height, g_feature_height);
+        tile_blend::Rows blend(g_width, g_feature_height);
+        Log("Feature 18 overlap tiles: frame=%ux%u tile=%ux%u grid=%zux%zu context=128 blend=128",
+            g_width, g_height, g_feature_width, g_feature_height, columns.size(), rows.size());
+        const bool hdr = g_frame_format == FrameFormat::Rgba16Float;
+        const size_t pixel_bytes = hdr ? 8 : 4;
+        const size_t tile_pitch = size_t(g_feature_width) * pixel_bytes;
+        std::vector<unsigned char> tile_data(tile_pitch * g_feature_height);
+        for (size_t row = 0; row < rows.size(); ++row) {
+          const auto &y = rows[row];
+          for (const auto &x : columns) {
             if (!BeginCommands(slot))
                 return false;
             // Each rectangle is an independent still-image region. Resetting prevents
             // temporal history from one spatial tile contaminating the next one.
-            SetEvaluationParameters(slot, true, x, y, width, height);
+            SetEvaluationParameters(slot, true, x.start, y.start, x.size, y.size);
             const NVSDK_NGX_Result evaluated = SafeEvaluate(slot.list);
             if (!NgxSucceeded(evaluated))
             {
                 Log("EvaluateFeature tiled rect=%u,%u %ux%u -> 0x%08X",
-                    x, y, width, height, evaluated);
+                    x.start, y.start, x.size, y.size, evaluated);
                 AbortCommands(slot);
                 return false;
             }
+            const D3D12_BOX box{x.start, y.start, 0, x.start + x.size, y.start + y.size, 1};
+            RecordReadback(slot.list, slot.output, *readback, &box);
             if (!SubmitCommands(slot, true))
                 return false;
+            // Mapped READBACK memory can be very slow for scalar channel reads.
+            // Bulk-copy once into cacheable RAM before the arithmetic loop.
+            for (unsigned py = 0; py < y.size; ++py)
+                memcpy(tile_data.data() + size_t(py) * tile_pitch,
+                    readback->mapped + readback->footprint.Offset +
+                    size_t(py) * readback->footprint.Footprint.RowPitch, size_t(x.size) * pixel_bytes);
+            blend.Add(x, y, [&](unsigned px, unsigned py, unsigned c) {
+                const auto *data = tile_data.data() + size_t(py) * tile_pitch;
+                return hdr ? DirectX::PackedVector::XMConvertHalfToFloat(
+                    reinterpret_cast<const uint16_t *>(data)[size_t(px) * 4 + c])
+                    : float(data[size_t(px) * 4 + c]);
+            });
+          }
+          blend.Flush(row + 1 < rows.size() ? rows[row + 1].begin : g_height,
+            [&](unsigned x, unsigned y, unsigned c, float value) {
+                const size_t index = (size_t(y) * g_width + x) * 4 + c;
+                if (hdr)
+                    static_cast<uint16_t *>(output)[index] = DirectX::PackedVector::XMConvertFloatToHalf(value);
+                else
+                    static_cast<unsigned char *>(output)[index] =
+                        static_cast<unsigned char>(std::clamp(value + 0.5f, 0.0f, 255.0f));
+            });
         }
+        return true;
+    } catch (const std::exception &error) {
+        Log("Tile blending failed: %s", error.what());
+        return false;
     }
-    return SubmitReadbackImmediate(slot, output);
 }
 
 bool ProcessMergedTransient(

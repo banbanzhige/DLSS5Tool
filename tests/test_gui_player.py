@@ -18,6 +18,7 @@ from ui_widgets import (
     AccentSlider, CheckToggle, ChipGroup, ChromeButton, ChromeCombobox,
     ProgressRule, StudioNotebook,
 )
+import gui
 from gui import (
     App, TimelineBar,
     PREVIEW_BACKGROUND_TICK_MS, PREVIEW_INTERACTION_IDLE_MS, PREVIEW_WORKER_POLL_MS,
@@ -36,6 +37,20 @@ from video_export import compose_output_frame
 
 
 class PlayerHelperTests(unittest.TestCase):
+    def test_impossible_upscale_plan_rejected_before_gpu_query(self):
+        from unittest import mock
+        app = App.__new__(App)
+        app.logln = mock.Mock()
+        with mock.patch.object(gui, 'query_gpu_memory') as query, mock.patch.object(
+            gui.messagebox, 'showerror'
+        ) as error:
+            self.assertFalse(app._confirm_super_resolution_export(11637,5120,2))
+            error.assert_called_once()
+            query.assert_not_called()
+            error.reset_mock()
+            self.assertFalse(app._confirm_super_resolution_export(4608,4608,4,notify=False))
+            error.assert_not_called()
+
     def test_dlss_feature_not_supported_has_actionable_release_guidance(self):
         error = "Init_with_ProjectID -> 0xBAD00001\ncaller/static initialization failed"
         self.assertTrue(_is_dlss_runtime_unsupported(error))
@@ -257,9 +272,9 @@ class PlayerHelperTests(unittest.TestCase):
         )
 
     def test_preview_controls_wrap_at_narrow_widths(self):
-        self.assertEqual(_preview_control_layout(900, "zh_CN"), "wide")
-        self.assertEqual(_preview_control_layout(805, "zh_CN"), "wide")
-        self.assertEqual(_preview_control_layout(804, "zh_CN"), "stacked")
+        self.assertEqual(_preview_control_layout(900, "zh_CN"), "stacked")
+        self.assertEqual(_preview_control_layout(960, "zh_CN"), "wide")
+        self.assertEqual(_preview_control_layout(959, "zh_CN"), "stacked")
         self.assertEqual(_preview_control_layout(420, "zh_CN"), "stacked")
         self.assertEqual(_preview_control_layout(419, "zh_CN"), "compact")
         self.assertEqual(_preview_control_layout(959, "en_US"), "stacked")
@@ -1693,8 +1708,64 @@ class WidgetSmokeTests(unittest.TestCase):
                 export_packed = list(app._export_section.master.pack_slaves())
                 self.assertEqual(
                     export_packed,
-                    [app._preview_section, app._export_section, app._host_section],
+                    [app._export_section, app._preview_section, app._guidance_advanced,
+                     app._host_section, app._modules_section, app._module_editor],
                 )
+                self.assertTrue(app._modules_section.collapsed)
+                self.assertTrue(app._module_editor.collapsed)
+                self.assertFalse(hasattr(app, '_module_advanced'))
+                self.assertIs(app._module_editor.master, app._export_inner)
+                self.assertIs(app._modules_section.master, app._export_inner)
+                self.assertIs(app._guidance_advanced.master, app._export_inner)
+                self.assertTrue(app._guidance_advanced.collapsed)
+                self.assertNotIn('w_guidance_hint', app._settings)
+                self.assertEqual(len(app._host_settings['module_summaries']), 4)
+                self.assertIn('component', app._host_settings['module_summaries'])
+                self.assertNotIn('guidance_python', app._host_settings['path_vars'])
+                self.assertNotIn('guidance_depth_code', app._host_settings['path_vars'])
+                self.assertNotIn('\n', app._host_settings['w_mod_hint'].cget('text'))
+                for field, code in (('v_guidance_device', 'cuda'), ('v_flow_direction', 'forward_negated'), ('v_depth_encoder', 'vitb')):
+                    app._host_settings[field].set(gui.tr('guidance.option.' + code))
+                collected = app._collect_host_settings()
+                self.assertEqual(collected['guidance_device'], 'cuda')
+                self.assertEqual(collected['guidance_flow_direction'], 'forward_negated')
+                self.assertEqual(collected['guidance_depth_encoder'], 'vitb')
+                self.assertEqual(collected['guidance_depth_profile'], 'fp32')
+                previous_hash = app._settings_hash()
+                app._host_settings['v_depth_profile'].set(gui.tr('guidance.option.sdpa_fp16'))
+                self.assertEqual(app._collect_persisted_settings()['guidance_depth_profile'], 'sdpa_fp16')
+                self.assertNotEqual(app._settings_hash(), previous_hash)
+                app._host_settings['v_depth_profile'].set(gui.tr('guidance.option.fp32'))
+                previous_hash = app._settings_hash()
+                app._host_settings['v_guidance_execution'].set(gui.tr('guidance.option.raft_streams'))
+                self.assertEqual(app._collect_persisted_settings()['guidance_execution'], 'raft_streams')
+                self.assertNotEqual(app._settings_hash(), previous_hash)
+                app._host_settings['v_guidance_execution'].set(gui.tr('guidance.option.serial'))
+                app._host_settings['v_guidance_device'].set(gui.tr('guidance.option.auto'))
+                app._host_settings['v_flow_direction'].set(gui.tr('guidance.option.backward'))
+                app._host_settings['v_depth_encoder'].set(gui.tr('guidance.option.vitl'))
+                self.assertIs(app._settings['v_guidance'], app._host_settings['v_guidance'])
+                self.assertNotIn(app._settings['w_guidance'], list(_iter_widgets(app._settings_frame)))
+                self.assertIn(app._settings['w_guidance'], list(_iter_widgets(app._guidance_page)))
+                self.assertNotIn(app._host_settings['w_runtime'], list(_iter_widgets(app._host_section)))
+                self.assertNotIn(app._host_settings['w_runtime'], list(_iter_widgets(app._modules_section)))
+                self.assertIn(app._host_settings['w_runtime'], list(_iter_widgets(app._module_editor)))
+                self.assertEqual(app._collect_host_settings()['dlss_runtime'], '')
+                app._host_settings['v_runtime'].set(gui.tr('mods.bundled'))
+                self.assertEqual(app._collect_host_settings()['dlss_runtime'], '__bundled__')
+                app._host_settings['v_runtime'].set(gui.tr('mods.auto'))
+                path_vars = app._host_settings['path_vars']
+                path_vars['guidance_flow_weights'].set('custom-flow.pth')
+                self.assertEqual(app._collect_persisted_settings()['guidance_flow_weights'], 'custom-flow.pth')
+                app._reset_module_paths()
+                deadline = time.monotonic() + 3
+                while app._module_reload_thread is not None and time.monotonic() < deadline:
+                    app.root.update()
+                    time.sleep(0.005)
+                self.assertIsNone(app._module_reload_thread)
+                self.assertEqual(app._collect_host_settings()['guidance_depth_encoder'], 'auto')
+                self.assertEqual(app._collect_persisted_settings()['guidance_flow_weights'], '')
+                self.assertEqual(path_vars['guidance_flow_weights'].get(), app._module_path_defaults['guidance_flow_weights'])
                 combos = [
                     widget for widget in _iter_widgets(app.root)
                     if isinstance(widget, ChromeCombobox)
@@ -1711,7 +1782,7 @@ class WidgetSmokeTests(unittest.TestCase):
                 sample.combo.event_generate("<FocusOut>")
                 app.root.update()
                 self.assertFalse(sample.combo.selection_present())
-                self.assertEqual(str(app.workspace_tabs.tab(0, "text")), "调参")
+                self.assertEqual(str(app.workspace_tabs.tab(0, "text")), "画面效果")
                 self.assertEqual(app._ui_theme_name, "dark")
                 app.toggle_ui_theme()
                 self.assertEqual(app._ui_theme_name, "light")

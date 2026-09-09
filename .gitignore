@@ -55,5 +55,11 @@ Desktop.ini
 /exports/
 /output/
 /tmp/
+/mods/*
+!/mods/README.md
+# User-supplied AMD developer runtime and private test outputs
+/amd_backend/*
+!/amd_backend/README.txt
+/results/
 /.playwright-mcp
 /assets/src

@@ -1,0 +1,6 @@
+{
+  "id": "dlss5-guidance",
+  "protocol": 1,
+  "analysis_parameters_version": 1,
+  "architectures": ["raft_large", "depth_anything_v2"]
+}

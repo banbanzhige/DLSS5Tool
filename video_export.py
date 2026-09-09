@@ -78,10 +78,11 @@ def _bitrate_arg(value):
 
 def build_video_encoder_args(
     is_hdr, uses_nvenc, nvenc_preset="p5", rate_control="quality",
-    quality_profile="high", video_bitrate_mbps=20.0,
+    quality_profile="high", video_bitrate_mbps=20.0, codec="auto",
 ):
     """Build one validated encoder policy for SDR/HDR and GPU/CPU paths."""
     is_hdr = bool(is_hdr)
+    uses_hevc = is_hdr or codec == "hevc"
     uses_nvenc = bool(uses_nvenc)
     nvenc_preset = nvenc_preset if nvenc_preset in _SOFTWARE_PRESETS else "p5"
     rate_control = rate_control if rate_control in {"quality", "bitrate"} else "quality"
@@ -92,7 +93,7 @@ def build_video_encoder_args(
 
     if uses_nvenc:
         args = [
-            "-c:v", "hevc_nvenc" if is_hdr else "h264_nvenc",
+            "-c:v", "hevc_nvenc" if uses_hevc else "h264_nvenc",
         ]
         if is_hdr:
             args.extend(["-profile:v", "main10"])
@@ -110,7 +111,7 @@ def build_video_encoder_args(
         return args
 
     args = [
-        "-c:v", "libx265" if is_hdr else "libx264",
+        "-c:v", "libx265" if uses_hevc else "libx264",
         "-preset", _SOFTWARE_PRESETS[nvenc_preset],
     ]
     if is_hdr:
@@ -125,6 +126,88 @@ def build_video_encoder_args(
             "-bufsize", _bitrate_arg(bitrate * 2.0),
         ])
     return args
+
+
+def resolve_encoder_size(width, height, output_size=None):
+    """Match the writer's final even-sized scale/pad geometry."""
+    width, height = int(width), int(height)
+    if output_size is None:
+        return width + width % 2, height + height % 2
+    try:
+        out_w, out_h = (int(value) for value in output_size)
+    except (TypeError, ValueError):
+        out_w, out_h = width, height
+    return max(2, out_w - out_w % 2), max(2, out_h - out_h % 2)
+
+
+def probe_video_encoder(ffmpeg, width, height, fps, is_hdr, encoder_args):
+    """Trial-encode one frame at the real output size, rate and encoding policy.
+
+    Do not cache availability: free NVENC sessions/memory can change between jobs.
+    No output file is created and subprocess.run kills/reaps timed-out probes.
+    """
+    pixel_format = "p010le" if is_hdr else "yuv420p"
+    cmd = [
+        ffmpeg, "-hide_banner", "-loglevel", "error", "-f", "lavfi",
+        "-i", f"color=c=black:s={width}x{height}:r={fps:.12g},format={pixel_format}",
+        "-frames:v", "1", "-an", *encoder_args, "-f", "null", "-",
+    ]
+    try:
+        result = subprocess.run(
+            cmd, stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL,
+            stderr=subprocess.PIPE, timeout=45, creationflags=_CREATE_NO_WINDOW,
+        )
+        if result.returncode == 0:
+            return None
+        return result.stderr.decode("utf-8", errors="replace").strip()[-2000:] or "未知编码错误"
+    except subprocess.TimeoutExpired:
+        return "编码器预检超时（45 秒）"
+    except (OSError, subprocess.SubprocessError) as ex:
+        return str(ex)
+
+
+def select_video_encoder(
+    ffmpeg, width, height, fps, is_hdr=False, use_nvenc=None,
+    nvenc_preset="p5", rate_control="quality", quality_profile="high",
+    video_bitrate_mbps=20.0, codec="auto",
+):
+    """Resolve SDR codec independently of HDR and validate before processing.
+
+    Explicit GPU/CPU choices are strict so parallel segments cannot silently
+    choose different encoders. Only automatic mode permits GPU -> CPU fallback.
+    """
+    if codec not in {"auto", "h264", "hevc"}:
+        raise ValueError(f"不支持的视频编码格式: {codec}")
+    if is_hdr:
+        codec = "hevc"
+    elif codec == "auto":
+        codec = "hevc" if max(width, height) > 4096 else "h264"
+    candidates = (True, False) if use_nvenc is None else (bool(use_nvenc),)
+    errors = []
+    for gpu in candidates:
+        args = build_video_encoder_args(
+            is_hdr, gpu, nvenc_preset, rate_control, quality_profile,
+            video_bitrate_mbps, codec=codec,
+        )
+        error = probe_video_encoder(ffmpeg, width, height, float(fps), is_hdr, args)
+        if error is None:
+            return codec, gpu
+        errors.append(f"{args[1]}: {error}")
+    raise RuntimeError(
+        f"视频编码器预检失败（{width}×{height}，{fps:g} fps，{codec.upper()}）。"
+        "请降低最终输出分辨率，或检查显卡驱动与 FFmpeg 编码器支持。\n"
+        + "\n".join(errors)
+    )
+
+
+def video_encoder_name(codec, uses_nvenc, is_hdr=False):
+    if codec == "hevc":
+        return (
+            "HEVC Main10 NVENC（HDR）" if uses_nvenc and is_hdr else
+            "libx265 Main10（HDR CPU 回退）" if is_hdr else
+            "HEVC NVENC（SDR GPU）" if uses_nvenc else "libx265（SDR CPU 回退）"
+        )
+    return "H.264 NVENC (GPU)" if uses_nvenc else "libx264 (CPU 回退)"
 
 
 def find_ffmpeg():
@@ -659,7 +742,7 @@ class FFmpegVideoWriter:
         self, output_path, width, height, fps, audio_source=None,
         use_nvenc=None, nvenc_preset="p5", hdr_metadata=None,
         rate_control="quality", quality_profile="high",
-        video_bitrate_mbps=20.0, output_size=None,
+        video_bitrate_mbps=20.0, output_size=None, codec="auto",
     ):
         self.output_path = os.path.abspath(output_path)
         output_ext = os.path.splitext(self.output_path)[1].lower()
@@ -673,36 +756,24 @@ class FFmpegVideoWriter:
         self.ffmpeg = find_ffmpeg()
         self.hdr_metadata = classify_color_info(hdr_metadata) if hdr_metadata else None
         self.is_hdr = bool(self.hdr_metadata and self.hdr_metadata["is_hdr"])
-        if use_nvenc is None:
-            self.uses_nvenc = (
-                has_hevc_main10_nvenc(self.ffmpeg) if self.is_hdr
-                else has_h264_nvenc(self.ffmpeg)
-            )
-        else:
-            self.uses_nvenc = bool(use_nvenc)
         self.nvenc_preset = nvenc_preset if nvenc_preset in {f"p{i}" for i in range(1, 8)} else "p5"
         self.rate_control = rate_control if rate_control in {"quality", "bitrate"} else "quality"
         self.quality_profile = (
             quality_profile if quality_profile in _QUALITY_PROFILE_VALUES else "high"
         )
         self.video_bitrate_mbps = _clamp_video_bitrate(video_bitrate_mbps)
-        self.output_width = self.width + self.width % 2
-        self.output_height = self.height + self.height % 2
-        self._resize_output = False
-        if output_size is not None:
-            try:
-                output_width, output_height = (int(value) for value in output_size)
-            except (TypeError, ValueError):
-                output_width, output_height = self.width, self.height
-            output_width = max(2, output_width - output_width % 2)
-            output_height = max(2, output_height - output_height % 2)
-            self.output_width, self.output_height = output_width, output_height
-            self._resize_output = (output_width, output_height) != (self.width, self.height)
-        self.encoder_name = (
-            "HEVC Main10 NVENC（HDR）" if self.is_hdr and self.uses_nvenc else
-            "libx265 Main10（HDR CPU 回退）" if self.is_hdr else
-            "NVIDIA NVENC (GPU)" if self.uses_nvenc else "libx264 (CPU 回退)"
+        self.output_width, self.output_height = resolve_encoder_size(
+            self.width, self.height, output_size,
         )
+        self._resize_output = output_size is not None and (
+            self.output_width, self.output_height
+        ) != (self.width, self.height)
+        self.codec, self.uses_nvenc = select_video_encoder(
+            self.ffmpeg, self.output_width, self.output_height, self.fps,
+            self.is_hdr, use_nvenc, self.nvenc_preset, self.rate_control,
+            self.quality_profile, self.video_bitrate_mbps, codec=codec,
+        )
+        self.encoder_name = video_encoder_name(self.codec, self.uses_nvenc, self.is_hdr)
         self._stderr = deque(maxlen=100)
         self._frames = 0
         self._finished = False
@@ -741,13 +812,12 @@ class FFmpegVideoWriter:
             cmd.extend(build_video_encoder_args(
                 True, self.uses_nvenc, self.nvenc_preset, self.rate_control,
                 self.quality_profile, self.video_bitrate_mbps,
+                codec=self.codec,
             ))
             cmd.extend([
                 "-color_range", "tv", "-color_primaries", primaries,
                 "-color_trc", transfer, "-colorspace", matrix,
             ])
-            if self.output_container in {"mp4", "mov"}:
-                cmd.extend(["-tag:v", "hvc1"])
         else:
             output_filter = (
                 f"scale={self.output_width}:{self.output_height}:flags=lanczos,format=yuv420p"
@@ -764,8 +834,11 @@ class FFmpegVideoWriter:
             cmd.extend(build_video_encoder_args(
                 False, self.uses_nvenc, self.nvenc_preset, self.rate_control,
                 self.quality_profile, self.video_bitrate_mbps,
+                codec=self.codec,
             ))
         if self.output_container in {"mp4", "mov"}:
+            if self.codec == "hevc":
+                cmd.extend(["-tag:v", "hvc1"])
             cmd.extend(["-movflags", "+faststart"])
         cmd.append(self._temp_path)
 

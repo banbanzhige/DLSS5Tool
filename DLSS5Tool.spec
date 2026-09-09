@@ -2,6 +2,7 @@
 """PyInstaller recipe for the portable Windows release."""
 
 import os
+import shutil
 import sys
 
 from PyInstaller.utils.hooks import collect_all
@@ -13,6 +14,7 @@ from app_version import APP_VERSION
 
 
 datas = []
+datas.append((os.path.join(project_root, 'licenses', 'torchvision-LICENSE.txt'), 'licenses'))
 binaries = []
 hiddenimports = []
 
@@ -35,7 +37,7 @@ for filename, required in (
     elif required:
         raise SystemExit(f"Missing required runtime file: {source}")
 
-for filename in ("LICENSE", "README.md", "README.en.md", "THIRD_PARTY_NOTICES.md"):
+for filename in ("LICENSE", "README.md", "README.en.md", "THIRD_PARTY_NOTICES.md", "GUIDANCE_PARAMETERS.md"):
     source = os.path.join(project_root, filename)
     if os.path.isfile(source):
         datas.append((source, "."))
@@ -45,6 +47,8 @@ for language in ("zh_CN", "en_US"):
     if not os.path.isfile(source):
         raise SystemExit(f"Missing localization catalog: {source}")
     datas.append((source, "locales"))
+
+# Guidance ships separately in mods/enhancement, not in the base package.
 
 app_icon = os.path.join(project_root, "assets", "app.ico")
 app_icon_png = os.path.join(project_root, "assets", "app.png")
@@ -62,7 +66,9 @@ a = Analysis(
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
-    excludes=[],
+    # Repository-only tools must never enter the main application's PYZ.
+    excludes=["torch", "torchvision", "depth_anything_v2", "guidance_worker",
+              "amd_devtest", "amd_devtest_ui", "scripts", "tests"],
     noarchive=False,
     optimize=0,
 )
@@ -104,3 +110,9 @@ coll = COLLECT(
     upx_exclude=[],
     name=f"DLSS5Tool-{APP_VERSION}",
 )
+
+# COLLECT puts DATA under _internal in onedir builds. This user-facing directory
+# must instead sit beside the executable; copy only our instruction file.
+release_mods = os.path.join(coll.name, "mods")
+os.makedirs(release_mods, exist_ok=True)
+shutil.copy2(os.path.join(project_root, "mods", "README.md"), os.path.join(release_mods, "README.md"))

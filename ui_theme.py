@@ -576,6 +576,20 @@ def install_combobox_behavior(root):
             pass
 
 
+def install_spinbox_behavior(root):
+    """Reserve the wheel for page scrolling, even when a number has focus.
+
+    Remove only the native class wheel actions: returning 'break' on the
+    widget would also swallow the inspector's bind_all scrolling handler.
+    Click/keyboard increment actions and text editing remain native.
+    """
+    for sequence in _COMBOBOX_WHEEL_SEQUENCES:
+        try:
+            root.unbind_class("TSpinbox", sequence)
+        except tk.TclError:
+            pass
+
+
 def apply_ttk(root, ui):
     """Paint clam-based ttk widgets with the active palette."""
     configure_fonts(root)
@@ -907,6 +921,7 @@ def apply_ttk(root, ui):
         foreground=[("disabled", ui["faint"])],
     )
     install_combobox_behavior(root)
+    install_spinbox_behavior(root)
     return style
 
 

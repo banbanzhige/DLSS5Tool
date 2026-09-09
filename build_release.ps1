@@ -49,7 +49,7 @@ try {
 
     if (-not $SkipTests) {
         Write-Host "Running tests..."
-        & $venvPython -m compileall -q -x "third_party|\.venv|build|dist" .
+        & $venvPython -m compileall -q -x "third_party|\.venv|build|dist|tmp|output|mods" .
         Assert-ExternalSuccess "Compiling Python sources"
         & $venvPython -m unittest discover -v
         Assert-ExternalSuccess "Running tests"
@@ -72,6 +72,15 @@ try {
     Copy-Item -LiteralPath (Join-Path $projectRoot "LICENSE") -Destination $releaseDir -Force
     Copy-Item -LiteralPath (Join-Path $projectRoot "THIRD_PARTY_NOTICES.md") -Destination $releaseDir -Force
 
+    # Only the instructions are shipped; never copy user models, Python or EXEs.
+    $releaseMods = Join-Path $releaseDir "mods"
+    New-Item -ItemType Directory -Path $releaseMods -Force | Out-Null
+    Copy-Item -LiteralPath (Join-Path $projectRoot "mods\README.md") -Destination $releaseMods -Force
+    $unexpectedMods = @(Get-ChildItem -LiteralPath $releaseMods -Force | Where-Object { $_.Name -ne "README.md" })
+    if ($unexpectedMods.Count -gt 0) {
+        throw "Refusing to package user modules from $releaseMods. Build into a clean release directory."
+    }
+
     $rtxSdkRoot = $env:NV_RTX_VIDEO_SDK
     if (-not $rtxSdkRoot) {
         $rtxSdkRoot = Join-Path $projectRoot "third_party\RTX_Video_SDK"
@@ -81,6 +90,10 @@ try {
         throw "Missing RTX Video SDK license for distribution: $rtxLicense"
     }
     Copy-Item -LiteralPath $rtxLicense -Destination $releaseDir -Force
+
+    # AMD validation and experiments are source-only, not release contents.
+    & $venvPython (Join-Path $projectRoot "scripts\check_release_contents.py") $releaseDir
+    Assert-ExternalSuccess "Checking release content isolation"
 
     $zipPath = Join-Path $projectRoot "dist\$releaseName-win64.zip"
     Compress-Archive -Path (Join-Path $releaseDir "*") -DestinationPath $zipPath -CompressionLevel Optimal -Force

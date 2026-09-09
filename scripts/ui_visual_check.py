@@ -15,7 +15,7 @@ import tkinter as tk
 from PIL import ImageGrab
 import app_settings
 import ui_theme
-from gui import App
+from gui import App, TkinterDnD
 
 
 def main():
@@ -31,7 +31,7 @@ def main():
             os.environ["DLSS5TOOL_SETTINGS_PATH"] = str(Path(temporary) / "settings.json")
             os.environ["DLSS5TOOL_QUEUE_PATH"] = str(Path(temporary) / "queue.json")
             app_settings.save({"ui_theme": "light", "inspector_width": 380})
-            root = tk.Tk()
+            root = TkinterDnD.Tk() if TkinterDnD else tk.Tk()
             root.withdraw()
             root.tk.call("tk", "scaling", scale * 96 / 72)
             app = App(root)
@@ -42,9 +42,11 @@ def main():
             ancestor.restype = ctypes.c_void_p
             cases = iter((
                 ("light", app._preview_page, "adjust"),
+                ("light", app._guidance_page, "guidance"),
                 ("light", app._export_page, "export"),
                 ("light", app.queue_tab, "queue"),
                 ("dark", app._preview_page, "adjust"),
+                ("dark", app._guidance_page, "guidance"),
             ))
 
             def advance(current_scale=scale):
@@ -54,11 +56,13 @@ def main():
                     print("font:", root._studio_fonts[ui_theme.UI_FONT].actual())
                     print("scale:", current_scale)
                     print("callback_errors:", errors)
+                    for handle in root.tk.splitlist(root.tk.call('after', 'info')):
+                        root.after_cancel(handle)
                     root.destroy()
                     return
                 app._apply_ui_theme(theme, persist=False)
                 app.workspace_tabs.select(page)
-                root.after(250, lambda: capture(theme, name, current_scale))
+                root.after(500, lambda: capture(theme, name, current_scale))
 
             def capture(theme, name, current_scale):
                 hwnd = ancestor(root.winfo_id(), 2) or root.winfo_id()

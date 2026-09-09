@@ -13,6 +13,7 @@ import time
 import uuid
 
 import numpy as np
+import i18n
 
 
 BASE = (
@@ -26,6 +27,7 @@ _CREATE_NO_WINDOW = getattr(subprocess, "CREATE_NO_WINDOW", 0)
 _MIB = 1024 * 1024
 _GIB = 1024 * _MIB
 _GPU_QUERY_CACHE = None
+MAX_TEXTURE_DIMENSION = 16384
 
 
 class SuperResolutionError(RuntimeError):
@@ -46,6 +48,19 @@ def target_size(width, height, scale):
     if width <= 0 or height <= 0:
         return 0, 0
     return width * scale, height * scale
+
+
+def validate_dimensions(width, height, scale):
+    """Reject unsupported whole-texture VSR plans before allocating shared RAM."""
+    output_width, output_height = target_size(width, height, scale)
+    if output_width <= 0 or output_height <= 0:
+        raise SuperResolutionError(i18n.tr('message.vsr_invalid_dimensions'))
+    if max(int(width), int(height), output_width, output_height) > MAX_TEXTURE_DIMENSION:
+        raise SuperResolutionError(i18n.tr(
+            'message.vsr_texture_limit', width=output_width, height=output_height,
+            limit=MAX_TEXTURE_DIMENSION,
+        ))
+    return output_width, output_height
 
 
 def operation_timeout(output_width, output_height, minimum=60.0):
@@ -276,7 +291,7 @@ class ProcessSuperResolution:
         self.is_hdr = bool(is_hdr)
         if self.scale == 1:
             raise ValueError("超分会话只接受 2× 或 4×")
-        self.output_width, self.output_height = target_size(width, height, scale)
+        self.output_width, self.output_height = validate_dimensions(self.width, self.height, self.scale)
         self.dtype = np.float16 if self.is_hdr else np.uint8
         self.timeout = operation_timeout(
             self.output_width, self.output_height, minimum=timeout,

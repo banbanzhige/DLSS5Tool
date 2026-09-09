@@ -18,6 +18,8 @@ import uuid
 import numpy as np
 
 import dlss_engine
+import guidance_client
+from guidance_visualization import guidance_images
 
 
 _CREATE_TIMEOUT = 120.0
@@ -63,6 +65,8 @@ def _metadata(live):
         "max_in_flight": int(live.max_in_flight),
         "supports_async": bool(live.supports_async),
         "tiled": bool(getattr(live, "tiled", False)),
+        "guidance_info": dict(getattr(live, 'guidance_info', {})),
+        "guidance_metrics": dict(getattr(live, 'guidance_metrics', {})),
     }
 
 
@@ -119,6 +123,7 @@ def _host_worker_main(
                 connection.send({
                     "ok": True, "operation": operation,
                     "has_output": result is not None,
+                    **_metadata(live),
                 })
             elif operation == "enqueue":
                 accepted = live.enqueue(
@@ -127,6 +132,7 @@ def _host_worker_main(
                 connection.send({
                     "ok": True, "operation": operation,
                     "accepted": bool(accepted),
+                    **_metadata(live),
                 })
             elif operation == "dequeue":
                 result = live.dequeue()
@@ -141,6 +147,20 @@ def _host_worker_main(
                     "ok": True, "operation": operation,
                     "pending": int(live.pending),
                 })
+            elif operation == 'guidance_preview':
+                if live.pending:
+                    raise ValueError('Drain DLSS frames before guidance preview')
+                mode = int(live.settings.get('guidance_mode', 0))
+                if not mode or input_frame.dtype != np.uint8:
+                    raise ValueError('Guidance preview requires enabled SDR guidance')
+                # Use the existing component/cache, without evaluating DLSS.
+                motion, depth, reset = live.guidance_preview(
+                    input_frame, bool(message.get('reset')),
+                    final=bool(message.get('display')),
+                )
+                images = guidance_images(motion, depth, mode, live.settings) if message.get('display') else {}
+                connection.send({'ok': True, 'operation': operation, 'images': images,
+                                 'reset': bool(reset), **_metadata(live)})
             else:
                 raise ValueError("未知 DLSS 工作进程命令: %r" % operation)
         except BaseException as exception:
@@ -152,6 +172,8 @@ def _host_worker_main(
     # Do not call dlssnr_shutdown here.  Some driver/runtime combinations hang or
     # crash on shutdown after evaluation.  Exiting this disposable process lets
     # Windows reclaim its D3D12/NGX resources without a second in-process init.
+    if hasattr(live, "close_guidance"):
+        live.close_guidance()
     del live
     del input_frame
     del output_frame
@@ -169,6 +191,10 @@ class _HostSession:
     """One child process plus its fixed-resolution shared frame buffers."""
 
     def __init__(self, width, height, settings, live_factory=None):
+        # Fail incompatible guidance before allocating two full-resolution frames
+        # or spawning NGX. Keep injected test hosts independent of model files.
+        if live_factory is None:
+            guidance_client.validate(settings)
         self.width = int(width)
         self.height = int(height)
         self._closed = False
@@ -264,6 +290,10 @@ class _HostSession:
         raise HostProcessError(detail)
 
     def _apply_metadata(self, response):
+        if 'guidance_info' in response:
+            self.guidance_info = dict(response['guidance_info'])
+        if 'guidance_metrics' in response:
+            self.guidance_metrics = dict(response['guidance_metrics'])
         if "backend" in response:
             self.backend = str(response["backend"])
             self.max_in_flight = max(1, int(response.get("max_in_flight", 1)))
@@ -355,7 +385,9 @@ class _HostSession:
 class ProcessLive:
     """Drop-in Live-compatible proxy with transaction-like backend replacement."""
 
-    def __init__(self, width, height, settings=None, _live_factory=None):
+    def __init__(self, width, height, settings=None, _live_factory=None, _on_guidance_ready=None):
+        self._on_guidance_ready = _on_guidance_ready
+        self._notified_guidance_session = None
         self._w = int(width)
         self._h = int(height)
         self.settings = dict(settings or {})
@@ -429,6 +461,8 @@ class ProcessLive:
         if (
             self._requires_replacement(new_preference)
             or dlss_engine.frame_contract(updated) != dlss_engine.frame_contract(self.settings)
+            or guidance_client.contract(updated) != guidance_client.contract(self.settings)
+            or updated.get("dlss_runtime", "") != self.settings.get("dlss_runtime", "")
         ):
             self._replace(self._w, self._h, updated)
             return
@@ -449,13 +483,31 @@ class ProcessLive:
     def process(self, rgba, reset=False):
         self._session.copy_input(rgba)
         response = self._session.request("process", reset=bool(reset))
+        self._notify_guidance_ready()
         return self._session.copy_output() if response["has_output"] else None
+
+    def guidance_preview(self, rgba, previous=None):
+        """Read an exact adjacent-frame pair; return owned, bounded display arrays.
+
+        The caller serializes access with normal preview/export and forces the
+        next DLSS frame to reset, because this advances the component history.
+        """
+        if max(rgba.shape[:2]) > 1280:
+            raise ValueError('Guidance preview exceeds inference limit')
+        if previous is not None:
+            self._session.copy_input(previous)
+            self._session.request('guidance_preview', reset=True, display=False)
+        self._session.copy_input(rgba)
+        response = self._session.request('guidance_preview', reset=previous is None, display=True)
+        self._notify_guidance_ready()
+        return response['images'], response['reset']
 
     def enqueue(self, rgba, reset=False):
         if not self.supports_async:
             raise RuntimeError("当前主机设置不支持异步帧队列")
         self._session.copy_input(rgba)
         response = self._session.request("enqueue", reset=bool(reset))
+        self._notify_guidance_ready()
         return bool(response["accepted"])
 
     def dequeue(self):
@@ -467,6 +519,21 @@ class ProcessLive:
     @property
     def pending(self):
         return int(self._session.request("pending")["pending"])
+
+    @property
+    def guidance_info(self):
+        return dict(getattr(self._session, 'guidance_info', {})) if self._session else {}
+
+    @property
+    def guidance_metrics(self):
+        return dict(getattr(self._session, 'guidance_metrics', {})) if self._session else {}
+
+    def _notify_guidance_ready(self):
+        info = self.guidance_info
+        if info and self._notified_guidance_session is not self._session:
+            self._notified_guidance_session = self._session
+            if self._on_guidance_ready:
+                self._on_guidance_ready(info)
 
     def close(self):
         if getattr(self, "_session", None) is not None:

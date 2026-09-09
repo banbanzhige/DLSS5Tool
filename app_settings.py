@@ -8,6 +8,7 @@ import re
 import sys
 
 import i18n
+from guidance_parameters import parameters as guidance_parameters
 
 
 DLSS_SLIDER_MIN = 0.0
@@ -17,7 +18,11 @@ DLSS_SLIDER_STEP = 0.01
 
 
 DEFAULTS = {
+    **guidance_parameters({}),
     "preview_view": "original",
+    "preview_compare_layout": "wipe",
+    "guidance_preview_view": "original",
+    "guidance_compare_target": "depth",
     "style": 0,
     "enable_5x": False,
     "intensity": 1.0,
@@ -46,6 +51,18 @@ DEFAULTS = {
     "video_bitrate_mbps": 20.0,
     "hdr_mode": True,
     "host_backend": "auto",
+    "dlss_runtime": "",
+    "mods_directory": "",
+    "guidance_flow_weights": "",
+    "guidance_depth_weights": "",
+    "ui_modules_open": False,
+    "guidance_mode": 0,
+    "guidance_edge": 720,
+    "guidance_flow_direction": "backward",
+    "guidance_depth_encoder": "auto",
+    "guidance_device": "auto",
+    "guidance_depth_profile": "fp32",
+    "guidance_execution": "serial",
     "host_zero_fast_path": True,
     "host_persistent_buffers": True,
     "host_submission": "merged",
@@ -176,6 +193,25 @@ def validate(values):
     result["video_bitrate_mbps"] = max(0.5, min(500.0, bitrate))
     if source.get("host_backend") in {"auto", "v2", "legacy"}:
         result["host_backend"] = source["host_backend"]
+    for name in ("dlss_runtime", "mods_directory",
+                 "guidance_flow_weights", "guidance_depth_weights"):
+        if isinstance(source.get(name), str):
+            result[name] = source[name].strip()
+    result["guidance_mode"] = _clamp_int(source.get("guidance_mode", 0), 0, 3)
+    result["guidance_edge"] = _clamp_int(source.get("guidance_edge", 720), 128, 1280)
+    result.update(guidance_parameters(source))
+    for name, choices in (("guidance_flow_direction", {"backward", "forward_negated"}),
+                          ("guidance_depth_encoder", {"auto", "vits", "vitb", "vitl"}),
+                          ("guidance_device", {"auto", "cpu", "cuda"}),
+                          ("guidance_depth_profile", {"fp32", "sdpa_fp16"}),
+                          ("guidance_execution", {"serial", "raft_final", "raft_streams"})):
+        if source.get(name) in choices:
+            result[name] = source[name]
+    # The final-only RAFT adapter was withdrawn after real footage exposed
+    # severe temporal jitter. Preserve old settings files but migrate that
+    # retired profile to torchvision's original serial implementation.
+    if result["guidance_execution"] == "raft_final":
+        result["guidance_execution"] = "serial"
     if source.get("host_submission") in {"merged", "compatibility"}:
         result["host_submission"] = source["host_submission"]
     for name in (
@@ -183,7 +219,7 @@ def validate(values):
         "use_output_mix", "use_auto_mask",
         "hdr_mode",
         "host_zero_fast_path", "host_persistent_buffers", "host_auto_fallback",
-        "ui_export_open", "ui_host_open", "ui_preview_open", "preview_detached",
+        "ui_export_open", "ui_host_open", "ui_preview_open", "ui_modules_open", "preview_detached",
     ):
         result[name] = _as_bool(source.get(name, result[name]), result[name])
     theme = str(source.get("ui_theme", result["ui_theme"])).strip().lower()
@@ -205,6 +241,12 @@ def validate(values):
     )
     if source.get("preview_quality") in {"auto", "1080p", "1440p", "original"}:
         result["preview_quality"] = source["preview_quality"]
+    if source.get('preview_compare_layout') in {'wipe', 'side'}:
+        result['preview_compare_layout'] = source['preview_compare_layout']
+    if source.get('guidance_preview_view') in {'original', 'depth', 'flow', 'compare'}:
+        result['guidance_preview_view'] = source['guidance_preview_view']
+    if source.get('guidance_compare_target') in {'depth', 'flow'}:
+        result['guidance_compare_target'] = source['guidance_compare_target']
     result["preview_prefetch"] = _clamp_int(
         source.get("preview_prefetch", result["preview_prefetch"]), 4, 120
     )

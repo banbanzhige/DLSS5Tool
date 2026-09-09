@@ -19,6 +19,7 @@ import numpy as np
 
 from app_version import APP_VERSION
 import dlss_engine
+import mod_paths
 import super_resolution
 import updater
 
@@ -266,7 +267,7 @@ def _probe_hints(probe):
             "代际不匹配、驱动过旧或程序使用了核显。先在 Windows“设置 → 系统 → "
             "显示 → 图形”中将 DLSS5Tool.exe 设为“高性能（NVIDIA GPU）”并重启；"
             "再从 Releases 列表下载 30/40/50 系对应运行库，关闭程序后只替换 "
-            f"_internal\\nvngx_dlssnr.dll：{updater.RELEASES_URL}"
+            f"mods\\nvngx_dlssnr.dll 后刷新检测（无外置库时使用 _internal\\nvngx_dlssnr.dll）：{updater.RELEASES_URL}"
         )
     elif re.search(r"(?:Init_with_ProjectID|runtime Init_Ext).*0xBAD", combined, re.I):
         hints.append("NGX 初始化返回 BAD 错误；通常与驱动、默认适配器或硬件支持有关。")
@@ -359,8 +360,12 @@ def write_diagnostic_report(output_path, context=None):
     if not os.path.isdir(output_dir):
         raise FileNotFoundError("诊断报告目录不存在: " + output_dir)
     settings = dict((context or {}).get("settings") or {})
+    try:
+        selected_runtime = mod_paths.runtime_path(settings)
+    except FileNotFoundError:
+        selected_runtime = settings.get('dlss_runtime') or dlss_engine.DLSSNR_DLL
     files = {
-        "nvngx_dlssnr.dll": describe_file(dlss_engine.DLSSNR_DLL),
+        "nvngx_dlssnr.dll": describe_file(selected_runtime),
         "dlssnr_host_v2.dll": describe_file(dlss_engine.HOST_DLL_V2),
         "dlssnr_host.dll": describe_file(dlss_engine.HOST_DLL_LEGACY),
         "nvngx_vsr.dll": describe_file(super_resolution.VSR_RUNTIME_DLL),
@@ -416,6 +421,7 @@ def diagnostic_worker_main(arguments):
     result_path, native_log_path, settings_path, backend = arguments
     started = time.perf_counter()
     payload = {"backend_requested": backend, "ok": False}
+    live = None
     try:
         settings = _read_json(settings_path)
         settings.update({
@@ -448,6 +454,11 @@ def diagnostic_worker_main(arguments):
             "error": _redact(str(exception) or repr(exception)),
             "traceback": _redact(traceback.format_exc()[-6000:]),
         })
+    finally:
+        # Close optional external models explicitly; still avoid native NGX
+        # shutdown. This also prevents a model child outliving diagnostic output.
+        if live is not None and hasattr(live, 'close_guidance'):
+            live.close_guidance()
     payload["elapsed_seconds"] = round(time.perf_counter() - started, 3)
     try:
         with open(result_path, "w", encoding="utf-8") as handle:

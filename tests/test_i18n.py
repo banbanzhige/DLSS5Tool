@@ -11,6 +11,58 @@ import i18n
 
 
 class LocalizationTests(unittest.TestCase):
+    def test_inference_model_titles(self):
+        self.assertEqual(i18n.tr_for('zh_CN', 'tab.guidance'), '推理模型')
+        self.assertEqual(i18n.tr_for('zh_CN', 'guidance.flow_section'), '光流估计推理')
+        self.assertEqual(i18n.tr_for('zh_CN', 'guidance.depth_section'), '深度推理')
+        self.assertEqual(i18n.tr_for('en_US', 'tab.guidance'), 'Models')
+
+    def test_explicit_worker_language_and_language_placeholder(self):
+        i18n.set_language('zh_CN')
+        text = i18n.tr_for('en_US', 'language.saved_message', language='English')
+        self.assertTrue(text.startswith('Language saved'))
+        with mock.patch.object(i18n, '_catalog', return_value={'fixture': '{language}'}):
+            self.assertEqual(i18n.tr_for('en_US', 'fixture', language='English'), 'English')
+        self.assertEqual(i18n.get_language(), 'zh_CN')
+
+    def test_guidance_errors_use_requested_language(self):
+        import guidance_client
+        import mod_paths
+        from pathlib import Path
+        i18n.set_language('zh_CN')
+        with self.assertRaisesRegex(ValueError, 'SDR') as error:
+            guidance_client.validate({'guidance_mode': 1, 'frame_format': 'rgba16f', 'ui_language': 'en_US'})
+        self.assertFalse(any('\u4e00' <= c <= '\u9fff' for c in str(error.exception)))
+        with tempfile.TemporaryDirectory() as directory, mock.patch.object(mod_paths, 'search_roots', return_value=[Path(directory)]):
+            with self.assertRaises(FileNotFoundError) as error:
+                guidance_client.validate({'guidance_mode': 1, 'mods_directory': directory, 'ui_language': 'en_US'})
+            self.assertIn('missing', str(error.exception))
+            self.assertFalse(any('\u4e00' <= c <= '\u9fff' for c in str(error.exception)))
+        session = guidance_client.GuidanceSession.__new__(guidance_client.GuidanceSession)
+        session.language = 'en_US'
+        session._connection = mock.Mock()
+        session._connection.recv_bytes.return_value = json.dumps({'ok': False, 'error_key': 'guidance.error.cuda'}).encode()
+        with self.assertRaisesRegex(RuntimeError, 'CUDA is unavailable'):
+            session._reply()
+        session._connection.poll.return_value = False
+        with self.assertRaisesRegex(TimeoutError, '90 seconds'):
+            session._reply()
+
+    def test_module_dynamic_labels_and_errors_are_catalogued(self):
+        root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        used = set()
+        for filename in ('mod_paths.py', 'guidance_client.py', 'guidance_worker.py', 'dlss_engine.py', 'guidance_execution.py'):
+            with open(os.path.join(root, filename), encoding='utf-8') as handle:
+                tree = ast.parse(handle.read())
+            for node in ast.walk(tree):
+                if isinstance(node, ast.Constant) and isinstance(node.value, str) and node.value.startswith('guidance.error.'):
+                    used.add(node.value)
+        used.update('guidance.option.' + name for name in ('auto', 'cuda', 'cpu', 'backward', 'forward_negated', 'vits', 'vitb', 'vitl', 'fp32', 'sdpa_fp16'))
+        used.update('mods.file.' + name for name in ('worker', 'flow_weights', 'depth_weights'))
+        used.update('guidance.option.' + name for name in ('serial', 'raft_streams'))
+        for language in i18n.SUPPORTED_LANGUAGES:
+            self.assertFalse(used - i18n.catalog_keys(language))
+
     def tearDown(self):
         i18n.set_language(i18n.DEFAULT_LANGUAGE)
 

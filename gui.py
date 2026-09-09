@@ -6,7 +6,7 @@ gui.py — 简约 DLSS5 实时预览 + 导出 (test4)
 功能：导入视频或图片 → 实时预览(原图/DLSS/对比) → 调风格/强度/本地色调整/本地结构
       → 逐帧实时看出效果 → 导出 DLSS 视频或图片。
 
-零引导（Feature 18 神经渲染忽略光流/深度），无需 torch/模型，只需 NVIDIA 显卡。
+默认零引导，无需 torch/模型；进阶设置可选用户提供的深度/光流模块。
 运行： python gui.py
 """
 import ctypes
@@ -33,6 +33,11 @@ import i18n
 from app_version import APP_VERSION
 import diagnostics
 import dlss_engine
+import guidance_client
+from preview_comparison import PreviewComparison
+from guidance_export_ui import GuidanceExportUI
+from shared_cache_budget import SharedCacheBudget
+import mod_paths
 import export_queue as export_queue_state
 import updater
 from dlss_host_process import ProcessLive
@@ -42,6 +47,7 @@ from super_resolution import (
     ProcessSuperResolution, classify_resource_risk, estimate_resources,
     format_bytes, format_resource_hint, normalize_scale, query_gpu_memory,
     runtime_status as super_resolution_runtime_status, target_size as super_resolution_target_size,
+    validate_dimensions as validate_super_resolution_dimensions, SuperResolutionError,
 )
 from video_export import (
     FFmpegHDRVideoReader, FFmpegVideoWriter, compose_hdr_frame,
@@ -376,7 +382,9 @@ def _preview_control_layout(width, language=None):
     """Choose a player-toolbar layout that never dictates a wide preview window."""
     width = max(int(width), 0)
     language = i18n.normalize_language(language or i18n.get_language())
-    wide_min = 960 if language == "en_US" else 805
+    # Four localized guidance-view labels need more room than the original
+    # three-item DLSS selector. Stacking below 960 keeps the last choice visible.
+    wide_min = 960
     stacked_min = 520 if language == "en_US" else 420
     if width >= wide_min:
         return "wide"
@@ -708,7 +716,7 @@ def compose_preview_frame(original, processed, output_view=0, output_mix=1.0):
 
 
 
-class App:
+class App(PreviewComparison, GuidanceExportUI):
     def __init__(self, root):
         self.root = root
         self._saved_settings = app_settings.load()
@@ -747,6 +755,12 @@ class App:
         self._exporting = False
         self._export_cancel_event = threading.Event()
         self._switching_backend = False
+        self._module_reload_thread = None
+        self._module_reload_after = None
+        self._close_after_module_reload = False
+        self._guidance_events = queue.SimpleQueue()
+        self._guidance_generation = 0
+        self._guidance_events_after = None
         self._diagnosing = False
         self._diagnostic_thread = None
         self._update_checking = False
@@ -755,6 +769,7 @@ class App:
         self._update_thread = None
         self._update_cancel_event = threading.Event()
         self._live = None
+        self._shared_cache_pool = None
         self._live_cache = None
         self._super_resolution_live = None
         self._super_resolution_key = None
@@ -844,6 +859,7 @@ class App:
         self._queue_active_job_id = None
         self._queue_last_summary = None
         self.view_var = tk.StringVar(value=self._saved_settings["preview_view"])
+        self._init_comparison()
         self._theme_widgets = []
 
         # Studio: left monitor + fixed 360px inspector (matches the mockup).
@@ -875,13 +891,15 @@ class App:
         )
         self._activate_preview_pane(self._docked_preview_pane)
 
-        self.workspace_tabs = StudioNotebook(self._inspector, ui=self._ui)
+        self.workspace_tabs = StudioNotebook(self._inspector, ui=self._ui, command=self._on_workspace_selected)
         self.workspace_tabs.pack(fill="both", expand=True)
         self._theme_widgets.append(self.workspace_tabs)
         self._preview_page = ttk.Frame(self.workspace_tabs.content, style="Panel.TFrame")
+        self._guidance_page = ttk.Frame(self.workspace_tabs.content, style="Panel.TFrame")
         self._export_page = ttk.Frame(self.workspace_tabs.content, style="Panel.TFrame")
         self.queue_tab = ttk.Frame(self.workspace_tabs.content, style="Panel.TFrame")
         self.workspace_tabs.add(self._preview_page, text=tr("tab.adjust"))
+        self.workspace_tabs.add(self._guidance_page, text=tr("tab.guidance"))
         self.workspace_tabs.add(self._export_page, text=tr("tab.export"))
         self.workspace_tabs.add(self.queue_tab, text=tr("tab.queue"), badge="0")
 
@@ -982,6 +1000,7 @@ class App:
         self._export_scrollbar_visible = False
         self._export_canvas.configure(yscrollcommand=self._export_scrollbar.set)
         export_inner = ttk.Frame(self._export_canvas, style="Panel.TFrame")
+        self._export_inner = export_inner  # Settings page; retain legacy export identifiers.
         self._export_window = self._export_canvas.create_window(
             (0, 0), window=export_inner, anchor="nw",
         )
@@ -997,7 +1016,7 @@ class App:
             ui=self._ui,
         )
         self._theme_widgets.append(self._preview_section)
-        self._preview_section.pack(fill="x", padx=8, pady=(8, 2))
+        self._preview_section.pack(fill="x", padx=16, pady=(10, 0))
         self._preview_settings = self._build_preview_settings(self._preview_section.body)
         self._preview_runtime_settings = self._collect_preview_settings()
         self.root.after_idle(self._update_preview_memory_hint)
@@ -1012,7 +1031,7 @@ class App:
             ui=self._ui,
         )
         self._theme_widgets.append(self._export_section)
-        self._export_section.pack(fill="x", padx=8, pady=2)
+        self._export_section.pack(fill="x", padx=16, pady=(12, 0), before=self._preview_section)
         self._export_settings = self._build_export_settings(self._export_section.body)
 
         self._host_section = CollapsibleSection(
@@ -1023,8 +1042,37 @@ class App:
             ui=self._ui,
         )
         self._theme_widgets.append(self._host_section)
-        self._host_section.pack(fill="x", padx=8, pady=2)
+        self._host_section.pack(fill="x", padx=16, pady=(10, 0))
         self._host_settings = self._build_host_settings(self._host_section.body)
+        self._guidance_page.rowconfigure(0, weight=1)
+        self._guidance_page.columnconfigure(0, weight=1)
+        self._guidance_canvas = tk.Canvas(
+            self._guidance_page, background=self._ui['panel'],
+            highlightthickness=0, borderwidth=0,
+        )
+        self._guidance_canvas.grid(row=0, column=0, sticky='nsew')
+        self._guidance_scrollbar = ttk.Scrollbar(
+            self._guidance_page, orient='vertical', command=self._guidance_canvas.yview,
+        )
+        self._guidance_scrollbar.grid(row=0, column=1, sticky='ns')
+        self._guidance_scrollbar.grid_remove()
+        self._guidance_scrollbar_visible = False
+        self._guidance_canvas.configure(yscrollcommand=self._guidance_scrollbar.set)
+        self._guidance_inner = ttk.Frame(self._guidance_canvas, style='Panel.TFrame')
+        self._guidance_window = self._guidance_canvas.create_window(
+            (0, 0), window=self._guidance_inner, anchor='nw',
+        )
+        self._guidance_inner.bind('<Configure>', self._sync_guidance_scrollregion)
+        self._guidance_canvas.bind('<Configure>', self._resize_guidance_content)
+        self._build_guidance_settings(self._guidance_inner)
+        self._modules_section = CollapsibleSection(
+            self._export_inner, tr('mods.section'), collapsed=not self._saved_settings.get('ui_modules_open', False),
+            on_toggle=self._on_panels_toggle, ui=self._ui,
+        )
+        self._theme_widgets.append(self._modules_section)
+        self._modules_section.pack(fill='x', padx=16, pady=(10, 0))
+        self._build_module_settings(self._modules_section.body)
+        self._build_guidance_export()
 
         self._build_queue_tab(self.queue_tab)
         self._build_export_quick(self._export_quick)
@@ -1055,6 +1103,8 @@ class App:
         self._save_queue_state()
         self._refresh_status_chips()
         self.root.after_idle(self._draw_empty)
+        self._poll_guidance_events()
+        self._sync_comparison_controls()
         if self._saved_settings.get("preview_detached", False):
             self.root.after_idle(self.detach_preview)
         if getattr(sys, "frozen", False) and not os.environ.get(
@@ -1146,9 +1196,10 @@ class App:
         right = ttk.Frame(ctrl, style="Transport.TFrame")
         right.pack(side="right")
         view_bar = SegmentedBar(
-            right, self.view_var, VIEWS, command=self.on_view_change, ui=self._ui,
+            right, self.preview_selector, VIEWS, command=self._on_preview_selection, ui=self._ui,
         )
         view_bar.pack(side="left", padx=(0, 8))
+        self._install_comparison_menu(view_bar)
         self._theme_widgets.append(view_bar)
         theme_widgets.append(view_bar)
         Tooltip(
@@ -1216,6 +1267,7 @@ class App:
 
         return {
             "canvas": canvas,
+            "view_bar": view_bar,
             "transport": transport,
             "timeline": timeline,
             "prev_btn": prev_btn,
@@ -1470,6 +1522,7 @@ class App:
             pass
         try:
             self._export_canvas.configure(bg=self._ui["panel"])
+            self._guidance_canvas.configure(bg=self._ui["panel"])
         except Exception:
             pass
         panes = [self._docked_preview_pane]
@@ -1558,7 +1611,9 @@ class App:
             )
         except Exception:
             pass
-        pills = [("v2", "ok"), (tr("status.zero_guidance"), "")]
+        selected_mode = self._collect_host_settings().get('guidance_mode', 0) if hasattr(self, '_host_settings') else 0
+        mode_label = tr('guidance.mode.' + str(selected_mode)) if selected_mode else tr('status.zero_guidance')
+        pills = [("v2", "ok"), (mode_label, "warn" if selected_mode else "")]
         color = getattr(self, "_video_color_info", None) or {}
         if color.get("label"):
             pills.append((color.get("label"), "warn" if color.get("is_hdr") else ""))
@@ -1595,6 +1650,7 @@ class App:
         }
 
     def _sync_preview_chrome(self, timeline_state):
+        self._sync_comparison_controls()
         self.timeline.set_range(timeline_state["minimum"], timeline_state["maximum"])
         self.timeline.set_cache_ranges(
             timeline_state["rendered"], timeline_state["queued"],
@@ -1882,6 +1938,26 @@ class App:
             self._export_canvas.yview_moveto(0.0)
             self._export_scrollbar.grid_remove()
 
+    def _resize_guidance_content(self, event=None):
+        width = max(getattr(event, 'width', self._guidance_canvas.winfo_width()), 1)
+        self._guidance_canvas.itemconfigure(self._guidance_window, width=width)
+        self.root.after_idle(self._sync_guidance_scrollregion)
+
+    def _sync_guidance_scrollregion(self, event=None):
+        content_height = self._guidance_inner.winfo_reqheight()
+        self._guidance_canvas.configure(
+            scrollregion=(0, 0, self._guidance_canvas.winfo_width(), content_height),
+        )
+        needs_scrollbar = content_height > self._guidance_canvas.winfo_height() + 2
+        if needs_scrollbar == self._guidance_scrollbar_visible:
+            return
+        self._guidance_scrollbar_visible = needs_scrollbar
+        if needs_scrollbar:
+            self._guidance_scrollbar.grid()
+        else:
+            self._guidance_canvas.yview_moveto(0.0)
+            self._guidance_scrollbar.grid_remove()
+
     def _on_workspace_mousewheel(self, event):
         """Scroll inspector pages when the pointer is over them."""
         widget = getattr(event, "widget", None)
@@ -1893,6 +1969,9 @@ class App:
                 break
             if cursor is self._export_page and getattr(self, "_export_scrollbar_visible", False):
                 target = self._export_canvas
+                break
+            if cursor is getattr(self, '_guidance_page', None) and getattr(self, '_guidance_scrollbar_visible', False):
+                target = self._guidance_canvas
                 break
             cursor = getattr(cursor, "master", None)
         if target is None:
@@ -2265,7 +2344,8 @@ class App:
         if not hasattr(self, "queue_start_btn"):
             return
         selected = self._selected_queue_jobs()
-        editable = not self._queue_running and not self._exporting and not self._diagnosing
+        editable = not (self._queue_running or self._exporting or self._diagnosing
+                        or getattr(self, '_switching_backend', False))
         retryable = any(
             job.state in {"failed", "cancelled", "interrupted"} for job in selected
         )
@@ -2686,6 +2766,8 @@ class App:
         return changed
 
     def start_export_queue(self):
+        if getattr(self, '_switching_backend', False):
+            return
         if self._queue_running or self._exporting:
             return
         if not any(job.state in QUEUE_STARTABLE_STATES for job in self._queue_jobs):
@@ -2949,9 +3031,11 @@ class App:
                 pass
 
     def _update_action_labels(self):
+        self._update_guidance_export_controls()
         try:
             has = bool(self.video)
-            busy = bool(self._exporting or self._queue_running or self._diagnosing)
+            busy = bool(self._exporting or self._queue_running or self._diagnosing
+                        or self._switching_backend)
             cancel_requested = self._export_cancel_event.is_set()
             active_job = self._queue_job(self._queue_active_job_id)
             cancellable_export = (
@@ -3129,6 +3213,8 @@ class App:
             body, text="", style="Hint.TLabel", wraplength=320, justify="left",
         )
         d['w_range_hint'] = range_hint
+
+        d['v_guidance'] = tk.StringVar(value=tr('guidance.mode.' + str(saved.get('guidance_mode', 0))))
 
         ttk.Label(body, text=tr("label.output_preview"), style="Kicker.TLabel").pack(
             fill="x", pady=(4, 6),
@@ -3408,12 +3494,37 @@ class App:
         mib = (settings or self._collect_preview_settings())['preview_cache_mb']
         return int(mib) * 1024 * 1024
 
+    def _ensure_shared_cache_pool(self):
+        with self._cache_lock:
+            if getattr(self, '_shared_cache_pool', None) is None:
+                self._shared_cache_pool = SharedCacheBudget(limit_bytes=self._preview_cache_bytes())
+                with self._shared_cache_pool.locked():
+                    self._publish_frame_cache_locked()
+            return self._shared_cache_pool
+
+    def _available_frame_cache_bytes(self):
+        pool = getattr(self, '_shared_cache_pool', None)
+        if pool is None:return self._preview_cache_bytes()
+        with pool.locked():return pool.allowance_locked(respect_demand=True)
+
+    def _publish_frame_cache_locked(self):
+        pool = getattr(self, '_shared_cache_pool', None)
+        if pool:
+            # Caller holds both the local cache lock and pool accounting lock.
+            # Pending minimum demand only borrows space when needed, never a split.
+            used = self._dlss_cache_bytes + self._source_cache_bytes
+            demand = getattr(self, '_frame_cache_pending_bytes', 0)
+            if demand > pool.limit_bytes:demand = 0;self._frame_cache_pending_bytes = 0
+            pool.publish_locked(used, max(used, demand))
+
     def _preview_scrub_ms(self):
         settings = getattr(self, '_preview_runtime_settings', None)
         return (settings or self._collect_preview_settings())['preview_scrub_ms']
 
     def _on_preview_settings_change(self, event=None):
         self._preview_runtime_settings = self._collect_preview_settings()
+        if getattr(self, '_shared_cache_pool', None):
+            self._shared_cache_pool.set_limit(self._preview_cache_bytes())
         self._update_preview_memory_hint()
         with self._cache_lock:
             self._evict_preview_cache_locked()
@@ -3441,12 +3552,14 @@ class App:
                 source_w, source_h, settings['preview_quality'],
             )
             pair_bytes = max((source_w * source_h + preview_w * preview_h) * 3, 1)
-            frames = max(int(budget_mib * 1024 * 1024 // pair_bytes), 1)
+            frames = max(int(self._available_frame_cache_bytes() // pair_bytes), 1)
             seconds = frames / max(float(self.fps), 1.0)
             text = tr(
                 "hint.cache_estimate", frames=frames, seconds=seconds,
                 startup=PREVIEW_BUFFER_SECONDS, width=preview_w, height=preview_h,
             )
+        shared_hint = tr('guidance.cache_budget', budget=budget_mib)
+        text = text + '\n' + shared_hint if source_w > 0 and source_h > 0 else shared_hint
         label = (getattr(self, "_preview_settings", None) or {}).get('w_cache_hint')
         if label is not None:
             try:
@@ -3700,6 +3813,14 @@ class App:
             'v_persistent': tk.BooleanVar(value=saved['host_persistent_buffers']),
             'v_in_flight': tk.IntVar(value=saved['host_in_flight']),
             'v_fallback': tk.BooleanVar(value=saved['host_auto_fallback']),
+            'v_runtime': tk.StringVar(value=tr('mods.bundled') if saved.get('dlss_runtime') == '__bundled__' else (saved.get('dlss_runtime', '') or tr('mods.auto'))),
+            'v_guidance': self._settings['v_guidance'],
+            'v_guidance_edge': tk.IntVar(value=saved.get('guidance_edge', 720)),
+            'v_flow_direction': tk.StringVar(value=tr('guidance.option.' + saved.get('guidance_flow_direction', 'backward'))),
+            'v_depth_encoder': tk.StringVar(value=tr('guidance.option.' + saved.get('guidance_depth_encoder', 'auto'))),
+            'v_guidance_device': tk.StringVar(value=tr('guidance.option.' + saved.get('guidance_device', 'auto'))),
+            'v_depth_profile': tk.StringVar(value=tr('guidance.option.' + saved.get('guidance_depth_profile', 'fp32'))),
+            'v_guidance_execution': tk.StringVar(value=tr('guidance.option.' + saved.get('guidance_execution', 'serial'))),
         }
 
         parent.grid_columnconfigure(0, weight=1)
@@ -3762,26 +3883,415 @@ class App:
         self.root.after_idle(self._update_host_control_states)
         return d
 
+    def _build_guidance_settings(self, parent):
+        from guidance_settings_ui import build_guidance_settings
+        build_guidance_settings(self, parent)
+
+    def _build_module_settings(self, parent):
+        d, saved = self._host_settings, self._saved_settings
+        group = ttk.Frame(parent, style='Panel.TFrame')
+        group.pack(fill='x', padx=(6, 8), pady=4)
+        group.columnconfigure(0, weight=1)
+        setup_hint = ttk.Label(group, text=tr('mods.setup_hint'), style='Hint.TLabel', wraplength=300)
+        setup_hint.grid(row=0, column=0, sticky='ew', pady=(0, 8))
+        group.bind('<Configure>', lambda e: setup_hint.configure(wraplength=max(160, e.width - 8)), add='+')
+        summaries = ttk.Frame(group, style='Panel.TFrame')
+        summaries.grid(row=1, column=0, sticky='ew')
+        summaries.columnconfigure(1, weight=1)
+        d['module_summaries'] = {}
+        for row, name in enumerate(('runtime', 'component', 'flow', 'depth')):
+            ttk.Label(summaries, text=tr('mods.summary.' + name)).grid(row=row, column=0, sticky='w', padx=(0, 12), pady=3)
+            label = ttk.Label(summaries, text='', style='Hint.TLabel')
+            label.grid(row=row, column=1, sticky='w', pady=3)
+            d['module_summaries'][name] = label
+        actions = ttk.Frame(group, style='Panel.TFrame')
+        actions.grid(row=2, column=0, sticky='ew', pady=(8, 4))
+        ttk.Button(actions, text=tr('mods.open'), command=self._open_mods).pack(side='left')
+        ttk.Button(actions, text=tr('mods.refresh'), command=self._refresh_mods).pack(side='left', padx=4)
+        ttk.Button(actions, text=tr('mods.details'), command=self._show_module_details).pack(side='left')
+        # Paths are a first-level section, independent of add-on status.
+        editor = CollapsibleSection(
+            self._export_inner, tr('mods.path_settings'), collapsed=True, ui=self._ui,
+        )
+        editor.pack(fill='x', padx=16, pady=(10, 8))
+        self._theme_widgets.append(editor)
+        self._module_editor = editor
+        editor.body.columnconfigure(0, weight=1)
+        runtime_combo = self._chrome_combo(editor.body, d['v_runtime'], [tr('mods.auto'), tr('mods.bundled')] + mod_paths.runtime_choices(saved))
+        ttk.Label(editor.body, text=tr('mods.runtime')).grid(row=0, column=0, sticky='w', pady=(0, 4))
+        runtime_combo.grid(row=1, column=0, sticky='ew')
+        runtime_combo.bind('<<ComboboxSelected>>', lambda e: self._on_mod_settings_change())
+        buttons = ttk.Frame(editor.body, style='Panel.TFrame')
+        buttons.grid(row=2, column=0, sticky='ew', pady=5)
+        runtime_button = ttk.Button(buttons, text=tr('mods.choose_runtime'), command=self._choose_runtime)
+        runtime_button.pack(side='left')
+        paths = ttk.Frame(editor.body, style='Panel.TFrame')
+        paths.grid(row=3, column=0, sticky='ew')
+        paths.columnconfigure(0, weight=1)
+        self._module_path_defaults = {
+            'guidance_flow_weights': 'models/raft_large_C_T_SKHT_V2-ff5fadd5.pth',
+            'guidance_depth_weights': 'models/depth_anything_v2_{encoder}.pth',
+            'mods_directory': 'mods',
+        }
+        path_vars, path_controls, path_entries = {}, [], {}
+        for row, (key, default) in enumerate(self._module_path_defaults.items()):
+            variable = tk.StringVar()
+            variable.set(saved.get(key, '') or default)
+            path_vars[key] = variable
+            ttk.Label(paths, text=tr('mods.path.' + key)).grid(row=row * 2, column=0, columnspan=2, sticky='w', pady=(6, 3))
+            entry = ChromeEntry(paths, ui=self._ui, textvariable=variable, width=18)
+            self._theme_widgets.append(entry)
+            path_entries[key] = entry
+            entry.grid(row=row * 2 + 1, column=0, sticky='ew', padx=(0, 4))
+            entry.bind('<Return>', lambda e: self._on_mod_settings_change())
+            entry.bind('<FocusOut>', lambda e: self._on_mod_settings_change())
+            browse = ttk.Button(paths, text=tr('common.browse'), width=7, command=lambda name=key: self._choose_module_path(name))
+            browse.grid(row=row * 2 + 1, column=1, sticky='e')
+            path_controls.extend((entry, browse))
+        reset_button = ttk.Button(editor.body, text=tr('mods.reset_paths'), command=self._reset_module_paths)
+        reset_button.grid(row=4, column=0, sticky='w', pady=6)
+        path_controls.append(reset_button)
+        footer = ttk.Frame(group, style='Panel.TFrame')
+        footer.grid(row=3, column=0, sticky='ew', pady=(4, 0))
+        footer.columnconfigure(0, weight=1)
+        hint = ttk.Label(footer, text='', style='Hint.TLabel')
+        hint.grid(row=0, column=0, sticky='w')
+        d['w_mod_setup_hint'] = setup_hint
+        d.update(w_runtime=runtime_combo, w_mod_hint=hint,
+                 w_runtime_button=runtime_button, path_vars=path_vars, path_controls=path_controls, path_entries=path_entries)
+        self._last_module_settings = self._collect_host_settings()
+
+    def _open_module_settings(self):
+        self.workspace_tabs.select(self._export_page)
+        if self._modules_section.collapsed:
+            self._modules_section.toggle()
+        self.root.after_idle(lambda: self._export_canvas.yview_moveto(1.0))
+
+    def _show_module_editor(self, name):
+        self.workspace_tabs.select(self._export_page)
+        if self._module_editor.collapsed:
+            self._module_editor.toggle()
+        key = {'component': 'mods_directory', 'flow': 'guidance_flow_weights', 'depth': 'guidance_depth_weights'}.get(name)
+        widget = self._host_settings['path_entries'][key] if key else self._host_settings['w_runtime']
+        def reveal():
+            self.root.update_idletasks()
+            inner = self._export_inner
+            y = widget.winfo_rooty() - inner.winfo_rooty()
+            self._export_canvas.yview_moveto(max(0.0, (y - 80) / max(inner.winfo_height(), 1)))
+            widget.focus_set()
+        self.root.after_idle(reveal)
+
+    def _show_module_details(self):
+        text = getattr(self, '_module_details_text', tr('mods.paths_hint'))
+        if getattr(self, '_last_guidance_info', None):
+            info = self._last_guidance_info
+            text += '\n\n' + tr('guidance.last_device', device=info.get('device_name') or info['device'])
+            if info.get('execution') in ('serial', 'raft_streams'):
+                text += '\n' + tr('guidance.execution_confirmed', execution=tr('guidance.option.' + info['execution']))
+        messagebox.showinfo(tr('mods.details'), text, parent=self.root)
+
+    def _guidance_started(self, info, generation=None):
+        # Even Tk.after() can wait for the Tk thread. This callback runs while
+        # holding _live_lock, so it must not make ANY Tk calls.
+        if generation is None:
+            generation = self._guidance_generation
+        self._guidance_events.put((generation, dict(info)))
+
+    def _poll_guidance_events(self):
+        self._guidance_events_after = None
+        for _ in range(64):
+            try:
+                generation, info = self._guidance_events.get_nowait()
+            except queue.Empty:
+                break
+            if generation != self._guidance_generation or self._module_reload_thread is not None:
+                continue
+            self._last_guidance_info = info
+            if info.get('analysis_parameters'):
+                self.logln(tr('guidance.parameters_confirmed', parameters=info['analysis_parameters']))
+            self.logln(tr('guidance.running', device=info.get('device_name') or info['device'],
+                          precision=info.get('precision') or 'float32'))
+            if info.get('execution') in ('serial', 'raft_streams'):
+                self.logln(tr('guidance.execution_confirmed', execution=tr('guidance.option.' + info['execution'])))
+            if info.get('cache_version') in ('raw_lru_v1', 'raw_lru_v2_shared'):
+                self.logln(tr('guidance.cache_ready', budget=int(info.get('cache_limit_bytes', 0)) // 1048576))
+            elif 'cache_version' in info:
+                self.logln(tr('guidance.cache_unavailable'))
+        self._guidance_events_after = self.root.after(100, self._poll_guidance_events)
+
+    def _choose_module_path(self, key):
+        if self._exporting or self._queue_running or self._diagnosing:
+            return
+        settings = self._collect_host_settings()
+        options = dict(title=tr('mods.path.' + key), initialdir=str(mod_paths.mods_root(settings)))
+        if key == 'mods_directory':
+            path = filedialog.askdirectory(**options)
+        else:
+            extension = '*.pth'
+            path = filedialog.askopenfilename(**options, filetypes=[('Module', extension), ('All', '*.*')])
+        if path:
+            self._host_settings['path_vars'][key].set(path)
+            self._on_mod_settings_change()
+
+    def _reset_module_paths(self):
+        if self._exporting or self._queue_running or self._diagnosing:
+            return
+        for key, default in self._module_path_defaults.items():
+            self._host_settings['path_vars'][key].set(default)
+        self._host_settings['v_runtime'].set(tr('mods.auto'))
+        self._host_settings['v_depth_encoder'].set(tr('guidance.option.auto'))
+        self._refresh_mods()
+
+    def _open_mods(self):
+        try:
+            directory = mod_paths.mods_root(self._collect_host_settings())
+            directory.mkdir(parents=True, exist_ok=True)
+            os.startfile(str(directory))
+        except OSError as exc:
+            messagebox.showerror(tr('mods.title'), str(exc))
+
+    def _choose_runtime(self):
+        if self._exporting or self._queue_running:
+            return
+        path = filedialog.askopenfilename(title=tr('mods.choose_runtime'), initialdir=str(mod_paths.mods_root(self._collect_host_settings())), filetypes=[('DLSS runtime', '*.dll')])
+        if path:
+            self._host_settings['v_runtime'].set(path)
+            self._on_mod_settings_change()
+
+    def _refresh_mods(self):
+        choices = [tr('mods.auto'), tr('mods.bundled')] + mod_paths.runtime_choices(self._collect_host_settings())
+        current = self._host_settings['v_runtime'].get()
+        if current not in choices:
+            choices.append(current)
+        self._host_settings['w_runtime'].config(values=choices)
+        if not (self._exporting or self._queue_running or self._switching_backend or self._diagnosing):
+            self._last_module_settings = None  # refresh also reloads a replaced file
+            self._on_mod_settings_change()
+        else:
+            self._update_host_control_states()
+
+    def _on_mod_settings_change(self):
+        if self._exporting or self._queue_running or self._switching_backend or self._diagnosing:
+            return
+        settings = self._collect_host_settings()
+        if settings == getattr(self, '_last_module_settings', None):
+            return
+        from guidance_parameters import DISPLAY_KEYS
+        previous_settings = getattr(self, '_last_module_settings', None)
+        if previous_settings is not None and (
+                {k: v for k, v in settings.items() if k not in DISPLAY_KEYS} ==
+                {k: v for k, v in previous_settings.items() if k not in DISPLAY_KEYS}):
+            self._last_module_settings = settings
+            self.pause()
+            self._guidance_preview_epoch += 1
+            self._guidance_result = self._guidance_ready = self._guidance_presented = None
+            self._guidance_display_signature = None
+            self._schedule_settings_save()
+            if self.video and self._guidance_context:
+                self.display_view()
+            return
+        self._last_module_settings = settings
+        self.pause()
+        self._freeze_preview_cache(resume_ms=None)
+        self._cancel_after('_live_debounce')
+        self._cancel_after('_output_preview_after')
+        self._guidance_generation += 1
+        self._last_guidance_info = None
+        self._cache_clear()
+        self._last_dlss_frame = -1
+        self._split_frame = -1
+        self._split_dlss = None
+        self._schedule_settings_save()
+        self._refresh_status_chips()
+        self._switching_backend = True
+        self._update_host_control_states()
+        self._update_action_labels()
+        self._update_queue_action_states()
+        self.set_status(tr('guidance.switching'))
+        previous = self._play_dlss_thread
+        result = queue.SimpleQueue()
+
+        def retire():
+            try:
+                # Keep the old worker referenced until it really exits; its
+                # in-flight IPC/GPU work has its own timeout. Never join on Tk.
+                if previous is not None:
+                    previous.join()
+                self._close_live()
+            except Exception as exc:
+                result.put(str(exc))
+            else:
+                result.put(None)
+
+        self._module_reload_thread = threading.Thread(
+            target=retire, daemon=True, name='dlss-module-reload',
+        )
+        try:
+            self._module_reload_thread.start()
+        except Exception as exc:
+            result.put(str(exc))
+        self._poll_module_reload(result)
+
+    def _poll_module_reload(self, result):
+        self._module_reload_after = None
+        try:
+            error = result.get_nowait()
+        except queue.Empty:
+            self._module_reload_after = self.root.after(
+                PREVIEW_WORKER_POLL_MS, lambda: self._poll_module_reload(result),
+            )
+            return
+        self._module_reload_thread = None
+        # A retiring worker may have entered _ensure_live after the initial
+        # invalidation. It is now gone: invalidate any last queued notification.
+        self._guidance_generation += 1
+        previous = self._play_dlss_thread
+        if previous is None or not previous.is_alive():
+            self._play_dlss_thread = None
+            self._play_dlss_busy = False
+        self._switching_backend = False
+        self._update_host_control_states()
+        self._update_action_labels()
+        self._update_queue_action_states()
+        if self._close_after_module_reload:
+            self._close_after_module_reload = False
+            self._on_close()
+            return
+        if error is not None:
+            self._last_module_settings = None  # allow an explicit retry
+            self.set_status(tr('guidance.switch_failed', error=error))
+            self.logln(tr('guidance.switch_failed', error=error))
+            return
+        self.set_status(tr('guidance.changed'))
+        self._schedule_preview_cache_resume(0)
+
     def _collect_host_settings(self):
         d = self._host_settings
         try:
             in_flight = int(d['v_in_flight'].get())
         except (ValueError, tk.TclError):
             in_flight = 2
+        try:
+            edge = max(128, min(1280, int(d['v_guidance_edge'].get())))
+        except (KeyError, ValueError, tk.TclError):
+            edge = 720
+        # get defaults keeps older embedded/test callers compatible.
+        def value(name, default):
+            return d[name].get() if name in d else default
+        def option(name, choices, default):
+            current = value(name, default)
+            return next((choice for choice in choices if current in (choice, tr('guidance.option.' + choice))), default)
+        mode = next((i for i in range(4) if value('v_guidance', '') == tr('guidance.mode.' + str(i))), 0)
+        runtime = value('v_runtime', '')
+        paths = {key: (variable.get().strip() if variable.get().strip() != self._module_path_defaults[key] else '')
+                 for key, variable in d.get('path_vars', {}).items()}
+        from guidance_parameters import parameters
+        analysis = parameters({'guidance_edge': edge})
+        for key, variable in d.get('analysis_vars', {}).items():
+            try:
+                analysis[key] = parameters({key: variable.get()}, strict=True)[key]
+            except ValueError:
+                analysis[key] = d['analysis_valid'][key]
+        analysis['guidance_depth_palette'] = option('v_depth_palette', ('gray', 'turbo'), 'gray')
+        analysis['guidance_depth_invert'] = option('v_depth_invert', ('normal', 'inverted'), 'normal') == 'inverted'
         return {
+            **analysis,
+            'dlss_runtime': '' if runtime == tr('mods.auto') else ('__bundled__' if runtime == tr('mods.bundled') else runtime),
+            'guidance_mode': mode,
+            'guidance_edge': edge,
+            'guidance_flow_direction': option('v_flow_direction', ('backward', 'forward_negated'), 'backward'),
+            'guidance_depth_encoder': option('v_depth_encoder', ('auto', 'vits', 'vitb', 'vitl'), 'auto'),
+            'guidance_device': option('v_guidance_device', ('auto', 'cuda', 'cpu'), 'auto'),
+            'guidance_depth_profile': option('v_depth_profile', ('fp32', 'sdpa_fp16'), 'fp32'),
+            'guidance_execution': option('v_guidance_execution', ('serial', 'raft_streams'), 'serial'),
+            **paths,
             'host_backend': HOST_BACKEND_CHOICES.get(d['v_backend'].get(), 'auto'),
             'host_submission': HOST_SUBMISSION_CHOICES.get(
                 d['v_submission'].get(), 'merged'
             ),
-            'host_zero_fast_path': bool(d['v_zero_fast'].get()),
+            'host_zero_fast_path': bool(d['v_zero_fast'].get()) and not mode,
             'host_persistent_buffers': bool(d['v_persistent'].get()),
             'host_in_flight': max(1, min(3, in_flight)),
             'host_auto_fallback': bool(d['v_fallback'].get()),
         }
 
+    def _update_module_summary(self, host):
+        d = self._host_settings
+        if 'w_mod_setup_hint' in d:
+            custom = bool(host.get('mods_directory'))
+            d['w_mod_setup_hint'].config(text=tr('mods.custom_hint' if custom else 'mods.setup_hint'))
+        # File-presence summary only. It never imports torch or starts inference.
+        candidates = mod_paths.guidance_candidates({**host, 'guidance_mode': 3})
+        present = {key: os.path.isfile(path) for key, path in candidates.items()}
+        component_error = ''
+        try:
+            mod_paths.enhancement_info(host)
+        except (FileNotFoundError, ValueError) as exc:
+            present['worker'] = False
+            component_error = str(exc)
+        runtime = mod_paths.runtime_info(host)
+        found, missing = tr('mods.found'), tr('mods.missing')
+        summary = {
+            'runtime': tr('mods.runtime.' + ('bundled' if runtime['source'] == 'bundled' else 'external')) if os.path.isfile(runtime['path']) else missing,
+            'component': found if present['worker'] else (tr('mods.incompatible') if os.path.isfile(candidates['worker']) else missing),
+            'flow': found if present.get('flow_weights') else missing,
+            'depth': found if present.get('depth_weights') else missing,
+        }
+        for key, label in d.get('module_summaries', {}).items():
+            if key == 'component' and present['worker']:
+                build = mod_paths.component_build(host)
+                if build != 'unknown':
+                    summary[key] = tr('mods.build.' + build)
+            label.config(text=summary[key])
+        mode = host['guidance_mode']
+        required = ['worker'] + (['flow_weights'] if mode in (1, 3) else []) + (['depth_weights'] if mode in (2, 3) else [])
+        missing_required = [key for key in required if not present[key]] if mode else []
+        status = tr('mods.status.off') if not mode else (tr('mods.status.missing') if missing_required else tr('mods.status.ready'))
+        if runtime['ambiguous']:
+            status = tr('mods.status.ambiguous')
+        elif runtime['fallback']:
+            status = tr('mods.status.fallback')
+        d['w_mod_hint'].config(text=status)
+        d['w_guidance_status'].config(text=status)
+        lines = [tr('mods.paths_hint'), '', tr('mods.detected_runtime', path=runtime['path'])]
+        if component_error:
+            lines.append(component_error)
+        if runtime['ambiguous']:
+            lines.append(tr('mods.ambiguous_runtime'))
+        if runtime['fallback']:
+            lines.append(tr('mods.path_fallback'))
+        for key, path in candidates.items():
+            lines.append(tr('mods.file_detail', label=tr('mods.file.' + key), status=found if present[key] else missing, path=path))
+        lines.extend(['', tr('guidance.off_hint') if not mode else tr('guidance.ready_hint')])
+        self._module_details_text = '\n'.join(lines)
+
     def _update_host_control_states(self):
         if not hasattr(self, "_host_settings"):
             return
+        if 'w_mod_hint' in self._host_settings:
+            host = self._collect_host_settings()
+            busy = self._exporting or self._queue_running or self._switching_backend or self._diagnosing
+            for key in ('w_guidance', 'w_runtime'):
+                self._host_settings[key].config(state='disabled' if busy else 'readonly')
+            self._host_settings['w_runtime_button'].config(state='disabled' if busy else 'normal')
+            for widget in self._host_settings.get('path_controls', []):
+                widget.config(state='disabled' if busy else 'normal')
+            mode = host['guidance_mode']
+            enabled = {
+                'mode': True, 'device': bool(mode), 'edge': bool(mode),
+                'flow': mode in (1, 3), 'depth': mode in (2, 3),
+                'profile': mode in (2, 3), 'execution': mode == 3,
+                'palette': mode in (2, 3), 'invert': mode in (2, 3),
+            }
+            for key, widget in self._host_settings['guidance_controls'].items():
+                if key.startswith('guidance_flow_'):
+                    enabled[key] = mode in (1, 3)
+                elif key.startswith('guidance_depth_'):
+                    enabled[key] = mode in (2, 3)
+                state = 'readonly' if isinstance(widget, ChromeCombobox) else 'normal'
+                widget.config(state=state if enabled[key] and not busy else 'disabled')
+            self._update_module_summary(host)
+            self._update_guidance_export_controls()
         if self._exporting or self._queue_running or self._switching_backend or self._diagnosing:
             for name in (
                 'w_backend', 'w_submission', 'w_zero_fast', 'w_persistent',
@@ -3797,7 +4307,7 @@ class App:
         )
         for name in ('w_zero_fast', 'w_persistent', 'w_fallback'):
             self._host_settings[name].config(
-                state="normal" if v2_enabled else "disabled"
+                state="normal" if v2_enabled and not (name == 'w_zero_fast' and host.get('guidance_mode')) else "disabled"
             )
         queue_enabled = (
             v2_enabled and host['host_submission'] == 'merged'
@@ -3923,6 +4433,8 @@ class App:
         }
         if hasattr(self, "_host_settings"):
             result.update(self._collect_host_settings())
+        result['ui_language'] = getattr(self, '_ui_language', i18n.get_language())
+        result['guidance_cache_pool'] = self._ensure_shared_cache_pool().name
         if hasattr(self, "_export_settings"):
             result['super_resolution_scale'] = self._collect_export_settings()[
                 'super_resolution_scale'
@@ -4130,7 +4642,10 @@ class App:
         d = self._settings
         export = self._collect_export_settings()
         return {
-            "preview_view": self.view_var.get(),
+            "preview_view": self._normal_preview_view if self._guidance_context else self.view_var.get(),
+            "preview_compare_layout": self.compare_layout.get(),
+            "guidance_preview_view": self._guidance_view,
+            "guidance_compare_target": self.compare_target.get(),
             "style": STYLE_CHOICES.get(d['v_style'].get(), 0),
             **self._remembered_dlss(),
             "output_view": OUTVIEW_CHOICES.get(d['v_outview'].get(), 0),
@@ -4154,6 +4669,7 @@ class App:
             "ui_host_open": bool(
                 getattr(self, "_host_section", None) and not self._host_section.collapsed
             ),
+            "ui_modules_open": bool(getattr(self, '_modules_section', None) and not self._modules_section.collapsed),
             "ui_preview_open": bool(
                 getattr(self, "_preview_section", None) and not self._preview_section.collapsed
             ),
@@ -4193,6 +4709,8 @@ class App:
             self.root.after_idle(self._sync_preview_scrollregion)
         if hasattr(self, "_export_canvas"):
             self.root.after_idle(self._sync_export_scrollregion)
+        if hasattr(self, '_guidance_canvas'):
+            self.root.after_idle(self._sync_guidance_scrollregion)
         self._schedule_settings_save()
 
     def _cancel_after(self, name):
@@ -4205,6 +4723,10 @@ class App:
             setattr(self, name, None)
 
     def _on_close(self):
+        if getattr(self, '_module_reload_thread', None) is not None:
+            self._close_after_module_reload = True
+            self.set_status(tr('guidance.closing'))
+            return
         if self._diagnosing:
             messagebox.showinfo(
                 tr("dialog.diagnosing"), tr("message.wait_diagnostics_close")
@@ -4227,6 +4749,9 @@ class App:
         self._cancel_after("_scrub_after")
         self._cancel_after("_resize_after")
         self._cancel_after("_preview_cache_resume_after")
+        self._cancel_after('_guidance_events_after')
+        self._cancel_after('_module_reload_after')
+        self._cancel_after('_guidance_preview_after')
         self._save_settings_now()
         self._save_queue_state()
         self.pause()
@@ -4238,6 +4763,9 @@ class App:
         self._source_kind = None
         self._video_color_info = None
         self._close_live()
+        if getattr(self, '_shared_cache_pool', None):
+            self._shared_cache_pool.close()
+            self._shared_cache_pool = None
         self._close_super_resolution()
         if self._detached_preview_window is not None:
             ui_theme.release_app_icon(self._detached_preview_window)
@@ -4256,6 +4784,7 @@ class App:
             s.get('host_backend'), s.get('host_submission'),
             s.get('host_zero_fast_path'), s.get('host_persistent_buffers'),
             s.get('host_in_flight'),
+            s.get('dlss_runtime'), guidance_client.contract(s),
             normalize_scale(s.get('super_resolution_scale', 1)),
         )
 
@@ -4349,7 +4878,9 @@ class App:
                             w, h, int(settings.get('preset', 1)), settings=settings,
                         )
                     else:
-                        self._live = ProcessLive(w, h, settings)
+                        generation = self._guidance_generation
+                        self._live = ProcessLive(w, h, settings, _on_guidance_ready=
+                            lambda info: self._guidance_started(info, generation))
                     self._live.update(settings)
                     self._live_w, self._live_h = w, h
                     self._last_dlss_frame = -1
@@ -4413,6 +4944,8 @@ class App:
             return None
 
     def _live_dlss_image(self, frame, source_bgr=None, settings=None, target_size=None):
+        if getattr(self, '_module_reload_thread', None) is not None:
+            return None
         settings = settings or self._collect_settings()
         sk = self._hash_settings_dict(settings)
         source_size = self._source_size(source_bgr)
@@ -4530,27 +5063,40 @@ class App:
         height, width = bgr.shape[:2]
         key = self._cache_key(frame, (width, height))
         with self._cache_lock:
-            previous = self._dlss_frame_cache.get(key)
-            if previous is not None:
-                self._dlss_cache_bytes -= previous[1].nbytes
-            self._dlss_frame_cache[key] = (sk, bgr)
-            self._dlss_cache_bytes += bgr.nbytes
-            self._live_cache = (key, sk, bgr)
-            self._last_shown_dlss = (key, bgr)
-            self._preview_processed_frames += 1
-            if self._preview_process_t0 is None:
-                self._preview_process_t0 = time.perf_counter()
-            self._evict_preview_cache_locked()
+            pool = getattr(self, '_shared_cache_pool', None)
+            if pool:
+                with pool.locked():
+                    return self._cache_store_accounted(frame, sk, bgr, key)
+            return self._cache_store_accounted(frame, sk, bgr, key)
+
+    def _cache_store_accounted(self, frame, sk, bgr, key):
+        previous = self._dlss_frame_cache.get(key)
+        if previous is not None:
+            self._dlss_cache_bytes -= previous[1].nbytes
+        self._dlss_frame_cache[key] = (sk, bgr)
+        self._dlss_cache_bytes += bgr.nbytes
+        self._live_cache = (key, sk, bgr)
+        self._last_shown_dlss = (key, bgr)
+        self._preview_processed_frames += 1
+        if self._preview_process_t0 is None:
+            self._preview_process_t0 = time.perf_counter()
+        self._evict_preview_cache_locked()
 
     def _source_cache_store(self, frame, bgr):
         frame = int(frame)
         with self._cache_lock:
-            previous = self._source_frame_cache.get(frame)
-            if previous is not None:
-                self._source_cache_bytes -= previous.nbytes
-            self._source_frame_cache[frame] = bgr
-            self._source_cache_bytes += bgr.nbytes
-            self._evict_preview_cache_locked()
+            pool = getattr(self, '_shared_cache_pool', None)
+            if pool:
+                with pool.locked():return self._source_cache_store_accounted(frame,bgr)
+            return self._source_cache_store_accounted(frame,bgr)
+
+    def _source_cache_store_accounted(self,frame,bgr):
+        previous = self._source_frame_cache.get(frame)
+        if previous is not None:
+            self._source_cache_bytes -= previous.nbytes
+        self._source_frame_cache[frame] = bgr
+        self._source_cache_bytes += bgr.nbytes
+        self._evict_preview_cache_locked()
 
     def _source_cache_get(self, frame):
         with self._cache_lock:
@@ -4565,7 +5111,7 @@ class App:
         source_w, source_h = self._source_size()
         preview_w, preview_h = self._active_preview_size or self._playback_preview_size()
         pair_bytes = max((source_w * source_h + preview_w * preview_h) * 3, 1)
-        return max(int(self._preview_cache_bytes() // pair_bytes), 1)
+        return max(int(self._available_frame_cache_bytes() // pair_bytes), 1)
 
     def _prerender_target_frames(self):
         capacity = self._cache_capacity_frames()
@@ -4573,7 +5119,15 @@ class App:
         return max(self._buffer_target_frames(), capacity - reserve)
 
     def _evict_preview_cache_locked(self):
-        budget = max(self._preview_cache_bytes(), 1)
+        pool = getattr(self, '_shared_cache_pool', None)
+        if pool:
+            with pool.locked():
+                self._evict_preview_cache_accounted(pool.allowance_locked(respect_demand=True))
+                self._publish_frame_cache_locked()
+        else:self._evict_preview_cache_accounted(self._preview_cache_bytes())
+
+    def _evict_preview_cache_accounted(self, budget):
+        budget = max(budget, 0)
         playhead = int(self._frame)
         protected_end = playhead + self._prerender_target_frames() - 1
 
@@ -4581,6 +5135,12 @@ class App:
             return self._dlss_cache_bytes + self._source_cache_bytes
 
         while total_bytes() > budget:
+            # No fixed raw/frame split. A denied frame can request enough space
+            # for the next source/result pair; idle worker releases LRU entries.
+            source_w, source_h = self._source_size()
+            pw, ph = self._active_preview_size or self._playback_preview_size()
+            pair_bytes = (source_w*source_h+pw*ph)*3
+            self._frame_cache_pending_bytes = pair_bytes if pair_bytes <= self._preview_cache_bytes() else 0
             candidates = []
             for key, item in self._dlss_frame_cache.items():
                 frame = key[0]
@@ -4595,9 +5155,13 @@ class App:
             if kind == "dlss":
                 self._dlss_frame_cache.pop(key, None)
                 self._dlss_cache_bytes -= size
+                if self._live_cache and self._live_cache[0] == key:self._live_cache = None
+                if self._last_shown_dlss and self._last_shown_dlss[0] == key:self._last_shown_dlss = None
             else:
                 self._source_frame_cache.pop(key, None)
                 self._source_cache_bytes -= size
+        if total_bytes() >= getattr(self,'_frame_cache_pending_bytes',0):
+            self._frame_cache_pending_bytes = 0
 
     def _cache_clear(self, keep_source=False):
         """Invalidate processed frames; only parameter edits can retain decoded sources."""
@@ -4614,6 +5178,10 @@ class App:
             self._preview_processed_frames = 0
             self._preview_process_t0 = None
             self._last_super_resolution_preview = None
+            self._frame_cache_pending_bytes = 0
+            pool = getattr(self,'_shared_cache_pool',None)
+            if pool:
+                with pool.locked():self._publish_frame_cache_locked()
 
     def _canvas_size(self):
         return (
@@ -4689,6 +5257,9 @@ class App:
             return
         frame = self._frame
         view = self.view_var.get()
+        if self._guidance_context:
+            self._display_guidance(frame)
+            return
         if self._hold_original:
             view = "original"
         fast = quality == "fast" and view in ("dlss", "compare") and self._cached_dlss(frame) is None
@@ -4892,6 +5463,9 @@ class App:
         self._blit_split(cw, ch)
 
     def _blit_split(self, cw, ch):
+        if getattr(self, 'compare_layout', None) is not None and self.compare_layout.get() == 'side' and not self._hold_original:
+            self._blit_side_by_side(cw, ch)
+            return
         original, (ox, oy, nw, nh) = self._render_viewport_image(
             self._split_orig, cw, ch,
         )
@@ -4908,7 +5482,7 @@ class App:
         self._drag_nw = nw
         self._drag_offsetx = ox
         composed = original
-        show_divider = self.view_var.get() == "compare" and not self._hold_original
+        show_divider = self._active_compare() and not self._hold_original
         if show_divider:
             composed = original.copy()
             sx = int(self.split_x * nw)
@@ -4937,7 +5511,7 @@ class App:
             )
             self._canvas_shadow_text(
                 ox + nw - 10, oy + 14,
-                tr("status.generating_dlss") if self._dlss_pending else "DLSS",
+                tr("status.generating_dlss") if self._dlss_pending else self._compare_label(),
                 anchor="e",
                 font=ui_theme.UI_FONT_SMALL,
             )
@@ -4958,7 +5532,7 @@ class App:
         return ox + int(self.split_x * nw)
 
     def _near_split(self, x):
-        if self.view_var.get() != "compare" or self._hold_original:
+        if not self._wipe_compare() or self._hold_original:
             return False
         sx = self._split_x_abs()
         if sx is None:
@@ -4991,12 +5565,19 @@ class App:
         if geom is None:
             return False
         ox, oy, nw, nh = geom
+        if self._active_compare() and getattr(self, 'compare_layout', None) is not None and self.compare_layout.get() == 'side':
+            slot = max(1, (self._canvas_size()[0] - 12) // 2)
+            if x >= slot + 12:
+                x -= slot + 12
         return ox <= x <= ox + nw and oy <= y <= oy + nh
 
     def _refresh_viewport_display(self):
         if not self.video or self._exporting:
             return
         cw, ch = self._canvas_size()
+        if getattr(self, '_guidance_context', False):
+            self._display_guidance(self._frame)
+            return
         if (
             self.view_var.get() == "compare"
             and getattr(self, "_split_orig", None) is not None
@@ -5114,7 +5695,7 @@ class App:
             self._update_pan_from_navigator(event)
             return
         shift = bool(event.state & 0x0001)
-        if self.view_var.get() == "compare" and (self._near_split(event.x) or shift):
+        if self._wipe_compare() and (self._near_split(event.x) or shift):
             self.pause()
             self._freeze_preview_cache(resume_ms=None)
             self._drag_split = True
@@ -5135,7 +5716,7 @@ class App:
             )
             self.canvas.config(cursor="fleur")
             return
-        kind = "compare" if self.view_var.get() == "compare" else "click"
+        kind = "compare" if self._wipe_compare() else "click"
         self._canvas_press = (kind, event.x, event.y)
 
     def on_canvas_drag(self, event):
@@ -5185,7 +5766,7 @@ class App:
         if press[0] == "pan":
             moved = self._pan_moved
             self._pan_moved = False
-            if not moved and self.view_var.get() == "compare":
+            if not moved and self._wipe_compare():
                 self._update_split_from_event(event)
             elif not moved:
                 self.toggle_play()
@@ -5232,7 +5813,7 @@ class App:
     def on_canvas_double(self, event):
         if self._point_in_navigator(event.x, event.y):
             return "break"
-        if self.video and self.view_var.get() == "compare" and self._near_split(event.x):
+        if self.video and self._wipe_compare() and self._near_split(event.x):
             self.split_x = 0.5
             cw, ch = self._canvas_size()
             if getattr(self, "_split_orig", None) is not None:
@@ -5511,6 +6092,11 @@ class App:
         self.pause()
         self._freeze_preview_cache()
         old_zoom = self._preview_zoom
+        side = self._active_compare() and self.compare_layout.get() == 'side'
+        if anchor is not None and side:
+            slot = max(1, (self._canvas_size()[0] - 12) // 2)
+            if anchor[0] >= slot + 12:
+                anchor = (anchor[0] - slot - 12, anchor[1])
         if anchor is not None:
             geom = getattr(self, "_video_geom", None)
             crop = getattr(self, "_viewport_crop_norm", None)
@@ -5523,6 +6109,8 @@ class App:
                 source_y = crop[1] + rel_y * (crop[3] - crop[1])
                 source_w, source_h = source_size
                 cw, ch = self._canvas_size()
+                if side:
+                    cw = max(1, (cw - 12) // 2)
                 fit_scale = min(cw / max(source_w, 1), ch / max(source_h, 1))
                 new_scale = max(fit_scale * zoom, 1e-9)
 
@@ -5625,6 +6213,10 @@ class App:
             pass
 
     def on_view_change(self):
+        if hasattr(self, 'preview_selector'):
+            if not self._guidance_context:
+                self.preview_selector.set(self.view_var.get())
+            self._sync_comparison_controls()
         self._schedule_settings_save()
         if not self.video:
             self._draw_empty()
@@ -5677,6 +6269,8 @@ class App:
 
     def _refresh_dlss(self):
         self._live_debounce = None
+        if getattr(self, '_module_reload_thread', None) is not None:
+            return
         thread = getattr(self, "_play_dlss_thread", None)
         if thread is not None and thread.is_alive():
             self._live_debounce = self.root.after(
@@ -5770,6 +6364,10 @@ class App:
     def _on_view_hotkey(self, view):
         if not self._preview_tab_selected() or self._input_widget_focused() or self._exporting:
             return None
+        if self._guidance_context:
+            self.preview_selector.set({'dlss': 'depth'}.get(view, view))
+            self._on_preview_selection()
+            return 'break'
         if self.view_var.get() != view:
             self.view_var.set(view)
             self.on_view_change()
@@ -5888,6 +6486,8 @@ class App:
             self._audio.play(self._frame, self.fps)
 
     def play(self):
+        if getattr(self, '_switching_backend', False):
+            return
         if not self.video:
             messagebox.showwarning(tr("dialog.hint"), tr("message.import_first"))
             return
@@ -5909,6 +6509,12 @@ class App:
         self._cancel_after("_play_after")
         self._cancel_after("_preview_decode_after")
         self._cancel_after("_scrub_after")
+        if self._guidance_context and self._guidance_view != 'original':
+            self._guidance_display_time = None
+            self._audio.pause()
+            self._set_play_btn(True)
+            self._play_tick()
+            return
         if view in ("dlss", "compare"):
             if not self._start_strict_preview_buffering():
                 self.playing = False
@@ -5958,6 +6564,7 @@ class App:
     def _preview_session_active(self):
         return bool(
             (self.playing or self._pre_rendering)
+            and getattr(self, '_module_reload_thread', None) is None
             and not getattr(self, "_preview_cache_frozen", False)
             and self.video and not self._exporting and not self._is_image
             and self.view_var.get() in ("dlss", "compare")
@@ -5965,6 +6572,8 @@ class App:
 
     def _schedule_preview_cache_resume(self, delay=PREVIEW_INTERACTION_IDLE_MS):
         self._cancel_after("_preview_cache_resume_after")
+        if getattr(self, '_module_reload_thread', None) is not None:
+            return
         root = getattr(self, "root", None)
         if root is None or self._exporting:
             self._preview_cache_frozen = False
@@ -6004,6 +6613,8 @@ class App:
 
     def _resume_preview_cache(self):
         self._preview_cache_resume_after = None
+        if getattr(self, '_module_reload_thread', None) is not None:
+            return
         thread = getattr(self, "_play_dlss_thread", None)
         if thread is not None and thread.is_alive():
             self._preview_cache_resume_after = self.root.after(
@@ -6179,12 +6790,15 @@ class App:
         size = self._active_preview_size or self._playback_preview_size()
         sk = self._settings_hash()
         with self._cache_lock:
+            self._evict_preview_cache_locked()
             rendered_frames = {
                 key[0] for key, item in self._dlss_frame_cache.items()
                 if key[1:] == size and item[0] == sk
             }
             queued_frames = set(self._source_frame_cache) - rendered_frames
             used_bytes = self._dlss_cache_bytes + self._source_cache_bytes
+        pool = getattr(self,'_shared_cache_pool',None)
+        if pool:used_bytes = pool.snapshot()['used_bytes']
         self.timeline.set_cache_ranges(
             _frame_ranges(rendered_frames), _frame_ranges(queued_frames),
         )
@@ -6253,6 +6867,9 @@ class App:
     def _play_tick(self):
         if not self.playing:
             return
+        if getattr(self, '_guidance_context', False) and self._guidance_view != 'original':
+            self._guidance_play_tick()
+            return
         worker_error = self._preview_worker_error
         if worker_error:
             self._preview_worker_error = None
@@ -6305,6 +6922,9 @@ class App:
         if getattr(self, "timeline", None) is not None and self.timeline.get() != frame:
             self.timeline.set(frame)
         self._sync_transport_labels()
+        if getattr(self, '_guidance_context', False):
+            self._display_guidance(frame, orig)
+            return
         cached_orig = getattr(self, "_play_orig", None)
         if orig is None and cached_orig is not None and cached_orig[0] == frame:
             orig = cached_orig[1]
@@ -6478,11 +7098,15 @@ class App:
                     rgba = cv2.cvtColor(bgr, cv2.COLOR_BGR2RGBA)
                 else:
                     rgba = cv2.cvtColor(bgr, cv2.COLOR_BGR2RGBA)
+                if stop.is_set() or gen != self._prefetch_gen:
+                    break
                 if live is None:
                     with self._live_lock:
                         live = self._ensure_live(target_w, target_h, settings)
                         if live is None:
                             raise RuntimeError(getattr(self, "_live_error", "DLSS 主机不可用"))
+                if stop.is_set() or gen != self._prefetch_gen:
+                    break
                 reset = frame != last_submitted + 1
                 if live.supports_async:
                     while len(pending) >= max(int(live.max_in_flight), 1):
@@ -6525,8 +7149,12 @@ class App:
         thread = getattr(self, "_play_dlss_thread", None)
         if thread is not None and thread.is_alive() and thread is not threading.current_thread():
             thread.join(timeout=timeout)
+        if thread is not None and thread.is_alive():
+            self._play_dlss_busy = True
+            return False
         self._play_dlss_busy = False
         self._play_dlss_thread = None
+        return True
 
     def pause(self):
         was_playing = self.playing
@@ -6552,6 +7180,8 @@ class App:
         self.import_media()
 
     def import_media(self):
+        if getattr(self, '_switching_backend', False):
+            return
         if self._diagnosing:
             messagebox.showinfo(
                 tr("dialog.diagnosing"), tr("message.wait_diagnostics_import")
@@ -6940,8 +7570,14 @@ class App:
         return getattr(event, "action", None)
 
     def _begin_source_load(self):
+        self._guidance_preview_epoch = getattr(self, '_guidance_preview_epoch', 0) + 1
+        self._guidance_result = None
+        self._guidance_ready = self._guidance_presented = None
+        self._guidance_display_signature = None
         self.pause()
         self._freeze_preview_cache(resume_ms=None)
+        if getattr(self,'_shared_cache_pool',None):
+            self._shared_cache_pool.invalidate_guidance()
         self._audio.close()
         self._cache_clear()
         self._last_dlss_frame = -1
@@ -6985,6 +7621,8 @@ class App:
             pass
 
     def clear_media(self):
+        if getattr(self, '_switching_backend', False):
+            return
         if self._exporting or self._queue_running or self._diagnosing:
             message = (
                 tr("message.wait_diagnostics_clear")
@@ -7021,6 +7659,8 @@ class App:
         self.logln(tr("status.cleared"))
 
     def _load_media(self, path):
+        if getattr(self, '_switching_backend', False):
+            return False
         if self._exporting or self._queue_running or self._diagnosing:
             message = (
                 tr("message.wait_diagnostics_import")
@@ -7322,6 +7962,13 @@ class App:
         scale = normalize_scale(scale)
         if scale == 1:
             return True
+        try:
+            validate_super_resolution_dimensions(width, height, scale)
+        except SuperResolutionError as error:
+            self.logln(str(error))
+            if notify:
+                messagebox.showerror(tr('dialog.rtx_unavailable'), str(error))
+            return False
         status = super_resolution_runtime_status()
         if not status['available']:
             message = tr(
@@ -7405,6 +8052,7 @@ class App:
         """Export one immutable SDR image request for the preview UI or mixed queue."""
         source_path = os.path.abspath(os.path.normpath(source_path))
         settings = {**self._collect_settings(), **dict(settings or {})}
+        settings['guidance_cache_pool'] = self._ensure_shared_cache_pool().name
         orig = _read_image_bgr(source_path)
         if orig is None or orig.size == 0:
             error = tr("message.input_image_unreadable")
@@ -7494,8 +8142,9 @@ class App:
                 video_bitrate_mbps=export_settings['video_bitrate_mbps'],
                 output_size=None,
             )
+            self.logln(f"[导出] 编码器: {writer.encoder_name}")
             sr_live = ProcessSuperResolution(width, height, scale, is_hdr=False)
-            live = ProcessLive(output_width, output_height, dlss_settings)
+            live = ProcessLive(output_width, output_height, dlss_settings, _on_guidance_ready=self._guidance_started)
             memory_after = query_gpu_memory(cache_seconds=0)
             if memory_before and memory_after:
                 measured = max(
@@ -7599,7 +8248,7 @@ class App:
             )
             if scale > 1:
                 sr_live = ProcessSuperResolution(width, height, scale, is_hdr=True)
-            live = ProcessLive(process_width, process_height, hdr_settings)
+            live = ProcessLive(process_width, process_height, hdr_settings, _on_guidance_ready=self._guidance_started)
             self.logln(
                 f"[HDR] {color_info.get('label')} → "
                 + (f"10-bit RTX VSR {scale}× → " if scale > 1 else "")
@@ -7683,6 +8332,8 @@ class App:
                 writer.abort()
 
     def export_dlss(self):
+        if getattr(self, '_switching_backend', False):
+            return
         if not self.video:
             messagebox.showwarning(tr("dialog.hint"), tr("message.import_first"))
             return
@@ -7707,6 +8358,7 @@ class App:
         """Export one immutable video request for either the preview UI or queue."""
         source_path = os.path.abspath(os.path.normpath(source_path))
         settings = {**self._collect_settings(), **dict(settings or {})}
+        settings['guidance_cache_pool'] = self._ensure_shared_cache_pool().name
         export_settings = {
             **self._collect_export_settings(), **dict(export_settings or {}),
         }

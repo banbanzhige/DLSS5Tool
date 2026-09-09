@@ -20,6 +20,9 @@ if errorlevel 1 (
 )
 
 set "ROOT=%~dp0.."
+set "OUTPUT=%ROOT%"
+if not "%~1"=="" set "OUTPUT=%~f1"
+if not exist "%OUTPUT%" mkdir "%OUTPUT%"
 set "NGX_INCLUDE=%ROOT%\third_party\NVIDIA-DLSS\include"
 set "NGX_LIB=%ROOT%\third_party\NVIDIA-DLSS\lib\Windows_x86_64\x64\nvsdk_ngx_s.lib"
 
@@ -36,7 +39,7 @@ if not exist "%NGX_LIB%" (
   exit /b 1
 )
 
-cl /nologo /std:c++17 /O2 /EHsc /MT /LD /I"%NGX_INCLUDE%" ^
+cl /nologo /std:c++17 /O2 /EHsc /MT /LD /I"%NGX_INCLUDE%" /Fo"%OUTPUT%\dlssnr_host_v2.obj" ^
   "%~dp0dlssnr_host_v2.cpp" "%NGX_LIB%" Advapi32.lib User32.lib ^
-  /link /OUT:"%ROOT%\dlssnr_host_v2.dll" /PDB:"%ROOT%\dlssnr_host_v2.pdb"
+  /link /OUT:"%OUTPUT%\dlssnr_host_v2.dll" /PDB:"%OUTPUT%\dlssnr_host_v2.pdb" /IMPLIB:"%OUTPUT%\dlssnr_host_v2.lib"
 exit /b %errorlevel%

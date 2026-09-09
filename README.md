@@ -15,7 +15,7 @@
 </p>
 
 <p align="center">
-  <a href="CHANGELOG.md"><img src="https://img.shields.io/badge/release-v2.0.1-0E7490?style=flat&amp;labelColor=475569" alt="当前文档版本 v2.0.1" height="20"></a>
+  <a href="CHANGELOG.md"><img src="https://img.shields.io/badge/release-v2.2.0-0E7490?style=flat&amp;labelColor=475569" alt="当前文档版本 v2.2.0" height="20"></a>
   <a href="#快速开始"><img src="https://img.shields.io/badge/platform-Windows_x64-0369A1?style=flat&amp;labelColor=475569" alt="平台 Windows x64" height="20"></a>
   <a href="#2-选择显卡运行库"><img src="https://img.shields.io/badge/GPU-NVIDIA_RTX-0E7490?style=flat&amp;labelColor=475569" alt="显卡 NVIDIA RTX；请按代际选择运行库" height="20"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-0369A1?style=flat&amp;labelColor=475569" alt="项目自有源码采用 MIT 许可证" height="20"></a>
@@ -100,13 +100,23 @@
 | RTX 30 系 | 另取同一 Release 的 `30系.zip`，替换下方 DLL |
 | RTX 50 系 | 另取同一 Release 的 `50系.zip`，替换下方 DLL |
 
-RTX 30 / 50 系请先关闭程序，再用附件中的 `nvngx_dlssnr.dll` 覆盖：
+RTX 30 / 50 系请先关闭程序，再将附件中的 `nvngx_dlssnr.dll` 放到：
 
 ```text
-_internal\nvngx_dlssnr.dll
+mods\nvngx_dlssnr.dll
 ```
 
-只替换这一个文件。从源码运行时，将 DLL 放在项目根目录。RTX 30 系使用社区适配运行库，不代表 NVIDIA 官方支持承诺；不同显卡和驱动组合仍需实机验证。
+默认自动检测：存在的自定义路径 → 模块目录中的 `nvngx_dlssnr.dll` → 唯一的已识别候选 → `_internal` 自带库。多个候选不猜选；可手动选择或强制使用内置库，无需覆盖 `_internal`。模块目录默认是程序同级的 `mods`，允许修改，界面显示命中路径。RTX 30 系使用社区适配运行库，不代表 NVIDIA 官方支持承诺；不同显卡和驱动组合仍需实机验证。
+
+深度／光流开关与参数集中在独立的「推理模型」Tab，与画面效果、设置、队列并列；画面效果页不再重复显示引导设置。**默认关闭，普通使用无需PyTorch或模型**。附加包直接解压到程序目录（包内自带 `mods`），无需配置路径或安装 Python。组件自带推理依赖及模型架构，深度型号默认自动识别。兼容 `.pth` 权重外置可替换；详见 [mods说明](mods/README.md)。「设置 → 模型与组件」提供状态和常用操作；「替换 DLL / 模型」是默认折叠的一级分组，无嵌套折叠；FP16／双 Stream 位于「设置 → 性能与设备」。未启用的参数置灰并保留原值。程序不下载模型、不自动执行安装器；当前引导支持SDR非分块，CPU推理可能很慢。
+
+推理模型 Tab 的播放器提供原图、深度图、光流图与对比；对比对象为原图 ↔ 深度或光流。普通 DLSS 对比和引导对比均支持滑动分割与左右并排，并同步帧号、缩放和平移。引导图按需复用当前组件生成，预览选择不会写入导出内容；光流颜色表示方向、亮度表示幅度，深度图显示归一化相对深度而非实际距离。
+
+点击底部「对比 ▾」设置布局、对比对象或分割线居中；图例说明按需打开，不常驻画面。引导播放等待下一帧时保留当前完整画面，两侧与帧号同时更新。
+
+在「推理模型」页底部选择深度图或光流图，可导出整个视频（MP4）或当前帧（PNG）。独立导出使用源尺寸、源帧率，不含音轨、原图、分割线或文案；PNG 为 8 位可视化，不是原始浮点深度／光流数据。导出可取消，失败和取消均保留已有目标文件。
+
+参数说明见 [深度与光流参数](GUIDANCE_PARAMETERS.md)。支持光流轮数、两路独立长边、深度范围稳定度及百分位；分析图显示独立调整，不影响增强视频。
 
 <details>
 <summary>运行库版本与 SHA-256 校验值</summary>
@@ -170,7 +180,7 @@ Get-FileHash .\_internal\nvngx_dlssnr.dll -Algorithm SHA256
 
 - **图片**：默认沿用源格式；关闭超分时保持原尺寸。PNG / TIFF 按无损方式写出，JPEG 等格式会重新编码；无损保存不代表增强后的像素与原图一致。
 - **视频**：默认 MP4，也可指定 MKV / MOV，或选择「跟随输入」。跟随输入支持 MP4/M4V、MKV、MOV；AVI / WebM 回退为 MP4。
-- **画质**：SDR 使用 H.264，支持画质档位或自定义码率。「极高质量」仍为有损视频压缩，并非数学无损。
+- **画质**：SDR 默认使用 H.264，最终输出任一边超过 4096 时自动使用 HEVC；支持画质档位或自定义码率。「极高质量」仍为有损视频压缩，并非数学无损。
 - **时序**：「严格时序（单会话）」维持完整连续的处理历史；「视觉无损（并行分段）」可加速 SDR 视频，但分段边界可能有细微差异。HDR 高精度与超分任务使用严格单会话。
 - **声音**：兼容的源音轨优先直通；MP4 / MOV 中不兼容的音轨会回退为 AAC。
 
@@ -194,6 +204,10 @@ Get-FileHash .\_internal\nvngx_dlssnr.dll -Algorithm SHA256
 **预览卡顿，或高倍率超分失败？**
 
 可在「预览性能」中降低播放质量，并按可用内存调整缓存预算（首次默认 `8192 MiB`）。高分辨率或 4× 超分任务可先用更小素材 / 2× 验证，并参考界面的资源风险提示；预览缩放本身不改变导出尺寸。
+
+**4× 超分的 8K 视频如何编码？**
+
+1080p 做 4× 超分会得到 7680×4320。最终输出任一边超过 4096 时，程序自动采用 HEVC/H.265，SDR 仍保持 SDR；较小 SDR 输出继续采用 H.264，HDR 使用 HEVC Main10。导出前会按实际尺寸和参数试编码；GPU 不支持时回退 CPU（8K 可能明显变慢），实际编码器见日志。MP4、MKV 和 MOV 均可承载 HEVC，但播放器也需要支持 HEVC。若仍失败，请降低最终输出尺寸并附上编码错误日志。
 
 **如何更新？**
 
@@ -243,7 +257,9 @@ git clone --depth 1 https://github.com/NVIDIA/DLSS.git third_party/NVIDIA-DLSS
 .\build_release.ps1
 ```
 
-当前版本输出至 `dist/DLSS5Tool-v2.0.1/` 和 `dist/DLSS5Tool-v2.0.1-win64.zip`。
+当前版本输出至 `dist/DLSS5Tool-v2.2.0/` 和 `dist/DLSS5Tool-v2.2.0-win64.zip`。
+
+正式主程序包不包含 AMD 开发验证工具、实验脚本／报告、测试源码或实验产物；这些内容仅保留在源码仓库，AMD 验证包使用独立构建入口。主程序按明确清单收集运行文件与用户文档，并在压缩前检查开发资料是否混入。增强组件仍单独打包，基础包的 `mods` 仅附说明文件。
 
 开发约定见 [CONTRIBUTING.md](CONTRIBUTING.md)，安全问题请遵循 [SECURITY.md](SECURITY.md)。源码仓库不包含 NVIDIA SDK、运行库 DLL、用户设置或私人测试媒体。
 

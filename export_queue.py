@@ -51,7 +51,7 @@ class ExportJob:
         return cls(
             source_path=source_path,
             output_path=os.path.abspath(os.path.normpath(output_path)),
-            settings=deepcopy(settings or {}),
+            settings={k:deepcopy(v) for k,v in (settings or {}).items() if k!='guidance_cache_pool'},
             export_settings=deepcopy(export_settings or {}),
             metadata=deepcopy(metadata or {}),
             color_info=deepcopy(color_info or {}),
@@ -82,7 +82,9 @@ class ExportJob:
             media_kind = inferred_kind
         def mapping(name):
             value = raw.get(name)
-            return deepcopy(value) if isinstance(value, dict) else {}
+            result = deepcopy(value) if isinstance(value, dict) else {}
+            if name=='settings':result.pop('guidance_cache_pool',None)
+            return result
         try:
             job = cls(
                 source_path=os.path.abspath(os.path.normpath(source)),

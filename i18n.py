@@ -64,8 +64,13 @@ def _catalog(language):
 
 def tr(key, **values):
     """Translate a stable key and safely interpolate named values."""
+    return tr_for(_language, key, **values)
+
+
+def tr_for(language_code, key, /, **values):
+    """Explicit language for background workers; never mutates global UI state."""
     fallback = _catalog(DEFAULT_LANGUAGE).get(key, key)
-    template = _catalog(_language).get(key, fallback)
+    template = _catalog(normalize_language(language_code) if language_code else _language).get(key, fallback)
     if not isinstance(template, str):
         template = str(template)
     if not values:

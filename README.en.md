@@ -15,7 +15,7 @@
 </p>
 
 <p align="center">
-  <a href="CHANGELOG.md"><img src="https://img.shields.io/badge/release-v2.0.1-0E7490?style=flat&amp;labelColor=475569" alt="Current documentation version v2.0.1" height="20"></a>
+  <a href="CHANGELOG.md"><img src="https://img.shields.io/badge/release-v2.2.0-0E7490?style=flat&amp;labelColor=475569" alt="Current documentation version v2.2.0" height="20"></a>
   <a href="#quick-start"><img src="https://img.shields.io/badge/platform-Windows_x64-0369A1?style=flat&amp;labelColor=475569" alt="Platform: Windows x64" height="20"></a>
   <a href="#2-select-the-runtime-for-your-gpu"><img src="https://img.shields.io/badge/GPU-NVIDIA_RTX-0E7490?style=flat&amp;labelColor=475569" alt="GPU: NVIDIA RTX; select the runtime for your GPU generation" height="20"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-0369A1?style=flat&amp;labelColor=475569" alt="Project source is licensed under MIT" height="20"></a>
@@ -98,13 +98,23 @@ Extract the complete archive into a writable folder. The portable package does n
 | RTX 30 series | Download `30系.zip` from the same release and replace the DLL below. |
 | RTX 50 series | Download `50系.zip` from the same release and replace the DLL below. |
 
-Close the application, then replace this file for RTX 30- or 50-series GPUs:
+Close the application, then place the matching runtime here for RTX 30- or 50-series GPUs:
 
 ```text
-_internal\nvngx_dlssnr.dll
+mods\nvngx_dlssnr.dll
 ```
 
-When running from source, place the DLL in the project root. The RTX 30-series runtime is a community adaptation and is not an NVIDIA support commitment. GPU and driver combinations still require real-hardware verification.
+Auto-detection prefers an existing custom path, then nvngx_dlssnr.dll in modules, then a unique recognized alternative, then bundled `_internal`. Multiple candidates are not guessed; select one manually or force bundled. No need to overwrite `_internal`. The modules directory defaults to mods beside the executable and can be changed; detected paths are shown. The RTX 30-series runtime is a community adaptation and is not an NVIDIA support commitment. GPU and driver combinations still require real-hardware verification.
+
+Depth/flow settings have a dedicated **Models** tab alongside Effects, Settings and Queue; Effects no longer duplicates guidance settings. Guidance is **off by default; ordinary use needs no PyTorch or models**. Extract the add-on beside the app: the archive includes `mods`, inference dependencies and architecture. No path setup or Python installation; depth size is detected automatically. Compatible `.pth` weights remain external and replaceable. Settings → Models & add-ons shows status and common actions; Replace DLL / models is a top-level section, collapsed by default without nested disclosure. FP16 and dual stream are under Settings → Performance & device. Inactive controls keep their values. See [mods instructions](mods/README.md). No models download and no installers run automatically. Guidance supports SDR, non-tiled processing; CPU inference may be slow.
+
+The Models player offers Original, Depth, Flow and Compare, with comparisons against the original. Both DLSS and guidance comparisons support a draggable wipe or synchronized side-by-side display. Guidance images reuse the current component on demand and never change export content. Flow hue indicates direction and brightness indicates magnitude; depth is normalized relative depth, not metric distance.
+
+Use the bottom **Compare ▾** menu for layout, comparison target, centering and the on-demand legend. Guidance playback holds the complete current image pair until the next pair is ready, updating the frame number and both images together.
+
+The fixed Models export area saves a complete MP4 video or the current PNG frame at source dimensions and frame rate, without audio or UI overlays. PNG contains an 8-bit visualization, not raw floating-point data. Export supports cancellation and preserves existing destination files on failure or cancellation.
+
+Analysis controls include RAFT iterations, independent flow/depth sizes, depth range stability and percentiles. Map display options affect map previews/exports only, not enhanced video. See [parameter notes](GUIDANCE_PARAMETERS.md).
 
 <details>
 <summary>Recorded runtime versions and SHA-256 values</summary>
@@ -168,7 +178,7 @@ Each queued job stores the settings active when it was added. Later adjustments 
 
 - **Images:** keep the source format by default. PNG and TIFF are written losslessly; JPEG and similar formats are re-encoded. Lossless file encoding does not mean the enhanced pixels equal the source.
 - **Video:** MP4 by default, with MKV, MOV, and Match input options. Match input supports MP4/M4V, MKV, and MOV; AVI and WebM safely fall back to MP4.
-- **Quality:** SDR uses H.264 with quality profiles or a custom bitrate. Maximum quality is still lossy compression, not mathematically lossless video.
+- **Quality:** SDR defaults to H.264 and automatically uses HEVC when either final output dimension exceeds 4096, with quality profiles or a custom bitrate. Maximum quality is still lossy compression, not mathematically lossless video.
 - **Temporal behavior:** Strict sequence keeps one continuous processing history. Visually lossless parallel segments can accelerate SDR video, but segment boundaries may differ slightly. High-precision HDR and super-resolution jobs use strict single-session processing.
 - **Audio:** compatible source audio is copied directly. Incompatible MP4/MOV audio falls back to AAC.
 
@@ -192,6 +202,10 @@ Check the GPU generation, DLL path, and hash. Then use **More → Diagnostics**;
 **Preview is slow or high-multiplier super resolution fails.**
 
 Lower Playback quality under Preview performance and adjust the cache budget to available memory (the first-run default is `8192 MiB`). Validate high-resolution or 4× jobs with smaller media or 2× first, and review the resource warning. Preview zoom does not change export dimensions.
+
+**How is 8K output from 4× super resolution encoded?**
+
+4× processing of 1080p produces 7680×4320. When either final output dimension exceeds 4096, export automatically uses HEVC/H.265 while keeping SDR content SDR. Smaller SDR output retains H.264; HDR uses HEVC Main10. A trial encode validates the actual size and settings before export, with CPU fallback if GPU encoding is unavailable (potentially much slower at 8K). The log identifies the selected encoder. MP4, MKV and MOV support HEVC, but playback also requires HEVC support. If export still fails, lower the final output size and include the encoder error log when reporting it.
 
 **How do updates work?**
 
@@ -241,7 +255,9 @@ Before building the portable package, provide `dlssnr_host_v2.dll`, `nvngx_dlssn
 .\build_release.ps1
 ```
 
-The current release is written to `dist/DLSS5Tool-v2.0.1/` and `dist/DLSS5Tool-v2.0.1-win64.zip`.
+The current release is written to `dist/DLSS5Tool-v2.2.0/` and `dist/DLSS5Tool-v2.2.0-win64.zip`.
+
+The main portable package excludes AMD developer tools, experiment scripts/reports, test sources, and experiment outputs. These remain in the source repository; AMD testing has a separate build entry point. Runtime assets and user documents are collected explicitly, and a pre-archive check rejects development material. The enhancement component is also packaged separately; the base package includes only the instructions in `mods`.
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for development conventions and [SECURITY.md](SECURITY.md) for security reports. The source repository excludes NVIDIA SDK files, runtime DLLs, user settings, private test media, and other generated artifacts.
 

@@ -1,15 +1,15 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-dlss_engine.py — ctypes wrapper for the test4 DLSS5 Feature 18 host DLL (zero-guidance).
-
-The Feature 18 ("neural render") ignores depth/flow guidance in this config, so this
-engine always feeds ZERO guidance. It only needs the colour frames from the video.
+dlss_engine.py — Feature 18 host wrapper. Guidance is optional and disabled by default.
 """
 import ctypes
 import os
 import sys
 import numpy as np
+import mod_paths
+import guidance_client
+import i18n
 
 # resolve the bundle dir: PyInstaller (frozen) -> _MEIPASS, else the script's own dir
 if getattr(sys, "frozen", False):
@@ -20,7 +20,7 @@ HOST_DLL_LEGACY = os.path.join(BASE, "dlssnr_host.dll")
 HOST_DLL_V2 = os.path.join(BASE, "dlssnr_host_v2.dll")
 # Kept for callers that imported the old constant.
 HOST_DLL = HOST_DLL_LEGACY
-DLSSNR_DLL = os.path.join(BASE, "nvngx_dlssnr.dll")
+DLSSNR_DLL = mod_paths.runtime_path()
 LOG_PATH = os.path.join(BASE, "dlss_run.log")
 
 _libraries = {}
@@ -120,7 +120,7 @@ def _load(settings=None, forced=None):
 def _host_config(settings):
     s = settings or {}
     return (
-        bool(s.get("host_zero_fast_path", True)),
+        bool(s.get("host_zero_fast_path", True)) and not int(s.get("guidance_mode", 0)),
         bool(s.get("host_persistent_buffers", True)),
         str(s.get("host_submission", "merged")) == "merged",
         max(1, min(3, int(s.get("host_in_flight", 2)))),
@@ -156,7 +156,7 @@ def _configure_host(lib, settings):
         lib.dlssnr_configure_format(format_id, profile_id)
 
 
-# settings dict keys that actually change the output on this Feature 18 config:
+# Common appearance keys; optional guidance is configured separately below:
 #   style (int), intensity/local_tone/local_struct (0..5), use_auto_mask,
 #   skin_struct (effective with auto mask), output_view (0/1/2), output_mix (0..5).
 def _set_options(lib, s):
@@ -169,8 +169,8 @@ def _set_options(lib, s):
         float(s.get('skin_struct', 0.5)),
         int(s.get('use_auto_mask', 0)),
         int(s.get('ui_correction', 0)),    # inert
-        0,                                 # guidance_mode ALWAYS 0 (off) — NR ignores guidance
-        int(s.get('depth_convention', 2)), # inert (depth ignored)
+        int(s.get('guidance_mode', 0)),
+        int(s.get('depth_convention', 2)),
         float(s.get('motion_scale_x', 1.0)),
         float(s.get('motion_scale_y', 1.0)))
 
@@ -210,6 +210,10 @@ class Live:
     def __init__(self, w, h, settings=None):
         self._w, self._h = w, h
         self.settings = dict(settings or {})
+        guidance_client.validate(self.settings)
+        self._guidance = None
+        self._reset_next = True
+        self.runtime_path = mod_paths.runtime_path(self.settings)
         self._preference = str(self.settings.get("host_backend", "auto"))
         self._lib, self.backend = _load(self.settings)
         self._open_with_fallback()
@@ -231,7 +235,7 @@ class Live:
             self._lib.dlssnr_shutdown()
         except Exception:
             pass
-        if not self._lib.dlssnr_init(self._w, self._h, int(s.get('preset', 1)), DLSSNR_DLL, LOG_PATH):
+        if not self._lib.dlssnr_init(self._w, self._h, int(s.get('preset', 1)), self.runtime_path, LOG_PATH):
             log = _read_log_tail(LOG_PATH)
             detail = "dlssnr_init failed (D3D12/gate). See dlss_run.log"
             if log:
@@ -268,6 +272,19 @@ class Live:
         self.supports_async = self.max_in_flight > 1
 
     def update(self, settings):
+        updated = {**self.settings, **settings}
+        guidance_client.validate(updated)
+        runtime_selection_changed = any(updated.get(key, '') != self.settings.get(key, '')
+                                        for key in ('dlss_runtime', 'mods_directory'))
+        if runtime_selection_changed and mod_paths.runtime_path(updated) != self.runtime_path:
+            raise RuntimeError(i18n.tr_for(updated.get('ui_language'), 'guidance.error.runtime_switch'))
+        changed_guidance = guidance_client.contract(updated) != guidance_client.contract(self.settings)
+        if changed_guidance and self.pending:
+            raise RuntimeError(i18n.tr_for(updated.get('ui_language'), 'guidance.error.pending'))
+        if changed_guidance:
+            self.close_guidance()
+            self._allocate_buffers()
+            self._reset_next = True
         old_preset = self.settings.get('preset')
         old_config = getattr(self, "_config", _host_config(self.settings))
         old_contract = frame_contract(self.settings)
@@ -302,6 +319,49 @@ class Live:
         self._config = _host_config(self.settings)
         self._refresh_capabilities()
         self._allocate_buffers()
+        self.close_guidance()
+        self._reset_next = True
+
+    def close_guidance(self):
+        if self._guidance is not None:
+            # Discard borrowed shared-memory views before the session unmaps.
+            self._mv = np.zeros((self._h, self._w, 2), np.float32)
+            self._dp = np.zeros((self._h, self._w), np.float32)
+            self._guidance.close()
+            self._guidance = None
+
+    @property
+    def guidance_info(self):
+        return dict(self._guidance.info) if self._guidance is not None else {}
+
+    @property
+    def guidance_metrics(self):
+        return dict(self._guidance.last_metrics) if self._guidance is not None else {}
+
+    def _prepare_guidance(self, rgba, reset):
+        reset = bool(reset or self._reset_next)
+        if int(self.settings.get('guidance_mode', 0)):
+            if self._guidance is None:
+                self._guidance = guidance_client.GuidanceSession(self.settings, self._w, self._h)
+            try:
+                self._mv, self._dp, reset = self._guidance.process(rgba, reset, copy_outputs=False)
+            except Exception:
+                self.close_guidance()
+                self._reset_next = True
+                raise
+        return reset
+
+    def guidance_preview(self, rgba, reset=False, final=True):
+        """Evaluate guidance without running DLSS; returned views expire next call."""
+        if rgba.dtype != np.uint8 or rgba.shape != (self._h, self._w, 4):
+            raise ValueError("Guidance preview requires same-size RGBA8 input")
+        if not rgba.flags.c_contiguous:
+            rgba = np.ascontiguousarray(rgba)
+        reset = self._prepare_guidance(rgba, reset)
+        # This inspection advances guidance history but not DLSS; make the next
+        # production call explicitly reset its own temporal state.
+        self._reset_next = bool(final)
+        return self._mv, self._dp, reset
 
     def process(self, rgba, reset=False):
         _set_options(self._lib, self.settings)
@@ -313,12 +373,14 @@ class Live:
                 % (np.dtype(expected_dtype).name, self._h, self._w, rgba.shape, rgba.dtype))
         if not rgba.flags.c_contiguous:
             rgba = np.ascontiguousarray(rgba)
+        reset = self._prepare_guidance(rgba, reset)
         ok = self._lib.dlssnr_process(
             rgba.ctypes.data_as(ctypes.c_void_p),
             self._mv.ctypes.data_as(ctypes.c_void_p),
             self._dp.ctypes.data_as(ctypes.c_void_p),
             self._output.ctypes.data_as(ctypes.c_void_p),
             1 if reset else 0)
+        self._reset_next = not bool(ok)
         return self._output if ok else None
 
     def enqueue(self, rgba, reset=False):
@@ -330,12 +392,18 @@ class Live:
             raise ValueError("RGBA frame shape/dtype mismatch")
         if not rgba.flags.c_contiguous:
             rgba = np.ascontiguousarray(rgba)
-        return bool(self._lib.dlssnr_enqueue(
+        # Do not advance the model's previous-frame state for a rejected queue.
+        if self.pending >= self.max_in_flight:
+            return False
+        reset = self._prepare_guidance(rgba, reset)
+        accepted = bool(self._lib.dlssnr_enqueue(
             rgba.ctypes.data_as(ctypes.c_void_p),
             self._mv.ctypes.data_as(ctypes.c_void_p),
             self._dp.ctypes.data_as(ctypes.c_void_p),
             1 if reset else 0,
         ))
+        self._reset_next = not accepted
+        return accepted
 
     def dequeue(self):
         """Wait for and return the oldest v2 frame in submission order."""
@@ -353,6 +421,7 @@ class Live:
         return int(self._lib.dlssnr_pending())
 
     def close(self):
+        self.close_guidance()
         try:
             self._lib.dlssnr_shutdown()
         except Exception:
@@ -360,18 +429,21 @@ class Live:
 
 
 def run_dlss(rgba_frames, settings=None, reset=True, progress=None):
-    """Batch-generate DLSS for a list of HxWx4 rgba frames (zero guidance). Returns HxWx4 list."""
+    """Batch-generate DLSS with optional user-provided guidance. Returns RGBA list."""
     settings = settings or {}
     h, w = rgba_frames[0].shape[:2]
     live = Live(w, h, settings)
     out = []
-    for i, rgba in enumerate(rgba_frames):
-        processed = live.process(rgba, reset=(reset and i == 0))
-        if processed is None:
-            raise RuntimeError("DLSS processing failed at frame %d" % i)
-        if progress:
-            progress(i, len(rgba_frames), "ok")
-        out.append(processed.copy())
+    try:
+        for i, rgba in enumerate(rgba_frames):
+            processed = live.process(rgba, reset=(reset and i == 0))
+            if processed is None:
+                raise RuntimeError("DLSS processing failed at frame %d" % i)
+            if progress:
+                progress(i, len(rgba_frames), "ok")
+            out.append(processed.copy())
+    finally:
+        live.close_guidance()
     view = settings.get('output_view', 0)
     mix = float(settings.get('output_mix', 1.0))
     if view != 0 or mix < 1.0:

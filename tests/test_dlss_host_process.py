@@ -21,6 +21,8 @@ class FakeLive:
         self.max_in_flight = 2 if self.backend == "v2" and not self.tiled else 1
         self.supports_async = self.max_in_flight > 1
         self._pending = []
+        self.guidance_info = {}
+        self._guidance_previous = None
 
     def update(self, settings):
         requested = settings.get("host_backend", self.backend)
@@ -32,6 +34,8 @@ class FakeLive:
         self.supports_async = self.max_in_flight > 1
 
     def _render(self, rgba):
+        if self.settings.get('fake_guidance'):
+            self.guidance_info = {'device': 'cuda', 'device_name': 'Fixture GPU', 'precision': 'float32'}
         increment = 2 if self.backend == "v2" else 1
         if rgba.dtype == np.float16:
             return (rgba.astype(np.float32) + increment / 100.0).astype(np.float16)
@@ -39,6 +43,15 @@ class FakeLive:
 
     def process(self, rgba, reset=False):
         return self._render(rgba)
+
+    def guidance_preview(self, rgba, reset=False, final=True):
+        reset = bool(reset or self._guidance_previous is None)
+        motion = np.zeros((*rgba.shape[:2], 2), np.float32)
+        if not reset:
+            motion[..., 0] = rgba[..., 0].astype(np.float32) - self._guidance_previous[..., 0]
+        depth = rgba[..., 0].astype(np.float32) / 255.0
+        self._guidance_previous = rgba.copy()
+        return motion, depth, reset
 
     def enqueue(self, rgba, reset=False):
         self._pending.append(self._render(rgba.copy()))
@@ -53,6 +66,71 @@ class FakeLive:
 
 
 class ProcessLiveTests(unittest.TestCase):
+    def test_incompatible_guidance_fails_before_large_shared_allocations(self):
+        from unittest import mock
+        import dlss_host_process
+        for extra in ({'host_tiled_mode': True}, {'frame_format': 'rgba16f'}):
+            with mock.patch.object(dlss_host_process, '_open_shared_memory') as memory:
+                with self.assertRaisesRegex(HostProcessError, 'SDR'):
+                    ProcessLive(11637,5120,{'guidance_mode':3, 'host_backend':'v2', **extra})
+                memory.assert_not_called()
+
+    def test_guidance_preview_crosses_process_boundary_without_dlss_output(self):
+        live = self.make_live('v2', guidance_mode=3)
+        try:
+            previous = np.zeros((6, 8, 4), np.uint8)
+            current = np.zeros((6, 8, 4), np.uint8)
+            current[..., 0] = 32
+            images, reset = live.guidance_preview(current, previous)
+            self.assertFalse(reset)
+            self.assertEqual(set(images), {'depth', 'flow'})
+            self.assertEqual(images['depth'].shape, (6, 8, 3))
+            self.assertEqual(images['flow'].shape, (6, 8, 3))
+            self.assertGreater(int(images['flow'].max()), 0)
+        finally:
+            live.close()
+    def test_appearance_keeps_guidance_session_budget_change_replaces(self):
+        live=self.make_live('v2',guidance_cache_mb=1024)
+        try:
+            original=live._session
+            live.update({'intensity':.55,'style':1,'local_tone':.3,'skin_struct':.8})
+            self.assertIs(live._session,original)
+            live.update({'guidance_cache_mb':512})
+            self.assertIsNot(live._session,original)
+            self.assertTrue(original._closed)
+        finally:live.close()
+
+    def test_guidance_device_crosses_process_boundary_once_per_session(self):
+        seen = []
+        live = ProcessLive(8, 6, {'host_backend': 'v2', 'fake_guidance': True},
+                           _live_factory=FakeLive, _on_guidance_ready=seen.append)
+        try:
+            self.assertEqual(live.guidance_info, {})
+            frame = np.zeros((6, 8, 4), np.uint8)
+            live.process(frame)
+            live.enqueue(frame)
+            live.dequeue()
+            self.assertEqual(live.guidance_info['device'], 'cuda')
+            self.assertEqual(len(seen), 1)
+            live.resize(8, 6)
+            live.process(frame)
+            self.assertEqual(len(seen), 2)
+        finally:
+            live.close()
+    def test_guidance_and_runtime_selection_replace_worker(self):
+        live = self.make_live('v2')
+        try:
+            previous = live._session
+            live.update({'guidance_mode': 1})
+            self.assertIsNot(previous, live._session)
+            self.assertTrue(previous._closed)
+            previous = live._session
+            live.update({'guidance_mode': 0, 'dlss_runtime': 'selected.dll'})
+            self.assertIsNot(previous, live._session)
+            self.assertTrue(previous._closed)
+        finally:
+            live.close()
+
     def make_live(self, backend="legacy", **extra):
         settings = {
             "host_backend": backend,

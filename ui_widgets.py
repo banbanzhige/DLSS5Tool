@@ -3,6 +3,7 @@
 """Custom-drawn studio widgets. Keep Tk/ttk chrome off the inspector."""
 
 import tkinter as tk
+from tkinter import font as tkfont
 from tkinter import ttk
 from collections import OrderedDict
 from PIL import Image, ImageDraw, ImageTk
@@ -10,9 +11,17 @@ from PIL import Image, ImageDraw, ImageTk
 from ui_theme import (
     HEIGHT_BUTTON, HEIGHT_PRIMARY, RADIUS_CONTROL, SLIDER_THUMB, SLIDER_TRACK,
     UI_FONT, UI_FONT_BOLD, UI_FONT_SMALL, UI_MONO, control_height, scale_px,
-    install_combobox_behavior,
+    install_combobox_behavior, install_spinbox_behavior,
 )
 from ui_icons import icon_photo
+
+
+def _has_focus(widget):
+    """Compare Tk paths: native ttk popdowns have no Python widget wrapper."""
+    try:
+        return str(widget.tk.call("focus")) == str(widget)
+    except tk.TclError:  # The interpreter may already be shutting down.
+        return False
 
 
 def _clear_chrome_live(canvas):
@@ -252,7 +261,7 @@ class CollapsibleSection(ttk.Frame):
             8, height / 2, text=f"{chevron}  {self._title}",
             anchor="w", fill=ui.get("text", "#e8eef3"), font=UI_FONT,
         )
-        if self._header.focus_get() is self._header:
+        if _has_focus(self._header):
             round_rect(
                 self._header, 1, 1, width - 1, height - 1, RADIUS_CONTROL,
                 fill="", outline=ui.get("accent_dim", "#4aa8b8"), width=1,
@@ -819,7 +828,7 @@ class AccentSlider(tk.Canvas):
                 self._items["focus"],
                 x - radius - 3, y - radius - 3, x + radius + 3, y + radius + 3,
             )
-        focused = (self.focus_get() is self) and not disabled
+        focused = _has_focus(self) and not disabled
         self.itemconfigure(
             self._items["focus"], outline=outline if focused else "",
         )
@@ -1209,7 +1218,7 @@ class ChromeButton(tk.Canvas):
             self.create_text(
                 width / 2, height / 2, text=self._text, fill=fg, font=font,
             )
-        if self.focus_get() is self and self._state != "disabled":
+        if _has_focus(self) and self._state != "disabled":
             round_rect(
                 self, 3, 3, width - 3, height - 3, RADIUS_CONTROL - 1,
                 fill="", outline=self._ui.get("accent_dim", "#4aa8b8"), width=1,
@@ -1345,6 +1354,7 @@ class ChromeSpinbox(ChromeField):
         spin_kwargs.setdefault("justify", "right")
         self.spin = ttk.Spinbox(self._canvas, **spin_kwargs)
         self._mount(self.spin, width=max(84, self.spin.winfo_reqwidth() + 16))
+        install_spinbox_behavior(self)
 
 
 class ChromeCombobox(ChromeField):
@@ -1447,6 +1457,11 @@ class ChipGroup(tk.Canvas):
         self.bind("<Right>", lambda _event: self._nudge(1))
         self.bind("<FocusIn>", lambda _event: self._redraw())
         self.bind("<FocusOut>", lambda _event: self._redraw())
+        self._redraw()
+
+    def set_choices(self, choices):
+        self._choices = list(choices.items()) if isinstance(choices, dict) else [(v, v) for v in choices]
+        self._hover = None
         self._redraw()
 
     def destroy(self):
@@ -1566,7 +1581,7 @@ class ChipGroup(tk.Canvas):
         super().configure(width=max(x, 40), height=height)
         # Separate chips already show selection on the active pill; a group
         # focus ring around the gaps reads as a stray box after a click.
-        if self._connected and self.focus_get() is self:
+        if self._connected and _has_focus(self):
             round_rect(
                 self, 1, 1, max(x - 1, 8), height - 1,
                 RADIUS_CONTROL, fill="", outline=ui.get("accent_dim", "#4aa8b8"), width=1,
@@ -1582,6 +1597,9 @@ class SegmentedBar(tk.Frame):
             connected=True,
         )
         self._group.pack(side="left")
+
+    def set_choices(self, choices):
+        self._group.set_choices(choices)
 
     def apply_theme(self, ui):
         self.configure(bg=ui.get("timeline_bg", "#10161c"))
@@ -1707,7 +1725,7 @@ class CheckToggle(tk.Canvas):
             self.create_line(5, cy, 8, cy + 4, 13, cy - 4, fill="#e9fbff", width=2, capstyle="round")
         fg = ui.get("faint", "#62707c") if self._state == "disabled" else ui.get("text", "#e8eef3")
         self.create_text(22, cy, text=self._text, fill=fg, font=font, anchor="w")
-        if self.focus_get() is self and self._state != "disabled":
+        if _has_focus(self) and self._state != "disabled":
             round_rect(
                 self, 1, 1, text_w + 30, height - 1, RADIUS_CONTROL,
                 fill="", outline=ui.get("accent_dim", "#4aa8b8"), width=1,
@@ -1717,7 +1735,8 @@ class CheckToggle(tk.Canvas):
 class StudioNotebook(tk.Frame):
     """Underline tab strip + page host. ttk.Notebook-compatible subset."""
 
-    def __init__(self, master, ui=None, **kwargs):
+    def __init__(self, master, ui=None, command=None, **kwargs):
+        self._command = command
         self._ui = dict(ui or {})
         super().__init__(
             master, bg=self._ui.get("panel", "#161d24"), highlightthickness=0,
@@ -1795,6 +1814,8 @@ class StudioNotebook(tk.Frame):
                 pass
         self._current.pack(in_=self.content, fill="both", expand=True)
         self._redraw()
+        if self._command:
+            self._command(target)
 
     def tab(self, child, option=None, **kwargs):
         index = self._index(child)
@@ -1816,10 +1837,31 @@ class StudioNotebook(tk.Frame):
     def _hit_map(self):
         width = max(int(self._header.winfo_width()), 1)
         count = max(len(self._tabs), 1)
-        slot = width / count
+        title_font = tkfont.Font(self, font=UI_FONT_BOLD)
+        badge_font = tkfont.Font(self, font=UI_FONT_SMALL)
+        self._compact_tabs = sum(title_font.measure(item['text']) + 12 +
+                                 (badge_font.measure(str(item.get('badge'))) + 16 if item.get('badge') else 0)
+                                 for item in self._tabs) > width
+        if self._compact_tabs:
+            title_font = badge_font
+        requested = [title_font.measure(item['text']) + 12 +
+                     (badge_font.measure(str(item.get('badge'))) + 16 if item.get('badge') else 0)
+                     for item in self._tabs]
+        total = sum(requested) or 1
+        minimum = [min(wanted, max(title_font.measure(word) for word in item['text'].split()) + 12)
+                   for item, wanted in zip(self._tabs, requested)]
+        minimum_total = sum(minimum)
         hits = []
-        for index, item in enumerate(self._tabs):
-            hits.append((item, index * slot, (index + 1) * slot))
+        left = 0
+        for item, wanted, least in zip(self._tabs, requested, minimum):
+            if width >= total:
+                slot = wanted + (width - total) / count
+            elif width >= minimum_total:
+                slot = least + (width - minimum_total) * (wanted - least) / max(1, total - minimum_total)
+            else:
+                slot = width * wanted / total
+            hits.append((item, left, left + slot))
+            left += slot
         return hits
 
     def _redraw(self):
@@ -1828,14 +1870,35 @@ class StudioNotebook(tk.Frame):
         ui = self._ui
         bg = ui.get("panel", "#161d24")
         height = scale_px(self, 38)
+        # Long localized tab names must wrap inside their hit targets, never
+        # overlap adjacent tabs. Measure before laying out the entire strip.
+        for item, x0, x1 in self._hit_map():
+            badge = item.get('badge') or ''
+            text = item['text'] + (' ' + badge if badge else '')
+            probe = self._header.create_text(0, 0, text=text, font=UI_FONT_SMALL if self._compact_tabs else UI_FONT_BOLD,
+                                             width=max(20, x1 - x0 - 8), justify='center')
+            box = self._header.bbox(probe)
+            if box:
+                height = max(height, box[3] - box[1] + scale_px(self, 14))
+            self._header.delete(probe)
         self._header.configure(bg=bg, height=height)
         for item, x0, x1 in self._hit_map():
             on = item["frame"] is self._current
             fg = ui.get("text", "#e8eef3") if on else ui.get("muted", "#8b97a3")
             font = UI_FONT_BOLD if on else UI_FONT
+            if self._compact_tabs:
+                font = UI_FONT_SMALL
             cx = (x0 + x1) / 2
             title_y = height / 2 - 2
             badge = item.get("badge") or ""
+            if height > scale_px(self, 38):
+                self._header.create_text(cx, title_y,
+                    text=item['text'] + (' ' + badge if badge else ''), fill=fg, font=font,
+                    width=max(20, x1 - x0 - 8), justify='center')
+                if on:
+                    self._header.create_line(x0 + 8, height - 2, x1 - 8, height - 2,
+                                             fill=ui.get('accent', '#7fe8e8'), width=2)
+                continue
             if badge:
                 probe = self._header.create_text(0, -40, text=item["text"], font=font)
                 title_box = self._header.bbox(probe) or (0, 0, 24, 12)

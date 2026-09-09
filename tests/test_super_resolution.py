@@ -66,6 +66,21 @@ class RuntimeDiscoveryTests(unittest.TestCase):
 
 
 class SessionPolicyTests(unittest.TestCase):
+    def test_impossible_plans_rejected_before_shared_memory_or_gpu(self):
+        for width, height, scale in [(11637,5120,2),(11637,5120,4),(4608,4608,4),(0,512,2),(-3,512,2)]:
+            with self.subTest(size=(width,height,scale)), mock.patch.object(
+                super_resolution.shared_memory, 'SharedMemory'
+            ) as memory, mock.patch.object(super_resolution.multiprocessing, 'get_context') as context:
+                with self.assertRaises(super_resolution.SuperResolutionError):
+                    super_resolution.ProcessSuperResolution(width,height,scale)
+                memory.assert_not_called()
+                context.assert_not_called()
+
+    def test_supported_large_dimensions_still_allowed(self):
+        self.assertEqual(super_resolution.validate_dimensions(4608,4608,2),(9216,9216))
+        self.assertEqual(super_resolution.validate_dimensions(4096,4096,4),(16384,16384))
+        self.assertEqual(super_resolution.validate_dimensions(3840,2160,4),(15360,8640))
+
     def test_large_targets_receive_a_longer_watchdog(self):
         self.assertGreaterEqual(
             super_resolution.operation_timeout(7680, 4320), 270.0,
