@@ -18,7 +18,7 @@ DLSS_SLIDER_STEP = 0.01
 
 
 DEFAULTS = {
-    **guidance_parameters({}),
+    **guidance_parameters({'guidance_edge': 512, 'guidance_flow_range': 3.0}),
     "preview_view": "original",
     "preview_compare_layout": "wipe",
     "guidance_preview_view": "original",
@@ -27,9 +27,9 @@ DEFAULTS = {
     "enable_5x": False,
     "intensity": 1.0,
     "use_intensity": True,
-    "local_tone": 0.94,
+    "local_tone": 1.0,
     "use_local_tone": True,
-    "local_struct": 0.84,
+    "local_struct": 1.0,
     "use_local_struct": True,
     "use_auto_mask": True,
     "skin_struct": 1.0,
@@ -40,14 +40,14 @@ DEFAULTS = {
     "parallel_workers": 4,
     "warmup_frames": 8,
     "decode_buffer": 4,
-    "nvenc_preset": "p7",
+    "nvenc_preset": "p5",
     "output_container": "mp4",
     "output_resolution": "source",
     "super_resolution_scale": 1,
     "custom_output_width": 1920,
     "custom_output_height": 1080,
     "rate_control": "quality",
-    "quality_profile": "balanced",
+    "quality_profile": "high",
     "video_bitrate_mbps": 20.0,
     "hdr_mode": True,
     "host_backend": "auto",
@@ -57,15 +57,15 @@ DEFAULTS = {
     "guidance_depth_weights": "",
     "ui_modules_open": False,
     "guidance_mode": 0,
-    "guidance_edge": 720,
+    "guidance_edge": 512,
     "guidance_flow_direction": "backward",
-    "guidance_depth_encoder": "auto",
+    "guidance_depth_encoder": "vitl",
     "guidance_device": "auto",
-    "guidance_depth_profile": "fp32",
-    "guidance_execution": "serial",
+    "guidance_depth_profile": "sdpa_fp16",
+    "guidance_execution": "raft_streams",
     "host_zero_fast_path": True,
     "host_persistent_buffers": True,
-    "host_submission": "merged",
+    "host_submission": "compatibility",
     "host_in_flight": 3,
     "host_auto_fallback": True,
     "ui_export_open": True,
@@ -198,8 +198,14 @@ def validate(values):
         if isinstance(source.get(name), str):
             result[name] = source[name].strip()
     result["guidance_mode"] = _clamp_int(source.get("guidance_mode", 0), 0, 3)
-    result["guidance_edge"] = _clamp_int(source.get("guidance_edge", 720), 128, 1280)
-    result.update(guidance_parameters(source))
+    result["guidance_edge"] = _clamp_int(source.get("guidance_edge", result['guidance_edge']), 128, 1280)
+    analysis_source = {**result, **source}
+    # Preserve old shared-edge settings, without changing the worker protocol's
+    # legacy defaults or overwriting independently saved model parameters.
+    for key in ('guidance_flow_edge', 'guidance_depth_edge'):
+        if key not in source and 'guidance_edge' in source:
+            analysis_source[key] = result['guidance_edge']
+    result.update(guidance_parameters(analysis_source))
     for name, choices in (("guidance_flow_direction", {"backward", "forward_negated"}),
                           ("guidance_depth_encoder", {"auto", "vits", "vitb", "vitl"}),
                           ("guidance_device", {"auto", "cpu", "cuda"}),
@@ -260,6 +266,14 @@ def validate(values):
         source.get("preview_scrub_ms", result["preview_scrub_ms"]), 0, 400
     )
     return result
+
+
+def startup_settings(values):
+    """Keep tuning, but require an explicit checked opt-in each GUI launch.
+
+    Queue/CLI validation and persistence still retain their requested mode.
+    """
+    return {**validate(values), 'guidance_mode': 0}
 
 
 def load(path=None):

@@ -15,7 +15,7 @@
 </p>
 
 <p align="center">
-  <a href="CHANGELOG.md"><img src="https://img.shields.io/badge/release-v2.2.0-0E7490?style=flat&amp;labelColor=475569" alt="Current documentation version v2.2.0" height="20"></a>
+  <a href="CHANGELOG.md"><img src="https://img.shields.io/badge/release-v2.1.1-0E7490?style=flat&amp;labelColor=475569" alt="Current documentation version v2.1.1" height="20"></a>
   <a href="#quick-start"><img src="https://img.shields.io/badge/platform-Windows_x64-0369A1?style=flat&amp;labelColor=475569" alt="Platform: Windows x64" height="20"></a>
   <a href="#2-select-the-runtime-for-your-gpu"><img src="https://img.shields.io/badge/GPU-NVIDIA_RTX-0E7490?style=flat&amp;labelColor=475569" alt="GPU: NVIDIA RTX; select the runtime for your GPU generation" height="20"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-0369A1?style=flat&amp;labelColor=475569" alt="Project source is licensed under MIT" height="20"></a>
@@ -255,7 +255,7 @@ Before building the portable package, provide `dlssnr_host_v2.dll`, `nvngx_dlssn
 .\build_release.ps1
 ```
 
-The current release is written to `dist/DLSS5Tool-v2.2.0/` and `dist/DLSS5Tool-v2.2.0-win64.zip`.
+The current release is written to `dist/DLSS5Tool-v2.1.1/` and `dist/DLSS5Tool-v2.1.1-win64.zip`.
 
 The main portable package excludes AMD developer tools, experiment scripts/reports, test sources, and experiment outputs. These remain in the source repository; AMD testing has a separate build entry point. Runtime assets and user documents are collected explicitly, and a pre-archive check rejects development material. The enhancement component is also packaged separately; the base package includes only the instructions in `mods`.
 

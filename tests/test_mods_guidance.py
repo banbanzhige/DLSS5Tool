@@ -42,8 +42,8 @@ class GuidanceDeviceTests(unittest.TestCase):
             guidance_client.check_depth_handshake({'guidance_mode': 3}, ready, 'en_US')
 
     def test_profile_persistence_contract_and_safe_defaults(self):
-        self.assertEqual(app_settings.validate({})['guidance_depth_profile'], 'fp32')
-        self.assertEqual(app_settings.validate({'guidance_depth_profile': 'bad'})['guidance_depth_profile'], 'fp32')
+        self.assertEqual(app_settings.validate({})['guidance_depth_profile'], 'sdpa_fp16')
+        self.assertEqual(app_settings.validate({'guidance_depth_profile': 'bad'})['guidance_depth_profile'], 'sdpa_fp16')
         settings = app_settings.validate({'guidance_depth_profile': 'sdpa_fp16'})
         self.assertEqual(settings['guidance_depth_profile'], 'sdpa_fp16')
         self.assertNotEqual(guidance_client.contract(settings), guidance_client.contract({**settings, 'guidance_depth_profile': 'fp32'}))
@@ -177,7 +177,7 @@ class ModPathsTests(unittest.TestCase):
         component = self.component(root)
         (component / 'models').mkdir()
         (component / 'models/depth_anything_v2_vits.pth').touch()
-        settings = app_settings.validate({'guidance_mode': 2})
+        settings = app_settings.validate({'guidance_mode': 2, 'guidance_depth_encoder': 'auto'})
         self.assertEqual(settings['guidance_depth_encoder'], 'auto')
         self.assertEqual(mod_paths.depth_encoder(settings), 'vits')
         self.assertIn('vits.pth', guidance_client.validate(settings)['depth_weights'])
@@ -211,7 +211,7 @@ class ModPathsTests(unittest.TestCase):
         component = self.component(root)
         (component / 'models').mkdir()
         (component / 'models/depth_anything_v2_vits.pth').touch()
-        settings = app_settings.validate({'guidance_mode': 2})
+        settings = app_settings.validate({'guidance_mode': 2, 'guidance_depth_encoder': 'auto'})
         before = dict(settings)
         guidance_client.validate(settings)
         self.assertEqual(settings, before)

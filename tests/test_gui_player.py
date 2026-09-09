@@ -548,9 +548,9 @@ class SettingsPanelPersistenceTests(unittest.TestCase):
             "enable_5x": False,
             "intensity": 1.0,
             "use_intensity": True,
-            "local_tone": 0.94,
+            "local_tone": 1.0,
             "use_local_tone": True,
-            "local_struct": 0.84,
+            "local_struct": 1.0,
             "use_local_struct": True,
             "use_auto_mask": True,
             "skin_struct": 1.0,
@@ -562,16 +562,16 @@ class SettingsPanelPersistenceTests(unittest.TestCase):
             "output_container": "mp4",
             "output_resolution": "source",
             "rate_control": "quality",
-            "quality_profile": "balanced",
+            "quality_profile": "high",
             "video_bitrate_mbps": 20.0,
-            "nvenc_preset": "p7",
+            "nvenc_preset": "p5",
             "hdr_mode": True,
             "export_mode": "single",
             "parallel_workers": 4,
             "warmup_frames": 8,
             "decode_buffer": 4,
             "host_backend": "auto",
-            "host_submission": "merged",
+            "host_submission": "compatibility",
             "host_in_flight": 3,
             "host_zero_fast_path": True,
             "host_persistent_buffers": True,
@@ -1590,9 +1590,9 @@ class WidgetSmokeTests(unittest.TestCase):
                 self.assertEqual(export["output_resolution"], "source")
                 self.assertEqual(export["super_resolution_scale"], 1)
                 self.assertEqual(export["rate_control"], "quality")
-                self.assertEqual(export["quality_profile"], "balanced")
+                self.assertEqual(export["quality_profile"], "high")
                 self.assertEqual(export["workers"], 4)
-                self.assertEqual(export["nvenc_preset"], "p7")
+                self.assertEqual(export["nvenc_preset"], "p5")
                 app._export_settings["v_rate_control"].set("目标码率")
                 app._export_settings["v_output_resolution"].set("自定义上限")
                 app._on_export_settings_change()
@@ -1726,6 +1726,8 @@ class WidgetSmokeTests(unittest.TestCase):
                 self.assertNotIn('\n', app._host_settings['w_mod_hint'].cget('text'))
                 for field, code in (('v_guidance_device', 'cuda'), ('v_flow_direction', 'forward_negated'), ('v_depth_encoder', 'vitb')):
                     app._host_settings[field].set(gui.tr('guidance.option.' + code))
+                app._host_settings['v_depth_profile'].set(gui.tr('guidance.option.fp32'))
+                app._host_settings['v_guidance_execution'].set(gui.tr('guidance.option.serial'))
                 collected = app._collect_host_settings()
                 self.assertEqual(collected['guidance_device'], 'cuda')
                 self.assertEqual(collected['guidance_flow_direction'], 'forward_negated')

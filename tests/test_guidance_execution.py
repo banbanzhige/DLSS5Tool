@@ -46,8 +46,8 @@ class ExecutionPolicyTests(unittest.TestCase):
         for profile in ('serial', 'raft_streams'):
             self.assertEqual(app_settings.validate({'guidance_execution': profile})['guidance_execution'], profile)
         self.assertEqual(app_settings.validate({'guidance_execution': 'raft_final'})['guidance_execution'], 'serial')
-        self.assertEqual(app_settings.validate({})['guidance_execution'], 'serial')
-        self.assertEqual(app_settings.validate({'guidance_execution': 'wrong'})['guidance_execution'], 'serial')
+        self.assertEqual(app_settings.validate({})['guidance_execution'], 'raft_streams')
+        self.assertEqual(app_settings.validate({'guidance_execution': 'wrong'})['guidance_execution'], 'raft_streams')
         self.assertNotEqual(guidance_client.contract({'guidance_execution': 'serial'}),
                             guidance_client.contract({'guidance_execution': 'raft_streams'}))
         with self.assertRaisesRegex(ValueError, 'CUDA'):

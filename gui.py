@@ -719,7 +719,7 @@ def compose_preview_frame(original, processed, output_view=0, output_mix=1.0):
 class App(PreviewComparison, GuidanceExportUI):
     def __init__(self, root):
         self.root = root
-        self._saved_settings = app_settings.load()
+        self._saved_settings = app_settings.startup_settings(app_settings.load())
         self._ui_language = i18n.get_language()
         self._preferred_ui_language = self._saved_settings.get(
             "ui_language", self._ui_language,
@@ -4091,6 +4091,13 @@ class App(PreviewComparison, GuidanceExportUI):
                 self.display_view()
             return
         self._last_module_settings = settings
+        self._guidance_preflight_error = ''
+        self._guidance_preflight_info = None
+        self._module_pending_settings = settings
+        # The requested mode is not active (or persisted) until the worker has
+        # loaded the selected weights and successfully processed a frame pair.
+        if settings.get('guidance_mode'):
+            self._host_settings['v_guidance'].set(tr('guidance.mode.0'))
         self.pause()
         self._freeze_preview_cache(resume_ms=None)
         self._cancel_after('_live_debounce')
@@ -4107,7 +4114,7 @@ class App(PreviewComparison, GuidanceExportUI):
         self._update_host_control_states()
         self._update_action_labels()
         self._update_queue_action_states()
-        self.set_status(tr('guidance.switching'))
+        self.set_status(tr('guidance.checking' if settings.get('guidance_mode') else 'guidance.switching'))
         previous = self._play_dlss_thread
         result = queue.SimpleQueue()
 
@@ -4118,6 +4125,10 @@ class App(PreviewComparison, GuidanceExportUI):
                 if previous is not None:
                     previous.join()
                 self._close_live()
+                if settings.get('guidance_mode'):
+                    info = guidance_client.preflight(settings, require_shared_cache=True)
+                    result.put({'info': info})
+                    return
             except Exception as exc:
                 result.put(str(exc))
             else:
@@ -4142,6 +4153,16 @@ class App(PreviewComparison, GuidanceExportUI):
             )
             return
         self._module_reload_thread = None
+        pending = getattr(self, '_module_pending_settings', None)
+        self._module_pending_settings = None
+        if isinstance(error, dict):
+            self._guidance_preflight_info = error['info']
+            self._guidance_edit_mode = 0
+            self._host_settings['v_guidance'].set(tr('guidance.mode.' + str(pending['guidance_mode'])))
+            error = None
+        elif error is not None and pending and pending.get('guidance_mode'):
+            self._guidance_preflight_error = tr('guidance.check_failed', error=error)
+            self._guidance_edit_mode = pending['guidance_mode']
         # A retiring worker may have entered _ensure_live after the initial
         # invalidation. It is now gone: invalidate any last queued notification.
         self._guidance_generation += 1
@@ -4153,6 +4174,7 @@ class App(PreviewComparison, GuidanceExportUI):
         self._update_host_control_states()
         self._update_action_labels()
         self._update_queue_action_states()
+        self._schedule_settings_save()
         if self._close_after_module_reload:
             self._close_after_module_reload = False
             self._on_close()
@@ -4161,8 +4183,12 @@ class App(PreviewComparison, GuidanceExportUI):
             self._last_module_settings = None  # allow an explicit retry
             self.set_status(tr('guidance.switch_failed', error=error))
             self.logln(tr('guidance.switch_failed', error=error))
+            if pending and pending.get('guidance_mode'):
+                # Failed activation leaves base rendering available. Preserve
+                # attempted parameters so the user can fix paths and retry.
+                self._schedule_preview_cache_resume(0)
             return
-        self.set_status(tr('guidance.changed'))
+        self.set_status(tr('guidance.checked' if pending and pending.get('guidance_mode') else 'guidance.changed'))
         self._schedule_preview_cache_resume(0)
 
     def _collect_host_settings(self):
@@ -4252,6 +4278,13 @@ class App(PreviewComparison, GuidanceExportUI):
         elif runtime['fallback']:
             status = tr('mods.status.fallback')
         d['w_mod_hint'].config(text=status)
+        pending = getattr(self, '_module_pending_settings', None)
+        if pending and pending.get('guidance_mode'):
+            status = tr('guidance.checking')
+        elif getattr(self, '_guidance_preflight_error', ''):
+            status = self._guidance_preflight_error
+        elif mode and getattr(self, '_guidance_preflight_info', None):
+            status = tr('guidance.checked')
         d['w_guidance_status'].config(text=status)
         lines = [tr('mods.paths_hint'), '', tr('mods.detected_runtime', path=runtime['path'])]
         if component_error:
@@ -4276,7 +4309,9 @@ class App(PreviewComparison, GuidanceExportUI):
             self._host_settings['w_runtime_button'].config(state='disabled' if busy else 'normal')
             for widget in self._host_settings.get('path_controls', []):
                 widget.config(state='disabled' if busy else 'normal')
-            mode = host['guidance_mode']
+            # A rejected activation is still OFF, but its configuration must
+            # remain editable (e.g. select FP32/serial before selecting CPU).
+            mode = host['guidance_mode'] or getattr(self, '_guidance_edit_mode', 0)
             enabled = {
                 'mode': True, 'device': bool(mode), 'edge': bool(mode),
                 'flow': mode in (1, 3), 'depth': mode in (2, 3),

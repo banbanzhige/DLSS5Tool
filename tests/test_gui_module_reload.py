@@ -266,7 +266,7 @@ class ModuleReloadTests(unittest.TestCase):
             errors = []
             root.report_callback_exception = lambda *error: errors.append(error)
             try:
-                for profile in ('sdpa_fp16', 'fp32'):
+                for profile in ('fp32', 'sdpa_fp16'):
                     app._last_module_settings = app._collect_host_settings()
                     app._host_settings['v_depth_profile'].set(gui.tr('guidance.option.' + profile))
                     release, closing = threading.Event(), threading.Event()

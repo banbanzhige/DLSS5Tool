@@ -49,6 +49,31 @@ def validate(settings):
     return mod_paths.guidance_files(settings) if mode else {}
 
 
+def preflight(settings, *, require_shared_cache=False):
+    """Load only requested models and exercise kernels in an isolated worker.
+
+    A small two-frame probe checks both depth and temporal flow, even without
+    imported media. It does not certify VRAM capacity for a full-size render.
+    No Torch import, downloads, or environment installation in the base app.
+    """
+    validate(settings)
+    if not int(settings.get('guidance_mode', 0)):
+        return {}
+    probe = {**settings, 'guidance_cache_mb': 0}
+    session = GuidanceSession(probe, 128, 128)
+    try:
+        if require_shared_cache and session.info.get('cache_version') != 'raw_lru_v2_shared':
+            raise RuntimeError(i18n.tr_for(settings.get('ui_language'), 'guidance.cache_unavailable'))
+        frame = np.empty((128, 128, 4), dtype=np.uint8)
+        frame[..., :3] = np.arange(128, dtype=np.uint8)[None, :, None]
+        frame[..., 3] = 255
+        session.process(frame, reset=True)
+        session.process(np.roll(frame, 1, axis=1), reset=False)
+        return dict(session.info)
+    finally:
+        session.close()
+
+
 def check_depth_handshake(settings, ready, language):
     profile = settings.get('guidance_depth_profile', 'fp32') if int(settings.get('guidance_mode', 0)) in (2, 3) else 'fp32'
     if profile == 'sdpa_fp16':

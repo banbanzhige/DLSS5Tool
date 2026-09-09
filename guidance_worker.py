@@ -12,6 +12,7 @@ from guidance_transport import GuidanceBuffers, TRANSPORT
 from guidance_execution import execution_contract
 from guidance_parameters import parameters, analysis_parameters, analysis_size
 from guidance_cache import RawGuidanceCache, frame_digest, cache_budget_mib, CACHE_VERSION
+from guidance_inputs import prepare_flow, clear_flow_inputs
 
 
 class ModelConfigurationError(RuntimeError):
@@ -76,6 +77,7 @@ class Models:
         self._closed = False
         self._failed = False
         self._process_lock = threading.Lock()
+        clear_flow_inputs(self)
         self.depth_profile = depth_profile(settings, self.device)
         self.depth_precision = 'float16_amp' if self.depth_profile == 'sdpa_fp16' else 'float32'
         self.depth_attention = 'sdpa' if self.depth_profile == 'sdpa_fp16' else 'original'
@@ -127,11 +129,7 @@ class Models:
             self._depth_events = (torch.cuda.Event(enable_timing=True), torch.cuda.Event(enable_timing=True))
 
     def _flow_input(self, small):
-        np, torch = self.np, self.torch
-        tensors = [torch.from_numpy(np.ascontiguousarray(x)).permute(2, 0, 1).float()[None] / 255.0
-                   for x in (self.prev, small)]
-        prev, cur = self.transforms(*tensors)
-        return (prev, cur) if self.settings.get('guidance_flow_direction', 'backward') == 'forward_negated' else (cur, prev)
+        return prepare_flow(self, small)
 
     def _depth_input(self, small, fw, fh):
         cv2, np, torch = self.cv2, self.np, self.torch
@@ -194,6 +192,7 @@ class Models:
             return self._process_frame(rgba, reset, outputs)
         except Exception:
             self._failed = True
+            clear_flow_inputs(self)
             if hasattr(self, 'raw_cache'):
                 self.raw_cache.clear()
             self._cached_flow = self._cached_depth = None
@@ -319,6 +318,7 @@ class Models:
                     pass  # Preserve the original failure; the worker exits.
         self.prev = self.prev_thumb = self.depth_range = None
         self.prev_digest = self._cached_flow = self._cached_depth = None
+        clear_flow_inputs(self)
         if hasattr(self, 'raw_cache'):
             self.raw_cache.close()
         self.flow = self.depth = None

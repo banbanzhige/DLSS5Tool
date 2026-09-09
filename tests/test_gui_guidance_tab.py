@@ -36,6 +36,15 @@ class GuidanceTabTests(unittest.TestCase):
         self.errors = []
         self.root.report_callback_exception = lambda *error: self.errors.append(error)
         self.app = gui.App(self.root)
+        self.assertEqual(self.app._collect_host_settings()['guidance_mode'], 0)
+        preflight = mock.patch.object(gui.guidance_client, 'preflight', return_value={'device': 'cuda'})
+        preflight.start()
+        self.addCleanup(preflight.stop)
+        # Rendering/navigation fixtures explicitly opt in; startup no longer
+        # activates saved modes. GPU readiness is tested separately.
+        self.app._host_settings['v_guidance'].set(gui.tr('guidance.mode.3'))
+        self.app._on_mod_settings_change()
+        self.wait_for_reload()
         self.root.update_idletasks()
 
     def tearDown(self):
@@ -67,6 +76,44 @@ class GuidanceTabTests(unittest.TestCase):
         for page in (app._export_page, app.queue_tab, app._preview_page, app._guidance_page):
             app.workspace_tabs.select(page)
         self.assertEqual(before, app._collect_settings())
+
+    def test_failed_activation_is_inline_and_persists_off_in_both_themes(self):
+        app = self.app
+        for theme in ('light', 'dark'):
+            with self.subTest(theme=theme):
+                app._apply_ui_theme(theme, persist=False)
+                app._host_settings['v_guidance'].set(gui.tr('guidance.mode.2'))
+                with mock.patch.object(gui.guidance_client, 'preflight', side_effect=RuntimeError('fixture: missing weights')):
+                    app._on_mod_settings_change()
+                    self.wait_for_reload()
+                status = app._host_settings['w_guidance_status'].cget('text')
+                self.assertIn('fixture: missing weights', status)
+                self.assertEqual(app._collect_persisted_settings()['guidance_mode'], 0)
+                self.assertEqual(app._collect_host_settings()['guidance_depth_encoder'], 'vitb')
+                self.assertEqual(str(app._host_settings['w_guidance'].cget('state')), 'readonly')
+                self.assertFalse(app.import_btn.instate(['disabled']))
+
+    def test_failed_gpu_activation_can_be_reconfigured_for_cpu_while_off(self):
+        app = self.app
+        app._host_settings['v_guidance'].set(gui.tr('guidance.mode.2'))
+        with mock.patch.object(gui.guidance_client, 'preflight', side_effect=RuntimeError('CUDA unavailable')):
+            app._on_mod_settings_change()
+            self.wait_for_reload()
+        for key, code in (('v_depth_profile', 'fp32'), ('v_guidance_device', 'cpu')):
+            control = 'profile' if key == 'v_depth_profile' else 'device'
+            self.assertFalse(app._host_settings['guidance_controls'][control].instate(['disabled']))
+            app._host_settings[key].set(gui.tr('guidance.option.' + code))
+            with mock.patch.object(gui.guidance_client, 'preflight') as check:
+                app._on_mod_settings_change()
+                self.wait_for_reload()
+                check.assert_not_called()
+            self.assertEqual(app._collect_host_settings()['guidance_mode'], 0)
+        app._host_settings['v_guidance'].set(gui.tr('guidance.mode.2'))
+        with mock.patch.object(gui.guidance_client, 'preflight', return_value={'device': 'cpu'}):
+            app._on_mod_settings_change()
+            self.wait_for_reload()
+        self.assertEqual(app._collect_host_settings()['guidance_mode'], 2)
+        self.assertEqual(app._guidance_edit_mode, 0)
 
     def test_context_switches_view_choices_and_preserves_each_selection(self):
         app = self.app
