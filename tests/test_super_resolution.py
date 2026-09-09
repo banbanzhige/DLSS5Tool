@@ -3,7 +3,7 @@ import tempfile
 import unittest
 from unittest import mock
 
-import super_resolution
+from dlss5tool import super_resolution
 
 
 class SuperResolutionSizingTests(unittest.TestCase):

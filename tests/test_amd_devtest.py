@@ -8,7 +8,7 @@ import zipfile
 
 import numpy as np
 
-import amd_devtest as amd
+from dlss5tool import amd_devtest as amd
 
 
 class AmdDeveloperTests(unittest.TestCase):

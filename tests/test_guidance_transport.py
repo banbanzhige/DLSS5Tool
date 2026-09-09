@@ -7,8 +7,8 @@ from unittest import mock
 
 import numpy as np
 
-import guidance_client
-from guidance_transport import GuidanceBuffers, TRANSPORT
+from dlss5tool import guidance_client
+from dlss5tool.guidance_transport import GuidanceBuffers, TRANSPORT
 
 
 class BufferTests(unittest.TestCase):

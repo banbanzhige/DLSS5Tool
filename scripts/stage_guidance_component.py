@@ -45,7 +45,7 @@ def main():
         except OSError:
             shutil.copy2(source, destination)
     import torch
-    manifest = json.loads((ROOT / 'enhancement-contract.json').read_text(encoding='utf-8'))
+    manifest = json.loads((ROOT / 'packaging/enhancement-contract.json').read_text(encoding='utf-8'))
     manifest.update(build='cuda' if torch.version.cuda else 'cpu', cuda=torch.version.cuda,
                     torch=torch.__version__, device_policy='explicit_cpu_only')
     (output / 'enhancement.json').write_text(json.dumps(manifest, indent=2), encoding='utf-8')

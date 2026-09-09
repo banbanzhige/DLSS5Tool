@@ -6,11 +6,11 @@ from unittest import mock
 
 import numpy as np
 
-import app_settings
-import dlss_engine
-import guidance_client
-import mod_paths
-import guidance_worker
+from dlss5tool import app_settings
+from dlss5tool import dlss_engine
+from dlss5tool import guidance_client
+from dlss5tool import mod_paths
+from dlss5tool import guidance_worker
 
 
 class GuidanceDeviceTests(unittest.TestCase):
@@ -115,13 +115,15 @@ class ModPathsTests(unittest.TestCase):
                 mod_paths.enhancement_info(settings)
 
     def test_runtime_detection_custom_priority_and_fallback(self):
-        with tempfile.TemporaryDirectory() as directory, mock.patch.object(mod_paths, 'app_root', return_value=Path(directory)):
+        with tempfile.TemporaryDirectory() as directory, \
+                mock.patch.object(mod_paths, 'app_root', return_value=Path(directory)), \
+                mock.patch.object(mod_paths.paths, 'runtime_root', return_value=Path(directory) / 'runtime'):
             root = Path(directory)
-            self.assertEqual(mod_paths.runtime_path(), str(root / 'nvngx_dlssnr.dll'))
+            self.assertEqual(mod_paths.runtime_path(), str(root / 'runtime/nvngx_dlssnr.dll'))
             (root / 'mods').mkdir()
             (root / 'mods/nvngx_dlssnr.dll').touch()
             self.assertEqual(mod_paths.runtime_path(), str(root / 'mods/nvngx_dlssnr.dll'))
-            self.assertEqual(mod_paths.runtime_path({'dlss_runtime': '__bundled__'}), str(root / 'nvngx_dlssnr.dll'))
+            self.assertEqual(mod_paths.runtime_path({'dlss_runtime': '__bundled__'}), str(root / 'runtime/nvngx_dlssnr.dll'))
             self.assertEqual(mod_paths.runtime_path({'dlss_runtime': 'nvngx_dlssnr.dll'}), str(root / 'mods/nvngx_dlssnr.dll'))
             chosen = root / 'custom.dll'
             chosen.touch()

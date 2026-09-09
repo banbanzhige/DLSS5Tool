@@ -31,7 +31,7 @@ def main():
         os.environ['DLSS5TOOL_SETTINGS_PATH'] = str(Path(directory) / 'settings.json')
         os.environ['DLSS5TOOL_QUEUE_PATH'] = str(Path(directory) / 'queue.json')
         import tkinter as tk
-        import app_settings
+        from dlss5tool import app_settings
         app_settings.save({**app_settings.DEFAULTS, 'preview_view': 'compare',
                            'mods_directory': str(args.component.resolve().parent) if args.component else '',
                            'guidance_flow_weights': str(Path(__file__).resolve().parents[1] / 'mods/models/raft_large_C_T_SKHT_V2-ff5fadd5.pth'),
@@ -39,7 +39,7 @@ def main():
                            'guidance_mode': 3, 'guidance_depth_encoder': 'vitl',
                            'guidance_depth_profile': 'fp32', 'guidance_edge': 720,
                            'preview_cache_mb': 256, 'preview_detached': False})
-        import gui
+        from dlss5tool import gui
         root = tk.Tk()
         root.withdraw()
         app = gui.App(root)

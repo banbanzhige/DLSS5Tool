@@ -7,10 +7,10 @@ import tkinter as tk
 import unittest
 from unittest import mock
 
-import app_settings
-import gui
+from dlss5tool import app_settings
+from dlss5tool import gui
 import numpy as np
-import ui_theme
+from dlss5tool import ui_theme
 
 
 class GuidanceTabTests(unittest.TestCase):
@@ -329,7 +329,7 @@ class GuidanceTabTests(unittest.TestCase):
         self.assertEqual(app.compare_target.get(), 'flow')
         menu.invoke(4)  # side-by-side layout
         self.assertEqual(app.compare_layout.get(), 'side')
-        with mock.patch('preview_comparison.messagebox.showinfo') as dialog:
+        with mock.patch('dlss5tool.preview_comparison.messagebox.showinfo') as dialog:
             menu.invoke(menu.index('end'))
             self.assertEqual(dialog.call_args.args[1], gui.tr('guidance.legend.flow'))
 
@@ -378,9 +378,9 @@ class GuidanceTabTests(unittest.TestCase):
         app = self.app
         app.video = 'fixture.mp4'
         before = app._collect_settings()
-        with mock.patch('guidance_export_ui.guidance_client.validate'), \
-                mock.patch('guidance_export_ui.filedialog.asksaveasfilename', return_value=''), \
-                mock.patch('guidance_export_ui.export_guidance') as exporter:
+        with mock.patch('dlss5tool.guidance_export_ui.guidance_client.validate'), \
+                mock.patch('dlss5tool.guidance_export_ui.filedialog.asksaveasfilename', return_value=''), \
+                mock.patch('dlss5tool.guidance_export_ui.export_guidance') as exporter:
             app._start_guidance_export()
         exporter.assert_not_called()
         self.assertFalse(app._exporting)

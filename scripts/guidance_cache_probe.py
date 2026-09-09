@@ -14,7 +14,7 @@ ROOT=Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(ROOT))
 import cv2
 import numpy as np
-from dlss_host_process import ProcessLive
+from dlss5tool.dlss_host_process import ProcessLive
 
 
 def main():
@@ -42,7 +42,7 @@ def main():
     reports=[];live=None
     pool=None
     if args.shared:
-        from shared_cache_budget import SharedCacheBudget
+        from dlss5tool.shared_cache_budget import SharedCacheBudget
         pool=SharedCacheBudget(limit_bytes=1024*1048576)
         settings['guidance_cache_pool']=pool.name
         # Simulate an actually allocated GUI cache consumer, not a fixed reserve.

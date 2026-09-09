@@ -7,7 +7,7 @@ import unittest
 import cv2
 import numpy as np
 
-from guidance_export import export_guidance, GuidanceExportCancelled
+from dlss5tool.guidance_export import export_guidance, GuidanceExportCancelled
 
 
 class FakeSession:
@@ -141,7 +141,7 @@ class GuidanceExportTests(unittest.TestCase):
         self.assertEqual(output.read_bytes(), b'encoded')
 
     def test_real_ffmpeg_output_has_source_dimensions_rate_and_frame_count(self):
-        from video_export import FFmpegVideoWriter
+        from dlss5tool.video_export import FFmpegVideoWriter
         output = self.directory / 'encoded.mp4'
         def writer(*args, **kwargs):
             return FFmpegVideoWriter(*args, use_nvenc=False, **kwargs)

@@ -17,7 +17,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 import cv2
 import numpy as np
-from dlss_host_process import ProcessLive
+from dlss5tool.dlss_host_process import ProcessLive
 import imageio_ffmpeg
 
 

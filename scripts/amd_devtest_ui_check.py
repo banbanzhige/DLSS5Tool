@@ -10,7 +10,7 @@ from unittest import mock
 from PIL import ImageGrab
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from amd_devtest_ui import DevTestWindow
+from dlss5tool.amd_devtest_ui import DevTestWindow
 
 
 def main():
@@ -40,7 +40,7 @@ def main():
                 path = captures/f"initial-{args.scale:g}x.png"
                 ImageGrab.grab(window=hwnd).save(path)
                 print(path)
-                with mock.patch("amd_devtest_ui.messagebox.showinfo") as info:
+                with mock.patch('dlss5tool.amd_devtest_ui.messagebox.showinfo') as info:
                     app.install()
                     assert info.called, "installer must require consent"
                 app.set_busy(True)

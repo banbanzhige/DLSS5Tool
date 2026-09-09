@@ -2,7 +2,7 @@ import unittest
 
 import numpy as np
 
-from video_export import (
+from dlss5tool.video_export import (
     _hlg_eotf,
     _hlg_oetf,
     _pq_eotf,

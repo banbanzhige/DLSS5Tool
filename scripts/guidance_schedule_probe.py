@@ -107,7 +107,7 @@ def run(args):
     sys.path.insert(0,str(ROOT/'tmp/dlss5standaloneV2/models'))
     import numpy as np
     import torch
-    from guidance_worker import Models
+    from dlss5tool.guidance_worker import Models
     directory=args.output/f'{args.variant}-r{args.round}'
     directory.mkdir(parents=True,exist_ok=False)
     frames=np.load(ROOT/'output/attention-ab-20260908/inputs.npy',mmap_mode='r')

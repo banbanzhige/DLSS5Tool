@@ -2,8 +2,8 @@ import tkinter as tk
 import unittest
 from unittest.mock import patch
 
-from ui_theme import tokens
-from ui_widgets import TimelineBar
+from dlss5tool.ui_theme import tokens
+from dlss5tool.ui_widgets import TimelineBar
 
 
 class TimelineBarTests(unittest.TestCase):

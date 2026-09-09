@@ -105,7 +105,7 @@ CASES = {
 
 
 def run_case(args):
-    import dlss_engine as engine
+    from dlss5tool import dlss_engine as engine
     dest = args.output.resolve()
     case_dir = dest / f"{args.backend}-{args.case}"
     case_dir.mkdir(exist_ok=False)

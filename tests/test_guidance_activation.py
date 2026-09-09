@@ -4,9 +4,9 @@ import unittest
 from unittest import mock
 
 import numpy as np
-import app_settings
-import guidance_client
-import i18n
+from dlss5tool import app_settings
+from dlss5tool import guidance_client
+from dlss5tool import i18n
 from tests import test_gui_module_reload as reload_tests
 
 

@@ -17,7 +17,7 @@ import zipfile
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
-from app_version import APP_VERSION
+from dlss5tool.app_version import APP_VERSION
 from scripts.check_release_contents import forbidden_contents
 
 WORKER_SHA = 'ae3d29343f669f8d0741e8fe4673afe3bf49ace9135feacfa1f11e6d8d545732'

@@ -3,8 +3,8 @@ import threading
 import unittest
 from unittest import mock
 import numpy as np
-from guidance_cache import RawGuidanceCache, frame_digest, cache_budget_mib
-from guidance_worker import Models
+from dlss5tool.guidance_cache import RawGuidanceCache, frame_digest, cache_budget_mib
+from dlss5tool.guidance_worker import Models
 
 
 class CacheTests(unittest.TestCase):
@@ -47,7 +47,7 @@ class CacheTests(unittest.TestCase):
         self.assertEqual(cache_budget_mib({'guidance_cache_mb':'bad'}),1024)
 
     def test_gui_reserves_budget_without_tk_access(self):
-        from gui import App
+        from dlss5tool.gui import App
         app=App.__new__(App)
         app._preview_runtime_settings={'preview_cache_mb':8192}
         self.assertEqual(app._preview_cache_bytes(),8192*1048576)
@@ -60,7 +60,7 @@ class ModelCacheTests(unittest.TestCase):
     def model(self, budget=1, mode=3):
         import cv2
         import torch
-        from guidance_execution import execution_contract
+        from dlss5tool.guidance_execution import execution_contract
         m=Models.__new__(Models)
         m.cv2,m.np,m.torch=cv2,np,torch
         m.settings={'guidance_mode':mode,'guidance_edge':128,'guidance_flow_direction':'backward'}

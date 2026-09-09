@@ -14,9 +14,9 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if ROOT not in sys.path:
     sys.path.insert(0, ROOT)
 
-from dlss_host_process import ProcessLive
-from super_resolution import ProcessSuperResolution
-from video_export import FFmpegVideoWriter
+from dlss5tool.dlss_host_process import ProcessLive
+from dlss5tool.super_resolution import ProcessSuperResolution
+from dlss5tool.video_export import FFmpegVideoWriter
 
 
 def main():

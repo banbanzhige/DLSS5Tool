@@ -5,7 +5,7 @@ import os
 import tempfile
 import unittest
 
-import updater
+from dlss5tool import updater
 
 
 class FakeResponse(io.BytesIO):

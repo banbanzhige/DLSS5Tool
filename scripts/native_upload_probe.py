@@ -19,7 +19,7 @@ sys.path.insert(0, str(ROOT))
 def run(args):
     import cv2
     import numpy as np
-    import dlss_engine as engine
+    from dlss5tool import dlss_engine as engine
     directory = args.output
     directory.mkdir(parents=True, exist_ok=False)
     engine.HOST_DLL_V2 = str(args.dll.resolve())

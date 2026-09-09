@@ -7,7 +7,7 @@ import time
 import unittest
 from unittest import mock
 
-from gui import App
+from dlss5tool.gui import App
 
 
 class MainThreadRoot:
@@ -254,7 +254,7 @@ class ModuleReloadTests(unittest.TestCase):
 
     def test_real_controls_restore_after_switching_both_directions(self):
         import tkinter as tk
-        import gui
+        from dlss5tool import gui
 
         with tempfile.TemporaryDirectory() as directory, mock.patch.dict(os.environ, {
             'DLSS5TOOL_SETTINGS_PATH': os.path.join(directory, 'settings.json'),

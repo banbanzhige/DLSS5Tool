@@ -15,7 +15,7 @@ import cv2
 import numpy as np
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from video_export import FFmpegVideoWriter, find_ffprobe, _CREATE_NO_WINDOW
+from dlss5tool.video_export import FFmpegVideoWriter, find_ffprobe, _CREATE_NO_WINDOW
 
 
 def main():

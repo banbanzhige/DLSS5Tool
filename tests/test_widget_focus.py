@@ -3,8 +3,8 @@ from tkinter import ttk
 import unittest
 from unittest import mock
 
-import ui_theme
-from ui_widgets import (
+from dlss5tool import ui_theme
+from dlss5tool.ui_widgets import (
     AccentSlider, CheckToggle, ChipGroup, ChromeButton, ChromeCombobox, ChromeSpinbox,
     CollapsibleSection, _has_focus,
 )

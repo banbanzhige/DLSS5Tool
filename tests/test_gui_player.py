@@ -8,18 +8,18 @@ from tkinter import filedialog, messagebox, ttk
 
 import numpy as np
 
-import app_settings
-import diagnostics
-import updater
-from app_version import APP_VERSION
-import ui_icons
-import ui_theme
-from ui_widgets import (
+from dlss5tool import app_settings
+from dlss5tool import diagnostics
+from dlss5tool import updater
+from dlss5tool.app_version import APP_VERSION
+from dlss5tool import ui_icons
+from dlss5tool import ui_theme
+from dlss5tool.ui_widgets import (
     AccentSlider, CheckToggle, ChipGroup, ChromeButton, ChromeCombobox,
     ProgressRule, StudioNotebook,
 )
-import gui
-from gui import (
+from dlss5tool import gui
+from dlss5tool.gui import (
     App, TimelineBar,
     PREVIEW_BACKGROUND_TICK_MS, PREVIEW_INTERACTION_IDLE_MS, PREVIEW_WORKER_POLL_MS,
     _ExportCancelled,
@@ -32,8 +32,8 @@ from gui import (
     _studio_window_layout,
     effective_skin_settings, effective_slider,
 )
-from preview_audio import frame_to_ms, ms_to_frame
-from video_export import compose_output_frame
+from dlss5tool.preview_audio import frame_to_ms, ms_to_frame
+from dlss5tool.video_export import compose_output_frame
 
 
 class PlayerHelperTests(unittest.TestCase):

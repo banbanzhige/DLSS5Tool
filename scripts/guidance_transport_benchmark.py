@@ -18,9 +18,9 @@ sys.path.insert(0, str(ROOT))
 import cv2
 import numpy as np
 
-from dlss_host_process import ProcessLive
-from guidance_client import GuidanceSession
-from guidance_transport import TRANSPORT
+from dlss5tool.dlss_host_process import ProcessLive
+from dlss5tool.guidance_client import GuidanceSession
+from dlss5tool.guidance_transport import TRANSPORT
 
 
 def main():

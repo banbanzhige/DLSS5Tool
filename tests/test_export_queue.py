@@ -3,7 +3,7 @@ import os
 import tempfile
 import unittest
 
-import export_queue
+from dlss5tool import export_queue
 
 
 class ExportJobTests(unittest.TestCase):

@@ -4,7 +4,7 @@ from pathlib import Path
 import tempfile
 import unittest
 
-import app_version
+from dlss5tool import app_version
 from scripts.check_release_contents import forbidden_contents
 
 
@@ -13,7 +13,7 @@ ROOT = Path(__file__).resolve().parents[1]
 
 class ReleasePackagingTests(unittest.TestCase):
     def test_version_resources_match_application(self):
-        resource = (ROOT / 'DLSS5Tool.version.txt').read_text(encoding='utf-8')
+        resource = (ROOT / 'packaging/DLSS5Tool.version.txt').read_text(encoding='utf-8')
         version_tuple = tuple(map(int, app_version.__version__.split('.'))) + (0,)
         self.assertIn(f'filevers={version_tuple}', resource)
         self.assertIn(f'prodvers={version_tuple}', resource)
@@ -21,7 +21,7 @@ class ReleasePackagingTests(unittest.TestCase):
             self.assertIn(f"StringStruct(u'{key}', u'{app_version.__version__}')", resource)
 
     def test_main_spec_excludes_developer_python_modules(self):
-        tree = ast.parse((ROOT / 'DLSS5Tool.spec').read_text(encoding='utf-8'))
+        tree = ast.parse((ROOT / 'packaging/DLSS5Tool.spec').read_text(encoding='utf-8'))
         analysis = next(node for node in ast.walk(tree) if isinstance(node, ast.Call)
                         and isinstance(node.func, ast.Name) and node.func.id == 'Analysis')
         excludes = ast.literal_eval(next(key.value for key in analysis.keywords if key.arg == 'excludes'))
@@ -55,6 +55,6 @@ class ReleasePackagingTests(unittest.TestCase):
             self.assertEqual(forbidden_contents(root), sorted(names))
 
     def test_release_check_runs_before_compression(self):
-        script = (ROOT / 'build_release.ps1').read_text(encoding='utf-8')
+        script = (ROOT / 'scripts/build_release.ps1').read_text(encoding='utf-8')
         self.assertLess(script.index('check_release_contents.py'), script.index('Compress-Archive'))
         self.assertIn('Assert-ExternalSuccess "Checking release content isolation"', script)

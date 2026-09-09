@@ -14,7 +14,7 @@ import zipfile
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
-from app_version import APP_VERSION
+from dlss5tool.app_version import APP_VERSION
 from scripts.package_editions import inventory
 
 
@@ -45,9 +45,9 @@ def main():
         raise RuntimeError('Extracted lite + add-on does not equal full package')
     print('Exact install overlay verified.', flush=True)
 
-    import app_settings
-    import guidance_client
-    import mod_paths
+    from dlss5tool import app_settings
+    from dlss5tool import guidance_client
+    from dlss5tool import mod_paths
     import numpy as np
     os.environ['PATH'] = str(Path(os.environ['SystemRoot']) / 'System32')
     child_env = dict(os.environ)

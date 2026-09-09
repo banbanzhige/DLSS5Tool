@@ -167,7 +167,7 @@ mods/
   models/                   # User weight overrides
 ```
 
-A complete component carries its dependencies; end users do not separately install Python, PyTorch, or CUDA Toolkit. Supported GPU hardware and drivers are still required. The app never automatically downloads models, installs dependencies, or runs installers. Compatible `.pth` weights are replaceable; renaming an incompatible architecture does not make it compatible. See [component layout and discovery](mods/README.md). Full and add-on packages include Depth Anything V2 Large under CC-BY-NC-4.0 (non-commercial). Sizes, hashes, and license archives are recorded in the [packaging index (Chinese)](PACKAGING_INDEX.md).
+A complete component carries its dependencies; end users do not separately install Python, PyTorch, or CUDA Toolkit. Supported GPU hardware and drivers are still required. The app never automatically downloads models, installs dependencies, or runs installers. Compatible `.pth` weights are replaceable; renaming an incompatible architecture does not make it compatible. See [component layout and discovery](mods/README.md). Full and add-on packages include Depth Anything V2 Large under CC-BY-NC-4.0 (non-commercial). Sizes, hashes, and license archives are recorded in the [packaging index (Chinese)](docs/release/PACKAGING_INDEX.md).
 
 ### Activation and recovery
 
@@ -192,7 +192,7 @@ Local activation checks took about 6–11 seconds; other machines vary. This che
 | Depth range stability and percentiles | 0.9, P1/P99 |
 | Flow display range and depth display | 3 px/frame, non-inverted grayscale; visualization only |
 
-Model alignment may slightly change the actual input dimensions. Larger inputs, more updates, or larger models do not guarantee better final images. Explicit saved settings are not overwritten by this table. See [parameter notes](GUIDANCE_PARAMETERS.md) and [activation verification](GUIDANCE_ACTIVATION.md).
+Model alignment may slightly change the actual input dimensions. Larger inputs, more updates, or larger models do not guarantee better final images. Explicit saved settings are not overwritten by this table. See [parameter notes](docs/guidance/GUIDANCE_PARAMETERS.md) and [activation verification](docs/guidance/GUIDANCE_ACTIVATION.md).
 
 ### Inspect and export maps
 
@@ -211,7 +211,7 @@ On an RTX 4070 SUPER at fixed 512 / 6 updates / Large / depth FP16 / dual stream
 | Mean process time, excluding first three frames | 173.84 ms | 149.76 ms |
 | Total including setup, decode, hashing, encoding and drain | 44.98 s | 41.38 s |
 
-This is a local single sequential A/B with background-load variation, without GUI or audio muxing—not a universal speedup or stable 30fps claim. Depth forward is unchanged and first-frame loading did not materially improve. The v2.1.1 full and add-on packages use that optimized candidate; updating Python source does not update an old component EXE. See [verification and reproduction](FIRST_PASS_OPTIMIZATION.md).
+This is a local single sequential A/B with background-load variation, without GUI or audio muxing—not a universal speedup or stable 30fps claim. Depth forward is unchanged and first-frame loading did not materially improve. The v2.1.1 full and add-on packages use that optimized candidate; updating Python source does not update an old component EXE. See [verification and reproduction](docs/experiments/FIRST_PASS_OPTIMIZATION.md).
 
 - Guidance currently requires **SDR, non-tiled processing**. HDR RGBA16F and tiled paths explicitly reject it rather than silently disabling it.
 - Flow is zero for a standalone image. The first frame, seeking, and detected scene cuts reset relevant history. Predicted relative depth is not game-engine ground truth; benefits depend on the source.
@@ -309,19 +309,23 @@ From the project root:
 
 # 2. Obtain the NVIDIA DLSS SDK, review and accept its license, then build the host
 git clone --depth 1 https://github.com/NVIDIA/DLSS.git third_party/NVIDIA-DLSS
-.\native_host_v2\build.bat
+.\native\host_v2\build.bat
 
-# 3. Place an authorized nvngx_dlssnr.dll in the project root and start the app
+# 3. Place an authorized nvngx_dlssnr.dll in runtime/ and start the app
 .\run.bat
 ```
 
 For 2× / 4× super resolution, obtain RTX Video SDK 1.1 separately. Extract it to `third_party/RTX_Video_SDK` or point `NV_RTX_VIDEO_SDK` to its root, then run:
 
 ```powershell
-.\native_vsr_host\build.bat
+.\native\vsr_host\build.bat
 ```
 
-This builds `vsr_host.dll` and copies `nvngx_vsr.dll` from the SDK into the project root.
+This places `vsr_host.dll` and the SDK's `nvngx_vsr.dll` in `runtime/`, with compiler intermediates in `build/native/`.
+
+Application sources live in `dlss5tool/`; development settings, queue and logs live in `var/`.
+Double-click `run.bat`, run `python gui.py`, or use `python -m dlss5tool`.
+See the [directory and documentation index](docs/README.md).
 
 ### Tests and packaging
 
@@ -334,7 +338,7 @@ Unit tests do not require a GPU, NVIDIA SDK, or proprietary DLL. Real GPU, HDR, 
 Before building the portable package, provide `dlssnr_host_v2.dll`, `nvngx_dlssnr.dll`, `vsr_host.dll`, `nvngx_vsr.dll`, the application icon, and the original RTX Video SDK license file. The release script installs build dependencies, runs tests, and creates the portable directory and ZIP:
 
 ```powershell
-.\build_release.ps1
+.\scripts\build_release.ps1
 ```
 
 A successful base build writes `dist/DLSS5Tool-v2.1.1/` and `dist/DLSS5Tool-v2.1.1-win64.zip`. The three user editions are produced by `scripts/package_editions.py` from a verified base package, inference component, and weights into a new directory under `dist/`. These paths do not imply that GitHub attachments have been uploaded.
@@ -343,7 +347,7 @@ Base tests do not need Torch; model-specific tests are conditionally skipped and
 
 Build the enhancement component separately with the [component builder](scripts/build_enhancement.py), matching architecture source, and licenses. Rebuilding the base EXE alone does not update it; see [maintainer build instructions](mods/README.md#maintainer-build-not-end-user-setup). Do not commit local candidates, test videos, weights, or SDK files to Git.
 
-Maintainers: see the [packaging footprint record and task index (Chinese)](PACKAGING_INDEX.md). Development environments may retain all components; user releases should include only necessary dependencies, with separate size and validation records for the base app, enhancement runtime, and models.
+Maintainers: see the [packaging footprint record and task index (Chinese)](docs/release/PACKAGING_INDEX.md). Development environments may retain all components; user releases should include only necessary dependencies, with separate size and validation records for the base app, enhancement runtime, and models.
 
 The main portable package excludes AMD developer tools, experiment scripts/reports, test sources, and experiment outputs. These remain in the source repository; AMD testing has a separate build entry point. Runtime assets and user documents are collected explicitly, and a pre-archive check rejects development material. The enhancement component is also packaged separately; the base package includes only the instructions in `mods`.
 

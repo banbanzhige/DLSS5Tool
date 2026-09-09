@@ -3,8 +3,8 @@ import unittest
 
 import numpy as np
 
-import dlss_engine
-from dlss_host_process import HostProcessError, ProcessLive
+from dlss5tool import dlss_engine
+from dlss5tool.dlss_host_process import HostProcessError, ProcessLive
 
 
 class FakeLive:
@@ -68,7 +68,7 @@ class FakeLive:
 class ProcessLiveTests(unittest.TestCase):
     def test_incompatible_guidance_fails_before_large_shared_allocations(self):
         from unittest import mock
-        import dlss_host_process
+        from dlss5tool import dlss_host_process
         for extra in ({'host_tiled_mode': True}, {'frame_format': 'rgba16f'}):
             with mock.patch.object(dlss_host_process, '_open_shared_memory') as memory:
                 with self.assertRaisesRegex(HostProcessError, 'SDR'):

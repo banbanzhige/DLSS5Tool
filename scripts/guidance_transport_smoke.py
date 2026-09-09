@@ -10,14 +10,14 @@ sys.path.insert(0, str(ROOT))
 import cv2
 import numpy as np
 
-from dlss_host_process import ProcessLive
-from guidance_client import GuidanceSession
-from guidance_transport import TRANSPORT
-from guidance_execution import execution_contract
+from dlss5tool.dlss_host_process import ProcessLive
+from dlss5tool.guidance_client import GuidanceSession
+from dlss5tool.guidance_transport import TRANSPORT
+from dlss5tool.guidance_execution import execution_contract
 
 
 def native_factory(width, height, settings):
-    import dlss_engine
+    from dlss5tool import dlss_engine
     if settings.get('_probe_host_dll'):
         dlss_engine.HOST_DLL_V2 = settings['_probe_host_dll']
     return dlss_engine.Live(width, height, settings)

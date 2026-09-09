@@ -9,7 +9,7 @@
 #include <random>
 #include <stdexcept>
 #include <vector>
-#include "../native_host_v2/guidance_upload.h"
+#include "../native/host_v2/guidance_upload.h"
 
 // Independent copy of the old host conversion, deliberately not calling the
 // production helper: catches changed rounding/special-value behavior.

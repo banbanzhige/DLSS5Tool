@@ -92,8 +92,8 @@ def run_variant(args):
         import xformers
     except ImportError:
         xformers = None
-    import dlss_engine
-    from guidance_worker import Models
+    from dlss5tool import dlss_engine
+    from dlss5tool.guidance_worker import Models
 
     backend, precision = args.variant.split('_')
     if backend == 'xformers' and xformers is None:

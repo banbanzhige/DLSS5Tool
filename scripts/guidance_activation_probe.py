@@ -15,8 +15,8 @@ def main():
         os.environ['DLSS5TOOL_SETTINGS_PATH'] = str(Path(directory) / 'settings.json')
         os.environ['DLSS5TOOL_QUEUE_PATH'] = str(Path(directory) / 'queue.json')
         import tkinter as tk
-        import app_settings
-        import gui
+        from dlss5tool import app_settings
+        from dlss5tool import gui
         app_settings.save({**app_settings.DEFAULTS, 'guidance_mode': 3})
         root = tk.Tk()
         root.withdraw()

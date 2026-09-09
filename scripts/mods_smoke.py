@@ -13,12 +13,12 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 import cv2
 import numpy as np
-import guidance_client
-import mod_paths
+from dlss5tool import guidance_client
+from dlss5tool import mod_paths
 
 
 def native_factory(width, height, settings):
-    import dlss_engine
+    from dlss5tool import dlss_engine
     settings = {**settings, 'mods_directory': settings['_smoke_mods']}
     return dlss_engine.Live(width, height, settings)
 
@@ -104,7 +104,7 @@ def main():
                 finally:
                     session.close()
                 if args.native:
-                    from dlss_host_process import ProcessLive
+                    from dlss5tool.dlss_host_process import ProcessLive
                     live = ProcessLive(192, 192, settings, _live_factory=native_factory)
                     try:
                         output = live.process(first, reset=True)

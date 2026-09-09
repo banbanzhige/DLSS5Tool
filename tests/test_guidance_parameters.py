@@ -3,11 +3,11 @@ from unittest import mock
 import importlib.util
 
 import numpy as np
-import app_settings
-import guidance_client
-from guidance_parameters import parameters, analysis_parameters, check_parameter_handshake, analysis_edge
-from guidance_visualization import guidance_images
-from guidance_worker import Models
+from dlss5tool import app_settings
+from dlss5tool import guidance_client
+from dlss5tool.guidance_parameters import parameters, analysis_parameters, check_parameter_handshake, analysis_edge
+from dlss5tool.guidance_visualization import guidance_images
+from dlss5tool.guidance_worker import Models
 
 
 class ParameterTests(unittest.TestCase):

@@ -7,8 +7,8 @@ from unittest import mock
 
 import numpy as np
 
-import parallel_export
-import video_export as video
+from dlss5tool import parallel_export
+from dlss5tool import video_export as video
 
 
 class EncoderSelectionTests(unittest.TestCase):
@@ -119,6 +119,8 @@ class EncoderSelectionTests(unittest.TestCase):
             self.assertEqual(launch.call_count, 2)
             for call in launch.call_args_list:
                 command = call.args[0]
+                self.assertEqual(command[1:4], ['-B', '-m', 'dlss5tool.parallel_export_worker'])
+                self.assertTrue(os.path.isfile(os.path.join(call.kwargs['cwd'], 'dlss5tool', 'parallel_export_worker.py')))
                 self.assertEqual(command[command.index("--codec") + 1], "hevc")
                 self.assertEqual(command[command.index("--nvenc") + 1], "0")
             self.assertIn("libx265", result["encoder"])

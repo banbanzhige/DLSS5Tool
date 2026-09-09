@@ -11,10 +11,10 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 def run(args):
     import numpy as np
     from PIL import Image
-    import app_settings
-    import dlss_engine as engine
-    from gui import _large_image_host_settings
-    from super_resolution import ProcessSuperResolution
+    from dlss5tool import app_settings
+    from dlss5tool import dlss_engine as engine
+    from dlss5tool.gui import _large_image_host_settings
+    from dlss5tool.super_resolution import ProcessSuperResolution
 
     args.output.mkdir(parents=True, exist_ok=False)
     engine.HOST_DLL_V2 = str(args.dll.resolve())

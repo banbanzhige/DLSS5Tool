@@ -44,7 +44,7 @@ def main():
     env = dict(os.environ, DLSS5_DEPTH_SOURCE=str(args.depth_source.resolve()))
     subprocess.run([sys.executable, '-m', 'PyInstaller', '--noconfirm',
                     '--distpath', str(output / 'mods'), '--workpath', str(output / 'build'),
-                    str(ROOT / 'GuidanceWorker.spec')], cwd=ROOT, env=env, check=True)
+                    str(ROOT / 'packaging/GuidanceWorker.spec')], cwd=ROOT, env=env, check=True)
     component = output / 'mods/enhancement'
     (component / 'enhancement.json').write_text(json.dumps({
         'id': 'dlss5-guidance', 'protocol': 1,

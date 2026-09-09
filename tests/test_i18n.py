@@ -6,8 +6,8 @@ import unittest
 from unittest import mock
 from string import Formatter
 
-import app_settings
-import i18n
+from dlss5tool import app_settings
+from dlss5tool import i18n
 
 
 class LocalizationTests(unittest.TestCase):
@@ -26,8 +26,8 @@ class LocalizationTests(unittest.TestCase):
         self.assertEqual(i18n.get_language(), 'zh_CN')
 
     def test_guidance_errors_use_requested_language(self):
-        import guidance_client
-        import mod_paths
+        from dlss5tool import guidance_client
+        from dlss5tool import mod_paths
         from pathlib import Path
         i18n.set_language('zh_CN')
         with self.assertRaisesRegex(ValueError, 'SDR') as error:
@@ -52,7 +52,7 @@ class LocalizationTests(unittest.TestCase):
         root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
         used = set()
         for filename in ('mod_paths.py', 'guidance_client.py', 'guidance_worker.py', 'dlss_engine.py', 'guidance_execution.py'):
-            with open(os.path.join(root, filename), encoding='utf-8') as handle:
+            with open(os.path.join(root, 'dlss5tool', filename), encoding='utf-8') as handle:
                 tree = ast.parse(handle.read())
             for node in ast.walk(tree):
                 if isinstance(node, ast.Constant) and isinstance(node.value, str) and node.value.startswith('guidance.error.'):
@@ -92,7 +92,7 @@ class LocalizationTests(unittest.TestCase):
 
     def test_gui_translation_keys_exist_in_both_catalogs(self):
         root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-        with open(os.path.join(root, "gui.py"), encoding="utf-8") as handle:
+        with open(os.path.join(root, "dlss5tool/gui.py"), encoding="utf-8") as handle:
             tree = ast.parse(handle.read())
         used = {
             node.args[0].value
@@ -143,7 +143,7 @@ class LocalizationTests(unittest.TestCase):
                 self.assertEqual(app_settings.load(path)["ui_language"], "en_US")
 
     def test_language_selection_remains_pending_until_restart(self):
-        import gui
+        from dlss5tool import gui
 
         app = gui.App.__new__(gui.App)
         app._ui_language = "zh_CN"
@@ -166,9 +166,9 @@ class LocalizationTests(unittest.TestCase):
 
     def test_release_configuration_includes_both_languages(self):
         root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-        with open(os.path.join(root, "DLSS5Tool.spec"), encoding="utf-8") as handle:
+        with open(os.path.join(root, "packaging/DLSS5Tool.spec"), encoding="utf-8") as handle:
             spec = handle.read()
-        with open(os.path.join(root, "build_release.ps1"), encoding="utf-8-sig") as handle:
+        with open(os.path.join(root, "scripts/build_release.ps1"), encoding="utf-8-sig") as handle:
             release_script = handle.read()
         for name in ("zh_CN", "en_US", "README.en.md"):
             self.assertIn(name, spec)

@@ -21,6 +21,9 @@ Thumbs.db
 Desktop.ini
 
 # Local application state and diagnostics
+/var/
+/runtime/*
+!/runtime/README.md
 /dlss5_settings.json
 /dlss5_settings.json.tmp
 /dlss5_queue.json

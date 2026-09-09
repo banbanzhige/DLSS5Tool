@@ -174,8 +174,8 @@ def run(args):
     import cv2
     import numpy as np
     import torch
-    import dlss_engine
-    from guidance_worker import Models
+    from dlss5tool import dlss_engine
+    from dlss5tool.guidance_worker import Models
     if args.threads:
         torch.set_num_threads(args.threads)
         cv2.setNumThreads(args.threads)

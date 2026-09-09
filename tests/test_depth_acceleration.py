@@ -5,7 +5,7 @@ import types
 import unittest
 from unittest import mock
 
-import depth_acceleration
+from dlss5tool import depth_acceleration
 
 
 @unittest.skipUnless(importlib.util.find_spec('torch'), 'Torch is intentionally absent from the base app')

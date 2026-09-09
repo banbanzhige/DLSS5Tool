@@ -2,10 +2,10 @@ import threading
 import unittest
 from unittest import mock
 
-import app_settings
-import guidance_client
-from guidance_execution import execution_contract
-from guidance_worker import Models
+from dlss5tool import app_settings
+from dlss5tool import guidance_client
+from dlss5tool.guidance_execution import execution_contract
+from dlss5tool.guidance_worker import Models
 
 
 class ExecutionPolicyTests(unittest.TestCase):

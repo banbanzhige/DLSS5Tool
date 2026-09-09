@@ -52,11 +52,11 @@ def main():
     args.output.mkdir(parents=True, exist_ok=False)
     import cv2
     import numpy as np
-    import app_settings
-    import mod_paths
-    import dlss_engine
-    from dlss_host_process import ProcessLive
-    from video_export import FFmpegVideoWriter
+    from dlss5tool import app_settings
+    from dlss5tool import mod_paths
+    from dlss5tool import dlss_engine
+    from dlss5tool.dlss_host_process import ProcessLive
+    from dlss5tool.video_export import FFmpegVideoWriter
 
     settings = {**app_settings.load(), 'guidance_mode': args.mode,
                 'guidance_cache_mb': 0, 'guidance_cache_pool': None,
@@ -82,7 +82,7 @@ def main():
         if args.backend == 'source':
             sys.path.insert(0, str(ROOT / 'tmp/dlss5standaloneV2/models'))
             import torch
-            from guidance_worker import Models
+            from dlss5tool.guidance_worker import Models
             if args.threads:
                 torch.set_num_threads(args.threads)
             if args.opencv_threads:

@@ -16,4 +16,4 @@ def original_flow_input(self, small):
     return (previous, current) if self.settings.get('guidance_flow_direction', 'backward') == 'forward_negated' else (current, previous)
 
 
-from guidance_inputs import prepare_flow
+from dlss5tool.guidance_inputs import prepare_flow

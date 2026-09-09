@@ -49,7 +49,8 @@ def prepare(args):
     cap.release()
     frames = np.stack(frames)
     np.save(args.output / 'inputs.npy', frames)
-    settings = json.loads((ROOT / 'dlss5_settings.json').read_text(encoding='utf-8'))
+    from dlss5tool.app_settings import settings_path
+    settings = json.loads(Path(settings_path()).read_text(encoding='utf-8'))
     save(args.output / 'input.json', {'source': str(args.source), 'source_frames': count,
         'fps': fps, 'indices': ids, 'starts': starts, 'span': 16,
         'warmup_frames_per_window': 3, 'shape': list(frames.shape),
@@ -114,9 +115,9 @@ def run(args):
     import numpy as np
     import torch
     import torchvision
-    import dlss_engine
-    from guidance_parameters import analysis_size
-    from guidance_visualization import guidance_images
+    from dlss5tool import dlss_engine
+    from dlss5tool.guidance_parameters import analysis_size
+    from dlss5tool.guidance_visualization import guidance_images
     cv2.setNumThreads(4)
     torch.set_num_threads(4)
     torch.manual_seed(0)

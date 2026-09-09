@@ -13,9 +13,9 @@ import tempfile
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import tkinter as tk
 from PIL import ImageGrab
-import app_settings
-import ui_theme
-from gui import App, TkinterDnD
+from dlss5tool import app_settings
+from dlss5tool import ui_theme
+from dlss5tool.gui import App, TkinterDnD
 
 
 def main():

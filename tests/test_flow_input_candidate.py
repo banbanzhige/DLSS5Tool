@@ -10,7 +10,7 @@ class FlowInputCandidateTests(unittest.TestCase):
     def test_bitwise_identity_directions_noncontiguous_and_discontinuous_frames(self):
         import torch
         from torchvision.models.optical_flow import Raft_Large_Weights
-        from guidance_inputs import prepare_flow, clear_flow_inputs
+        from dlss5tool.guidance_inputs import prepare_flow, clear_flow_inputs
         from scripts.flow_input_candidate import original_flow_input
         for direction in ('backward', 'forward_negated'):
             model = SimpleNamespace(np=np, torch=torch, transforms=Raft_Large_Weights.DEFAULT.transforms(),
@@ -41,7 +41,7 @@ class FlowInputCandidateTests(unittest.TestCase):
         import types
         import torch
         from torchvision.models.optical_flow import Raft_Large_Weights
-        from guidance_worker import Models
+        from dlss5tool.guidance_worker import Models
         from tests.test_guidance_cache import ModelCacheTests
         from scripts.flow_input_candidate import original_flow_input
         for direction in ('backward', 'forward_negated'):

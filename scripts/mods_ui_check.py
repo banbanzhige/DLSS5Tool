@@ -11,8 +11,8 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 import tkinter as tk
 from PIL import ImageGrab
-import app_settings
-import ui_theme
+from dlss5tool import app_settings
+from dlss5tool import ui_theme
 
 
 def main():
@@ -24,13 +24,13 @@ def main():
     parser.add_argument('--execution', choices=['serial', 'raft_streams'], default='serial')
     args = parser.parse_args()
     os.environ['DLSS5TOOL_LANG'] = args.language
-    from gui import App, tr, TkinterDnD
+    from dlss5tool.gui import App, tr, TkinterDnD
     output = args.output
     output.mkdir(parents=True, exist_ok=True)
     with tempfile.TemporaryDirectory() as directory:
         os.environ['DLSS5TOOL_SETTINGS_PATH'] = str(Path(directory) / 'settings.json')
         os.environ['DLSS5TOOL_QUEUE_PATH'] = str(Path(directory) / 'queue.json')
-        import mod_paths
+        from dlss5tool import mod_paths
         # Isolate discovery now that the development workspace contains real mods.
         mod_paths.mods_root = lambda settings=None: Path(directory) / 'mods'
         mod_paths.search_roots = lambda settings=None: [Path(directory) / 'mods']

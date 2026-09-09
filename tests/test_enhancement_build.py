@@ -8,7 +8,7 @@ import unittest
 from unittest import mock
 import zipfile
 
-import mod_paths
+from dlss5tool import mod_paths
 from scripts import build_enhancement
 
 

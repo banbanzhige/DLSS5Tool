@@ -18,8 +18,8 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 import cv2
 import numpy as np
-import guidance_client
-from dlss_host_process import ProcessLive
+from dlss5tool import guidance_client
+from dlss5tool.dlss_host_process import ProcessLive
 
 
 def main():

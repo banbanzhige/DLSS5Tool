@@ -7,10 +7,10 @@ import wave
 import cv2
 import numpy as np
 
-import app_settings
-from gui import _estimate_output_size_mb, _fit_output_box, _resolve_output_size
-from parallel_export import _encoding_worker_args
-from video_export import (
+from dlss5tool import app_settings
+from dlss5tool.gui import _estimate_output_size_mb, _fit_output_box, _resolve_output_size
+from dlss5tool.parallel_export import _encoding_worker_args
+from dlss5tool.video_export import (
     FFmpegVideoWriter, build_video_encoder_args, find_ffmpeg,
     mux_source_audio, output_container_extension, probe_video_stream,
     probe_audio_codecs, resolve_output_container,
@@ -122,7 +122,7 @@ class EncoderIntegrationTests(unittest.TestCase):
             )
             self.assertEqual(probe_audio_codecs(ffmpeg, mp4_output), ["aac"])
             unknown_output = os.path.join(temp_dir, "unknown-probe.mov")
-            with mock.patch("video_export.probe_audio_codecs", return_value=None):
+            with mock.patch('dlss5tool.video_export.probe_audio_codecs', return_value=None):
                 self.assertEqual(
                     mux_source_audio(ffmpeg, encoded, audio_source, unknown_output),
                     "AAC 192 kbps（兼容转换）",

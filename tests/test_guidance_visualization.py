@@ -2,7 +2,7 @@ import unittest
 
 import numpy as np
 
-from guidance_visualization import guidance_images
+from dlss5tool.guidance_visualization import guidance_images
 
 
 class GuidanceVisualizationTests(unittest.TestCase):

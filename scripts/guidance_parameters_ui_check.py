@@ -14,13 +14,13 @@ def main():
     os.environ['DLSS5TOOL_LANG'] = language
     from PIL import ImageGrab
     import tkinter as tk
-    import app_settings
-    import ui_theme
+    from dlss5tool import app_settings
+    from dlss5tool import ui_theme
     with tempfile.TemporaryDirectory() as temporary:
         os.environ['DLSS5TOOL_SETTINGS_PATH'] = str(Path(temporary) / 'settings.json')
         os.environ['DLSS5TOOL_QUEUE_PATH'] = str(Path(temporary) / 'queue.json')
         app_settings.save({'guidance_mode': 3, 'guidance_device': 'cuda', 'inspector_width': 360})
-        from gui import App, TkinterDnD
+        from dlss5tool.gui import App, TkinterDnD
         ui_theme.enable_dpi_awareness()
         root = TkinterDnD.Tk() if TkinterDnD else tk.Tk()
         root.withdraw()

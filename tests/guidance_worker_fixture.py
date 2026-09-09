@@ -6,7 +6,7 @@ import threading
 
 import numpy as np
 
-import guidance_worker
+from dlss5tool import guidance_worker
 
 
 class FakeModels:

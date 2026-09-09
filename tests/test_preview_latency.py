@@ -6,7 +6,7 @@ from unittest.mock import Mock
 
 import numpy as np
 
-from gui import App
+from dlss5tool.gui import App
 
 
 class PreviewLatencyTests(unittest.TestCase):

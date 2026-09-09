@@ -5,7 +5,7 @@ import unittest
 
 from PIL import Image
 
-import ui_theme
+from dlss5tool import ui_theme
 
 
 REQUIRED_ICO_SIZES = (
@@ -17,7 +17,7 @@ REQUIRED_ICO_SIZES = (
 class AppIconTests(unittest.TestCase):
     def test_release_files_require_icons_and_include_full_upstream_notices(self):
         root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-        with open(os.path.join(root, "DLSS5Tool.spec"), encoding="utf-8") as handle:
+        with open(os.path.join(root, "packaging/DLSS5Tool.spec"), encoding="utf-8") as handle:
             spec = handle.read()
         self.assertIn("Missing required application icon", spec)
         self.assertIn("icon=app_icon", spec)

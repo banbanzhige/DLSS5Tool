@@ -170,7 +170,7 @@ mods/
   models/                   # 用户覆盖权重
 ```
 
-完整组件自带推理依赖，用户无需另装 Python、PyTorch 或 CUDA Toolkit；仍需支持的 GPU 和驱动。软件不自动下载模型、安装依赖或执行安装器。兼容 `.pth` 权重可以外置替换，其他架构不能只换文件名使用。组件布局与查找顺序见 [mods 说明](mods/README.md)。完整版与附加包含 Depth Anything V2 Large，受 CC-BY-NC-4.0 非商业条款约束；体积、哈希和许可归档见 [打包记录](PACKAGING_INDEX.md)。
+完整组件自带推理依赖，用户无需另装 Python、PyTorch 或 CUDA Toolkit；仍需支持的 GPU 和驱动。软件不自动下载模型、安装依赖或执行安装器。兼容 `.pth` 权重可以外置替换，其他架构不能只换文件名使用。组件布局与查找顺序见 [mods 说明](mods/README.md)。完整版与附加包含 Depth Anything V2 Large，受 CC-BY-NC-4.0 非商业条款约束；体积、哈希和许可归档见 [打包记录](docs/release/PACKAGING_INDEX.md)。
 
 ### 启用与失败恢复
 
@@ -195,7 +195,7 @@ mods/
 | 深度范围稳定度、百分位 | 0.9、P1/P99 |
 | 光流显示量程、深度显示 | 3 px/帧、灰度且不反相；仅影响可视化 |
 
-长边会按模型要求对齐，实际输入尺寸可能略有差异。更高尺寸、更多迭代或更大的模型不保证更好的最终画质。已有显式设置不会自动改成此表。详见 [参数说明](GUIDANCE_PARAMETERS.md) 与 [启用检查记录](GUIDANCE_ACTIVATION.md)。
+长边会按模型要求对齐，实际输入尺寸可能略有差异。更高尺寸、更多迭代或更大的模型不保证更好的最终画质。已有显式设置不会自动改成此表。详见 [参数说明](docs/guidance/GUIDANCE_PARAMETERS.md) 与 [启用检查记录](docs/guidance/GUIDANCE_ACTIVATION.md)。
 
 ### 查看与导出分析图
 
@@ -214,7 +214,7 @@ RTX 4070 SUPER、固定512／6次／Large／深度FP16／双Stream，两段完�
 | 平均 process 耗时（排除前三帧） | 173.84 ms | 149.76 ms |
 | 含准备、解码、哈希、编码和收尾的总时间 | 44.98 秒 | 41.38 秒 |
 
-这是本机单次顺序 A/B，存在背景负载影响，不含 GUI 和音频复用，不是通用提速承诺或稳定30fps。深度 forward 未改；首帧加载时间未明显改善。v2.1.1 完整版／附加包使用上述候选优化组件；仅更新源码不会自动更新旧组件 EXE。细节和复现见 [首次渲染优化](FIRST_PASS_OPTIMIZATION.md)。
+这是本机单次顺序 A/B，存在背景负载影响，不含 GUI 和音频复用，不是通用提速承诺或稳定30fps。深度 forward 未改；首帧加载时间未明显改善。v2.1.1 完整版／附加包使用上述候选优化组件；仅更新源码不会自动更新旧组件 EXE。细节和复现见 [首次渲染优化](docs/experiments/FIRST_PASS_OPTIMIZATION.md)。
 
 - 引导目前仅支持 **SDR、非分块**。HDR RGBA16F 或分块路径会明确拒绝，不静默关闭引导。
 - 单张图片的光流为零；首帧、跳转、明显切镜会重置相关历史。预测深度不是游戏引擎提供的真实深度，收益仍需按素材判断。
@@ -312,19 +312,22 @@ RTX 4070 SUPER、固定512／6次／Large／深度FP16／双Stream，两段完�
 
 # 2. 获取 NVIDIA DLSS SDK，阅读并接受其许可证后编译宿主
 git clone --depth 1 https://github.com/NVIDIA/DLSS.git third_party/NVIDIA-DLSS
-.\native_host_v2\build.bat
+.\native\host_v2\build.bat
 
-# 3. 把有权使用的 nvngx_dlssnr.dll 放到项目根目录后启动
+# 3. 把有权使用的 nvngx_dlssnr.dll 放到 runtime/ 后启动
 .\run.bat
 ```
 
 如需 2× / 4× 超分，另行准备 RTX Video SDK 1.1，解压到 `third_party/RTX_Video_SDK`，或将环境变量 `NV_RTX_VIDEO_SDK` 指向 SDK 根目录，然后执行：
 
 ```powershell
-.\native_vsr_host\build.bat
+.\native\vsr_host\build.bat
 ```
 
-该脚本会生成 `vsr_host.dll`，并将 SDK 中的 `nvngx_vsr.dll` 复制到项目根目录。
+该脚本会将 `vsr_host.dll` 和 SDK 中的 `nvngx_vsr.dll` 放到 `runtime/`；编译中间产物进入 `build/native/`。
+
+源码集中在 `dlss5tool/`，开发设置、队列和日志集中在 `var/`。仍可双击 `run.bat`，
+或运行 `python gui.py` / `python -m dlss5tool`。目录约定与文档索引见 [docs/README.md](docs/README.md)。
 
 ### 测试与打包
 
@@ -337,7 +340,7 @@ git clone --depth 1 https://github.com/NVIDIA/DLSS.git third_party/NVIDIA-DLSS
 构建完整免安装包前，需要准备 `dlssnr_host_v2.dll`、`nvngx_dlssnr.dll`、`vsr_host.dll`、`nvngx_vsr.dll`、应用图标，以及 RTX Video SDK 的原始许可证文件。打包脚本默认安装构建依赖、运行测试，再生成便携目录和 ZIP：
 
 ```powershell
-.\build_release.ps1
+.\scripts\build_release.ps1
 ```
 
 基础包构建输出至 `dist/DLSS5Tool-v2.1.1/` 和 `dist/DLSS5Tool-v2.1.1-win64.zip`。三种用户发行形态由 `scripts/package_editions.py` 从已验证的基础包、推理组件和权重生成，产物位于 `dist/` 下的独立目录，不会覆盖开发环境。此路径说明不代表附件已上传到 GitHub。
@@ -346,7 +349,7 @@ git clone --depth 1 https://github.com/NVIDIA/DLSS.git third_party/NVIDIA-DLSS
 
 增强组件需使用 [独立构建脚本](scripts/build_enhancement.py) 和匹配的模型源码／许可，不能靠重打基础 EXE 更新；入口说明见 [mods 维护者构建](mods/README.md#maintainer-build-not-end-user-setup)。不要将本机候选目录、测试视频、权重或 SDK 一起提交 Git。
 
-维护者请查阅 [打包轻量化记录与索引](PACKAGING_INDEX.md)：开发环境可保留全组件，用户发行包按必要依赖精简，分别记录基础包、增强组件和模型的体积与验证状态。
+维护者请查阅 [打包轻量化记录与索引](docs/release/PACKAGING_INDEX.md)：开发环境可保留全组件，用户发行包按必要依赖精简，分别记录基础包、增强组件和模型的体积与验证状态。
 
 正式主程序包不包含 AMD 开发验证工具、实验脚本／报告、测试源码或实验产物；这些内容仅保留在源码仓库，AMD 验证包使用独立构建入口。主程序按明确清单收集运行文件与用户文档，并在压缩前检查开发资料是否混入。增强组件仍单独打包，基础包的 `mods` 仅附说明文件。
 

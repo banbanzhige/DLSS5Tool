@@ -17,9 +17,9 @@ def main():
         os.environ['DLSS5TOOL_SETTINGS_PATH']=str(Path(directory)/'settings.json')
         os.environ['DLSS5TOOL_QUEUE_PATH']=str(Path(directory)/'queue.json')
         os.environ['DLSS5TOOL_LANG']=args.language
-        import app_settings
+        from dlss5tool import app_settings
         (Path(directory)/'settings.json').write_text(json.dumps({'ui_language':args.language,'preview_cache_mb':8192}),encoding='utf-8')
-        from gui import App,TkinterDnD
+        from dlss5tool.gui import App,TkinterDnD
         from PIL import ImageGrab
         root=TkinterDnD.Tk();root.withdraw();app=App(root)
         errors=[];root.report_callback_exception=lambda *error:errors.append(str(error))

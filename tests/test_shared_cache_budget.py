@@ -4,8 +4,8 @@ import threading
 import unittest
 from collections import OrderedDict
 import numpy as np
-from shared_cache_budget import SharedCacheBudget
-from guidance_cache import RawGuidanceCache
+from dlss5tool.shared_cache_budget import SharedCacheBudget
+from dlss5tool.guidance_cache import RawGuidanceCache
 
 
 def lease_child(name,conn):
@@ -70,7 +70,7 @@ class SharedBudgetTests(unittest.TestCase):
             parent.close();child.close();other.close();owner.close()
 
     def test_gui_evicts_clears_and_returns_shared_usage(self):
-        from gui import App
+        from dlss5tool.gui import App
         app=App.__new__(App)
         app._cache_lock=threading.RLock();app._frame=0
         app.fps=24

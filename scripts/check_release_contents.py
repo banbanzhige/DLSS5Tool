@@ -10,7 +10,7 @@ USER_DOCUMENTS = {
 }
 DEVELOPER_ROOTS = {
     'scripts', 'tests', 'native_amd_probe', 'amd_backend', 'third_party',
-    'output', 'results', 'tmp',
+    'output', 'results', 'tmp', 'native', 'packaging', 'var',
 }
 
 
@@ -19,7 +19,7 @@ def forbidden_contents(release_dir):
     if not (release_dir / 'DLSS5Tool.exe').is_file():
         raise ValueError('Expected a main release directory containing DLSS5Tool.exe')
     developer_documents = {
-        path.name.lower() for path in ROOT.glob('*.md')
+        path.name.lower() for path in [*ROOT.glob('*.md'), *(ROOT / 'docs').rglob('*.md')]
     } - USER_DOCUMENTS
     developer_stems = {
         path.stem.lower() for path in (ROOT / 'scripts').glob('*.py')

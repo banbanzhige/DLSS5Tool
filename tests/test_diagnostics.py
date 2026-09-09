@@ -7,7 +7,7 @@ from unittest import mock
 
 import numpy as np
 
-import diagnostics
+from dlss5tool import diagnostics
 
 
 class DiagnosticHelpersTests(unittest.TestCase):
@@ -84,7 +84,7 @@ class DiagnosticReportTests(unittest.TestCase):
                     diagnostics, "_probe_backend",
                     side_effect=lambda _temp, _settings, backend: probes[backend],
                 ),
-                mock.patch("diagnostics.os.path.isfile", return_value=True),
+                mock.patch('dlss5tool.diagnostics.os.path.isfile', return_value=True),
             ):
                 result = diagnostics.write_diagnostic_report(
                     output,

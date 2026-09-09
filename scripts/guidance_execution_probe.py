@@ -9,8 +9,8 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 import cv2
 import numpy as np
-from guidance_client import GuidanceSession
-from guidance_execution import execution_contract
+from dlss5tool.guidance_client import GuidanceSession
+from dlss5tool.guidance_execution import execution_contract
 
 
 def trial(component, execution, case):

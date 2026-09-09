@@ -67,7 +67,7 @@ imageio-ffmpeg、Pillow 和 tkinterdnd2。它们不受本项目 MIT 许可证重
 - 上游：[lucide](https://github.com/lucide-icons/lucide)
 - 许可证：ISC；下列 Feather 衍生图标同时遵循 MIT
 - 版权：Copyright (c) 2026 Lucide Icons and Contributors
-- 在本项目中的用途：`ui_icons.py` 内嵌的 24×24 描边图标，由 Pillow 栅格化后用于播放条与队列工具按钮
+- 在本项目中的用途：`dlss5tool/ui_icons.py` 内嵌的 24×24 描边图标，由 Pillow 栅格化后用于播放条与队列工具按钮
 
 ### Lucide ISC License
 

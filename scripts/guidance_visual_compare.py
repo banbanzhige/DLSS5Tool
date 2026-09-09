@@ -25,8 +25,8 @@ def run(args):
     import cv2
     import numpy as np
     import torch
-    import dlss_engine
-    from guidance_worker import Models
+    from dlss5tool import dlss_engine
+    from dlss5tool.guidance_worker import Models
     from scripts.guidance_schedule_probe import raft_final_only, parallel_process
 
     inputs = np.load(ROOT / 'output/attention-ab-20260908/inputs.npy', mmap_mode='r')
