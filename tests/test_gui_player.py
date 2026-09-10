@@ -1719,7 +1719,7 @@ class WidgetSmokeTests(unittest.TestCase):
                 self.assertIs(app._guidance_advanced.master, app._export_inner)
                 self.assertTrue(app._guidance_advanced.collapsed)
                 self.assertNotIn('w_guidance_hint', app._settings)
-                self.assertEqual(len(app._host_settings['module_summaries']), 4)
+                self.assertEqual(len(app._host_settings['module_summaries']), 3)
                 self.assertIn('component', app._host_settings['module_summaries'])
                 self.assertNotIn('guidance_python', app._host_settings['path_vars'])
                 self.assertNotIn('guidance_depth_code', app._host_settings['path_vars'])
@@ -1989,7 +1989,8 @@ class WidgetSmokeTests(unittest.TestCase):
                 app.start_export_queue()
                 self.assertEqual(job.state, "pending")
                 self.assertTrue(app._queue_running)
-                self.assertEqual(scheduled, [app._run_next_queue_job])
+                self.assertEqual([callback for callback in scheduled
+                                  if callback != app._sync_guidance_scrollregion], [app._run_next_queue_job])
                 app._queue_running = False
                 app._queue_last_summary = "paused"
                 app._update_queue_action_states()

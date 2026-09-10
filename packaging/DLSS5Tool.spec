@@ -69,7 +69,7 @@ a = Analysis(
     # Repository-only tools must never enter the main application's PYZ.
     excludes=["torch", "torchvision", "depth_anything_v2", "guidance_worker",
               "amd_devtest", "amd_devtest_ui", "scripts", "tests",
-              "dlss5tool.guidance_worker", "dlss5tool.amd_devtest", "dlss5tool.amd_devtest_ui"],
+              "dlss5tool.guidance_worker", "dlss5tool.nvofa", "dlss5tool.amd_devtest", "dlss5tool.amd_devtest_ui"],
     noarchive=False,
     optimize=0,
 )

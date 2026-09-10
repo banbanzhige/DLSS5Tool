@@ -34,6 +34,7 @@ from dlss5tool.app_version import APP_VERSION
 from dlss5tool import diagnostics
 from dlss5tool import dlss_engine
 from dlss5tool import guidance_client
+from dlss5tool.guidance_public import depth_enabled, public_mode
 from dlss5tool.preview_comparison import PreviewComparison
 from dlss5tool.guidance_export_ui import GuidanceExportUI
 from dlss5tool.shared_cache_budget import SharedCacheBudget
@@ -196,6 +197,8 @@ def _is_dlss_runtime_unsupported(error):
 
 
 def _dlss_runtime_guidance(error):
+    if re.search(r"0xBAD00002\b", str(error), re.I):
+        return tr("message.dlss_platform_error")
     if not _is_dlss_runtime_unsupported(error):
         return ""
     return tr(
@@ -3899,7 +3902,7 @@ class App(PreviewComparison, GuidanceExportUI):
         summaries.grid(row=1, column=0, sticky='ew')
         summaries.columnconfigure(1, weight=1)
         d['module_summaries'] = {}
-        for row, name in enumerate(('runtime', 'component', 'flow', 'depth')):
+        for row, name in enumerate(('runtime', 'component', 'flow', 'depth') if depth_enabled() else ('runtime', 'component', 'flow')):
             ttk.Label(summaries, text=tr('mods.summary.' + name)).grid(row=row, column=0, sticky='w', padx=(0, 12), pady=3)
             label = ttk.Label(summaries, text='', style='Hint.TLabel')
             label.grid(row=row, column=1, sticky='w', pady=3)
@@ -3938,6 +3941,8 @@ class App(PreviewComparison, GuidanceExportUI):
             variable = tk.StringVar()
             variable.set(saved.get(key, '') or default)
             path_vars[key] = variable
+            if key == 'guidance_depth_weights' and not depth_enabled():
+                continue
             ttk.Label(paths, text=tr('mods.path.' + key)).grid(row=row * 2, column=0, columnspan=2, sticky='w', pady=(6, 3))
             entry = ChromeEntry(paths, ui=self._ui, textvariable=variable, width=18)
             self._theme_widgets.append(entry)
@@ -4007,6 +4012,14 @@ class App(PreviewComparison, GuidanceExportUI):
             if generation != self._guidance_generation or self._module_reload_thread is not None:
                 continue
             self._last_guidance_info = info
+            if info.get('flow_backend'):
+                grid = info.get('flow_grid')
+                self.logln('flow_backend=' + info['flow_backend']
+                           + (f' grid={grid}' if grid else ''))
+            if info.get('flow_fallback_reason'):
+                warning = tr('guidance.flow_fallback', reason=info['flow_fallback_reason'])
+                self.logln(warning)
+                self.set_status(warning)
             if info.get('analysis_parameters'):
                 self.logln(tr('guidance.parameters_confirmed', parameters=info['analysis_parameters']))
             self.logln(tr('guidance.running', device=info.get('device_name') or info['device'],
@@ -4093,7 +4106,18 @@ class App(PreviewComparison, GuidanceExportUI):
         self._last_module_settings = settings
         self._guidance_preflight_error = ''
         self._guidance_preflight_info = None
+        self._module_reload_error = ''
         self._module_pending_settings = settings
+        # If media is already open in the analysis workspace, validate using the
+        # real preview session and retain it. A disposable probe would load the
+        # same weights a second time immediately afterwards.
+        warm_preview = None
+        if (settings.get('guidance_mode') and self.video
+                and getattr(self, '_guidance_context', False)
+                and not (self._video_color_info or {}).get('is_hdr')):
+            warm_preview = (self.video, self._frame,
+                            self._image_bgr.copy() if self._is_image else None,
+                            self._collect_settings(), self._guidance_preview_epoch)
         # The requested mode is not active (or persisted) until the worker has
         # loaded the selected weights and successfully processed a frame pair.
         if settings.get('guidance_mode'):
@@ -4115,6 +4139,8 @@ class App(PreviewComparison, GuidanceExportUI):
         self._update_action_labels()
         self._update_queue_action_states()
         self.set_status(tr('guidance.checking' if settings.get('guidance_mode') else 'guidance.switching'))
+        if self.video and hasattr(self, 'canvas'):
+            self._draw_work_status(tr('guidance.switching'))
         previous = self._play_dlss_thread
         result = queue.SimpleQueue()
 
@@ -4126,10 +4152,15 @@ class App(PreviewComparison, GuidanceExportUI):
                     previous.join()
                 self._close_live()
                 if settings.get('guidance_mode'):
+                    if warm_preview is not None:
+                        result.put(self._warm_guidance_preview(warm_preview))
+                        return
                     info = guidance_client.preflight(settings, require_shared_cache=True)
                     result.put({'info': info})
                     return
             except Exception as exc:
+                if warm_preview is not None:
+                    self._close_live()
                 result.put(str(exc))
             else:
                 result.put(None)
@@ -4143,6 +4174,27 @@ class App(PreviewComparison, GuidanceExportUI):
             result.put(str(exc))
         self._poll_module_reload(result)
 
+    def _warm_guidance_preview(self, request):
+        from dlss5tool.preview_comparison import guidance_input_pair
+        source, frame, still, settings, epoch = request
+        current, previous = guidance_input_pair(source, frame, still, settings)
+        # First/reset frames have no motion. Still exercise temporal kernels so
+        # activation retains the same two-frame guarantee as the small probe.
+        with self._live_lock:
+            live = self._ensure_live(current.shape[1], current.shape[0], settings=settings)
+            if live is None:
+                raise RuntimeError(self._live_error)
+            if previous is None:
+                live.guidance_preview(current, np.roll(current, 1, axis=1))
+            images, reset = live.guidance_preview(current, previous)
+            info = live.guidance_info
+            if info.get('cache_version') != 'raw_lru_v2_shared':
+                raise RuntimeError(tr('guidance.cache_unavailable'))
+            images['_metrics'] = dict(live.guidance_metrics)
+            self._last_dlss_frame = -1
+        return {'info': info, 'preview': (source, frame, epoch,
+                cv2.cvtColor(current, cv2.COLOR_RGBA2BGR), images, reset)}
+
     def _poll_module_reload(self, result):
         self._module_reload_after = None
         try:
@@ -4155,17 +4207,33 @@ class App(PreviewComparison, GuidanceExportUI):
         self._module_reload_thread = None
         pending = getattr(self, '_module_pending_settings', None)
         self._module_pending_settings = None
+        warmed = None
         if isinstance(error, dict):
+            warmed = error.get('preview')
             self._guidance_preflight_info = error['info']
+            if error['info'].get('flow_fallback_reason'):
+                pending['guidance_flow_backend'] = 'raft'
+                self._host_settings['v_flow_backend'].set(tr('guidance.option.raft'))
+                self.logln(tr('guidance.flow_fallback', reason=error['info']['flow_fallback_reason']))
             self._guidance_edit_mode = 0
             self._host_settings['v_guidance'].set(tr('guidance.mode.' + str(pending['guidance_mode'])))
             error = None
         elif error is not None and pending and pending.get('guidance_mode'):
             self._guidance_preflight_error = tr('guidance.check_failed', error=error)
             self._guidance_edit_mode = pending['guidance_mode']
+        self._module_reload_error = str(error) if error is not None else ''
         # A retiring worker may have entered _ensure_live after the initial
         # invalidation. It is now gone: invalidate any last queued notification.
         self._guidance_generation += 1
+        if warmed is not None:
+            source, frame, epoch, original, images, reset = warmed
+            if (source == self.video and frame == self._frame
+                    and epoch == self._guidance_preview_epoch and self._guidance_context):
+                self._guidance_result = (self._guidance_preview_key(), original, images, reset, '')
+            self._last_guidance_info = self._guidance_preflight_info
+            if self._live is not None:
+                generation = self._guidance_generation
+                self._live._on_guidance_ready = lambda info: self._guidance_started(info, generation)
         previous = self._play_dlss_thread
         if previous is None or not previous.is_alive():
             self._play_dlss_thread = None
@@ -4181,8 +4249,10 @@ class App(PreviewComparison, GuidanceExportUI):
             return
         if error is not None:
             self._last_module_settings = None  # allow an explicit retry
-            self.set_status(tr('guidance.switch_failed', error=error))
+            self.set_status(tr('guidance.status.failed'))
             self.logln(tr('guidance.switch_failed', error=error))
+            if hasattr(self, 'canvas'):
+                self._draw_work_status(tr('guidance.status.failed'))
             if pending and pending.get('guidance_mode'):
                 # Failed activation leaves base rendering available. Preserve
                 # attempted parameters so the user can fix paths and retry.
@@ -4207,7 +4277,7 @@ class App(PreviewComparison, GuidanceExportUI):
         def option(name, choices, default):
             current = value(name, default)
             return next((choice for choice in choices if current in (choice, tr('guidance.option.' + choice))), default)
-        mode = next((i for i in range(4) if value('v_guidance', '') == tr('guidance.mode.' + str(i))), 0)
+        mode = public_mode(next((i for i in range(4) if value('v_guidance', '') == tr('guidance.mode.' + str(i))), 0))
         runtime = value('v_runtime', '')
         paths = {key: (variable.get().strip() if variable.get().strip() != self._module_path_defaults[key] else '')
                  for key, variable in d.get('path_vars', {}).items()}
@@ -4224,6 +4294,9 @@ class App(PreviewComparison, GuidanceExportUI):
             **analysis,
             'dlss_runtime': '' if runtime == tr('mods.auto') else ('__bundled__' if runtime == tr('mods.bundled') else runtime),
             'guidance_mode': mode,
+            'guidance_flow_backend': option('v_flow_backend', ('raft', 'nvofa'), 'raft'),
+            'guidance_flow_grid': next((n for n in (4, 2, 1)
+                                        if value('v_flow_grid', '') == tr('guidance.option.grid_' + str(n))), 4),
             'guidance_edge': edge,
             'guidance_flow_direction': option('v_flow_direction', ('backward', 'forward_negated'), 'backward'),
             'guidance_depth_encoder': option('v_depth_encoder', ('auto', 'vits', 'vitb', 'vitl'), 'auto'),
@@ -4247,7 +4320,7 @@ class App(PreviewComparison, GuidanceExportUI):
             custom = bool(host.get('mods_directory'))
             d['w_mod_setup_hint'].config(text=tr('mods.custom_hint' if custom else 'mods.setup_hint'))
         # File-presence summary only. It never imports torch or starts inference.
-        candidates = mod_paths.guidance_candidates({**host, 'guidance_mode': 3})
+        candidates = mod_paths.guidance_candidates({**host, 'guidance_mode': 3 if depth_enabled() else 1})
         present = {key: os.path.isfile(path) for key, path in candidates.items()}
         component_error = ''
         try:
@@ -4260,7 +4333,7 @@ class App(PreviewComparison, GuidanceExportUI):
         summary = {
             'runtime': tr('mods.runtime.' + ('bundled' if runtime['source'] == 'bundled' else 'external')) if os.path.isfile(runtime['path']) else missing,
             'component': found if present['worker'] else (tr('mods.incompatible') if os.path.isfile(candidates['worker']) else missing),
-            'flow': found if present.get('flow_weights') else missing,
+            'flow': tr('guidance.no_flow_weights') if host.get('guidance_flow_backend') == 'nvofa' else found if present.get('flow_weights') else missing,
             'depth': found if present.get('depth_weights') else missing,
         }
         for key, label in d.get('module_summaries', {}).items():
@@ -4270,7 +4343,7 @@ class App(PreviewComparison, GuidanceExportUI):
                     summary[key] = tr('mods.build.' + build)
             label.config(text=summary[key])
         mode = host['guidance_mode']
-        required = ['worker'] + (['flow_weights'] if mode in (1, 3) else []) + (['depth_weights'] if mode in (2, 3) else [])
+        required = ['worker'] + (['flow_weights'] if mode in (1, 3) and host.get('guidance_flow_backend', 'raft') == 'raft' else []) + (['depth_weights'] if mode in (2, 3) else [])
         missing_required = [key for key in required if not present[key]] if mode else []
         status = tr('mods.status.off') if not mode else (tr('mods.status.missing') if missing_required else tr('mods.status.ready'))
         if runtime['ambiguous']:
@@ -4284,8 +4357,22 @@ class App(PreviewComparison, GuidanceExportUI):
         elif getattr(self, '_guidance_preflight_error', ''):
             status = self._guidance_preflight_error
         elif mode and getattr(self, '_guidance_preflight_info', None):
-            status = tr('guidance.checked')
-        d['w_guidance_status'].config(text=status)
+            reason = self._guidance_preflight_info.get('flow_fallback_reason')
+            status = tr('guidance.flow_fallback', reason=reason) if reason else tr('guidance.checked')
+        if getattr(self, '_module_reload_error', ''):
+            status = self._module_reload_error
+        # Keep the page geometry stable; detailed errors belong in Details.
+        short_status = tr('guidance.status.off')
+        if pending:
+            short_status = tr('guidance.status.loading')
+        elif getattr(self, '_guidance_preflight_error', '') or getattr(self, '_module_reload_error', ''):
+            short_status = tr('guidance.status.failed')
+        elif mode:
+            short_status = tr('guidance.status.checked' if getattr(self, '_guidance_preflight_info', None)
+                              else 'guidance.status.unchecked')
+        d['w_guidance_status'].config(text=short_status)
+        if 'guidance_status_tooltip' in d:
+            d['guidance_status_tooltip'].text = status
         lines = [tr('mods.paths_hint'), '', tr('mods.detected_runtime', path=runtime['path'])]
         if component_error:
             lines.append(component_error)
@@ -4295,7 +4382,7 @@ class App(PreviewComparison, GuidanceExportUI):
             lines.append(tr('mods.path_fallback'))
         for key, path in candidates.items():
             lines.append(tr('mods.file_detail', label=tr('mods.file.' + key), status=found if present[key] else missing, path=path))
-        lines.extend(['', tr('guidance.off_hint') if not mode else tr('guidance.ready_hint')])
+        lines.extend(['', status, tr('guidance.off_hint') if not mode else tr('guidance.ready_hint')])
         self._module_details_text = '\n'.join(lines)
 
     def _update_host_control_states(self):
@@ -4314,7 +4401,7 @@ class App(PreviewComparison, GuidanceExportUI):
             mode = host['guidance_mode'] or getattr(self, '_guidance_edit_mode', 0)
             enabled = {
                 'mode': True, 'device': bool(mode), 'edge': bool(mode),
-                'flow': mode in (1, 3), 'depth': mode in (2, 3),
+                'flow': mode in (1, 3), 'flow_backend': True, 'depth': mode in (2, 3),
                 'profile': mode in (2, 3), 'execution': mode == 3,
                 'palette': mode in (2, 3), 'invert': mode in (2, 3),
             }
@@ -4323,8 +4410,16 @@ class App(PreviewComparison, GuidanceExportUI):
                     enabled[key] = mode in (1, 3)
                 elif key.startswith('guidance_depth_'):
                     enabled[key] = mode in (2, 3)
+                if key == 'guidance_flow_updates' and host.get('guidance_flow_backend') == 'nvofa':
+                    enabled[key] = False
+                if key == 'flow_grid':
+                    enabled[key] = mode in (1, 3) and host.get('guidance_flow_backend') == 'nvofa'
                 state = 'readonly' if isinstance(widget, ChromeCombobox) else 'normal'
                 widget.config(state=state if enabled[key] and not busy else 'disabled')
+            from dlss5tool.guidance_settings_ui import sync_flow_backend_controls
+            sync_flow_backend_controls(self)
+            if hasattr(self, '_guidance_canvas'):
+                self.root.after_idle(self._sync_guidance_scrollregion)
             self._update_module_summary(host)
             self._update_guidance_export_controls()
         if self._exporting or self._queue_running or self._switching_backend or self._diagnosing:
@@ -5297,7 +5392,12 @@ class App(PreviewComparison, GuidanceExportUI):
             return
         if self._hold_original:
             view = "original"
-        fast = quality == "fast" and view in ("dlss", "compare") and self._cached_dlss(frame) is None
+        missing = view in ("dlss", "compare") and self._cached_dlss(frame) is None
+        # Full-resolution still images must use the same asynchronous queue as
+        # videos. Never start an IPC/GPU wait while painting the Tk canvas.
+        fast = missing and (quality == "fast" or self._is_image)
+        if missing and self._is_image and quality != "fast" and not self._pre_rendering:
+            self._schedule_full_preview()
         self._dlss_pending = bool(fast)
         if view == "compare":
             self._draw_split(frame, cw, ch, fast=fast)
@@ -5425,6 +5525,26 @@ class App(PreviewComparison, GuidanceExportUI):
             cw - 10, y, text="DLSS…", fill=self._ui_color("muted", "#aaaaaa"), anchor="se",
             font=ui_theme.UI_FONT_SMALL,
         )
+
+    def _draw_work_status(self, text):
+        """A fixed overlay, independent of the layout and bottom status bar."""
+        self.canvas.delete('work_status')
+        if not text:
+            return
+        cw, ch = self._canvas_size()
+        item = self.canvas.create_text(
+            cw - 16, ch - 16, text=text, anchor='se', width=max(100, cw - 48),
+            fill=self._ui_color('text', '#eeeeee'), font=ui_theme.UI_FONT_SMALL,
+            tags='work_status',
+        )
+        bounds = self.canvas.bbox(item)
+        if bounds:
+            x0, y0, x1, y1 = bounds
+            background = self.canvas.create_rectangle(
+                x0 - 8, y0 - 5, x1 + 8, y1 + 5,
+                fill=self._ui_color('panel', '#161d24'), outline='', tags='work_status',
+            )
+            self.canvas.tag_lower(background, item)
 
     def _draw_fit(self, img, cw, ch, badge=None):
         self._last_viewport_image = img if abs(self._preview_zoom - 1.0) > 1e-6 else None
@@ -6045,7 +6165,7 @@ class App(PreviewComparison, GuidanceExportUI):
         wants_dlss = self.view_var.get() in ("dlss", "compare") and not self._hold_original
         precise_size = self._precise_preview_size()
         if (
-            wants_dlss and not self._is_image
+            wants_dlss
             and self._cached_dlss(self._frame, precise_size) is None
         ):
             # Exact paused previews used to run synchronously here and could lock
@@ -6056,7 +6176,7 @@ class App(PreviewComparison, GuidanceExportUI):
                 self._update_preview_timeline_and_status(force=True)
             return
         self._display_precise_preview()
-        if self._start_paused_prerender():
+        if not self._is_image and self._start_paused_prerender():
             self._update_preview_timeline_and_status(force=True)
 
     def _display_precise_preview(self):
@@ -6400,7 +6520,8 @@ class App(PreviewComparison, GuidanceExportUI):
         if not self._preview_tab_selected() or self._input_widget_focused() or self._exporting:
             return None
         if self._guidance_context:
-            self.preview_selector.set({'dlss': 'depth'}.get(view, view))
+            from dlss5tool.guidance_public import public_targets
+            self.preview_selector.set({'dlss': public_targets()[0]}.get(view, view))
             self._on_preview_selection()
             return 'break'
         if self.view_var.get() != view:
@@ -6601,7 +6722,7 @@ class App(PreviewComparison, GuidanceExportUI):
             (self.playing or self._pre_rendering)
             and getattr(self, '_module_reload_thread', None) is None
             and not getattr(self, "_preview_cache_frozen", False)
-            and self.video and not self._exporting and not self._is_image
+            and self.video and not self._exporting
             and self.view_var.get() in ("dlss", "compare")
         )
 
@@ -6664,6 +6785,11 @@ class App(PreviewComparison, GuidanceExportUI):
         if not self.video:
             self._close_live()
             return
+        if getattr(self, '_guidance_context', False):
+            self.display_view()
+            return
+        if hasattr(self, 'canvas'):
+            self._draw_work_status('')
         if self.playing:
             if (
                 self.view_var.get() in ("dlss", "compare")
@@ -6685,7 +6811,7 @@ class App(PreviewComparison, GuidanceExportUI):
     def _start_paused_prerender(self, target_size=None):
         if (
             getattr(self, "_preview_cache_frozen", False)
-            or self.playing or not self.video or self._exporting or self._is_image
+            or self.playing or not self.video or self._exporting
         ):
             return False
         if self.view_var.get() not in ("dlss", "compare") or self._hold_original:
@@ -6742,6 +6868,8 @@ class App(PreviewComparison, GuidanceExportUI):
 
     def _preview_decode_tick(self):
         self._preview_decode_after = None
+        if self._handle_preview_worker_error():
+            return
         if not self._preview_session_active():
             return
         # Presentation must precede every early return in the fill-ahead loop,
@@ -6899,16 +7027,28 @@ class App(PreviewComparison, GuidanceExportUI):
                 return True
         return False
 
+    def _handle_preview_worker_error(self):
+        error = getattr(self, '_preview_worker_error', None)
+        if not error:
+            return False
+        self._preview_worker_error = None
+        self.pause()
+        self._freeze_preview_cache(resume_ms=None)
+        self._dlss_pending = False
+        self.logln('[预览] DLSS 缓存失败: ' + str(error))
+        self.set_status(tr('status.preview_failed'))
+        if hasattr(self, 'canvas'):
+            self._draw_work_status(tr('status.preview_failed'))
+        return True
+
     def _play_tick(self):
         if not self.playing:
             return
         if getattr(self, '_guidance_context', False) and self._guidance_view != 'original':
             self._guidance_play_tick()
             return
-        worker_error = self._preview_worker_error
-        if worker_error:
-            self._preview_worker_error = None
-            self.logln("[预览] DLSS 缓存失败: " + str(worker_error))
+        if self._handle_preview_worker_error():
+            return
         if self._hold_original and not _alt_is_down():
             self._set_hold_original(False)
             try:
@@ -7137,7 +7277,9 @@ class App(PreviewComparison, GuidanceExportUI):
                     break
                 if live is None:
                     with self._live_lock:
-                        live = self._ensure_live(target_w, target_h, settings)
+                        live_settings = (_large_image_host_settings(target_w, target_h, settings)
+                                         if getattr(self, '_source_kind', None) == 'image' else settings)
+                        live = self._ensure_live(target_w, target_h, live_settings)
                         if live is None:
                             raise RuntimeError(getattr(self, "_live_error", "DLSS 主机不可用"))
                 if stop.is_set() or gen != self._prefetch_gen:
@@ -7952,7 +8094,7 @@ class App(PreviewComparison, GuidanceExportUI):
             self.set_status(tr("status.export_failed_log"))
             if notify:
                 guidance = _dlss_runtime_guidance(error_message)
-                if guidance:
+                if guidance and _is_dlss_runtime_unsupported(error_message):
                     if messagebox.askyesno(
                         tr("dialog.dlss_runtime_unsupported"),
                         guidance + tr("message.open_releases_prompt"),
@@ -7961,7 +8103,7 @@ class App(PreviewComparison, GuidanceExportUI):
                         self._open_release_page(updater.RELEASES_URL)
                 else:
                     messagebox.showerror(
-                        tr("dialog.export_failed"), tr("message.export_incomplete")
+                        tr("dialog.export_failed"), guidance or tr("message.export_incomplete")
                     )
 
     @staticmethod

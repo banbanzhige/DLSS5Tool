@@ -260,6 +260,24 @@ def _probe_hints(probe):
         hints.append("运行时加载失败；检查实际替换路径、文件完整性和安全软件。")
     if "missing runtime exports" in combined:
         hints.append("DLL 缺少必需导出，可能拿错或损坏。")
+    if re.search(r"0xBAD00002\b", combined, re.I):
+        hints.append(
+            "NGX 返回 0xBAD00002（PlatformError）：底层图形 API、系统或依赖发生错误；"
+            "它不等于 FeatureNotSupported，也不能单凭此码判定显存不足。"
+        )
+        if re.search(r"CreateFeature\(18\).*0xBAD00002\b", combined, re.I):
+            hints.append("失败阶段：创建 Feature 18，尚未处理输入图像；更换图片不能验证或解决该初始化错误。")
+        hints.append(
+            "请保留完整报告中的显卡/驱动、实际 DLL 路径、版本与 SHA256，以及 v2/legacy 各自的日志。"
+            "先核对完整解压的可信安装包、运行库选择和 NVIDIA 驱动；不要据此安装光流组件或盲目替换 DLL。"
+        )
+    for code, name, advice in (
+        ('0xBAD0000C', 'OutOfDate', '驱动或功能运行库版本过旧，请核对两者版本。'),
+        ('0xBAD0000D', 'OutOfGPUMemory', 'GPU 显存不足，请关闭其它 GPU 任务并降低处理分辨率。'),
+        ('0xBAD0000F', 'UnableToWriteToAppDataPath', 'NGX 数据目录不可写，请核对目录权限。'),
+    ):
+        if re.search(code + r'\b', combined, re.I):
+            hints.append(f'NGX 返回 {code}（{name}）：{advice}')
     if "caller/static initialization failed" in combined:
         hints.append("NGX 静态初始化或调用者检查失败；核对驱动、GPU 与 DLL 代际。")
     if re.search(r"0xBAD00001", combined, re.I):

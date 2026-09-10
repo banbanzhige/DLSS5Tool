@@ -15,7 +15,7 @@
 </p>
 
 <p align="center">
-  <a href="CHANGELOG.md"><img src="https://img.shields.io/badge/release-v2.1.1-0E7490?style=flat&amp;labelColor=475569" alt="当前文档版本 v2.1.1" height="20"></a>
+  <a href="CHANGELOG.md"><img src="https://img.shields.io/badge/release-v2.1.2-0E7490?style=flat&amp;labelColor=475569" alt="源码版本 v2.1.2" height="20"></a>
   <a href="#快速开始"><img src="https://img.shields.io/badge/platform-Windows_x64-0369A1?style=flat&amp;labelColor=475569" alt="平台 Windows x64" height="20"></a>
   <a href="#2-选择显卡运行库"><img src="https://img.shields.io/badge/GPU-NVIDIA_RTX-0E7490?style=flat&amp;labelColor=475569" alt="显卡 NVIDIA RTX；请按代际选择运行库" height="20"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-0369A1?style=flat&amp;labelColor=475569" alt="项目自有源码采用 MIT 许可证" height="20"></a>
@@ -47,24 +47,6 @@
   </tr>
 </table>
 
-### 深度 / 光流反推对比
-
-从视频画面估算场景远近与帧间运动，为神经渲染补充空间和时序参考，减少增强过程中出现的黑斑、闪烁与异常黑影，单图片似乎对深度没参考和反应，我后续更多测试后再看看情况
-
-<table>
-  <tr>
-    <th width="50%">开启深度反推</th>
-    <th width="50%">开启光流反推</th>
-  </tr>
-  <tr>
-    <td align="center">   <a href="img/04.png"><img src="img/04.png" alt="深度处理对比" width="100%"></a>
-    </td>
-    <td align="center"> <a href="img/05.png"><img src="img/05.png" alt="光流处理对比" width="100%"></a>
-    </td>
-  </tr>
-</table>
-
-
 ## 功能概览
 
 DLSS5Tool 使用 **DLSS 5 Neural Rendering** 增强本地视频与图片，无需接入游戏引擎或自行提供材质、法线、深度数据。这是面向已有素材的画面后处理工具，不是游戏插件，也不提供插帧。
@@ -74,9 +56,11 @@ DLSS5Tool 使用 **DLSS 5 Neural Rendering** 增强本地视频与图片，无�
 - **交互对比**：滑动分界、左右并排、缩放与逐帧查看，支持全屏和独立预览窗口。
 - **批量导出**：图片与视频混合排队，每项独立保存参数；视频支持 MP4 / MKV / MOV，兼容的原音轨优先保留。
 - **HDR 视频**：支持 HDR10 / HLG 高精度处理与 10-bit 导出，使用前请查看下方 HDR 注意事项。
-- **深度 / 光流反推（可选）**：从视频估算场景深度与帧间运动，借鉴游戏渲染利用深度和运动信息的思路，为增强补充引导，尝试减少黑斑、闪烁和异常黑影，让连续画面更稳定。这是对缺失信息的估计，并非完整还原游戏引擎数据，改善程度因素材而异。
+- **光流引导（可选）**：估计帧间运动，为连续画面增强提供时序参考。效果因素材而异；现阶段深度参考失效，相关推理暂时下线。
 
 界面支持简体中文 / English、浅色 / 暗色主题。通过「更多 → 语言」切换语言，重启后生效。
+
+当前源码版本为 **v2.1.2，发行包尚未上传**：深度暂时下线；光流后端可选 RAFT 或 NVOFA，默认仍 RAFT。开发入口为根目录 `run.bat`。下方下载入口指向已发布版本，不代表本版已经上传。
 
 ## 快速开始
 
@@ -89,13 +73,12 @@ DLSS5Tool 使用 **DLSS 5 Neural Rendering** 增强本地视频与图片，无�
 | 你的需求 | 选择哪个包 |
 | --- | --- |
 | 普通增强、2× / 4× 超分 | **轻量版（推荐）**：`DLSS5Tool-v版本号-win64.zip` |
-| 还需要深度 / 光流模型 | **完整版**：`DLSS5Tool-v版本号-win64-full.zip.001` 起的所有分卷 |
+| 还需要光流模型 | **完整版**：`DLSS5Tool-v版本号-win64-full.zip.001` 起的所有分卷 |
 | 已有轻量版，只补充模型功能 | **推理附加包**：`DLSS5Tool-v版本号-win64-addon.zip.001` 起的所有分卷 |
 
 - 完整版已包含附加包，不必重复下载。分卷请下载同一版本的全部文件，放在同一目录，用 7-Zip 打开 `.001` 解压。
 - 附加包请在关闭程序后解压到 `DLSS5Tool.exe` 所在目录，不要套成 `mods/mods`。
 - **完整解压到可写目录后再运行**，保持 `DLSS5Tool.exe` 与 `_internal` 目录在一起。无需另装 Python 或 FFmpeg。
-- 完整版与附加包包含具有**非商业使用限制**的深度模型，详见[许可证](#许可证)。
 
 ### 2. 选择显卡运行库
 
@@ -124,8 +107,8 @@ mods\nvngx_dlssnr.dll
 
 ## 使用须知
 
-- **效果与速度因素材和硬件而异**：交互对比不代表模型能实时处理。高分辨率、4× 超分和深度 / 光流会增加耗时及显存占用。
-- **深度 / 光流按需开启**：安装完整版或附加包后，在「推理模型」中选择模式，环境检查通过后启用；每次启动默认关闭。目前只支持 SDR、非分块处理，单张图片没有帧间光流。
+- **效果与速度因素材和硬件而异**：交互对比不代表模型能实时处理。高分辨率、4× 超分和光流会增加耗时及显存占用。
+- **光流按需开启**：安装完整版或附加包后，在「推理模型」中选择模式，环境检查通过后启用；每次启动默认关闭。目前只支持 SDR、非分块处理，单张图片没有帧间光流。
 - **HDR 并非完整元数据透传**：界面预览会映射为 SDR；导出保留基础 HDR10 / HLG 色彩标签，不保留 Dolby Vision / HDR10+ 动态元数据及部分源 HDR 元数据。暂不支持静态 HDR 图片，详见[输出与画质说明](docs/USER_GUIDE.md#输出与画质说明)。
 
 ## 常见问题
@@ -136,7 +119,7 @@ mods\nvngx_dlssnr.dll
 
 **预览卡顿，或高倍率超分失败？**
 
-先降低播放质量，尝试较小素材或 2× 超分，并暂时关闭可选深度 / 光流。增大缓存不能加快尚未计算的首遍处理。
+先降低播放质量，尝试较小素材或 2× 超分，并暂时关闭可选光流。增大缓存不能加快尚未计算的首遍处理。
 
 **如何更新？**
 
@@ -155,4 +138,4 @@ mods\nvngx_dlssnr.dll
 
 ## 许可证
 
-项目自有源码按 [MIT License](LICENSE) 发布。免安装版附带的 `nvngx_dlssnr.dll`、NVIDIA SDK、FFmpeg 和 Python 依赖仍受各自上游许可约束，不属于本仓库 MIT 授权范围。完整版与附加包中的 Depth Anything V2 Large 权重为 **CC-BY-NC-4.0**，仅供非商业使用。详见 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) 及包内 `mods/enhancement/licenses`。
+项目自有源码按 [MIT License](LICENSE) 发布。免安装版附带的 `nvngx_dlssnr.dll`、NVIDIA SDK、FFmpeg 和 Python 依赖仍受各自上游许可约束，不属于本仓库 MIT 授权范围。本候选的完整/附加包策略仅附 RAFT 权重，不附深度权重。详见 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) 及包内 `mods/enhancement/licenses`。

@@ -15,7 +15,7 @@ datas = []
 for package in ('torch', 'torchvision', 'numpy', 'opencv-python', 'einops'):
     datas += copy_metadata(package)
 a = Analysis([str(root / 'dlss5tool/guidance_worker.py')], pathex=[str(root), str(depth_source)],
-             binaries=[], datas=datas, hiddenimports=['depth_anything_v2.dpt'],
+             binaries=[], datas=datas, hiddenimports=['depth_anything_v2.dpt', 'dlss5tool.nvofa'],
              excludes=['tkinter', 'pytest', 'matplotlib', 'IPython', 'tensorboard'],
              noarchive=False)
 a.binaries = [entry for entry in a.binaries if Path(entry[0]).name.lower() != 'ucrtbase.dll']

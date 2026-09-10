@@ -3,6 +3,7 @@ from pathlib import Path
 import tempfile
 import threading
 import unittest
+from tests.depth_fixture import depth_test_case
 
 import cv2
 import numpy as np
@@ -27,6 +28,7 @@ class FakeSession:
         self.closed = True
 
 
+@depth_test_case
 class GuidanceExportTests(unittest.TestCase):
     def setUp(self):
         self.temporary = tempfile.TemporaryDirectory()

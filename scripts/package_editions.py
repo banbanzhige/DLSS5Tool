@@ -21,7 +21,17 @@ from dlss5tool.app_version import APP_VERSION
 from scripts.check_release_contents import forbidden_contents
 
 WORKER_SHA = 'ae3d29343f669f8d0741e8fe4673afe3bf49ace9135feacfa1f11e6d8d545732'
-MODELS = ('raft_large_C_T_SKHT_V2-ff5fadd5.pth', 'depth_anything_v2_vitl.pth')
+MODELS = ('raft_large_C_T_SKHT_V2-ff5fadd5.pth',)
+
+
+def release_notes_path():
+    return ROOT / 'docs/release' / f'RELEASE_NOTES_{APP_VERSION}.md'
+
+
+def validate_flow_inventory(manifest):
+    leaked = [name for name in manifest if Path(name).match('depth_anything_v2_*.pth')]
+    if leaked:
+        raise ValueError(f'Depth weights leaked into public edition: {leaked}')
 
 
 def portable_update_name(version=APP_VERSION):
@@ -42,12 +52,13 @@ def sha(path):
         return hashlib.file_digest(handle, 'sha256').hexdigest()
 
 
-def copy_tree(source, target):
+def copy_tree(source, target, *, flow_only=False):
     # Do not follow symlinks/reparse points into an unrelated user directory.
     for path in source.rglob('*'):
         if path.is_symlink() or (hasattr(path, 'is_junction') and path.is_junction()):
             raise ValueError(f'Refusing link in package input: {path}')
-    shutil.copytree(source, target, dirs_exist_ok=True)
+    shutil.copytree(source, target, dirs_exist_ok=True,
+                    ignore=shutil.ignore_patterns('depth_anything_v2_*.pth') if flow_only else None)
 
 
 def inventory(directory):
@@ -116,9 +127,11 @@ def main():
     for name in MODELS:
         if not (model_dir / name).is_file():
             raise FileNotFoundError(name)
-    for name in ('DepthAnythingV2-CODE-LICENSE.txt', 'DepthAnythingV2-Large-CC-BY-NC-4.0.txt'):
+    for name in ('DepthAnythingV2-CODE-LICENSE.txt',):
         if not (license_dir / name).is_file() or (license_dir / name).stat().st_size < 1000:
             raise ValueError(f'Missing original license: {name}')
+    if not release_notes_path().is_file():
+        raise FileNotFoundError(release_notes_path())
     output.mkdir(parents=True)
     folders = {name: output / f'DLSS5Tool-{APP_VERSION}-win64-{name}' for name in ('lite', 'addon', 'full')}
     print('Staging lite edition...', flush=True)
@@ -127,7 +140,7 @@ def main():
     notice = ('发行前须知 / Distribution review\n\n'
               '此包已完成本机功能验证，不等于所有显卡、干净环境或第三方分发许可审核通过。\n'
               'NVIDIA DLSS/RTX Video、CUDA/cuDNN、FFmpeg及各依赖仍受各自上游条款约束。\n'
-              'Model editions include Depth Anything V2 Large under CC-BY-NC-4.0; noncommercial terms apply.\n'
+              'Model editions include RAFT-Large only; no Depth Anything V2 weights.\n'
               'The publisher must review redistribution, notices and any source-offer obligations before public release.\n'
               'No files are uploaded or published by this build.\n')
     (folders['lite'] / 'DISTRIBUTION-REVIEW.txt').write_text(notice, encoding='utf-8')
@@ -137,7 +150,8 @@ def main():
     print('Staging complete add-on (no dependency pruning)...', flush=True)
     mods = folders['addon'] / 'mods'
     mods.mkdir(parents=True)
-    copy_tree(component, mods / 'enhancement')
+    copy_tree(component, mods / 'enhancement', flow_only=True)
+    shutil.copy2(ROOT / 'mods/README.md', mods / 'enhancement/README.md')
     shutil.copy2(ROOT / 'mods/README.md', mods / 'README.md')
     weights = mods / 'models'
     weights.mkdir()
@@ -162,19 +176,19 @@ def main():
                 dest.parent.mkdir(parents=True, exist_ok=True)
                 shutil.copy2(path, dest)
     (mods / 'ADDON-INSTALL.txt').write_text(
-        f'DLSS5Tool {APP_VERSION} 深度/光流附加包\n\n'
+        f'DLSS5Tool {APP_VERSION} 光流附加包\n\n'
         '关闭程序，将本压缩包解压到DLSS5Tool.exe所在目录；mods应与EXE同级。不要解压到mods内部。\n'
-        '包含优化推理组件、完整依赖、RAFT-Large及Depth Anything V2 Large；无需系统Python或CUDA Toolkit。\n'
+        '包含优化推理组件、完整依赖及RAFT-Large；不附深度模型权重；无需系统Python或CUDA Toolkit。\n'
         '完整版本无需重复安装本包。启动后在推理模型页选择模式，检查通过才启用。\n'
         '不包含主程序、用户设置、队列或运行库替换文件。保留完整_internal目录。\n'
-        'Large权重仅供遵循CC-BY-NC-4.0的非商业使用；详情见enhancement/licenses。\n'
+        '模型来源和第三方许可详见enhancement/licenses。\n'
         'Close the app; extract beside DLSS5Tool.exe, not inside mods. Keep all files together.\n', encoding='utf-8')
     (notices / 'MODEL-NOTICES.md').write_text(
         '# Models and provenance\n\n'
         '- Depth Anything V2: Lihe Yang, Bingyi Kang, Zilong Huang, Zhen Zhao, Xiaogang Xu, Jiashi Feng, Hengshuang Zhao. '
         'Code: https://github.com/DepthAnything/Depth-Anything-V2 ; Large weights: '
         'https://huggingface.co/depth-anything/Depth-Anything-V2-Large . '
-        'Large weights are CC-BY-NC-4.0; see the included legal code. Weight bytes were not modified.\n'
+        'Architecture code remains in the component; depth weights are NOT included in this edition.\n'
         '- torchvision RAFT-Large: https://github.com/pytorch/vision/tree/v0.23.0 ; '
         'checkpoint: https://download.pytorch.org/models/raft_large_C_T_SKHT_V2-ff5fadd5.pth . '
         'Original torchvision BSD-3-Clause license is included. Weight bytes were not modified.\n'
@@ -191,6 +205,8 @@ def main():
     for name, folder in folders.items():
         manifests[name] = inventory(folder)
         (manifest_dir / f'{name}-files.json').write_text(json.dumps(manifests[name], indent=2), encoding='utf-8')
+    for name in ('full', 'addon'):
+        validate_flow_inventory(manifests[name])
     if manifests['full'] != {**manifests['lite'], **manifests['addon']}:
         raise RuntimeError('Full edition is not the exact lite + add-on overlay')
     if any(n.startswith(('mods/enhancement/', 'mods/models/')) or n.endswith('.pth') for n in manifests['lite']):
@@ -227,13 +243,13 @@ def main():
     (output / 'SHA256SUMS.txt').write_text('\n'.join(root_checks) + '\n', encoding='utf-8')
     report = {'version': APP_VERSION, 'built_at': time.strftime('%Y-%m-%d %H:%M:%S'),
               'component_sha256': WORKER_SHA, 'models': model_records, 'editions': records,
-              'full_equals_lite_plus_addon': True, 'license_review': 'Publisher review required; Large is CC-BY-NC-4.0',
+              'full_equals_lite_plus_addon': True, 'license_review': 'Publisher review required; RAFT weights only; depth architecture retained',
               'github_portable_asset': canonical, 'published': False}
     (output / 'package-report.json').write_text(json.dumps(report, indent=2), encoding='utf-8')
     shutil.copy2(output / 'package-report.json', assets / 'package-report.json')
     shutil.copy2(ROOT / 'scripts/Join-ReleaseArchive.ps1', assets / 'Join-ReleaseArchive.ps1')
-    shutil.copy2(ROOT / f'RELEASE_NOTES_{APP_VERSION}.md', output / f'RELEASE_NOTES_{APP_VERSION}.md')
-    shutil.copy2(ROOT / f'RELEASE_NOTES_{APP_VERSION}.md', assets / f'RELEASE_NOTES_{APP_VERSION}.md')
+    shutil.copy2(release_notes_path(), output / f'RELEASE_NOTES_{APP_VERSION}.md')
+    shutil.copy2(release_notes_path(), assets / f'RELEASE_NOTES_{APP_VERSION}.md')
     (assets / 'SHA256SUMS.txt').write_text('\n'.join(asset_checks) + '\n', encoding='utf-8')
     (assets / 'README-UPLOAD.txt').write_text(
         'GitHub Release upload set. Do not publish this folder automatically.\n\n'
@@ -241,7 +257,7 @@ def main():
         'Do not also upload *-lite.zip; it is the same bytes.\n'
         'Upload full/add-on as .zip.001 .002 .003 only. Unsplit archives exceed 2 GiB.\n'
         'Optional: 30系.zip, 50系.zip, Join-ReleaseArchive.ps1, SHA256SUMS.txt.\n'
-        'Large depth weights are CC-BY-NC-4.0; publisher must review before public upload.\n',
+        'No depth weights included; publisher must review third-party terms before public upload.\n',
         encoding='utf-8')
     print('DONE', output, flush=True)
 

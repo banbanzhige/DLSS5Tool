@@ -82,9 +82,16 @@ def main():
     rgba = np.empty((128, 128, 4), np.uint8)
     rgba[..., :3] = np.arange(128, dtype=np.uint8)[None, :, None]
     rgba[..., 3] = 255
-    for mode in (1, 2, 3):
+    from dlss5tool.guidance_public import public_mode
+    for requested_mode in (1, 2, 3):
+        mode = public_mode(requested_mode)
         settings = {**app_settings.DEFAULTS, 'mods_directory': str(upgrade / 'mods'),
                     'guidance_mode': mode, 'guidance_cache_mb': 0}
+        if mode == 0:
+            if guidance_client.preflight(settings):
+                raise RuntimeError('Retired depth-only mode must remain off')
+            records['addon_modes'].append({'requested_mode': requested_mode, 'mode': 0})
+            continue
         files = guidance_client.validate(settings)
         for key in ('worker', 'flow_weights', 'depth_weights'):
             if key in files and not Path(files[key]).resolve().is_relative_to(upgrade):

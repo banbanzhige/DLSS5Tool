@@ -48,6 +48,7 @@ def main():
     component = output / 'mods/enhancement'
     (component / 'enhancement.json').write_text(json.dumps({
         'id': 'dlss5-guidance', 'protocol': 1,
+        'flow_backends': ['raft', 'nvofa'],
         'architectures': ['raft_large', 'depth_anything_v2'],
         'build': 'cuda' if torch.version.cuda else 'cpu',
         'cuda': torch.version.cuda, 'dependencies': versions,
@@ -58,6 +59,9 @@ def main():
     licenses.mkdir()
     shutil.copy2(args.depth_license, licenses / 'DepthAnythingV2-LICENSE.txt')
     shutil.copy2(ROOT / 'LICENSE', licenses / 'DLSS5Tool-LICENSE.txt')
+    shutil.copy2(ROOT / 'licenses/NVIDIA-Optical-Flow-Headers-LICENSE.txt', licenses / 'NVIDIA-Optical-Flow-Headers-LICENSE.txt')
+    if any(path.name.lower() == 'nvofapi64.dll' for path in component.rglob('*.dll')):
+        raise RuntimeError('Driver nvofapi64.dll must not be redistributed')
     shutil.copy2(ROOT / 'mods/README.md', component / 'README.md')
     shutil.copy2(ROOT / 'mods/README.md', output / 'mods/README.md')
     if args.weights_notice:

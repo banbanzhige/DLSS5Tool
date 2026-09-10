@@ -191,6 +191,7 @@ class _HostSession:
     """One child process plus its fixed-resolution shared frame buffers."""
 
     def __init__(self, width, height, settings, live_factory=None):
+        settings = guidance_client.normalize_public_settings(settings)
         # Fail incompatible guidance before allocating two full-resolution frames
         # or spawning NGX. Keep injected test hosts independent of model files.
         if live_factory is None:
@@ -390,7 +391,7 @@ class ProcessLive:
         self._notified_guidance_session = None
         self._w = int(width)
         self._h = int(height)
-        self.settings = dict(settings or {})
+        self.settings = guidance_client.normalize_public_settings(settings)
         self.preference = str(self.settings.get("host_backend", "auto"))
         self._live_factory = _live_factory
         self._session = self._start_session(self._w, self._h, self.settings)
@@ -449,7 +450,7 @@ class ProcessLive:
         previous = self._session
         self._session = replacement
         self._w, self._h = int(width), int(height)
-        self.settings = dict(settings)
+        self.settings = guidance_client.normalize_public_settings(settings)
         self.preference = str(self.settings.get("host_backend", "auto"))
         self._sync_metadata()
         previous.close()
@@ -457,6 +458,7 @@ class ProcessLive:
     def update(self, settings):
         updated = dict(self.settings)
         updated.update(settings or {})
+        updated = guidance_client.normalize_public_settings(updated)
         new_preference = str(updated.get("host_backend", self.preference))
         if (
             self._requires_replacement(new_preference)
@@ -476,6 +478,7 @@ class ProcessLive:
     def resize(self, width, height, preset=None, settings=None):
         updated = dict(self.settings)
         updated.update(settings or {})
+        updated = guidance_client.normalize_public_settings(updated)
         if preset is not None:
             updated["preset"] = int(preset)
         self._replace(int(width), int(height), updated)

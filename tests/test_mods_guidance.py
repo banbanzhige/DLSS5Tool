@@ -2,6 +2,7 @@ from pathlib import Path
 import json
 import tempfile
 import unittest
+from tests.depth_fixture import depth_test_case
 from unittest import mock
 
 import numpy as np
@@ -13,6 +14,7 @@ from dlss5tool import mod_paths
 from dlss5tool import guidance_worker
 
 
+@depth_test_case
 class GuidanceDeviceTests(unittest.TestCase):
     def test_depth_profile_defaults_cpu_policy_and_flow_only(self):
         for mode in (1, 2, 3):
@@ -77,6 +79,7 @@ class GuidanceDeviceTests(unittest.TestCase):
             guidance_worker.select_device('invalid', True)
 
 
+@depth_test_case
 class ModPathsTests(unittest.TestCase):
     def setUp(self):
         self.actual_app_root = mod_paths.app_root
@@ -283,6 +286,7 @@ class ModPathsTests(unittest.TestCase):
                 guidance_client.validate({**settings, 'guidance_depth_encoder': 'vitb'})
 
 
+@depth_test_case
 class EngineGuidanceTests(unittest.TestCase):
     def make_live(self, mode):
         live = dlss_engine.Live.__new__(dlss_engine.Live)

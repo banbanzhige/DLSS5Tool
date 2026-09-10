@@ -5,6 +5,7 @@ import sys
 import tempfile
 import types
 import unittest
+from tests.depth_fixture import depth_test_case
 from unittest import mock
 import zipfile
 
@@ -12,6 +13,7 @@ from dlss5tool import mod_paths
 from scripts import build_enhancement
 
 
+@depth_test_case
 class EnhancementBuildTests(unittest.TestCase):
     def test_zip_extracts_beside_app_and_is_detected_with_no_path_configuration(self):
         with tempfile.TemporaryDirectory() as directory:

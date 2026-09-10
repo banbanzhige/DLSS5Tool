@@ -21,7 +21,7 @@ if errorlevel 1 goto :failed
 echo.
 echo ========================================
 echo  依赖安装完成！
-echo  1) 双击 run.bat  或  运行  python gui.py
+echo  1) 双击 run.bat 启动
 echo  2) 需要 NVIDIA 显卡 + 最新驱动
 echo ========================================
 pause

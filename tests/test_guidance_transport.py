@@ -3,6 +3,7 @@ import os
 import subprocess
 import sys
 import unittest
+from tests.depth_fixture import depth_test_case
 from unittest import mock
 
 import numpy as np
@@ -11,6 +12,7 @@ from dlss5tool import guidance_client
 from dlss5tool.guidance_transport import GuidanceBuffers, TRANSPORT
 
 
+@depth_test_case
 class BufferTests(unittest.TestCase):
     def test_layout_attach_and_cleanup(self):
         owner = GuidanceBuffers(8, 6)
@@ -46,6 +48,7 @@ class BufferTests(unittest.TestCase):
 
 
 @unittest.skipUnless(os.name == 'nt', 'Windows named-pipe component contract')
+@depth_test_case
 class SessionTests(unittest.TestCase):
     def test_old_cache_component_cannot_ignore_shared_budget(self):
         with self.assertRaisesRegex(RuntimeError,'component|组件'):

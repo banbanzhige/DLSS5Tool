@@ -11,13 +11,23 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 
 def main():
+    import argparse
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--mods', type=Path)
+    parser.add_argument('--backend', choices=('raft', 'nvofa'), default='raft')
+    parser.add_argument('--output', type=Path)
+    args = parser.parse_args()
+    if args.output:
+        args.output.mkdir(parents=True, exist_ok=False)
     with tempfile.TemporaryDirectory(prefix='guidance-activation-') as directory:
         os.environ['DLSS5TOOL_SETTINGS_PATH'] = str(Path(directory) / 'settings.json')
         os.environ['DLSS5TOOL_QUEUE_PATH'] = str(Path(directory) / 'queue.json')
         import tkinter as tk
         from dlss5tool import app_settings
         from dlss5tool import gui
-        app_settings.save({**app_settings.DEFAULTS, 'guidance_mode': 3})
+        app_settings.save({**app_settings.DEFAULTS, 'guidance_mode': 3,
+                           'guidance_flow_backend': args.backend,
+                           **({'mods_directory': str(args.mods.resolve())} if args.mods else {})})
         root = tk.Tk()
         root.withdraw()
         app = gui.App(root)
@@ -26,7 +36,8 @@ def main():
         records = []
         try:
             assert app._collect_host_settings()['guidance_mode'] == 0
-            for mode in (1, 2, 3, 0):
+            from dlss5tool.guidance_public import public_modes
+            for mode in (*public_modes()[1:], 0):
                 selected = app._host_settings['v_guidance']
                 selected.set(gui.tr('guidance.mode.' + str(mode)))
                 start = last = time.monotonic()
@@ -52,7 +63,9 @@ def main():
                 records.append(record)
                 print(json.dumps(record, ensure_ascii=False), flush=True)
             assert max(r['max_tick_gap_ms'] for r in records) < 2000
-            print('PASS: startup off, all three modes checked without media, off needs no models', flush=True)
+            if args.output:
+                (args.output / 'report.json').write_text(json.dumps(records, ensure_ascii=False, indent=2), encoding='utf-8')
+            print('PASS: startup off, public modes checked without media, off needs no models', flush=True)
         finally:
             while app._module_reload_thread is not None:
                 root.update()

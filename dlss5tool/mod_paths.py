@@ -4,6 +4,7 @@ import json
 import sys
 from dlss5tool import i18n
 from dlss5tool import paths
+from dlss5tool.guidance_public import normalize_public_settings
 
 
 def app_root():
@@ -133,6 +134,21 @@ def component_build(settings=None):
     return 'unknown'
 
 
+def flow_backends(settings=None):
+    """Advertised engines. A missing field is a RAFT-only legacy component."""
+    manifest = enhancement_path(settings) / 'enhancement.json'
+    try:
+        if manifest.stat().st_size <= 65536:
+            declared = json.loads(manifest.read_text(encoding='utf-8')).get('flow_backends', ['raft'])
+            if isinstance(declared, list):
+                values = tuple(item for item in declared if item in ('raft', 'nvofa'))
+                if values:
+                    return values
+    except (OSError, ValueError, TypeError, AttributeError):
+        pass
+    return ('raft',)
+
+
 def depth_encoder(settings):
     """Resolve known checkpoint names only; no torch import or checkpoint execution."""
     selected = settings.get('guidance_depth_encoder', 'auto')
@@ -168,11 +184,12 @@ def depth_encoder(settings):
 
 def guidance_candidates(settings):
     """Read-only discovery, including missing paths, for compact UI statuses."""
+    settings = normalize_public_settings(settings)
     mode = int(settings.get("guidance_mode", 0))
     if not mode:
         return {}
     result = {"worker": str(enhancement_path(settings) / 'guidance_worker.exe')}
-    if mode in (1, 3):
+    if mode in (1, 3) and settings.get('guidance_flow_backend', 'raft') == 'raft':
         name = 'raft_large_C_T_SKHT_V2-ff5fadd5.pth'
         result["flow_weights"] = str(find_module(settings, 'guidance_flow_weights',
             [f'models/{name}', f'enhancement/models/{name}', f'torch_home/hub/checkpoints/{name}', f'models/checkpoints/{name}', name]))
@@ -185,6 +202,7 @@ def guidance_candidates(settings):
 
 
 def guidance_files(settings):
+    settings = normalize_public_settings(settings)
     if not int(settings.get('guidance_mode', 0)):
         return {}
     component = enhancement_info(settings)

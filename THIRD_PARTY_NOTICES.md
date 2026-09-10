@@ -3,7 +3,14 @@
 DLSS5Tool 的 MIT 许可证只覆盖本仓库的自有源码。以下组件保持其各自许可证、版权、
 商标和分发限制；本文件只是项目清单，不替代原始许可证，也不构成法律意见。
 
-## torchvision RAFT
+## NVIDIA Optical Flow API headers
+
+- `dlss5tool/nvofa.py` adapts the official NVIDIA Optical Flow API 2.0 CUDA header declarations, originally Copyright (c) 2020 NVIDIA Corporation, under BSD-3-Clause.
+- Full terms: [NVIDIA-Optical-Flow-Headers-LICENSE.txt](licenses/NVIDIA-Optical-Flow-Headers-LICENSE.txt). The standalone component also carries this license in its licenses directory.
+- Sources: [CUDA declarations](https://github.com/NVIDIA/NVIDIAOpticalFlowSDK/blob/master/nvOpticalFlowCuda.h) and [common declarations](https://github.com/NVIDIA/NVIDIAOpticalFlowSDK/blob/master/nvOpticalFlowCommon.h).
+- The driver optical-flow DLL is loaded from Windows System32 and is not distributed by this project. Header licensing does not grant redistribution rights to unrelated SDK/driver binaries.
+
+## torchvision RAFT implementation
 
 - 增强组件直接使用 torchvision 0.23 的原始 RAFT-Large 推理实现；生产路径不再包含自定义 final-only adapter。
 - 原始版权与 BSD-3-Clause 条款保留于 `licenses/torchvision-LICENSE.txt`，冻结增强组件同时保留 torchvision 的许可证元数据。

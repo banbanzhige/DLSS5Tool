@@ -11,6 +11,21 @@ from dlss5tool import i18n
 
 
 class LocalizationTests(unittest.TestCase):
+    def test_flow_options_use_descriptive_names(self):
+        for language, algorithm, backward, legacy in (
+            ('zh_CN', '光流算法', '反向估计（推荐）', '前向取负（旧版兼容）'),
+            ('en_US', 'Optical flow algorithm', 'Backward estimation (recommended)',
+             'Negated forward (legacy)'),
+        ):
+            with self.subTest(language=language):
+                self.assertEqual(i18n.tr_for(language, 'guidance.flow_backend'), algorithm)
+                self.assertEqual(i18n.tr_for(language, 'guidance.option.nvofa'), 'NVOFA')
+                self.assertEqual(i18n.tr_for(language, 'guidance.option.backward'), backward)
+                self.assertEqual(i18n.tr_for(language, 'guidance.option.forward_negated'), legacy)
+                hint = i18n.tr_for(language, 'guidance.direction_hint')
+                self.assertIn('RAFT', hint)
+                self.assertIn('NVOFA', hint)
+
     def test_inference_model_titles(self):
         self.assertEqual(i18n.tr_for('zh_CN', 'tab.guidance'), '推理模型')
         self.assertEqual(i18n.tr_for('zh_CN', 'guidance.flow_section'), '光流估计推理')
@@ -59,7 +74,7 @@ class LocalizationTests(unittest.TestCase):
                     used.add(node.value)
         used.update('guidance.option.' + name for name in ('auto', 'cuda', 'cpu', 'backward', 'forward_negated', 'vits', 'vitb', 'vitl', 'fp32', 'sdpa_fp16'))
         used.update('mods.file.' + name for name in ('worker', 'flow_weights', 'depth_weights'))
-        used.update('guidance.option.' + name for name in ('serial', 'raft_streams'))
+        used.update('guidance.option.' + name for name in ('serial', 'raft_streams', 'grid_4', 'grid_2', 'grid_1'))
         for language in i18n.SUPPORTED_LANGUAGES:
             self.assertFalse(used - i18n.catalog_keys(language))
 

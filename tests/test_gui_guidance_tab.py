@@ -5,6 +5,7 @@ import tempfile
 import time
 import tkinter as tk
 import unittest
+from tests.depth_fixture import depth_test_case
 from unittest import mock
 
 from dlss5tool import app_settings
@@ -13,6 +14,7 @@ import numpy as np
 from dlss5tool import ui_theme
 
 
+@depth_test_case
 class GuidanceTabTests(unittest.TestCase):
     def setUp(self):
         self.temporary = tempfile.TemporaryDirectory()
@@ -87,7 +89,8 @@ class GuidanceTabTests(unittest.TestCase):
                     app._on_mod_settings_change()
                     self.wait_for_reload()
                 status = app._host_settings['w_guidance_status'].cget('text')
-                self.assertIn('fixture: missing weights', status)
+                self.assertEqual(gui.tr('guidance.status.failed'), status)
+                self.assertIn('fixture: missing weights', app._module_details_text)
                 self.assertEqual(app._collect_persisted_settings()['guidance_mode'], 0)
                 self.assertEqual(app._collect_host_settings()['guidance_depth_encoder'], 'vitb')
                 self.assertEqual(str(app._host_settings['w_guidance'].cget('state')), 'readonly')
@@ -201,9 +204,10 @@ class GuidanceTabTests(unittest.TestCase):
                 'guidance_flow_range'},
             2: {'mode', 'device', 'depth', 'profile', 'guidance_depth_edge',
                 'guidance_depth_smoothing', 'guidance_depth_low', 'guidance_depth_high', 'palette', 'invert'},
-            3: set(app._host_settings['guidance_controls']),
+            3: set(app._host_settings['guidance_controls']) - {'flow_grid'},
         }
         for mode, active in active_by_mode.items():
+            active = active | {'flow_backend'}
             with self.subTest(mode=mode):
                 app._host_settings['v_guidance'].set(gui.tr('guidance.mode.' + str(mode)))
                 app._on_mod_settings_change()
@@ -214,6 +218,62 @@ class GuidanceTabTests(unittest.TestCase):
                 collected = app._collect_host_settings()
                 self.assertEqual({key: collected[key] for key in before}, {**before, 'guidance_mode': mode})
                 self.assertNotIn('w_guidance_summary', app._settings)
+
+    def test_status_height_is_stable(self):
+        app = self.app
+        status = app._host_settings['w_guidance_status']
+        height = status.winfo_reqheight()
+        app._guidance_preflight_error = 'failure ' * 500
+        app._update_host_control_states()
+        self.root.update_idletasks()
+        self.assertEqual(status.winfo_reqheight(), height)
+        self.assertEqual(status.cget('text'), gui.tr('guidance.status.failed'))
+        self.assertIn('failure ' * 500, app._module_details_text)
+
+    def test_help_buttons_are_removed_but_control_tooltips_remain(self):
+        app = self.app
+        expected = {'mode', 'flow_backend', 'guidance_flow_updates', 'flow_grid', 'flow',
+                    'guidance_depth_smoothing', 'guidance_depth_low', 'guidance_flow_range',
+                    'profile', 'execution'}
+        tooltips = app._host_settings['guidance_tooltips']
+        self.assertEqual(set(tooltips), expected)
+        self.assertNotIn('guidance_help', app._host_settings)
+        self.assertEqual(tooltips['flow'].text, gui.tr('guidance.direction_hint'))
+        for key, tooltip in tooltips.items():
+            self.assertIs(tooltip.widget, app._host_settings['guidance_controls'][key])
+            self.assertTrue(tooltip.text)
+            self.assertTrue(tooltip.widget.bind('<Enter>'))
+
+        def descendants(widget):
+            for child in widget.winfo_children():
+                yield child
+                yield from descendants(child)
+
+        for theme in ('light', 'dark'):
+            app._apply_ui_theme(theme, persist=False)
+            for container in (app._guidance_settings_frame, app._guidance_advanced):
+                buttons = [child for child in descendants(container)
+                           if isinstance(child, gui.ttk.Button)]
+                self.assertFalse(any(button.cget('text') == gui.tr('guidance.help')
+                                     for button in buttons))
+
+    def test_guidance_tab_stops_dlss_prerender_and_leaving_resumes_it(self):
+        app = self.app
+        app.video = 'fixture.mp4'
+        app.view_var.set('dlss')
+        app._pre_rendering = True
+        with mock.patch.object(app, 'display_view'), \
+                mock.patch.object(app, '_schedule_preview_cache_resume') as resume, \
+                mock.patch.object(app, '_start_prefetch') as prefetch:
+            app.workspace_tabs.select(app._guidance_page)
+            self.assertFalse(app._pre_rendering)
+            self.assertEqual(app.view_var.get(), 'original')
+            self.assertFalse(app._start_paused_prerender())
+            prefetch.assert_not_called()
+            resume.assert_not_called()
+            app.workspace_tabs.select(app._preview_page)
+            self.assertEqual(app.view_var.get(), 'dlss')
+            resume.assert_called_once_with()
 
     def _comparison_fixture(self, target='depth', layout='wipe'):
         app = self.app
@@ -269,7 +329,7 @@ class GuidanceTabTests(unittest.TestCase):
                     self.assertFalse(any('正在生成' in app.canvas.itemcget(item, 'text')
                                          for item in app.canvas.find_all() if app.canvas.type(item) == 'text'))
 
-    def test_seek_holds_complete_pair_and_puts_waiting_status_outside_canvas(self):
+    def test_seek_holds_complete_pair_with_fixed_waiting_overlay(self):
         app = self._comparison_fixture()
         app._guidance_result = self._result(0)
         app._display_guidance(0)
@@ -280,7 +340,9 @@ class GuidanceTabTests(unittest.TestCase):
             app._display_guidance(3)
         self.assertIs(app._split_orig, source)
         self.assertIs(app._split_dlss, depth)
-        self.assertEqual(app.canvas.find_all(), previous_canvas)
+        self.assertEqual(tuple(item for item in app.canvas.find_all()
+                               if 'work_status' not in app.canvas.gettags(item)), previous_canvas)
+        self.assertTrue(app.canvas.find_withtag('work_status'))
         self.assertEqual(app.eta_label.cget('text'), gui.tr('guidance.preview_waiting', frame=3, shown=0))
 
     def test_paused_playback_does_not_accept_inflight_next_frame(self):
@@ -388,6 +450,7 @@ class GuidanceTabTests(unittest.TestCase):
 
     def test_busy_states_lock_all_guidance_controls(self):
         app = self.app
+        inactive = {'flow_grid'}
         for flag in ('_exporting', '_queue_running', '_switching_backend', '_diagnosing'):
             with self.subTest(flag=flag):
                 setattr(app, flag, True)
@@ -396,8 +459,8 @@ class GuidanceTabTests(unittest.TestCase):
                                     for control in app._host_settings['guidance_controls'].values()))
                 setattr(app, flag, False)
                 app._update_host_control_states()
-                self.assertTrue(all(not control.instate(['disabled'])
-                                    for control in app._host_settings['guidance_controls'].values()))
+                self.assertTrue(all(control.instate(['disabled']) == (name in inactive)
+                                    for name, control in app._host_settings['guidance_controls'].items()))
 
     def test_edits_reach_preview_export_queue_and_saved_settings(self):
         app = self.app
@@ -458,6 +521,35 @@ class GuidanceTabTests(unittest.TestCase):
         self.root.tk.call(widget.spin.cget('command'))
         self.assertEqual(app._host_settings['analysis_vars'][key].get(), '6')
         self.assertIsNone(app._module_reload_thread)
+
+    def test_backend_shows_only_active_processing_controls(self):
+        app = self.app
+        host = app._host_settings
+        def mapped(widgets):
+            return [bool(widget.grid_info()) for widget in widgets]
+        self.assertEqual(host['v_flow_backend'].get(), gui.tr('guidance.option.raft'))
+        self.assertEqual(mapped(host['flow_rows_raft']), [True])
+        self.assertEqual(mapped(host['flow_rows_nvofa']), [False])
+        self.assertTrue(host['guidance_controls']['flow_grid'].instate(['disabled']))
+        self.assertFalse(host['guidance_controls']['guidance_flow_updates'].instate(['disabled']))
+        host['v_flow_backend'].set(gui.tr('guidance.option.nvofa'))
+        app._update_host_control_states()
+        self.assertEqual(mapped(host['flow_rows_raft']), [False])
+        self.assertEqual(mapped(host['flow_rows_nvofa']), [True])
+        self.assertTrue(host['guidance_controls']['guidance_flow_updates'].instate(['disabled']))
+        self.assertFalse(host['guidance_controls']['flow_grid'].instate(['disabled']))
+        self.assertFalse(host['guidance_controls']['flow'].instate(['disabled']))
+        for direction in ('backward', 'forward_negated'):
+            host['v_flow_direction'].set(gui.tr('guidance.option.' + direction))
+            settings = app._collect_host_settings()
+            self.assertEqual(settings['guidance_flow_backend'], 'nvofa')
+            self.assertEqual(settings['guidance_flow_direction'], direction)
+        host['v_flow_grid'].set(gui.tr('guidance.option.grid_1'))
+        self.assertEqual(app._collect_host_settings()['guidance_flow_grid'], 1)
+        host['v_flow_backend'].set(gui.tr('guidance.option.raft'))
+        app._update_host_control_states()
+        self.assertEqual(mapped(host['flow_rows_raft']), [True])
+        self.assertEqual(app._collect_host_settings()['guidance_flow_grid'], 1)
 
     def test_compact_iterations_and_consistent_section_insets(self):
         app = self.app

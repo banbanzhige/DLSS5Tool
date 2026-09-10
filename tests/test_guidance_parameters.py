@@ -1,4 +1,5 @@
 import unittest
+from tests.depth_fixture import depth_test_case
 from unittest import mock
 import importlib.util
 
@@ -10,6 +11,7 @@ from dlss5tool.guidance_visualization import guidance_images
 from dlss5tool.guidance_worker import Models
 
 
+@depth_test_case
 class ParameterTests(unittest.TestCase):
     def test_legacy_migration_and_independent_settings(self):
         old = app_settings.validate({'guidance_edge': 512})
@@ -87,6 +89,7 @@ class ParameterTests(unittest.TestCase):
 
 
 @unittest.skipUnless(importlib.util.find_spec('torch'), 'requires Torch')
+@depth_test_case
 class ResolutionTests(unittest.TestCase):
     def test_depth_uses_original_when_flow_resolution_is_lower(self):
         from tests.test_guidance_cache import ModelCacheTests

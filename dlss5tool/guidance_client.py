@@ -15,6 +15,8 @@ from dlss5tool import i18n
 from dlss5tool.guidance_transport import GuidanceBuffers, TRANSPORT
 from dlss5tool.guidance_execution import execution_contract
 from dlss5tool.guidance_parameters import ANALYSIS_KEYS, parameters, check_parameter_handshake
+from dlss5tool.guidance_public import normalize_public_settings
+from dlss5tool.guidance_flow import flow_backend, flow_grid, check_flow_handshake
 
 KEYS = ("guidance_mode", "guidance_edge", "guidance_flow_direction",
         "guidance_depth_encoder", "guidance_device", "mods_directory",
@@ -22,11 +24,21 @@ KEYS = ("guidance_mode", "guidance_edge", "guidance_flow_direction",
 
 
 def contract(settings):
+    settings = normalize_public_settings(settings)
     values = parameters(settings)
-    return tuple(settings.get(key) for key in KEYS) + tuple(values[key] for key in ANALYSIS_KEYS)
+    backend = flow_backend(settings)
+    return (backend, settings.get('guidance_flow_fallback', True), flow_grid(settings)) + tuple(
+        settings.get(key) for key in KEYS) + tuple(
+        values[key] for key in ANALYSIS_KEYS if not (backend == 'nvofa' and key == 'guidance_flow_updates'))
 
 
 def validate(settings):
+    settings = normalize_public_settings(settings)
+    try:
+        flow_backend(settings, strict=True)
+        flow_grid(settings)
+    except ValueError as exc:
+        raise ValueError(i18n.tr_for(settings.get('ui_language'), str(exc))) from exc
     try:
         parameters(settings, strict=True)
     except ValueError as exc:
@@ -46,7 +58,10 @@ def validate(settings):
             execution_contract(settings, settings.get('guidance_device'))
         except ValueError as exc:
             raise ValueError(i18n.tr_for(settings.get('ui_language'), str(exc))) from exc
-    return mod_paths.guidance_files(settings) if mode else {}
+    files = mod_paths.guidance_files(settings) if mode else {}
+    if mode in (1, 3) and flow_backend(settings) == 'nvofa' and 'nvofa' not in mod_paths.flow_backends(settings):
+        raise ValueError(i18n.tr_for(settings.get('ui_language'), 'guidance.error.flow_backend_component'))
+    return files
 
 
 def preflight(settings, *, require_shared_cache=False):
@@ -56,6 +71,7 @@ def preflight(settings, *, require_shared_cache=False):
     imported media. It does not certify VRAM capacity for a full-size render.
     No Torch import, downloads, or environment installation in the base app.
     """
+    settings = normalize_public_settings(settings)
     validate(settings)
     if not int(settings.get('guidance_mode', 0)):
         return {}
@@ -98,6 +114,25 @@ def check_execution_handshake(settings, ready, language):
 
 class GuidanceSession:
     def __init__(self, settings, width, height):
+        settings = normalize_public_settings(settings)
+        backend = flow_backend(settings, strict=True)
+        try:
+            self._initialize(settings, width, height)
+        except (RuntimeError, FileNotFoundError, OSError) as error:
+            if (backend != 'nvofa' or settings['guidance_mode'] != 1
+                    or not settings.get('guidance_flow_fallback', True)):
+                raise
+            # Only during initialization. process() never changes backend.
+            fallback = {**settings, 'guidance_flow_backend': 'raft'}
+            try:
+                self._initialize(fallback, width, height)
+            except Exception as fallback_error:
+                raise RuntimeError(f'NVOFA: {error}\nRAFT: {fallback_error}') from fallback_error
+            self.info.update(flow_backend='raft', flow_requested_backend='nvofa',
+                             flow_fallback_reason=str(error))
+
+    def _initialize(self, settings, width, height):
+        settings = normalize_public_settings(settings)
         self._process = self._connection = self._listener = None
         self._buffers = None
         self._sequence = 0
@@ -155,6 +190,7 @@ class GuidanceSession:
             check_depth_handshake(settings, ready, self.language)
             check_execution_handshake(settings, ready, self.language)
             try:
+                check_flow_handshake(settings, ready)
                 check_parameter_handshake(settings, ready)
             except ValueError as exc:
                 raise RuntimeError(i18n.tr_for(self.language, str(exc))) from exc
@@ -172,6 +208,8 @@ class GuidanceSession:
                 'depth_profile', 'depth_precision', 'depth_attention', 'execution', 'raft_output', 'schedule',
                 'cache_version', 'cache_limit_bytes', 'analysis_parameters')}
             self.info['transport'] = self.transport
+            self.info.update({key: ready.get(key) for key in ('flow_grid', 'flow_quality', 'flow_temporal_hints')})
+            self.info['flow_backend'] = ready.get('flow_backend', 'raft')
         except Exception as exc:
             self.close()
             detail = str(exc) or i18n.tr_for(self.language, 'guidance.error.connection')
@@ -189,7 +227,10 @@ class GuidanceSession:
             if key in ('guidance.error.cuda', 'guidance.error.component_invalid', 'guidance.error.oom', 'guidance.error.device',
                        'guidance.error.depth_profile', 'guidance.error.depth_cuda', 'guidance.error.depth_acceleration',
                        'guidance.error.depth_nonfinite', 'guidance.error.execution',
-                       'guidance.error.streams_cuda', 'guidance.error.execution_component'):
+                       'guidance.error.streams_cuda', 'guidance.error.execution_component',
+                       'guidance.error.nvofa', 'guidance.error.nvofa_cuda', 'guidance.error.nvofa_mixed',
+                       'guidance.error.flow_backend', 'guidance.error.flow_backend_component',
+                       'guidance.error.flow_grid', 'guidance.error.flow_grid_component'):
                 raise RuntimeError(i18n.tr_for(self.language, key))
             raise RuntimeError(i18n.tr_for(self.language, 'guidance.error.worker', error=value.get('error', '')))
         return value

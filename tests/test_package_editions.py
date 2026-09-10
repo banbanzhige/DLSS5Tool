@@ -9,6 +9,23 @@ from scripts.package_editions import (
 
 
 class EditionArchiveTests(unittest.TestCase):
+    def test_flow_only_staging_recursively_excludes_depth_weights(self):
+        from scripts.package_editions import copy_tree, validate_flow_inventory, MODELS, release_notes_path
+        self.assertEqual(len(MODELS), 1)
+        self.assertEqual(release_notes_path().parent.name, 'release')
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            source = root / 'source'
+            (source / '_internal/models').mkdir(parents=True)
+            (source / '_internal/models/depth_anything_v2_vitl.pth').write_bytes(b'fixture')
+            (source / 'guidance_worker.exe').write_bytes(b'unchanged')
+            copy_tree(source, root / 'staged', flow_only=True)
+            validate_flow_inventory(inventory(root / 'staged'))
+            self.assertTrue((source / '_internal/models/depth_anything_v2_vitl.pth').exists())
+            self.assertEqual((root / 'staged/guidance_worker.exe').read_bytes(), b'unchanged')
+        with self.assertRaises(ValueError):
+            validate_flow_inventory({'mods/enhancement/models/depth_anything_v2_vits.pth': {}})
+
     def test_archive_paths_crc_inventory_and_no_overwrite(self):
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)

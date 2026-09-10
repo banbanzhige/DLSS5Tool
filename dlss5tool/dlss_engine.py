@@ -9,6 +9,7 @@ import sys
 import numpy as np
 from dlss5tool import mod_paths
 from dlss5tool import guidance_client
+from dlss5tool.guidance_public import normalize_public_settings
 from dlss5tool import i18n
 from dlss5tool import paths
 
@@ -207,7 +208,7 @@ class Live:
     changing 'preset' recreates the feature. close() releases the D3D12 device."""
     def __init__(self, w, h, settings=None):
         self._w, self._h = w, h
-        self.settings = dict(settings or {})
+        self.settings = normalize_public_settings(settings)
         guidance_client.validate(self.settings)
         self._guidance = None
         self._reset_next = True
@@ -270,7 +271,7 @@ class Live:
         self.supports_async = self.max_in_flight > 1
 
     def update(self, settings):
-        updated = {**self.settings, **settings}
+        updated = normalize_public_settings({**self.settings, **settings})
         guidance_client.validate(updated)
         runtime_selection_changed = any(updated.get(key, '') != self.settings.get(key, '')
                                         for key in ('dlss_runtime', 'mods_directory'))
@@ -286,7 +287,7 @@ class Live:
         old_preset = self.settings.get('preset')
         old_config = getattr(self, "_config", _host_config(self.settings))
         old_contract = frame_contract(self.settings)
-        self.settings.update(settings)
+        self.settings.update(updated)
         requested_backend = str(self.settings.get("host_backend", self._preference))
         if requested_backend not in {"auto", self.backend}:
             raise RuntimeError(

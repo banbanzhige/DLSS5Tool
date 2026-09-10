@@ -10,17 +10,49 @@ import cv2
 from dlss5tool import ui_theme
 from dlss5tool.i18n import tr
 from dlss5tool.guidance_parameters import analysis_edge
+from dlss5tool.guidance_public import depth_enabled, public_targets, normalize_public_settings
+
+
+def guidance_input_pair(source, frame, still, settings):
+    """Decode an owned adjacent pair on a worker, never through Tk state."""
+    capture = None
+    try:
+        if still is not None:
+            original = still
+        else:
+            capture = cv2.VideoCapture(source)
+            capture.set(cv2.CAP_PROP_POS_FRAMES, max(frame - 1, 0))
+            ok, original = capture.read()
+            if not ok:
+                raise RuntimeError(tr('status.frame_read_failed', frame=frame))
+        height, width = original.shape[:2]
+        scale = min(1.0, analysis_edge(settings) / max(width, height))
+        size = (max(1, round(width * scale)), max(1, round(height * scale)))
+
+        def rgba(image):
+            return cv2.cvtColor(cv2.resize(image, size, interpolation=cv2.INTER_AREA), cv2.COLOR_BGR2RGBA)
+
+        previous = None
+        if still is None and frame > 0:
+            previous = rgba(original)
+            ok, original = capture.read()
+            if not ok:
+                raise RuntimeError(tr('status.frame_read_failed', frame=frame))
+        return rgba(original), previous
+    finally:
+        if capture is not None:
+            capture.release()
 
 
 class PreviewComparison:
     def _init_comparison(self):
         self._guidance_context = False
         self._normal_preview_view = self.view_var.get()
-        saved = getattr(self, '_saved_settings', {})
+        saved = normalize_public_settings(getattr(self, '_saved_settings', {}))
         self._guidance_view = saved.get('guidance_preview_view', 'original')
         self.preview_selector = tk.StringVar(value=self.view_var.get())
         self.compare_layout = tk.StringVar(value=saved.get('preview_compare_layout', 'wipe'))
-        self.compare_target = tk.StringVar(value=saved.get('guidance_compare_target', 'depth'))
+        self.compare_target = tk.StringVar(value=saved.get('guidance_compare_target', public_targets()[0]))
         self._guidance_result = None
         self._guidance_ready = None
         self._guidance_presented = None
@@ -46,7 +78,7 @@ class PreviewComparison:
                        bg=self._ui['panel'], fg=self._ui['text'],
                        activebackground=self._ui['select_bg'], activeforeground=self._ui['text'])
         if self._guidance_context:
-            for target in ('depth', 'flow'):
+            for target in public_targets():
                 menu.add_radiobutton(label=tr('compare.target', view=tr('view.' + target)),
                                      variable=self.compare_target, value=target,
                                      command=self._comparison_changed)
@@ -99,7 +131,7 @@ class PreviewComparison:
     def _sync_comparison_controls(self):
         context = self._guidance_context
         choices = {'original': tr('view.original')}
-        choices.update({'depth': tr('view.depth'), 'flow': tr('view.flow')} if context else {'dlss': 'DLSS'})
+        choices.update({name: tr('view.' + name) for name in public_targets()} if context else {'dlss': 'DLSS'})
         choices['compare'] = tr('compare.menu')
         for pane in (getattr(self, '_docked_preview_pane', None), getattr(self, '_detached_preview_pane', None)):
             if not pane:
@@ -164,6 +196,8 @@ class PreviewComparison:
         target = self.compare_target.get() if self._guidance_view == 'compare' else self._guidance_view
         if target == 'original':
             return ''
+        if self._switching_backend:
+            return tr('guidance.switching')
         mode = self._collect_host_settings()['guidance_mode']
         if mode not in ((2, 3) if target == 'depth' else (1, 3)):
             return tr('guidance.preview_disabled', view=tr('view.' + target))
@@ -181,6 +215,10 @@ class PreviewComparison:
 
     def _display_guidance(self, frame, original=None):
         cw, ch = self._canvas_size()
+        if self._switching_backend:
+            self._draw_work_status(tr('guidance.switching'))
+            return
+        self._draw_work_status('')
         target = self.compare_target.get() if self._guidance_view == 'compare' else self._guidance_view
         if target == 'original' or self._hold_original:
             self._guidance_display_signature = None
@@ -213,7 +251,7 @@ class PreviewComparison:
                         if name == 'flow' and reset:
                             return tr('guidance.metrics.reset')
                         return str(round(metrics.get(name + '_ms', 0), 1))
-                    status += ' · ' + tr('guidance.metrics', flow=size('flow'), depth=size('depth'),
+                    status += ' · ' + tr('guidance.nvofa_metrics' if metrics.get('flow_backend') == 'nvofa' else 'guidance.metrics' if depth_enabled() else 'guidance.flow_metrics', flow=size('flow'), depth=size('depth'),
                                          updates=metrics.get('flow_updates', 0),
                                          flow_ms=timing('flow'), depth_ms=timing('depth'))
                 self._set_guidance_status(status)
@@ -226,6 +264,7 @@ class PreviewComparison:
             if held and held[0][0] == key[0] and held[0][2:] == key[2:] and target in held[2]:
                 self._render_guidance_result(held, target, cw, ch)
                 self._set_guidance_status(tr('guidance.preview_waiting', frame=frame, shown=held[0][1]))
+                self._draw_work_status(tr('guidance.preview_waiting', frame=frame, shown=held[0][1]))
                 return
             signature = ('pending', key, id(self.canvas), cw, ch, self._preview_zoom,
                          self._preview_pan_x, self._preview_pan_y)
@@ -236,6 +275,7 @@ class PreviewComparison:
                 self._guidance_display_signature = signature
             self._split_orig = self._split_dlss = None
             self._set_guidance_status(tr('guidance.preview_pending', frame=frame))
+            self._draw_work_status(tr('guidance.preview_pending', frame=frame))
             return
         # Unavailable/error states are distinct from ordinary frame buffering.
         self._split_orig = self._split_dlss = None
@@ -276,28 +316,9 @@ class PreviewComparison:
         self._guidance_preview_busy = True
 
         def work():
-            capture = None
             try:
-                previous_rgba = None
-                if still is not None:
-                    original = still
-                else:
-                    capture = cv2.VideoCapture(source)
-                    capture.set(cv2.CAP_PROP_POS_FRAMES, max(frame - 1, 0))
-                    ok, original = capture.read()
-                    if not ok:
-                        raise RuntimeError(tr('status.frame_read_failed', frame=frame))
-                height, width = original.shape[:2]
-                scale = min(1.0, analysis_edge(settings) / max(width, height))
-                size = (max(1, round(width * scale)), max(1, round(height * scale)))
-                def rgba(image):
-                    return cv2.cvtColor(cv2.resize(image, size, interpolation=cv2.INTER_AREA), cv2.COLOR_BGR2RGBA)
-                if still is None and frame > 0:
-                    previous_rgba = rgba(original)
-                    ok, original = capture.read()
-                    if not ok:
-                        raise RuntimeError(tr('status.frame_read_failed', frame=frame))
-                current = rgba(original)
+                current, previous_rgba = guidance_input_pair(source, frame, still, settings)
+                size = (current.shape[1], current.shape[0])
                 with self._live_lock:
                     if key[2:4] != (self._guidance_generation, self._guidance_preview_epoch):
                         raise RuntimeError('Retired guidance preview')
@@ -313,9 +334,6 @@ class PreviewComparison:
                 result = (key, source_image, images, reset, '')
             except Exception as error:
                 result = (key, None, {}, False, str(error))
-            finally:
-                if capture is not None:
-                    capture.release()
             self._guidance_preview_queue.put(result)
 
         # Existing retirement/export/close code waits for this same worker slot.

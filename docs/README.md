@@ -26,8 +26,6 @@
 
 ```powershell
 .\run.bat
-# 或
-.\.venv\Scripts\python.exe -m dlss5tool
 
 # 普通单元测试，无需 GPU / SDK
 .\.venv\Scripts\python.exe -B -m unittest discover -v
@@ -50,9 +48,13 @@
 
 ## 文档导航
 
+- 当前源码版本：[v2.1.2 说明](release/RELEASE_NOTES_v2.1.2.md)、[NVOFA 集成验证](experiments/NVOFA_INTEGRATION.md)、[深度下线状态](experiments/DEPTH_REFERENCE_STATUS.md)、[实施核对](development/IMPLEMENTATION_READINESS.md)
+
+- 用户指南：[简体中文](USER_GUIDE.md)、[English](USER_GUIDE.en.md)
+- 开发上手：[源码运行与构建](development/BUILDING.md)、[English](development/BUILDING.en.md)
 - 引导与增强：[参数说明](guidance/GUIDANCE_PARAMETERS.md)、[激活验证](guidance/GUIDANCE_ACTIVATION.md)、[增强组件](guidance/ENHANCEMENT_PACK.md)、[GPU 引导](guidance/GPU_GUIDANCE.md)
 - 缓存与传输：[缓存](guidance/GUIDANCE_CACHE.md)、[共享缓存](guidance/GUIDANCE_SHARED_CACHE.md)、[进程传输](guidance/GUIDANCE_TRANSPORT.md)
 - 实验记录：[首轮优化](experiments/FIRST_PASS_OPTIMIZATION.md)、[光流质量](experiments/FLOW_QUALITY_TEST.md)、[实时路径](experiments/REALTIME_ROUTES.md)、[原生上传](experiments/NATIVE_UPLOAD_OPTIMIZATION.md)
-- 开发与发行：[AMD 验证](development/AMD_DEVTEST.md)、[打包索引](release/PACKAGING_INDEX.md)、[历史发行说明](release/RELEASE_NOTES_v2.1.1.md)
+- 开发与发行：[AMD 验证](development/AMD_DEVTEST.md)、[打包索引](release/PACKAGING_INDEX.md)、[历史发行说明](release/RELEASE_NOTES_v2.1.1.md)、[v2.1.2 待办：暂时下线深度引导](development/TODO_v2.1.2.md)、[NVOFA 接入待办](development/TODO_NVOFA.md)
 
 实验记录中的历史部署路径和哈希描述当时的验证环境，不代表当前文件仍位于旧目录。

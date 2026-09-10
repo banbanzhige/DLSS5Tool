@@ -5,6 +5,8 @@
 
 ## 开发环境
 
+完整的源码运行、SDK 准备与打包步骤见[开发指南](docs/development/BUILDING.md)。
+
 1. 使用 Windows 10/11 和 Python 3.10+。
 2. 运行 `setup.bat` 创建 `.venv` 并安装依赖。
 3. 运行测试：

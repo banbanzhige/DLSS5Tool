@@ -1,6 +1,7 @@
 """Default tuning and opt-in readiness checks, without downloading models."""
 import threading
 import unittest
+from tests.depth_fixture import depth_test_case
 from unittest import mock
 
 import numpy as np
@@ -10,11 +11,13 @@ from dlss5tool import i18n
 from tests import test_gui_module_reload as reload_tests
 
 
+@depth_test_case
 class DefaultTuningTests(unittest.TestCase):
     def test_product_defaults_and_lightweight_startup(self):
         values = app_settings.validate({})
         expected = dict(guidance_mode=0, guidance_flow_edge=512, guidance_depth_edge=512,
-                        guidance_flow_updates=6, guidance_depth_encoder='vitl',
+                        guidance_flow_updates=6, guidance_flow_backend='raft', guidance_flow_grid=4,
+                        guidance_depth_encoder='vitl',
                         guidance_depth_profile='sdpa_fp16', guidance_execution='raft_streams',
                         guidance_flow_range=3.0, local_tone=1.0, local_struct=1.0,
                         nvenc_preset='p5', quality_profile='high', host_submission='compatibility')
@@ -28,6 +31,7 @@ class DefaultTuningTests(unittest.TestCase):
         self.assertEqual(app_settings.validate(saved), saved)  # queues retain opt-in
 
 
+@depth_test_case
 class PreflightTests(unittest.TestCase):
     def test_off_does_not_start_component(self):
         with mock.patch.object(guidance_client, 'GuidanceSession') as factory:
@@ -74,6 +78,7 @@ class PreflightTests(unittest.TestCase):
             factory.return_value.close.assert_called_once()
 
 
+@depth_test_case
 class ActivationTests(unittest.TestCase):
     setUp = reload_tests.ModuleReloadTests.setUp
     wait_reload = reload_tests.ModuleReloadTests.wait_reload

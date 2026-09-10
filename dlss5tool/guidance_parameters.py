@@ -43,7 +43,8 @@ def analysis_parameters(settings):
     values = parameters(settings, strict=True)
     mode = int(settings.get('guidance_mode', 0))
     return {key: values[key] for key in ANALYSIS_KEYS
-            if mode in ((1, 3) if key.startswith('guidance_flow_') else (2, 3))}
+            if mode in ((1, 3) if key.startswith('guidance_flow_') else (2, 3))
+            and not (key == 'guidance_flow_updates' and settings.get('guidance_flow_backend') == 'nvofa')}
 
 
 def check_parameter_handshake(settings, ready):

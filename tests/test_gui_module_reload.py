@@ -171,7 +171,7 @@ class ModuleReloadTests(unittest.TestCase):
         self.assertFalse(app._switching_backend)
         self.assertIsNone(app._last_module_settings)
         self.assertTrue(app._preview_cache_frozen)
-        self.assertIn('fixture failure', app.set_status.call_args.args[0])
+        self.assertIn('fixture failure', app.logln.call_args.args[0])
         app._resume_preview_cache.assert_not_called()
 
     def test_notification_created_during_retirement_is_discarded(self):

@@ -13,12 +13,13 @@ from dlss5tool.guidance_execution import execution_contract
 from dlss5tool.guidance_parameters import parameters, analysis_parameters, analysis_size
 from dlss5tool.guidance_cache import RawGuidanceCache, frame_digest, cache_budget_mib, CACHE_VERSION
 from dlss5tool.guidance_inputs import prepare_flow, clear_flow_inputs
+from dlss5tool.guidance_flow import flow_backend, flow_contract, flow_grid
 
 
 class ModelConfigurationError(RuntimeError):
-    def __init__(self, key):
+    def __init__(self, key, detail=None):
         self.key = key
-        super().__init__(key)
+        super().__init__(detail or key)
 
 
 def select_device(requested, cuda_available):
@@ -66,6 +67,11 @@ class Models:
         self.settings = {**settings, **parameters(settings, strict=True)}
         self.analysis_parameters = analysis_parameters(self.settings)
         self.mode = int(settings["guidance_mode"])
+        try:
+            self.flow_backend = flow_backend(settings, strict=True)
+        except ValueError as exc:
+            raise ModelConfigurationError(str(exc)) from exc
+        self._nvof = None
         requested = settings.get("guidance_device", "auto")
         self.device = select_device(requested, torch.cuda.is_available() if requested != 'cpu' else False)
         self.device_name = torch.cuda.get_device_name() if self.device == 'cuda' else 'CPU'
@@ -96,7 +102,7 @@ class Models:
         self.prev = self.prev_thumb = None
         self.depth_range = None
         self.flow = self.depth = None
-        if self.mode in (1, 3):
+        if self.mode in (1, 3) and self.flow_backend == "raft":
             from torchvision.models.optical_flow import Raft_Large_Weights, raft_large
             self.flow = raft_large(weights=None).eval()
             self.flow.load_state_dict(torch.load(settings["flow_weights"], map_location="cpu", weights_only=True))
@@ -128,7 +134,31 @@ class Models:
             self._flow_events = (torch.cuda.Event(enable_timing=True), torch.cuda.Event(enable_timing=True))
             self._depth_events = (torch.cuda.Event(enable_timing=True), torch.cuda.Event(enable_timing=True))
 
+        if self.has_flow and self.flow_backend == 'nvofa':
+            # Prove driver execution before ready/first source frame; fallback
+            # remains an initialization decision, never a mid-video switch.
+            fw, fh = self._flow_size(settings.get('width', 128), settings.get('height', 128))
+            try:
+                self._infer_flow((np.zeros((fh, fw, 3), np.uint8), np.zeros((fh, fw, 3), np.uint8)))
+            except Exception:
+                self.close()
+                raise
+
+    @property
+    def has_flow(self):
+        return self.flow is not None or (getattr(self, 'flow_backend', 'raft') == 'nvofa' and self.mode in (1, 3))
+
+    def _flow_size(self, w, h):
+        size = analysis_size(w, h, parameters(self.settings)['guidance_flow_edge'])
+        if getattr(self, 'flow_backend', 'raft') == 'nvofa':
+            from dlss5tool.nvofa import align_size
+            size = align_size(*size)
+        return size
+
     def _flow_input(self, small):
+        if getattr(self, 'flow_backend', 'raft') == 'nvofa':
+            pair = (self.prev, small) if self.settings.get('guidance_flow_direction', 'backward') == 'forward_negated' else (small, self.prev)
+            return tuple(self.np.ascontiguousarray(frame) for frame in pair)
         return prepare_flow(self, small)
 
     def _depth_input(self, small, fw, fh):
@@ -140,6 +170,22 @@ class Models:
 
     def _infer_flow(self, inputs):
         first, second = inputs
+        if getattr(self, 'flow_backend', 'raft') == 'nvofa':
+            try:
+                from dlss5tool.nvofa import OpticalFlow
+                h, w = first.shape[:2]
+                grid = flow_grid(self.settings) or 4
+                if self._nvof is not None and (self._nvof.w, self._nvof.h, self._nvof.grid) != (w, h, grid):
+                    self._nvof.close()
+                    self._nvof = None
+                if self._nvof is None:
+                    # Establish Torch's selected physical context, including
+                    # CUDA_VISIBLE_DEVICES remapping, before driver inspection.
+                    self.torch.empty(0, device=self.device)
+                    self._nvof = OpticalFlow(w, h, require_current=True, grid=grid)
+                return self._nvof.calculate(first, second)
+            except Exception as exc:
+                raise ModelConfigurationError('guidance.error.nvofa', str(exc)) from exc
         return self.flow(first.to(self.device), second.to(self.device),
                          num_flow_updates=self.settings.get('guidance_flow_updates', 6))[-1]
 
@@ -211,7 +257,7 @@ class Models:
         cut = self.prev_thumb is not None and np.abs(thumb - self.prev_thumb).mean() > 0.30
         reset = bool(reset or cut or self.prev is None)
         params = parameters(self.settings, strict=True)
-        fw, fh = analysis_size(w, h, params['guidance_flow_edge'])
+        fw, fh = self._flow_size(w, h)
         dw, dh = analysis_size(w, h, params['guidance_depth_edge'])
         small = cv2.resize(rgb, (fw, fh))
         # Both branches resize from the original input, never from each other.
@@ -224,7 +270,7 @@ class Models:
         # input identity, or a later grant could cache (None,current) for wrong pairs.
         current_digest = frame_digest(rgba) if self.raw_cache.limit_bytes or self.raw_cache.pool else None
         self._depth_key = ('depth', current_digest) if current_digest is not None and self.depth is not None else None
-        self._flow_key = ('flow', self.prev_digest, current_digest) if current_digest is not None and not reset and self.flow is not None else None
+        self._flow_key = ('flow', self.prev_digest, current_digest) if current_digest is not None and not reset and self.has_flow else None
         self._cached_depth = self.raw_cache.get(self._depth_key) if self._depth_key is not None else None
         self._cached_flow = self.raw_cache.get(self._flow_key) if self._flow_key is not None else None
         self._depth_hit = self._cached_depth is not None
@@ -235,7 +281,7 @@ class Models:
         else:
             mv, dp = outputs
             # Reused buffers must never leak a prior frame on reset/inactive mode.
-            if self.flow is None or reset:
+            if not self.has_flow or reset:
                 mv.fill(0)
             if self.depth is None:
                 dp.fill(0)
@@ -272,14 +318,15 @@ class Models:
                                                        depth_small, dw, dh)
         self.last_metrics = {'inference_ms': (time.perf_counter() - started) * 1000,
             'flow_ms': flow_ms, 'depth_ms': depth_ms,
-            'flow_size': [fw, fh] if self.flow is not None else None,
+            'flow_size': [fw, fh] if self.has_flow else None,
             'depth_size': [max(14, round(dw / 14) * 14), max(14, round(dh / 14) * 14)] if self.depth is not None else None,
-            'flow_updates': params['guidance_flow_updates'] if self.flow is not None else 0,
+            'flow_updates': params['guidance_flow_updates'] if self.has_flow and getattr(self, 'flow_backend', 'raft') == 'raft' else None,
+            'flow_backend': getattr(self, 'flow_backend', 'raft'),
             'timing_kind': 'overlapping_gpu_events' if dual else 'serial_wall_with_postprocess',
             'schedule': self.execution_info['schedule'],
             **self.raw_cache.metrics(),
             'cache_flow_hit': self._flow_hit, 'cache_depth_hit': self._depth_hit,
-            'flow_model_calls': int(self.flow is not None and not reset and not self._flow_hit),
+            'flow_model_calls': int(self.has_flow and not reset and not self._flow_hit),
             'depth_model_calls': int(self.depth is not None and not self._depth_hit),
             'peak_allocated_mib': torch.cuda.max_memory_allocated() / 1048576 if self.device == 'cuda' else 0,
             'peak_reserved_mib': torch.cuda.max_memory_reserved() / 1048576 if self.device == 'cuda' else 0}
@@ -292,7 +339,7 @@ class Models:
         bounds = self.depth_range
         with self.torch.inference_mode():
             flow_start = time.perf_counter()
-            if self.flow is not None and not reset:
+            if self.has_flow and not reset:
                 flow = self._cached_flow if self._flow_hit else self._infer_flow(self._flow_input(small))
                 self._finish_flow(flow, mv, w, h, fw, fh)
             flow_ms = (time.perf_counter() - flow_start) * 1000
@@ -321,6 +368,9 @@ class Models:
         clear_flow_inputs(self)
         if hasattr(self, 'raw_cache'):
             self.raw_cache.close()
+        if getattr(self, '_nvof', None) is not None:
+            self._nvof.close()
+            self._nvof = None
         self.flow = self.depth = None
 
 
@@ -338,6 +388,7 @@ def serve(conn, settings, model_factory=Models):
         load_start = time.perf_counter()
         models = model_factory(settings)
         reply({'ok': True, 'device': models.device, 'device_name': models.device_name,
+               **flow_contract(settings),
                **({'analysis_parameters': models.analysis_parameters} if hasattr(models, 'analysis_parameters') else {}),
                'precision': getattr(models, 'precision', 'float32'),
                'depth_profile': getattr(models, 'depth_profile', 'fp32'),

@@ -1,5 +1,6 @@
 import os
 import unittest
+from tests.depth_fixture import depth_test_case
 
 import numpy as np
 
@@ -65,6 +66,7 @@ class FakeLive:
         return len(self._pending)
 
 
+@depth_test_case
 class ProcessLiveTests(unittest.TestCase):
     def test_incompatible_guidance_fails_before_large_shared_allocations(self):
         from unittest import mock

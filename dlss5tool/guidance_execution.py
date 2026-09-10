@@ -15,5 +15,5 @@ def execution_contract(settings, device=None):
     if dual and device == 'cpu':
         raise ValueError('guidance.error.streams_cuda')
     return {'execution': 'raft_streams' if dual else 'serial',
-            'raft_output': 'all' if has_flow else 'off',
+            'raft_output': 'all' if has_flow and settings.get('guidance_flow_backend', 'raft') == 'raft' else 'off',
             'schedule': 'dual_stream' if dual else 'serial'}

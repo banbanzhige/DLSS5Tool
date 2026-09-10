@@ -9,6 +9,7 @@ import cv2
 from dlss5tool.guidance_client import GuidanceSession
 from dlss5tool.guidance_visualization import guidance_images
 from dlss5tool.guidance_parameters import analysis_edge
+from dlss5tool.guidance_public import normalize_public_settings
 from dlss5tool.video_export import FFmpegVideoWriter
 
 
@@ -24,6 +25,7 @@ def export_guidance(source, destination, settings, target, *, frame=None,
     frame=None exports the entire video. Otherwise write exactly that PNG frame;
     seed optical flow with its actual predecessor. Commit output only on success.
     """
+    settings = normalize_public_settings(settings)
     mode = int(settings.get('guidance_mode', 0))
     if target not in ('depth', 'flow') or mode not in ((2, 3) if target == 'depth' else (1, 3)):
         raise ValueError('Requested guidance is not enabled')

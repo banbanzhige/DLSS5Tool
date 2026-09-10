@@ -7,6 +7,7 @@ import tkinter as tk
 from tkinter import ttk, filedialog, messagebox
 
 from dlss5tool import guidance_client
+from dlss5tool.guidance_public import public_targets
 from dlss5tool.guidance_export import export_guidance, GuidanceExportCancelled
 from dlss5tool.i18n import tr
 from dlss5tool.ui_widgets import Tooltip
@@ -19,10 +20,10 @@ class GuidanceExportUI:
         footer.columnconfigure(1, weight=1)
         self._guidance_export_footer = footer
         self._guidance_export_active = False
-        self._guidance_export_target = tk.StringVar(value=tr('view.depth'))
+        self._guidance_export_target = tk.StringVar(value=tr('view.' + public_targets()[0]))
         self._guidance_export_scope = tk.StringVar(value=tr('guidance.export.video'))
         ttk.Label(footer, text=tr('guidance.export.content')).grid(row=0, column=0, sticky='w', padx=(0, 8))
-        target = self._chrome_combo(footer, self._guidance_export_target, [tr('view.depth'), tr('view.flow')])
+        target = self._chrome_combo(footer, self._guidance_export_target, [tr('view.' + name) for name in public_targets()])
         target.grid(row=0, column=1, sticky='ew', pady=3)
         target.bind('<<ComboboxSelected>>', lambda e: self._update_guidance_export_controls())
         ttk.Label(footer, text=tr('guidance.export.scope')).grid(row=1, column=0, sticky='w', padx=(0, 8))

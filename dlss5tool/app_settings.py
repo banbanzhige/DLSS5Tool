@@ -9,6 +9,7 @@ import sys
 
 from dlss5tool import i18n
 from dlss5tool.guidance_parameters import parameters as guidance_parameters
+from dlss5tool.guidance_public import normalize_public_settings
 
 
 DLSS_SLIDER_MIN = 0.0
@@ -57,6 +58,8 @@ DEFAULTS = {
     "guidance_depth_weights": "",
     "ui_modules_open": False,
     "guidance_mode": 0,
+    "guidance_flow_backend": "raft",
+    "guidance_flow_grid": 4,
     "guidance_edge": 512,
     "guidance_flow_direction": "backward",
     "guidance_depth_encoder": "vitl",
@@ -203,6 +206,7 @@ def validate(values):
             analysis_source[key] = result['guidance_edge']
     result.update(guidance_parameters(analysis_source))
     for name, choices in (("guidance_flow_direction", {"backward", "forward_negated"}),
+                          ("guidance_flow_backend", {"raft", "nvofa"}),
                           ("guidance_depth_encoder", {"auto", "vits", "vitb", "vitl"}),
                           ("guidance_device", {"auto", "cpu", "cuda"}),
                           ("guidance_depth_profile", {"fp32", "sdpa_fp16"}),
@@ -214,6 +218,12 @@ def validate(values):
     # retired profile to torchvision's original serial implementation.
     if result["guidance_execution"] == "raft_final":
         result["guidance_execution"] = "serial"
+    try:
+        grid = int(source.get("guidance_flow_grid", result["guidance_flow_grid"]))
+    except (TypeError, ValueError):
+        grid = result["guidance_flow_grid"]
+    if grid in (1, 2, 4):
+        result["guidance_flow_grid"] = grid
     if source.get("host_submission") in {"merged", "compatibility"}:
         result["host_submission"] = source["host_submission"]
     for name in (
@@ -261,7 +271,7 @@ def validate(values):
     result["preview_scrub_ms"] = _clamp_int(
         source.get("preview_scrub_ms", result["preview_scrub_ms"]), 0, 400
     )
-    return result
+    return normalize_public_settings(result)
 
 
 def startup_settings(values):

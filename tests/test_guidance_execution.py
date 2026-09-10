@@ -1,5 +1,6 @@
 import threading
 import unittest
+from tests.depth_fixture import depth_test_case
 from unittest import mock
 
 from dlss5tool import app_settings
@@ -8,6 +9,7 @@ from dlss5tool.guidance_execution import execution_contract
 from dlss5tool.guidance_worker import Models
 
 
+@depth_test_case
 class ExecutionPolicyTests(unittest.TestCase):
     def test_profiles_always_use_original_raft(self):
         self.assertEqual(execution_contract({'guidance_mode': 3})['raft_output'], 'all')
