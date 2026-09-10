@@ -36,7 +36,7 @@ class PublicPolicyTests(unittest.TestCase):
         job = ExportJob.from_dict(dict(source_path='fixture.png', output_path='out.png', settings=original))
         self.assertEqual(normalize_public_settings(job.settings)['guidance_mode'], 1)
         self.assertEqual(job.settings, original)
-        self.assertEqual(app_settings.startup_settings(original)['guidance_mode'], 0)
+        self.assertEqual(app_settings.startup_settings(original)['guidance_mode'], 1)
 
     def test_depth_only_needs_no_component_and_no_preflight(self):
         with mock.patch.object(mod_paths, 'enhancement_info') as files, \
@@ -74,7 +74,14 @@ class PublicPolicyTests(unittest.TestCase):
             root = tk.Tk()
             root.withdraw()
             try:
-                app = gui.App(root)
+                with mock.patch.object(guidance_client, 'preflight', return_value={'device': 'cuda'}):
+                    app = gui.App(root)
+                    import time
+                    deadline = time.monotonic() + 5
+                    while app._module_reload_thread is not None and time.monotonic() < deadline:
+                        root.update()
+                        time.sleep(0.005)
+                self.assertIsNone(app._module_reload_thread)
                 self.assertEqual(list(app._host_settings['w_guidance'].cget('values')),
                                  [gui.tr('guidance.mode.0'), gui.tr('guidance.mode.1')])
                 self.assertEqual(app._guidance_depth_advanced.winfo_manager(), '')

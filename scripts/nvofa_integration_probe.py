@@ -23,6 +23,7 @@ def parser():
     result.add_argument('--flow-weights', type=Path)
     result.add_argument('--backends', nargs='+', choices=('raft', 'nvofa'), default=['nvofa'])
     result.add_argument('--edge', type=int, default=512)
+    result.add_argument('--grid', type=int, choices=(1, 2, 4), default=4)
     result.add_argument('--direction', choices=('backward', 'forward_negated'), default='backward')
     result.add_argument('--cache-mb', type=int, default=0)
     return result
@@ -44,6 +45,7 @@ def main():
     settings = {**app_settings.DEFAULTS, 'guidance_mode': 1,
                 'guidance_device': 'cuda', 'guidance_flow_fallback': False,
                 'guidance_flow_edge': args.edge, 'guidance_flow_direction': args.direction,
+                'guidance_flow_grid': args.grid,
                 'guidance_execution': 'serial', 'guidance_cache_mb': args.cache_mb,
                 'host_backend': 'v2', 'host_auto_fallback': False,
                 'mods_directory': str(args.mods.resolve())}
@@ -72,7 +74,7 @@ def main():
             from dlss5tool.video_export import FFmpegVideoWriter
             target = args.output / (backend + '.mp4')
             writer = live = None
-            count, durations, hashes = 0, [], []
+            count, durations, hashes, metrics = 0, [], [], []
             try:
                 live = ProcessLive(w, h, selected)
                 writer = FFmpegVideoWriter(str(target), w, h, fps, audio_source=None)
@@ -87,6 +89,9 @@ def main():
                     if output is None:
                         raise RuntimeError('Missing synchronous output')
                     durations.append((time.perf_counter() - tick) * 1000)
+                    if live.guidance_info.get('flow_backend') != backend:
+                        raise RuntimeError('Active processing backend mismatch')
+                    metrics.append(dict(live.guidance_metrics))
                     hashes.append(hashlib.sha256(output.tobytes()).hexdigest())
                     writer.write(cv2.cvtColor(output, cv2.COLOR_RGBA2BGR))
                     count += 1
@@ -96,6 +101,8 @@ def main():
                 record.update(frames=count, wall_s=time.perf_counter() - wall,
                               process_p50_ms=float(np.median(durations)),
                               process_p95_ms=float(np.percentile(durations, 95)), frame_sha256=hashes,
+                              width=w, height=h, source_fps=fps,
+                              process_ms=durations, guidance_metrics=metrics,
                               output=str(target))
                 # Explicit seek/reset after a complete sequence must give zero motion.
                 cap.set(cv2.CAP_PROP_POS_FRAMES, max(0, count // 2))
@@ -117,7 +124,8 @@ def main():
             if decoded != count:
                 raise RuntimeError('Encoded video incomplete')
             record['decoded_frames'] = decoded
-        print(json.dumps({key: value for key, value in record.items() if key != 'frame_sha256'}, ensure_ascii=False), flush=True)
+        print(json.dumps({key: value for key, value in record.items()
+                          if key not in ('frame_sha256', 'process_ms', 'guidance_metrics')}, ensure_ascii=False), flush=True)
         (args.output / 'report.json').write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding='utf-8')
 
 

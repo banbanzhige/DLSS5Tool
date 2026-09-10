@@ -44,7 +44,7 @@ class NvofaTests(unittest.TestCase):
         self.assertEqual(guidance_client.contract(values), guidance_client.contract({**values, 'guidance_flow_updates': 12}))
         self.assertNotEqual(guidance_client.contract(values), guidance_client.contract({**values, 'guidance_flow_backend': 'raft'}))
         self.assertEqual(app_settings.validate({**values, 'guidance_flow_grid': 1})['guidance_flow_grid'], 1)
-        self.assertEqual(app_settings.validate({**values, 'guidance_flow_grid': 3})['guidance_flow_grid'], 4)
+        self.assertEqual(app_settings.validate({**values, 'guidance_flow_grid': 3})['guidance_flow_grid'], 1)
         self.assertEqual(flow_contract(values)['flow_grid'], 4)
         self.assertEqual(flow_contract({**values, 'guidance_flow_grid': 1})['flow_grid'], 1)
         self.assertIsNone(flow_contract({'guidance_mode': 1, 'guidance_flow_grid': 1})['flow_grid'])

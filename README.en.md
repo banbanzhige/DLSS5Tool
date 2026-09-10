@@ -44,20 +44,60 @@ The images below use the same AI-generated source. The left side is untouched an
   </tr>
 </table>
 
+## RAFT / NVOFA optical flow comparison
+
+Flow maps visualize inter-frame motion, not the final rendered image: **hue encodes direction and brightness encodes displacement magnitude**. They are neither segmentation maps nor quality scores. Click an image to view it at full size.
+
+<table>
+  <tr>
+    <th width="33%">07 · Original / DLSS wipe</th>
+    <th width="33%">08 · RAFT flow</th>
+    <th width="33%">09 · NVOFA flow</th>
+  </tr>
+  <tr>
+    <td align="center"><a href="img/07.png"><img src="img/07.png" alt="Original and DLSS wipe comparison of the same scene" width="100%"></a></td>
+    <td align="center"><a href="img/08.png"><img src="img/08.png" alt="RAFT flow with more coherent motion regions around the subject and hair" width="100%"></a></td>
+    <td align="center"><a href="img/09.png"><img src="img/09.png" alt="NVOFA flow with more fragmented regions and local direction changes" width="100%"></a></td>
+  </tr>
+</table>
+
+In these examples, RAFT produces more coherent large motion regions and subject outlines. NVOFA shows more fragmented colors around the background, hair, and face. This observation does not establish final DLSS image quality. The screenshots lack complete frame-pair and parameter metadata, so they are illustrative only; the measurements below use separately controlled inputs and settings.
+
+### Measured with the current configuration
+
+2026-09-10, RTX 4070 SUPER 12 GB / driver 616.64. Analysis long edge: 512; RAFT-Large: 6 updates / FP32; NVOFA: SLOW / **1×1 grid** / temporal hints off (the saved test configuration, subsequently adopted as the default). Identical DLSS v2 settings, source-resolution SDR, cache off, fallback forbidden. Each backend ran three times per clip with alternating order; values below are medians.
+
+| Clip | RAFT total time (effective fps) | NVOFA total time (effective fps) | NVOFA time reduction |
+| --- | ---: | ---: | ---: |
+| Square 1440×1440 · 165 frames | 17.08 s (9.66) | 10.54 s (15.65) | 38.3% |
+| Portrait 1088×1920 · 243 frames | 20.77 s (11.70) | 14.23 s (17.08) | 31.5% |
+
+Total time includes decoding, first-frame worker loading, flow, DLSS, per-frame hashing, and H.264 NVENC encoding. It excludes preflight/encoder checks, host construction, and audio handling: **it is neither GUI click-to-file latency nor real-time playback fps**. Steady flow-stage times, including input preparation, readback, and resizing but excluding DLSS, were **31.21 / 6.19 ms** (RAFT / NVOFA) for square and **23.21 / 5.29 ms** for portrait. Flow-stage speedup is not whole-export speedup.
+
+| Quality proxy ↓ (39 pairs per clip; 8-bit RGB levels) | Square RAFT | Square NVOFA | Portrait RAFT | Portrait NVOFA |
+| --- | ---: | ---: | ---: | ---: |
+| Flow warp MAE · shared valid region | 3.099 | 2.592 | 3.469 | 3.652 |
+| DLSS enhancement temporal residual · fixed RAFT reference | 1.560 | 1.610 | 1.446 | 1.478 |
+| DLSS enhancement temporal residual · fixed NVOFA reference | 1.516 | 1.424 | 1.394 | 1.391 |
+
+**NVOFA was faster on both local clips, but there was no universal quality winner.** Its warp error was lower on square and higher on portrait; temporal-residual rankings changed with the reference flow. These unencoded-data proxies are neither ground-truth flow errors nor perceptual quality scores. No continuous-playback blind review was performed, so equal quality, flicker-free output, and ghost-free motion are not established. RAFT-Large remains the default.
+
+See the [full methodology, run-to-run variation, no-flow baseline, and reproduction commands (Chinese)](docs/experiments/README_FLOW_BENCHMARK.md) and [public measurements with component hashes](docs/experiments/README_FLOW_BENCHMARK_20260910.json).
+
 ## Features
 
-DLSS5Tool uses **DLSS 5 Neural Rendering** to enhance local videos and images. No game engine or user-supplied materials, normals, or depth data are needed. It is a post-processing tool for existing media, not a game plugin or frame-interpolation tool.
+DLSS5Tool uses **DLSS 5 Neural Rendering** to enhance local videos and images. No game engine integration is needed. It is a post-processing tool for existing media, not a game plugin or frame-interpolation tool.
 
 - **Image enhancement:** Default, Natural, and Cinema styles with strength, tone, structure, and skin-mask controls.
 - **2× / 4× super resolution:** Upscale with RTX Video before enhancement, or process at the original size.
 - **Interactive comparison:** Draggable wipe, side-by-side views, zoom, frame stepping, fullscreen, and a detachable preview.
 - **Batch export:** Mix images and videos in one queue, with independent settings per item. Export MP4 / MKV / MOV video and preserve compatible source audio.
 - **HDR video:** High-precision HDR10 / HLG processing and 10-bit export; see the HDR limitations below.
-- **Optical flow guidance (optional):** Estimate inter-frame motion for temporal guidance. Results depend on the source. Depth reference currently has no observed effect in this release and depth inference is temporarily hidden.
+- **Optical flow guidance (optional):** Estimate inter-frame motion for temporal guidance. Results depend on the source.
 
 The interface supports Simplified Chinese / English and light / dark themes. Change the language under **More → Language**, then restart the app.
 
-The current source version is **v2.1.2; release packages have not been uploaded**: depth is temporarily hidden; the flow backend can be RAFT or NVOFA, with RAFT still the default. Launch with `run.bat` at the repo root. Download links below refer to published releases, not necessarily this version.
+The current source version is **v2.1.2; release packages have not been uploaded**: the flow backend can be RAFT or NVOFA, with RAFT-Large the default. Launch with `run.bat` at the repo root. Download links below refer to published releases, not necessarily this version.
 
 ## Quick start
 
@@ -105,7 +145,7 @@ Start with the default settings and a short clip or single image. See the [user 
 ## Before you start
 
 - **Results and speed vary by source and hardware.** Interactive comparison does not mean real-time model processing. High resolutions, 4× scaling, and optical flow increase processing time and VRAM use.
-- **Optical flow is optional.** With Full or the add-on installed, select a mode under **Models**; it activates after an environment check. It starts off on every launch. Guidance currently supports only SDR, non-tiled processing; a single image has no inter-frame flow.
+- **Optical flow is optional.** With Full or the add-on installed, select a mode under **Models**. The app remembers your selection and restores it after a startup environment check; a failed check turns it off and reports the reason. First use checks RAFT-Large before enabling it; a saved off mode remains off. Guidance currently supports only SDR, non-tiled processing; a single image has no inter-frame flow.
 - **HDR metadata is not fully preserved.** Preview is tone-mapped to SDR. Export retains basic HDR10 / HLG color tags, but not Dolby Vision / HDR10+ dynamic metadata or some source HDR metadata. Static HDR images are not supported. See [output and quality](docs/USER_GUIDE.en.md#output-and-quality).
 
 ## FAQ
@@ -135,4 +175,4 @@ Use **More → Diagnostics**, then open an [issue](https://github.com/banbanzhig
 
 ## License
 
-Project-owned source code is released under the [MIT License](LICENSE). `nvngx_dlssnr.dll`, NVIDIA SDKs, FFmpeg, and bundled Python dependencies remain subject to their respective upstream licenses and are not covered by this repository's MIT license. Candidate full/add-on packages include RAFT weights, not depth weights. See [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) and `mods/enhancement/licenses` in those packages.
+Project-owned source code is released under the [MIT License](LICENSE). `nvngx_dlssnr.dll`, NVIDIA SDKs, FFmpeg, and bundled Python dependencies remain subject to their respective upstream licenses and are not covered by this repository's MIT license. Candidate full/add-on packages include RAFT weights. See [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) and `mods/enhancement/licenses` in those packages.

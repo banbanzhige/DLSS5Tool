@@ -37,16 +37,12 @@ class GuidanceTabTests(unittest.TestCase):
         self.addCleanup(self.root.destroy)
         self.errors = []
         self.root.report_callback_exception = lambda *error: self.errors.append(error)
-        self.app = gui.App(self.root)
-        self.assertEqual(self.app._collect_host_settings()['guidance_mode'], 0)
         preflight = mock.patch.object(gui.guidance_client, 'preflight', return_value={'device': 'cuda'})
         preflight.start()
         self.addCleanup(preflight.stop)
-        # Rendering/navigation fixtures explicitly opt in; startup no longer
-        # activates saved modes. GPU readiness is tested separately.
-        self.app._host_settings['v_guidance'].set(gui.tr('guidance.mode.3'))
-        self.app._on_mod_settings_change()
+        self.app = gui.App(self.root)
         self.wait_for_reload()
+        self.assertEqual(self.app._collect_host_settings()['guidance_mode'], 3)
         self.root.update_idletasks()
 
     def tearDown(self):

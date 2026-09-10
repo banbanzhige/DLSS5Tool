@@ -19,13 +19,13 @@ mods/
 
 ## 使用
 
-1. 在“推理模型”选择光流后端，再选择“仅光流”。每次启动默认关闭，不会因发现组件自动启用。
-2. 默认 RAFT-Large，512 长边、6 次迭代、FP32、当前帧到上一帧。它需要兼容的 RAFT 权重。
+1. 在“推理模型”选择光流后端，再选择“仅光流”。重启记住上次模式，环境检查通过后自动恢复，失败才关闭并提示原因；首次使用检查默认 RAFT-Large，仅通过后启用；上次关闭时保持关闭。
+2. 可选 RAFT-Large，512 长边、6 次迭代、FP32、当前帧到上一帧。它需要兼容的 RAFT 权重。
 3. NVOFA 是当前组件提供的硬件光流选项，无需权重和迭代，仍需支持的 NVIDIA GPU 与驱动。
 4. 启用前进行两帧检查。NVOFA 初始化失败时提示并尝试 RAFT（需权重）；处理中失败停止，不中途换算法。
 5. “设置 → 模型与组件”查看状态和详情；“替换 DLL / 模型”可选自定义组件目录或权重路径。
 
-默认仍为 RAFT，不承诺实时 30fps。开发从仓库根目录 `run.bat` 启动。
+默认采用 RAFT-Large，不承诺实时 30fps。开发从仓库根目录 `run.bat` 启动。
 仅支持 SDR、非分块；单张图和首帧/reset 为零光流。切镜、seek、换会话重置历史。
 自动/CUDA 不静默切到 CPU。CPU 仅供主动选择的 RAFT 调试。资源不足请降低长边或并发后重试。
 显示量程只影响分析图，不影响增强结果。分析图导出无音频。
@@ -54,7 +54,7 @@ Small/Base/Large 权重许可不同，需核对上游；公开包未附权重不
 ## English quick start
 
 Extract the trusted complete add-on beside DLSS5Tool.exe, not inside mods. Keep the complete enhancement directory.
-Select a flow backend, then Flow only. Each launch starts off. RAFT-Large remains the default (512 edge, six updates,
+Select a flow backend, then Flow only. The last mode is restored after a startup environment check; failure turns it off and reports the reason. First use checks RAFT-Large before enabling it. RAFT-Large is the default (512 edge, six updates,
 FP32, backward flow) and needs weights. NVOFA needs a supported NVIDIA GPU/driver, but no weights or iterations.
 Initialization failure is reported before trying RAFT; runtime failure stops processing with no mid-video switch.
 No automatic CPU fallback, downloads or installers. Base enhancement works with guidance off.

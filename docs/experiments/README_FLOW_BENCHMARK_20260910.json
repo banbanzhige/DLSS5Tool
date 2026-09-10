@@ -1,0 +1,366 @@
+{
+  "environment": {
+    "date": "2026-09-10 18:11:47 +0800",
+    "platform": "Windows-11-10.0.26200-SP0",
+    "python": "3.13.3",
+    "gpu": "NVIDIA GeForce RTX 4070 SUPER, 616.64, 12282 MiB",
+    "grid": 1,
+    "edge": 512,
+    "repeats": 3,
+    "git_head": "8126507f85d1f51992e2c2fd7e80e5c27c4776e9",
+    "worker_sha256": "56d36aa26334d4caa8ac70b881717f17d71045e02933cba2dd38c6379928167b",
+    "runtime_sha256": "ceb6432f6fbdf44d886014bcd47241932bf8b67439feef9bbdd0961436662650",
+    "host_sha256": "7046b5402ea28edfb7f4d1f771bcfa5edf20b1ec21ffc0a6d81f2104b8fd3931",
+    "weights_sha256": "ff5fadd56d26b40647388883af1547351ea17868b765c05b27231e72dd16a322",
+    "settings_sha256_before": "9a084e69f1884c167aeec1c0177c43ac156cf0c7da296e99f48c88bf37d10644",
+    "settings_sha256_after": "9a084e69f1884c167aeec1c0177c43ac156cf0c7da296e99f48c88bf37d10644"
+  },
+  "clips": [
+    {
+      "id": "clip1",
+      "source_sha256": "2e1490b6a7c4b1a91910e5d35a208865eb35e9dbe927f1ed6346463c921758d1",
+      "speed": {
+        "raft": {
+          "wall_s_runs": [
+            17.853096700000606,
+            17.07902869999816,
+            16.57336479999867
+          ],
+          "wall_s_median": 17.07902869999816,
+          "wall_fps": 9.660970942687026,
+          "flow_ms_run_means": [
+            32.13082101893245,
+            31.21016369425361,
+            30.804372611429667
+          ],
+          "flow_ms_median": 31.21016369425361,
+          "process_p95_ms_median": 70.71449999857577,
+          "analysis_size": [
+            512,
+            512
+          ],
+          "ready": {
+            "device": "cuda",
+            "device_name": "NVIDIA GeForce RTX 4070 SUPER",
+            "precision": "float32",
+            "load_ms": 3783.4398000013607,
+            "depth_profile": "fp32",
+            "depth_precision": "float32",
+            "depth_attention": "original",
+            "execution": "serial",
+            "raft_output": "all",
+            "schedule": "serial",
+            "cache_version": "raw_lru_v2_shared",
+            "cache_limit_bytes": 0,
+            "analysis_parameters": {
+              "guidance_flow_edge": 512,
+              "guidance_flow_updates": 6
+            },
+            "transport": "shared_memory_v1",
+            "flow_grid": null,
+            "flow_quality": null,
+            "flow_temporal_hints": false,
+            "flow_backend": "raft"
+          },
+          "all_encoded_frames_verified": true
+        },
+        "nvofa": {
+          "wall_s_runs": [
+            10.253529999998136,
+            10.75556080000024,
+            10.54343929999959
+          ],
+          "wall_s_median": 10.54343929999959,
+          "wall_fps": 15.649542365175508,
+          "flow_ms_run_means": [
+            6.146587261140968,
+            6.185417834345502,
+            6.657956050991401
+          ],
+          "flow_ms_median": 6.185417834345502,
+          "process_p95_ms_median": 40.30620000048657,
+          "analysis_size": [
+            512,
+            512
+          ],
+          "ready": {
+            "device": "cuda",
+            "device_name": "NVIDIA GeForce RTX 4070 SUPER",
+            "precision": "float32",
+            "load_ms": 1954.2210000035993,
+            "depth_profile": "fp32",
+            "depth_precision": "float32",
+            "depth_attention": "original",
+            "execution": "serial",
+            "raft_output": "off",
+            "schedule": "serial",
+            "cache_version": "raw_lru_v2_shared",
+            "cache_limit_bytes": 0,
+            "analysis_parameters": {
+              "guidance_flow_edge": 512
+            },
+            "transport": "shared_memory_v1",
+            "flow_grid": 1,
+            "flow_quality": "slow",
+            "flow_temporal_hints": false,
+            "flow_backend": "nvofa"
+          },
+          "all_encoded_frames_verified": true
+        }
+      },
+      "width": 1440,
+      "height": 1440,
+      "frames": 165,
+      "source_fps": 30.0,
+      "wall_reduction_percent": 38.26675108286032,
+      "quality": {
+        "window_starts": [
+          0,
+          74,
+          149
+        ],
+        "indices": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13,
+          14,
+          15,
+          74,
+          75,
+          76,
+          77,
+          78,
+          79,
+          80,
+          81,
+          82,
+          83,
+          84,
+          85,
+          86,
+          87,
+          88,
+          89,
+          149,
+          150,
+          151,
+          152,
+          153,
+          154,
+          155,
+          156,
+          157,
+          158,
+          159,
+          160,
+          161,
+          162,
+          163,
+          164
+        ],
+        "measured_pairs": 39,
+        "common_mask_fraction": 0.9274373070987654,
+        "photo_mae": {
+          "raft": 3.0990274135883036,
+          "nvofa": 2.5916792093179164
+        },
+        "temporal_residual": {
+          "raft": {
+            "zero": 1.8477718921808095,
+            "raft": 1.5601343925182636,
+            "nvofa": 1.6100924290143526
+          },
+          "nvofa": {
+            "zero": 1.7576415019157605,
+            "raft": 1.5164492588776808,
+            "nvofa": 1.4238773446816664
+          }
+        }
+      }
+    },
+    {
+      "id": "clip2",
+      "source_sha256": "0daf23457420cee803c33ea50128219c649dd80a18195ff777aeb888f97f5e31",
+      "speed": {
+        "raft": {
+          "wall_s_runs": [
+            21.492398800000956,
+            20.77436730000045,
+            20.64106349999929
+          ],
+          "wall_s_median": 20.77436730000045,
+          "wall_fps": 11.69710713644669,
+          "flow_ms_run_means": [
+            23.477786695264886,
+            23.211647210373016,
+            23.019546781017798
+          ],
+          "flow_ms_median": 23.211647210373016,
+          "process_p95_ms_median": 65.68425000114075,
+          "analysis_size": [
+            288,
+            512
+          ],
+          "ready": {
+            "device": "cuda",
+            "device_name": "NVIDIA GeForce RTX 4070 SUPER",
+            "precision": "float32",
+            "load_ms": 3346.199499999784,
+            "depth_profile": "fp32",
+            "depth_precision": "float32",
+            "depth_attention": "original",
+            "execution": "serial",
+            "raft_output": "all",
+            "schedule": "serial",
+            "cache_version": "raw_lru_v2_shared",
+            "cache_limit_bytes": 0,
+            "analysis_parameters": {
+              "guidance_flow_edge": 512,
+              "guidance_flow_updates": 6
+            },
+            "transport": "shared_memory_v1",
+            "flow_grid": null,
+            "flow_quality": null,
+            "flow_temporal_hints": false,
+            "flow_backend": "raft"
+          },
+          "all_encoded_frames_verified": true
+        },
+        "nvofa": {
+          "wall_s_runs": [
+            14.229577099999005,
+            14.624322299998312,
+            13.752830000001268
+          ],
+          "wall_s_median": 14.229577099999005,
+          "wall_fps": 17.07710624794443,
+          "flow_ms_run_means": [
+            5.293821030019212,
+            5.4024227468059305,
+            4.77994291855411
+          ],
+          "flow_ms_median": 5.293821030019212,
+          "process_p95_ms_median": 41.08948999928543,
+          "analysis_size": [
+            288,
+            512
+          ],
+          "ready": {
+            "device": "cuda",
+            "device_name": "NVIDIA GeForce RTX 4070 SUPER",
+            "precision": "float32",
+            "load_ms": 1893.223200000648,
+            "depth_profile": "fp32",
+            "depth_precision": "float32",
+            "depth_attention": "original",
+            "execution": "serial",
+            "raft_output": "off",
+            "schedule": "serial",
+            "cache_version": "raw_lru_v2_shared",
+            "cache_limit_bytes": 0,
+            "analysis_parameters": {
+              "guidance_flow_edge": 512
+            },
+            "transport": "shared_memory_v1",
+            "flow_grid": 1,
+            "flow_quality": "slow",
+            "flow_temporal_hints": false,
+            "flow_backend": "nvofa"
+          },
+          "all_encoded_frames_verified": true
+        }
+      },
+      "width": 1088,
+      "height": 1920,
+      "frames": 243,
+      "source_fps": 24.0,
+      "wall_reduction_percent": 31.504161380651542,
+      "quality": {
+        "window_starts": [
+          0,
+          113,
+          227
+        ],
+        "indices": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13,
+          14,
+          15,
+          113,
+          114,
+          115,
+          116,
+          117,
+          118,
+          119,
+          120,
+          121,
+          122,
+          123,
+          124,
+          125,
+          126,
+          127,
+          128,
+          227,
+          228,
+          229,
+          230,
+          231,
+          232,
+          233,
+          234,
+          235,
+          236,
+          237,
+          238,
+          239,
+          240,
+          241,
+          242
+        ],
+        "measured_pairs": 39,
+        "common_mask_fraction": 0.9315881267871731,
+        "photo_mae": {
+          "raft": 3.4694656958946815,
+          "nvofa": 3.6518395191583877
+        },
+        "temporal_residual": {
+          "raft": {
+            "zero": 1.7426660977877104,
+            "raft": 1.4459796104675684,
+            "nvofa": 1.477510385024242
+          },
+          "nvofa": {
+            "zero": 1.6777498936041808,
+            "raft": 1.3935184998390002,
+            "nvofa": 1.3907002424582458
+          }
+        }
+      }
+    }
+  ]
+}

@@ -19,11 +19,11 @@ DLSS_SLIDER_STEP = 0.01
 
 
 DEFAULTS = {
-    **guidance_parameters({'guidance_edge': 512, 'guidance_flow_range': 3.0}),
-    "preview_view": "original",
+    **guidance_parameters({'guidance_edge': 512, 'guidance_flow_range': 5.0}),
+    "preview_view": "compare",
     "preview_compare_layout": "wipe",
-    "guidance_preview_view": "original",
-    "guidance_compare_target": "depth",
+    "guidance_preview_view": "flow",
+    "guidance_compare_target": "flow",
     "style": 0,
     "enable_5x": False,
     "intensity": 1.0,
@@ -57,32 +57,32 @@ DEFAULTS = {
     "guidance_flow_weights": "",
     "guidance_depth_weights": "",
     "ui_modules_open": False,
-    "guidance_mode": 0,
+    "guidance_mode": 1,
     "guidance_flow_backend": "raft",
-    "guidance_flow_grid": 4,
-    "guidance_edge": 512,
+    "guidance_flow_grid": 1,
+    "guidance_edge": 720,
     "guidance_flow_direction": "backward",
     "guidance_depth_encoder": "vitl",
     "guidance_device": "auto",
     "guidance_depth_profile": "sdpa_fp16",
     "guidance_execution": "raft_streams",
-    "host_zero_fast_path": True,
+    "host_zero_fast_path": False,
     "host_persistent_buffers": True,
     "host_submission": "compatibility",
     "host_in_flight": 3,
     "host_auto_fallback": True,
-    "ui_export_open": True,
-    "ui_host_open": True,
-    "ui_preview_open": True,
-    "ui_theme": "dark",
+    "ui_export_open": False,
+    "ui_host_open": False,
+    "ui_preview_open": False,
+    "ui_theme": "light",
     "ui_language": i18n.DEFAULT_LANGUAGE,
     "inspector_width": 360,
     "preview_detached": False,
     "preview_window_geometry": "",
     "queue_output_dir": "",
     "preview_quality": "original",
-    "preview_prefetch": 24,
-    "preview_cache": 96,
+    "preview_prefetch": 120,
+    "preview_cache": 400,
     "preview_cache_mb": 8192,
     "preview_scrub_ms": 40,
 }
@@ -196,7 +196,7 @@ def validate(values):
                  "guidance_flow_weights", "guidance_depth_weights"):
         if isinstance(source.get(name), str):
             result[name] = source[name].strip()
-    result["guidance_mode"] = _clamp_int(source.get("guidance_mode", 0), 0, 3)
+    result["guidance_mode"] = _clamp_int(source.get("guidance_mode", result["guidance_mode"]), 0, 3)
     result["guidance_edge"] = _clamp_int(source.get("guidance_edge", result['guidance_edge']), 128, 1280)
     analysis_source = {**result, **source}
     # Preserve old shared-edge settings, without changing the worker protocol's
@@ -275,11 +275,8 @@ def validate(values):
 
 
 def startup_settings(values):
-    """Keep tuning, but require an explicit checked opt-in each GUI launch.
-
-    Queue/CLI validation and persistence still retain their requested mode.
-    """
-    return {**validate(values), 'guidance_mode': 0}
+    """Restore saved tuning and mode; the GUI checks readiness before activation."""
+    return validate(values)
 
 
 def load(path=None):

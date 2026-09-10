@@ -273,13 +273,13 @@ class PlayerHelperTests(unittest.TestCase):
 
     def test_preview_controls_wrap_at_narrow_widths(self):
         self.assertEqual(_preview_control_layout(900, "zh_CN"), "stacked")
-        self.assertEqual(_preview_control_layout(960, "zh_CN"), "wide")
-        self.assertEqual(_preview_control_layout(959, "zh_CN"), "stacked")
-        self.assertEqual(_preview_control_layout(420, "zh_CN"), "stacked")
-        self.assertEqual(_preview_control_layout(419, "zh_CN"), "compact")
-        self.assertEqual(_preview_control_layout(959, "en_US"), "stacked")
-        self.assertEqual(_preview_control_layout(960, "en_US"), "wide")
-        self.assertEqual(_preview_control_layout(519, "en_US"), "compact")
+        self.assertEqual(_preview_control_layout(1000, "zh_CN"), "wide")
+        self.assertEqual(_preview_control_layout(999, "zh_CN"), "stacked")
+        self.assertEqual(_preview_control_layout(460, "zh_CN"), "stacked")
+        self.assertEqual(_preview_control_layout(459, "zh_CN"), "compact")
+        self.assertEqual(_preview_control_layout(999, "en_US"), "stacked")
+        self.assertEqual(_preview_control_layout(1000, "en_US"), "wide")
+        self.assertEqual(_preview_control_layout(559, "en_US"), "compact")
 
     def test_play_target_skips_ahead_and_stops_at_last(self):
         self.assertEqual(_play_target_frame(0, 0, 24, 242), 0)
@@ -543,7 +543,7 @@ class SettingsPanelPersistenceTests(unittest.TestCase):
     def test_release_defaults_match_recommended_profile(self):
         defaults = app_settings.validate({})
         expected = {
-            "preview_view": "original",
+            "preview_view": "compare",
             "style": 0,
             "enable_5x": False,
             "intensity": 1.0,
@@ -573,13 +573,13 @@ class SettingsPanelPersistenceTests(unittest.TestCase):
             "host_backend": "auto",
             "host_submission": "compatibility",
             "host_in_flight": 3,
-            "host_zero_fast_path": True,
+            "host_zero_fast_path": False,
             "host_persistent_buffers": True,
             "host_auto_fallback": True,
-            "ui_preview_open": True,
-            "ui_export_open": True,
-            "ui_host_open": True,
-            "ui_theme": "dark",
+            "ui_preview_open": False,
+            "ui_export_open": False,
+            "ui_host_open": False,
+            "ui_theme": "light",
             "preview_detached": False,
             "preview_window_geometry": "",
         }
@@ -609,8 +609,8 @@ class SettingsPanelPersistenceTests(unittest.TestCase):
             self.assertEqual(loaded["preview_view"], "dlss")
             self.assertTrue(loaded["preview_detached"])
             self.assertEqual(loaded["preview_window_geometry"], "1280x720-1200+80")
-            self.assertTrue(app_settings.validate({})["ui_preview_open"])
-            self.assertEqual(app_settings.validate({})["ui_theme"], "dark")
+            self.assertFalse(app_settings.validate({})["ui_preview_open"])
+            self.assertEqual(app_settings.validate({})["ui_theme"], "light")
             self.assertEqual(app_settings.validate({"ui_theme": "LIGHT"})["ui_theme"], "light")
             self.assertEqual(ui_theme.normalize_theme_name("Light"), "light")
             self.assertNotEqual(
@@ -1328,6 +1328,15 @@ class PreviewQueueTests(unittest.TestCase):
 
 
 class WidgetSmokeTests(unittest.TestCase):
+    def setUp(self):
+        # These control tests use an explicitly disabled analysis mode.
+        # First-run readiness and restoration are covered by GuidanceStartupTests.
+        original = app_settings.startup_settings
+        patcher = mock.patch.object(app_settings, 'startup_settings',
+                                    side_effect=lambda values: original({**values, 'guidance_mode': 0}))
+        patcher.start()
+        self.addCleanup(patcher.stop)
+
     def test_automatic_update_check_only_prompts_for_a_newer_release(self):
         logs = []
         prompted = []
@@ -1438,6 +1447,10 @@ class WidgetSmokeTests(unittest.TestCase):
                 self.assertEqual(str(app.fs_btn.cget("icon")), "fullscreen")
                 self.assertEqual(str(app.detach_btn.cget("text")), "分离")
                 self.assertEqual(str(app.play_btn.cget("icon")), "play")
+                self.assertEqual(str(app.clear_cache_btn.cget("text")), "清空缓存")
+                self.assertEqual(str(app.clear_cache_btn.cget("icon")), "retry")
+                self.assertTrue(app.clear_cache_btn.instate(["disabled"]))
+                self.assertIs(app.clear_cache_btn.master, app.zoom_in_btn.master)
                 app._draw_empty(640, 400)
                 empty_text = " ".join(
                     str(app.canvas.itemcget(item, "text"))
@@ -1606,6 +1619,7 @@ class WidgetSmokeTests(unittest.TestCase):
                 app._update_action_labels()
                 self.assertTrue(app.zoom_in_btn.instate(["!disabled"]))
                 self.assertTrue(app.zoom_out_btn.instate(["!disabled"]))
+                self.assertTrue(app.clear_cache_btn.instate(["!disabled"]))
                 self.assertTrue(app._export_settings["w_output_container"].instate(["disabled"]))
                 self.assertTrue(app._export_settings["w_nvenc_preset"].instate(["disabled"]))
                 self.assertTrue(app._export_settings["w_mode"].instate(["disabled"]))
@@ -2059,6 +2073,7 @@ class WidgetSmokeTests(unittest.TestCase):
             app_settings.save(
                 {
                     "intensity": 0.9,
+                    "ui_theme": "dark",
                     "use_intensity": False,
                     "local_tone": 0.6,
                     "use_local_tone": True,

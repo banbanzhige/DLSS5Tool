@@ -386,9 +386,9 @@ def _preview_control_layout(width, language=None):
     width = max(int(width), 0)
     language = i18n.normalize_language(language or i18n.get_language())
     # Four localized guidance-view labels need more room than the original
-    # three-item DLSS selector. Stacking below 960 keeps the last choice visible.
-    wide_min = 960
-    stacked_min = 520 if language == "en_US" else 420
+    # three-item DLSS selector, plus the cache-clear tool.
+    wide_min = 1000
+    stacked_min = 560 if language == "en_US" else 460
     if width >= wide_min:
         return "wide"
     if width >= stacked_min:
@@ -723,6 +723,7 @@ class App(PreviewComparison, GuidanceExportUI):
     def __init__(self, root):
         self.root = root
         self._saved_settings = app_settings.startup_settings(app_settings.load())
+        self._startup_guidance_mode = 0
         self._ui_language = i18n.get_language()
         self._preferred_ui_language = self._saved_settings.get(
             "ui_language", self._ui_language,
@@ -754,6 +755,7 @@ class App(PreviewComparison, GuidanceExportUI):
         self.thread = None
         self.split_x = 0.5
         self.playing = False
+        self._clear_preview_pending = False
         self._frame = 0
         self._exporting = False
         self._export_cancel_event = threading.Event()
@@ -1117,6 +1119,17 @@ class App(PreviewComparison, GuidanceExportUI):
             # Up-to-date, newer local builds, and network failures stay silent.
             self.check_for_updates(manual=False)
 
+        self._restore_guidance_mode()
+
+    def _restore_guidance_mode(self):
+        """Check the remembered mode asynchronously before allowing inference."""
+        self._startup_guidance_mode = self._saved_settings.get('guidance_mode', 0)
+        if self._startup_guidance_mode:
+            # Widget construction already captured these settings. Force the
+            # normal checked activation path even though nothing was edited.
+            self._last_module_settings = None
+            self._on_mod_settings_change()
+
     def _create_preview_pane(self, parent, detached=False):
         """Build one visual player surface backed by the shared App state."""
         theme_widgets = []
@@ -1229,6 +1242,12 @@ class App(PreviewComparison, GuidanceExportUI):
         Tooltip(zoom_out_btn, tr("tooltip.zoom_out"))
         Tooltip(zoom_reset_btn, tr("tooltip.fit"))
         Tooltip(zoom_in_btn, tr("tooltip.zoom_in"))
+        clear_cache_btn = ChromeButton(
+            zoom_bar, text=tr("action.clear_preview_cache"), icon="retry", icon_only=True,
+            variant="tool", width=36, command=self.clear_preview_cache, ui=self._ui,
+        )
+        clear_cache_btn.pack(side="left", padx=(4, 0))
+        Tooltip(clear_cache_btn, tr("tooltip.clear_preview_cache"))
         detach_btn = ChromeButton(
             right,
             text=tr("action.dock") if detached else tr("action.detach"),
@@ -1263,7 +1282,7 @@ class App(PreviewComparison, GuidanceExportUI):
 
         for widget in (
             prev_btn, play_btn, next_btn, mute_btn,
-            zoom_out_btn, zoom_reset_btn, zoom_in_btn, detach_btn, fs_btn,
+            zoom_out_btn, zoom_reset_btn, zoom_in_btn, clear_cache_btn, detach_btn, fs_btn,
         ):
             self._theme_widgets.append(widget)
             theme_widgets.append(widget)
@@ -1283,6 +1302,7 @@ class App(PreviewComparison, GuidanceExportUI):
             "zoom_out_btn": zoom_out_btn,
             "zoom_reset_btn": zoom_reset_btn,
             "zoom_in_btn": zoom_in_btn,
+            "clear_cache_btn": clear_cache_btn,
             "detach_btn": detach_btn,
             "fs_btn": fs_btn,
             "theme_widgets": tuple(theme_widgets),
@@ -4118,8 +4138,9 @@ class App(PreviewComparison, GuidanceExportUI):
             warm_preview = (self.video, self._frame,
                             self._image_bgr.copy() if self._is_image else None,
                             self._collect_settings(), self._guidance_preview_epoch)
-        # The requested mode is not active (or persisted) until the worker has
-        # loaded the selected weights and successfully processed a frame pair.
+        # The requested mode is not active until the worker has loaded the
+        # selected weights and successfully processed a frame pair. A remembered
+        # startup choice stays persisted while this check is still pending.
         if settings.get('guidance_mode'):
             self._host_settings['v_guidance'].set(tr('guidance.mode.0'))
         self.pause()
@@ -4207,6 +4228,7 @@ class App(PreviewComparison, GuidanceExportUI):
         self._module_reload_thread = None
         pending = getattr(self, '_module_pending_settings', None)
         self._module_pending_settings = None
+        self._startup_guidance_mode = 0
         warmed = None
         if isinstance(error, dict):
             warmed = error.get('preview')
@@ -4386,6 +4408,7 @@ class App(PreviewComparison, GuidanceExportUI):
         self._module_details_text = '\n'.join(lines)
 
     def _update_host_control_states(self):
+        self._update_clear_cache_control()
         if not hasattr(self, "_host_settings"):
             return
         if 'w_mod_hint' in self._host_settings:
@@ -4771,6 +4794,9 @@ class App(PreviewComparison, GuidanceExportUI):
     def _collect_persisted_settings(self):
         d = self._settings
         export = self._collect_export_settings()
+        host = self._collect_host_settings()
+        if getattr(self, '_startup_guidance_mode', 0):
+            host['guidance_mode'] = self._startup_guidance_mode
         return {
             "preview_view": self._normal_preview_view if self._guidance_context else self.view_var.get(),
             "preview_compare_layout": self.compare_layout.get(),
@@ -4815,7 +4841,7 @@ class App(PreviewComparison, GuidanceExportUI):
                 if hasattr(self, "queue_output_dir_var") else ""
             ),
             **self._collect_preview_settings(),
-            **self._collect_host_settings(),
+            **host,
         }
 
     def _schedule_settings_save(self, event=None):
@@ -4880,6 +4906,7 @@ class App(PreviewComparison, GuidanceExportUI):
         self._cancel_after("_resize_after")
         self._cancel_after("_preview_cache_resume_after")
         self._cancel_after('_guidance_events_after')
+        self._cancel_after('_clear_preview_after')
         self._cancel_after('_module_reload_after')
         self._cancel_after('_guidance_preview_after')
         self._save_settings_now()
@@ -5313,6 +5340,73 @@ class App(PreviewComparison, GuidanceExportUI):
             if pool:
                 with pool.locked():self._publish_frame_cache_locked()
 
+    def _can_clear_preview_cache(self):
+        return bool(getattr(self, 'video', None)) and not any(getattr(self, name, False) for name in (
+            '_exporting', '_queue_running', '_diagnosing', '_switching_backend',
+            '_module_reload_thread', '_clear_preview_pending',
+        ))
+
+    def _update_clear_cache_control(self):
+        button = getattr(self, 'clear_cache_btn', None)
+        if button is not None:
+            self._set_ttk_enabled(button, self._can_clear_preview_cache())
+
+    def clear_preview_cache(self):
+        """Retire in-flight work, then regenerate without changing media or settings."""
+        if not self._can_clear_preview_cache():
+            return
+        self.pause()
+        self._freeze_preview_cache(resume_ms=None)
+        self._cancel_after('_live_debounce')
+        self._cancel_after('_output_preview_after')
+        self._clear_preview_pending = True
+        self._guidance_preview_epoch += 1
+        self._guidance_result = self._guidance_ready = self._guidance_presented = None
+        self._guidance_display_signature = None
+        self._update_clear_cache_control()
+        self.set_status(tr('status.clearing_preview_cache'))
+        self._clear_preview_after = self.root.after(0, self._poll_clear_preview_cache)
+
+    def _poll_clear_preview_cache(self):
+        self._clear_preview_after = None
+        if not getattr(self, '_clear_preview_pending', False):
+            return
+        thread = getattr(self, '_play_dlss_thread', None)
+        if ((thread is not None and thread.is_alive()) or any(
+                getattr(self, name, False) for name in
+                ('_module_reload_thread', '_exporting', '_queue_running', '_switching_backend', '_diagnosing'))):
+            self._clear_preview_after = self.root.after(
+                PREVIEW_WORKER_POLL_MS, self._poll_clear_preview_cache,
+            )
+            return
+        self._play_dlss_thread = None
+        self._play_dlss_busy = False
+        self._preview_cache_frozen = False
+        self._finish_clear_preview_cache()
+        if self.video:
+            self.display_view(quality="fast")
+            if not getattr(self, '_guidance_context', False):
+                self._schedule_full_preview()
+
+    def _finish_clear_preview_cache(self):
+        # Called only after the worker has retired: it can no longer refill the
+        # frame caches or overwrite the temporal reset marker below.
+        pool = getattr(self, '_shared_cache_pool', None)
+        if pool:
+            pool.invalidate_guidance()
+        self._cache_clear()
+        self._last_dlss_frame = -1
+        self._play_orig = None
+        self._split_frame = -1
+        self._split_orig = self._split_dlss = None
+        self._active_preview_size = None
+        self._clear_preview_pending = False
+        self.timeline.set_cache_ranges([], [])
+        self._update_clear_cache_control()
+        message = tr('status.preview_cache_cleared')
+        self.logln(message)
+        self.set_status(message)
+
     def _canvas_size(self):
         return (
             max(self.canvas.winfo_width() or 780, 200),
@@ -5376,7 +5470,7 @@ class App(PreviewComparison, GuidanceExportUI):
         self._paint_empty_button()
 
     def display_view(self, quality="full"):
-        if getattr(self, "_exporting", False):
+        if getattr(self, "_exporting", False) or getattr(self, '_clear_preview_pending', False):
             return
         if self.playing:
             self._present_play_frame(self._frame)
@@ -6214,6 +6308,7 @@ class App(PreviewComparison, GuidanceExportUI):
         self._schedule_preview_cache_resume()
 
     def _update_zoom_controls(self):
+        self._update_clear_cache_control()
         zoom = max(PREVIEW_ZOOM_MIN, min(self._preview_zoom, PREVIEW_ZOOM_MAX))
         fitted = abs(zoom - 1.0) < 0.005
         text = tr("action.fit") if fitted else f"{int(round(zoom * 100))}%"
@@ -6642,7 +6737,7 @@ class App(PreviewComparison, GuidanceExportUI):
             self._audio.play(self._frame, self.fps)
 
     def play(self):
-        if getattr(self, '_switching_backend', False):
+        if getattr(self, '_switching_backend', False) or getattr(self, '_clear_preview_pending', False):
             return
         if not self.video:
             messagebox.showwarning(tr("dialog.hint"), tr("message.import_first"))
@@ -6721,6 +6816,7 @@ class App(PreviewComparison, GuidanceExportUI):
         return bool(
             (self.playing or self._pre_rendering)
             and getattr(self, '_module_reload_thread', None) is None
+            and not getattr(self, '_clear_preview_pending', False)
             and not getattr(self, "_preview_cache_frozen", False)
             and self.video and not self._exporting
             and self.view_var.get() in ("dlss", "compare")
@@ -6769,7 +6865,8 @@ class App(PreviewComparison, GuidanceExportUI):
 
     def _resume_preview_cache(self):
         self._preview_cache_resume_after = None
-        if getattr(self, '_module_reload_thread', None) is not None:
+        if (getattr(self, '_module_reload_thread', None) is not None
+                or getattr(self, '_clear_preview_pending', False)):
             return
         thread = getattr(self, "_play_dlss_thread", None)
         if thread is not None and thread.is_alive():
@@ -7747,11 +7844,13 @@ class App(PreviewComparison, GuidanceExportUI):
         return getattr(event, "action", None)
 
     def _begin_source_load(self):
+        self._clear_preview_pending = False
         self._guidance_preview_epoch = getattr(self, '_guidance_preview_epoch', 0) + 1
         self._guidance_result = None
         self._guidance_ready = self._guidance_presented = None
         self._guidance_display_signature = None
         self.pause()
+        self._cancel_after('_clear_preview_after')
         self._freeze_preview_cache(resume_ms=None)
         if getattr(self,'_shared_cache_pool',None):
             self._shared_cache_pool.invalidate_guidance()

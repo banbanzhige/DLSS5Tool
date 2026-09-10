@@ -303,7 +303,7 @@ class PreviewComparison:
         self._guidance_display_signature = signature
 
     def _request_guidance_preview(self, key):
-        if self._guidance_preview_busy:
+        if self._guidance_preview_busy or getattr(self, '_clear_preview_pending', False):
             return
         previous = getattr(self, '_play_dlss_thread', None)
         if previous is not None and previous.is_alive():

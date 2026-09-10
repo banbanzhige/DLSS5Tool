@@ -58,13 +58,13 @@ A complete component carries its dependencies; end users do not separately insta
 
 ### Activation and recovery
 
-NVOFA needs no flow weights or iterations. Initialization failure is reported before trying RAFT (weights required). Runtime failure stops processing, with no mid-video algorithm switch. RAFT remains the default and flow starts off. Depth inference is temporarily hidden. Launch the development app with `run.bat` at the repo root.
+NVOFA needs no flow weights or iterations. Initialization failure is reported before trying RAFT (weights required). Runtime failure stops processing, with no mid-video algorithm switch. RAFT-Large remains the default; the last analysis mode is remembered and restored after a startup environment check. Depth inference is temporarily hidden. Launch the development app with `run.bat` at the repo root.
 
 1. Under **Models → Analysis mode**, choose Flow only; select RAFT or NVOFA.
 2. Wait for the environment check. The mode remains off during the check and activates only after it succeeds.
 3. If the check fails, read the reason shown below the mode. Check **Settings → Models & add-ons**, correct the component path, weights, device, or precision, then select the mode again. Base enhancement remains available.
 
-Inference starts off on every launch, but your tuning is retained. Installing the full component does not require a separate Python, PyTorch, or CUDA Toolkit installation. Do not copy just the component EXE.
+Both the analysis mode and tuning are saved. On restart, the previously enabled mode is checked and restored automatically; a missing environment or failed check turns it off and reports the reason. First use checks the default RAFT-Large mode before enabling it; a saved off mode remains off. Installing the full component does not require a separate Python, PyTorch, or CUDA Toolkit installation. Do not copy just the component EXE.
 
 A successful check does not guarantee enough VRAM for every source. Auto/GPU does not silently fall back to CPU; CPU must be selected explicitly with compatible settings.
 
@@ -72,10 +72,10 @@ A successful check does not guarantee enough VRAM for every source. Auto/GPU doe
 
 | Setting | Default |
 | --- | --- |
-| Analysis mode | Off; explicit activation on every GUI launch |
-| Flow model, analysis long edge, updates | RAFT-Large, 512 px, 6; NVOFA grid default 4×4 |
+| Analysis mode | Flow only; enabled after a startup environment check |
+| Flow model, analysis long edge, updates | RAFT-Large, 512 px, six updates; alternative NVOFA grid: 1×1 |
 | Flow direction and precision | Current → previous frame, FP32 |
-| Flow display range | 3 px/frame; visualization only |
+| Flow display range | 5 px/frame; visualization only |
 
 Model alignment may slightly change the actual input dimensions. Larger inputs, more updates, or larger models do not guarantee better final images. Explicit saved settings are not overwritten by this table. See [parameter notes](../docs/guidance/GUIDANCE_PARAMETERS.md).
 
@@ -133,7 +133,7 @@ Lower Playback quality under Preview performance and adjust the cache budget to 
 
 **Why is inference off after restarting or after selecting a mode?**
 
-Startup preserves tuning but requires an explicit activation. The mode stays off during readiness checks; failures are shown below it. Check **Settings → Models & add-ons**, fix weights, component paths, device, or precision, and retry. Do not copy only the component EXE.
+Startup remembers the last mode and checks it automatically. It is not active while the check runs; only a missing environment or failed check turns it off, while tuning is retained. See the status, Details, or log, then check **Settings → Models & add-ons**, fix weights, component paths, device, or precision, and retry. Do not copy only the component EXE.
 
 **Flow slows rendering. Will a larger cache help?**
 

@@ -260,6 +260,7 @@ class ModuleReloadTests(unittest.TestCase):
             'DLSS5TOOL_SETTINGS_PATH': os.path.join(directory, 'settings.json'),
             'DLSS5TOOL_QUEUE_PATH': os.path.join(directory, 'queue.json'),
         }):
+            gui.app_settings.save({'guidance_mode': 0})
             root = tk.Tk()
             root.withdraw()
             app = App(root)
