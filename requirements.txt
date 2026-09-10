@@ -1,5 +1,5 @@
 numpy>=1.24
-opencv-python>=4.8
+opencv-python>=5.0.0.93
 imageio-ffmpeg>=0.4.9
 tkinterdnd2>=0.4
 Pillow>=10.0
