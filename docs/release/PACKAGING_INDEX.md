@@ -9,6 +9,24 @@ NVOFA 已写入默认 `mods/enhancement`，开发入口为根目录 `run.bat`。
 
 ## 已确认原则
 
+### 本地完整版：2026-09-10 / PKG-002 / v2.1.2
+
+- 在上述基础包上使用当前已验证 NVOFA 网格 4/2/1 组件，worker SHA-256 `56d36aa26334d4caa8ac70b881717f17d71045e02933cba2dd38c6379928167b`，同步脚本旧哈希锁定与发行说明；未重建或裁剪组件。仅附原始 RAFT-Large 权重，递归排除 DAV2 权重。
+- 输出目录 `dist/v2.1.2-editions/`；ZIP64 / Deflate level 6。完整版 ZIP 为 `DLSS5Tool-v2.1.2-win64-full.zip`：3,283,448,048 B（约 3.06 GiB），解压 5,247,862,043 B（约 4.89 GiB），3631 个文件；SHA-256 `4536c52998bac8224123e1362ec1a3005ccde5ad193e0d0f3473c03da06aed8d`。
+- 配套附加包 ZIP 3,053,774,326 B，解压 4,781,518,435 B，2412 个文件；SHA-256 `a4439423525817319c79a180b56c622b9b7fad585d953ba687c5e0ff8a7c7797`。流程另生成含分发说明的轻量包与两卷式完整／附加包，均未上传。
+- 逐文件大小／SHA 清单在 `verification/*-files.json`，完整校验报告在 `package-report.json`，归档校验值在 `SHA256SUMS.txt`。所有 ZIP CRC 校验通过，完整版与轻量＋附加包逐文件精确叠加一致。
+- 本机 `scripts/verify_editions.py` 通过：冻结轻量版基础诊断成功、缺光流组件时明确失败；冻结完整版与叠加安装诊断输出一致，安装后的 RAFT 连续帧与旧深度模式映射检查通过。报告：`output/verify-v2.1.2-editions/report.json`。
+- 另对完整版执行 NVOFA 1×1 禁止回退的两帧就绪检查，确认实际 `flow_backend=nvofa`、`flow_grid=1`、CUDA RTX 4070 SUPER；冻结完整版 NVOFA 单帧诊断通过。专项打包回归 9 项通过。本机验证不是干净环境、跨显卡认证或公开分发许可审核。
+
+### 本地基础包复打：2026-09-10 / PKG-002 / v2.1.2
+
+- 源码基点：`5e88370`；使用 `scripts/build_release.ps1 -SkipInstall -SkipTests`，复用 Python 3.13.3 / PyInstaller 6.22.2；构建前完整回归 409 项，401 项通过、8 项因可选依赖缺失跳过。
+- 产物：`dist/DLSS5Tool-v2.1.2-win64.zip`；可运行目录：`dist/DLSS5Tool-v2.1.2/`。仅基础轻量包，文件清单按 `packaging/DLSS5Tool.spec` 与 `scripts/build_release.ps1` 收集，不含增强组件、Torch、模型、用户设置或实验素材；未实施依赖裁剪。
+- ZIP 实测 230,687,409 B（约 220.00 MiB），解压逻辑体积 466,319,973 B（约 444.72 MiB），1232 个归档条目；压缩方式为 PowerShell `Compress-Archive -CompressionLevel Optimal`。
+- SHA-256：`df7a28a8a2787dee5e4d308c516959370e827ea0bd9e05d54c3556d2a13db82d`。
+- 验证：发行内容隔离、ZIP 逐文件 CRC、EXE 文件／产品版本 2.1.2 均通过；冻结程序 v2 后端在关闭光流的合成 640×360 单帧诊断通过，输出 SHA-256 为 `329A1278081892CFD4A09ED79152CEA0FBFC7B13571689D9169440A178FE1D93`。本地诊断记录在 `output/package-v2.1.2-check/`，不进入发行包。
+- 当前默认参数已固化；轻量包缺少光流组件时仍经启动检查后关闭并提示。未构建完整包或附加包，未上传发布；本机基础诊断不代替干净环境、完整 GUI 导出及跨显卡验收。
+
 **开发环境可以保留全组件；面向用户的发行包必须按实际功能需要尽量轻量、精简。**
 开发便利不等于发行依赖，不能把开发环境或整个开发机 `mods` 直接作为正式发行清单。
 轻量化不能以静默降低画质、减少既有功能、破坏兼容性或要求用户额外安装 Python、

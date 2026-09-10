@@ -20,7 +20,8 @@ sys.path.insert(0, str(ROOT))
 from dlss5tool.app_version import APP_VERSION
 from scripts.check_release_contents import forbidden_contents
 
-WORKER_SHA = 'ae3d29343f669f8d0741e8fe4673afe3bf49ace9135feacfa1f11e6d8d545732'
+# NVOFA grid 4/2/1 candidate verified in docs/experiments/NVOFA_INTEGRATION.md.
+WORKER_SHA = '56d36aa26334d4caa8ac70b881717f17d71045e02933cba2dd38c6379928167b'
 MODELS = ('raft_large_C_T_SKHT_V2-ff5fadd5.pth',)
 
 
