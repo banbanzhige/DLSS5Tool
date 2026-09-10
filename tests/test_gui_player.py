@@ -4,6 +4,7 @@ import tempfile
 import threading
 import time
 import unittest
+from unittest import mock
 from tkinter import filedialog, messagebox, ttk
 
 import numpy as np
@@ -1695,10 +1696,10 @@ class WidgetSmokeTests(unittest.TestCase):
                 app.clear_media()
                 self.assertIsNone(app.video)
                 self.assertTrue(app.clear_btn.instate(["disabled"]))
-                self.assertFalse(app._preview_section.collapsed)
+                self.assertTrue(app._preview_section.collapsed)
                 self.assertEqual(app._preview_settings["v_quality"].get(), "原始分辨率")
-                self.assertFalse(app._export_section.collapsed)
-                self.assertFalse(app._host_section.collapsed)
+                self.assertTrue(app._export_section.collapsed)
+                self.assertTrue(app._host_section.collapsed)
                 packed = list(app.root.pack_slaves())
                 self.assertIn(app._studio, packed)
                 self.assertIn(app._progress_rule, packed)
@@ -1799,6 +1800,8 @@ class WidgetSmokeTests(unittest.TestCase):
                 app.root.update()
                 self.assertFalse(sample.combo.selection_present())
                 self.assertEqual(str(app.workspace_tabs.tab(0, "text")), "画面效果")
+                self.assertEqual(app._ui_theme_name, "light")
+                app.toggle_ui_theme()
                 self.assertEqual(app._ui_theme_name, "dark")
                 app.toggle_ui_theme()
                 self.assertEqual(app._ui_theme_name, "light")
@@ -1935,9 +1938,9 @@ class WidgetSmokeTests(unittest.TestCase):
                 self.assertEqual(app.timeline.get(), 12)
                 self.assertEqual(_format_timecode(app.timeline.get(), 24), "0:00.50")
                 app._export_section.toggle()
-                self.assertTrue(app._export_section.collapsed)
-                app._export_section.toggle()
                 self.assertFalse(app._export_section.collapsed)
+                app._export_section.toggle()
+                self.assertTrue(app._export_section.collapsed)
                 bar = TimelineBar(root)
                 bar.set_range(0, 10)
                 bar.set(10)
