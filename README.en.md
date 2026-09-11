@@ -154,6 +154,8 @@ Start with the default settings and a short clip or single image. See the [user 
 
 Fully extract the package, keep the EXE beside `_internal`, and install the x64 Visual C++ runtime. Do not mix application files from different versions.
 
+If you are running a `Source code` package, installing Python dependencies does not provide the native DLLs. Follow [Build and run from source](#build-and-run-from-source) below. `missing dlssnr_host.dll` can also mean the v2 host was not found and the app tried the legacy host; it does not necessarily mean you need the legacy DLL.
+
 **Preview is slow, or high-multiplier super resolution fails.**
 
 Lower playback quality, try smaller media or 2× scaling, and temporarily disable optional optical flow. A larger cache cannot speed up frames that have not yet been processed.
@@ -165,6 +167,66 @@ Use **More → Check for updates**, or download the latest Release. In-app downl
 **Still having trouble?**
 
 Use **More → Diagnostics**, then open an [issue](https://github.com/banbanzhige/DLSS5Tool/issues) with the app version, GPU, driver, reproduction steps, and diagnostic log. Check logs for local paths and other private information before posting.
+
+## Build and run from source
+
+These steps apply to the **current source layout**. For ordinary use, choose the portable release. GitHub's `Source code` archives do not include compiled DLLs or NVIDIA SDKs. `setup.bat` **only installs Python dependencies; it does not compile hosts or install NVIDIA runtimes**. The UI may open while media processing remains unavailable until those components are ready.
+
+### 1. Prepare the build environment
+
+- Windows 10 / 11 x64, Python 3.10+ with Tkinter and the `py` launcher, and Git.
+- Visual Studio 2022 Build Tools with the **Desktop development with C++** workload and Windows SDK. The Visual C++ redistributable alone cannot compile the hosts.
+- Actual processing requires a compatible NVIDIA GPU, driver, and an authorized NVIDIA runtime matching your GPU.
+
+Run the commands below from the source root. Continue only after each step succeeds.
+
+### 2. Install Python dependencies and compile the DLSS host
+
+```powershell
+.\setup.bat
+git clone --depth 1 https://github.com/NVIDIA/DLSS.git third_party/NVIDIA-DLSS
+# After reviewing and accepting the SDK license:
+.\native\host_v2\build.bat
+```
+
+Skip cloning if the SDK is already present. A successful build creates `runtime\dlssnr_host_v2.dll`. Automatic host selection prefers v2; you do not need to find the legacy `dlssnr_host.dll` or rename the v2 DLL to that name.
+
+### 3. Provide the DLSS runtime
+
+Place an authorized `nvngx_dlssnr.dll` matching your GPU in the `runtime` folder under the source root. If you already have the same-version portable package, you can extract an applicable runtime from its `_internal` folder. For RTX 30 / 50 series, select the appropriate attachment as described in [GPU runtime selection](#2-select-the-runtime-for-your-gpu).
+
+`dlssnr_host_v2.dll` is the host built from this project; `nvngx_dlssnr.dll` is a separately supplied NVIDIA runtime. Compiling the host does not produce the latter. If you have a replacement in `mods` or a custom runtime path, confirm the selected file under **Runtime & model paths**.
+
+### 4. Optional: build 2× / 4× super resolution components
+
+For super resolution, obtain RTX Video SDK 1.1, review and accept its license, and extract it to `third_party\RTX_Video_SDK`, or set `NV_RTX_VIDEO_SDK` to the SDK root. Then run:
+
+```powershell
+.\native\vsr_host\build.bat
+```
+
+The script creates `runtime\vsr_host.dll` and copies `nvngx_vsr.dll` from the SDK into `runtime`. Skip this step if you do not need super resolution.
+
+### 5. Check the files and launch
+
+```text
+Source root/
+├── run.bat
+├── gui.py
+└── runtime/
+    ├── dlssnr_host_v2.dll
+    ├── nvngx_dlssnr.dll
+    ├── vsr_host.dll          # Super resolution only
+    └── nvngx_vsr.dll         # Super resolution only
+```
+
+```powershell
+.\run.bat
+```
+
+Use `run.bat` as the source-development entry point; it prefers `.venv`. Settings, queues, and development logs are stored in `var`. These steps cover base enhancement and optional super resolution. Model inference components require a [separate build](mods/README.md#维护者深度与构建). See the [developer guide](docs/development/BUILDING.en.md) for tests and portable EXE packaging.
+
+**Older layout:** v2.1.1 uses `native_host_v2\build.bat` and `native_vsr_host\build.bat`, with DLLs in the source root. The current version uses `native\host_v2`, `native\vsr_host`, and `runtime`. Follow the instructions for your version; do not mix layouts or host binaries.
 
 ## Documentation
 

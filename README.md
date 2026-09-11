@@ -158,6 +158,8 @@ mods\nvngx_dlssnr.dll
 
 确认已完整解压，EXE 与 `_internal` 在一起，并安装 x64 Visual C++ 运行库；不要混用不同版本的程序文件。
 
+如果运行的是 `Source code` 源码包，安装 Python 依赖并不会补齐原生 DLL，请按下方[从源码构建与启动](#从源码构建与启动)准备运行环境。`missing dlssnr_host.dll` 也可能是找不到 v2 宿主后尝试旧版宿主的结果，不代表必须下载旧版 DLL。
+
 **预览卡顿，或高倍率超分失败？**
 
 先降低播放质量，尝试较小素材或 2× 超分，并暂时关闭可选光流。增大缓存不能加快尚未计算的首遍处理。
@@ -169,6 +171,66 @@ mods\nvngx_dlssnr.dll
 **仍然无法使用？**
 
 通过「更多 → 一键诊断」生成报告，在 [Issues](https://github.com/banbanzhige/DLSS5Tool/issues) 附上软件版本、显卡、驱动、复现步骤及诊断日志。公开前请检查日志中的本地路径等隐私信息。
+
+## 从源码构建与启动
+
+以下步骤适用于**当前源码布局**。普通使用请选择免安装版；GitHub 的 `Source code` 包不包含编译后的 DLL 和 NVIDIA SDK。`setup.bat` **只安装 Python 依赖，不编译宿主，也不安装 NVIDIA 运行库**；即使界面能打开，缺少这些组件仍无法处理素材。
+
+### 1. 准备构建环境
+
+- Windows 10 / 11 x64、Python 3.10+（含 Tkinter 和 `py` 启动器）、Git。
+- Visual Studio 2022 Build Tools，安装「使用 C++ 的桌面开发」工作负载及 Windows SDK。仅安装 Visual C++ 运行库不足以编译。
+- 实际处理需要兼容的 NVIDIA 显卡、驱动，以及有权使用且匹配显卡的 NVIDIA 运行库。
+
+在源码根目录执行以下命令，每一步成功后再继续。
+
+### 2. 安装 Python 依赖并编译 DLSS 宿主
+
+```powershell
+.\setup.bat
+git clone --depth 1 https://github.com/NVIDIA/DLSS.git third_party/NVIDIA-DLSS
+# 阅读并接受 SDK 许可证后执行：
+.\native\host_v2\build.bat
+```
+
+若 SDK 已存在，无需重复 clone。编译成功会生成 `runtime\dlssnr_host_v2.dll`。默认自动选择 v2 宿主，不需要另行寻找或将它重命名为旧版 `dlssnr_host.dll`。
+
+### 3. 准备 DLSS 运行库
+
+将有权使用、匹配显卡的 `nvngx_dlssnr.dll` 放到源码根目录下的 `runtime` 文件夹。已有同版本免安装包时，可从其 `_internal` 提取适用的运行库；RTX 30 / 50 系需按对应附件选择，参见[显卡运行库说明](#2-选择显卡运行库)。
+
+`dlssnr_host_v2.dll` 是本项目编译的宿主，`nvngx_dlssnr.dll` 是另行提供的 NVIDIA 运行库；编译宿主不会生成后者。已有 `mods` 替换库或自定义运行库路径时，请在「运行库与模型路径」确认实际选中的文件。
+
+### 4. 可选：构建 2× / 4× 超分组件
+
+需要超分时，另行准备 RTX Video SDK 1.1，阅读并接受其许可证，解压到 `third_party\RTX_Video_SDK`，或设置环境变量 `NV_RTX_VIDEO_SDK` 指向 SDK 根目录，然后执行：
+
+```powershell
+.\native\vsr_host\build.bat
+```
+
+脚本会生成 `runtime\vsr_host.dll`，并从 SDK 复制 `nvngx_vsr.dll` 到 `runtime`。不需要超分时可跳过此步。
+
+### 5. 检查文件并启动
+
+```text
+源码根目录/
+├── run.bat
+├── gui.py
+└── runtime/
+    ├── dlssnr_host_v2.dll
+    ├── nvngx_dlssnr.dll
+    ├── vsr_host.dll          # 仅超分需要
+    └── nvngx_vsr.dll         # 仅超分需要
+```
+
+```powershell
+.\run.bat
+```
+
+源码开发统一通过 `run.bat` 启动，优先使用 `.venv`；设置、队列和开发日志保存在 `var`。上述步骤用于基础增强及可选超分，模型推理组件需[独立构建](mods/README.md#维护者深度与构建)。测试及生成免安装 EXE 的步骤见[开发指南](docs/development/BUILDING.md#测试与打包)。
+
+**旧版路径提醒：** v2.1.1 使用 `native_host_v2\build.bat`、`native_vsr_host\build.bat`，DLL 放在源码根目录；当前版本使用 `native\host_v2`、`native\vsr_host` 和 `runtime`。请按所用版本的说明操作，不要混用目录或宿主二进制。
 
 ## 更多文档
 
