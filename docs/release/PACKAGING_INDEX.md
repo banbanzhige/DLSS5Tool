@@ -1,5 +1,31 @@
 # 打包轻量化记录与索引
 
+## v2.2.0 文件级更新基线 — 2026-09-11 构建，09-12 验证
+
+- 源码提交 `5d21f4d`（`feat: release v2.2.0 with file-level incremental updater`），本地提交，无推送/上传/tag；原有仓库卫生文档改动未混入功能提交。
+- 新输出 `dist/v2.2.0-release-20260911/editions/`，避免覆盖 `dist/DLSS5Tool-v2.2.0-win64.zip` 历史实验包。此次 v2.2.0 才是带新更新器的基线，历史同名实验文件不能用于此版本分发。
+- 基础构建使用 `.venv` / Python 3.13.3 / PyInstaller 6.22.2：`scripts/build_release.ps1 -SkipInstall -SkipTests -OutputDirectory dist/v2.2.0-release-20260911/base -WorkDirectory tmp/package-v220-20260911/build`。构建前全量回归 459 项，451 通过、8 跳过；主 EXE 文件/产品版本均 2.2.0，发行内容隔离通过。
+- 三形态使用 `scripts/package_editions.py --base dist/v2.2.0-release-20260911/base/DLSS5Tool-v2.2.0 --component mods/enhancement --models mods/models --licenses tmp/package-licenses-v2.1.1 --output dist/v2.2.0-release-20260911/editions`；不重建/裁剪 Torch/CUDA，仅附原始 RAFT-Large，不附深度权重，不复制用户设置/队列。
+- worker SHA-256 `2b309510ef6f73ae73dc98d11842a8ef3ba2e012c19a7e1cfe38def9a3b9f450`；助手 SHA-256 `ebfdccd29762ebe4ae9e4a37f727b23b2b21dac1b72c60ef0002e75b68e9f978`，随轻量及完整包提供。附加包只含 mods。
+
+| 形态 | ZIP 字节数 | 解压字节数 | ZIP SHA-256 |
+| --- | ---: | ---: | --- |
+| 轻量 | 238,905,762 | 475,765,682 | `c646ba1e561151d07c7526f904a9ff0bd8b1578682fcadd6db3c008474f46a33` |
+| 附加 | 3,053,841,718 | 4,781,623,177 | `a912a27c010914445f7945a04a861ad51078d01fa1300f025d6f58be52df907e` |
+| 完整 | 3,292,744,933 | 5,257,384,738 | `79aa7249ffa082295a5e563e033ca91a8bbae04a109e335c7d39cbcd01dda75d` |
+
+- 所有 ZIP CRC、清单校验及分卷重组 SHA 通过；上传集合在 `editions/github-assets/`，含标准名称轻量 ZIP、完整/附加包各两卷、合并脚本、SHA256SUMS、发布说明。未上传；不要同时上传重复轻量 ZIP 或超过 2 GiB 的完整 ZIP。
+- `scripts/verify_editions.py --packages dist/v2.2.0-release-20260911/editions --output output/package-v220-20260911-verification --stream-overlay` 通过。为遵守 tmp 30 GiB 上限，采用逐字节流式读取 ZIP 叠加并与正式完整目录比对，不新建第二套多 GB 解压环境；报告明确 `fresh_extraction_verified=false`。轻量普通冻结诊断成功，缺组件诊断按预期失败；完整冻结诊断及 RAFT 连续帧/旧深度模式映射通过。
+- `scripts/nvofa_integration_probe.py --mods dist/v2.2.0-release-20260911/editions/DLSS5Tool-v2.2.0-win64-full/mods --output output/package-v220-20260911-nvofa --grid 1`：RTX 4070 SUPER NVOFA 1×1 禁止回退初始化通过；未以此声称完成视频画质验收。
+- `scripts/probe_file_update.py` 使用本次正式助手对小型合成版本文件执行退出等待/安装验证，退出码 0，设置保留、备份字节校验成功；真实 lite/full 清单通过 schema 1 未来更新基线校验。未生成从旧版到 v2.2.0 的虚假差异包：旧版需先手动完整升级，新版才开始支持之后的版本对增量更新。
+- 此为本机打包验证，不代表干净 Windows、跨显卡或第三方公开分发授权已完成。发布说明见 [v2.2.0](RELEASE_NOTES_v2.2.0.md)。
+
+### 本次空间与保留
+
+开始 F 盘约 107 GiB 可用，既有 tmp 28.63 GiB，新增峰值预算 25 GiB；没有复制新的开发/推理环境。正式 lite/full 解压目录作为后续差异包基线保留；正式 ZIP、分卷、清单和报告保留。构建缓存、合成助手探针、重复基础包及附加包暂存目录在验收后清理；旧任务与历史同名包不删除。
+
+清理完成：逻辑删除 5,567,410,696 B，F 盘前后可用空间增加 5,573,373,952 B（约 5.19 GiB），剩余可用 95,644,307,456 B。任务 tmp 仅余 1,226 B 的 `TASK.md`，保留用途/重建登记至 2026-09-18 复核；已删除产物不从回收站恢复，但可按脚本重建，附加组件完整字节保留于正式 ZIP 和 full 基线。报告在 `output/package-v220-20260911-verification/` 与 `output/package-v220-20260911-nvofa/`，仅小型 JSON/日志，长期保留。
+
 ## v2.1.3 本地发行打包 — 2026-09-11
 
 - 源码基点 `f46dd32`，仅更新版本资源、发布说明及打包入口；审查发现的三处问题按用户要求保留，已在 [Release notes](RELEASE_NOTES_v2.1.3.md) 注明使用建议。
