@@ -87,7 +87,9 @@ Export a complete MP4 or the current PNG at source dimensions/frame rate, withou
 
 ## Performance and compatibility
 
-- Guidance requires SDR, non-tiled processing; it cannot be combined with HDR or tiled images.
+- Flow supports SDR and a separate SDR analysis copy of HDR input; rendering and encoding retain the high-precision original. Flow previews/exports are SDR visualizations, not HDR footage.
+- Still images skip temporal flow without changing video preferences or blocking image tiling. Tiled video temporal guidance remains unsupported.
+- Flow analysis supports long edges up to 2048. Above 1280 is experimental and requires an updated enhancement component; defaults are unchanged. High-resolution RAFT costs substantially more memory/time and is not an export-size limit.
 - Flow is zero for a standalone image. Seeking and scene cuts reset relevant history.
 - Frame caches share a budget of 8192 MiB by default. Cache does not survive a restart or speed up frames not yet processed. The RAM readout shows registered caches, not total process memory or VRAM.
 - Parallel export uses up to four workers and can consume more memory without necessarily being faster. Reduce concurrency or try smaller media when resources are limited.
@@ -100,7 +102,8 @@ Export a complete MP4 or the current PNG at source dimensions/frame rate, withou
 - **Super resolution off:** neural rendering runs at the source size. A video output-resolution limit downscales after processing and does not reduce DLSS input dimensions.
 - **2× / 4× super resolution:** RTX Video scales first, then DLSS 5 runs at the target resolution. Width and height both scale, so pixel count becomes 4× or 16× and memory requirements increase accordingly.
 - During super-resolution playback, the application uses a lower-cost proxy. Pausing, stepping, or releasing the scrubber generates an exact target-resolution preview.
-- Very large still images can be tiled automatically while preserving target dimensions. Success is still limited by VRAM, texture-size limits, and the runtime.
+- Very large still images are tiled at 45 million pixels or above, or when a dimension exceeds 8192. When device capacity is known, 6/8 GiB GPUs tile earlier. Full GPU textures are still required: dimensions must not exceed 16384, and success also depends on VRAM and the runtime.
+- Custom video output dimensions now allow up to 16384 per side. Actual dimensions must pass the encoder trial; not every size is guaranteed to encode.
 
 ### Formats, encoding, and temporal behavior
 
@@ -113,6 +116,7 @@ Export a complete MP4 or the current PNG at source dimensions/frame rate, withou
 ### HDR and experimental controls
 
 - High-precision HDR processing applies only to correctly tagged PQ/HLG video; static HDR images are not currently supported.
+- Large HDR jobs may use the requested 2/3 in-flight frames when estimated free VRAM permits, otherwise 1. Strict single-session temporal order is unchanged; estimates are not allocation guarantees.
 - HDR export uses HEVC Main10, 10-bit 4:2:0, and preserves basic HDR10/HLG color tags. Dolby Vision, HDR10+ dynamic metadata, and source mastering-display/MaxCLL SEI are not copied.
 - The UI tone-maps HDR previews to SDR and should not be used to judge final HDR brightness. Disabling high-precision processing tone-maps HDR video to SDR before export.
 - The experimental 5× control range is disabled by default. Values up to 500% can cause clipping, artifacts, or over-processing, and some runtimes may clamp them internally.

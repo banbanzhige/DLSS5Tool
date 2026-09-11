@@ -2,7 +2,7 @@
 import math
 
 NUMERIC = {
-    'guidance_flow_edge': (720, 128, 1280, int),
+    'guidance_flow_edge': (720, 128, 2048, int),
     'guidance_depth_edge': (720, 128, 1280, int),
     'guidance_flow_updates': (6, 1, 32, int),
     'guidance_depth_smoothing': (0.9, 0, 0.99, float),

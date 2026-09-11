@@ -110,7 +110,31 @@ def query_gpu_memory(cache_seconds=5.0):
     return dict(info)
 
 
-def estimate_resources(width, height, scale, is_hdr=False):
+def cached_gpu_memory():
+    """Last device snapshot, without spawning a driver query on the UI thread."""
+    return dict(_GPU_QUERY_CACHE[1]) if _GPU_QUERY_CACHE else None
+
+
+def select_in_flight(width, height, scale, requested, *, is_hdr=False, guidance=False, gpu_memory=None):
+    """Honor the queue preference at large sizes only with sufficient headroom.
+
+    Unknown VRAM stays single-frame; this is a conservative estimate, not an
+    allocation guarantee. Never change the saved preference or temporal order.
+    """
+    requested = max(1, min(3, int(requested)))
+    ow, oh = target_size(width, height, scale)
+    if ow * oh <= 3840 * 2160:
+        return requested
+    available = (gpu_memory or {}).get('free_bytes', 0)
+    for count in range(requested, 1, -1):
+        estimate = estimate_resources(width, height, scale, is_hdr, in_flight=count)
+        reserve = 2 * _GIB if guidance else 0
+        if estimate['recommended_gpu_bytes'] + reserve <= available * 0.65:
+            return count
+    return 1
+
+
+def estimate_resources(width, height, scale, is_hdr=False, *, in_flight=None):
     """Estimate known buffers; model/driver workspaces remain runtime-dependent."""
     width, height = int(width), int(height)
     scale = normalize_scale(scale)
@@ -118,7 +142,7 @@ def estimate_resources(width, height, scale, is_hdr=False):
     source_pixels = max(width * height, 0)
     output_pixels = max(output_width * output_height, 0)
     frame_bpp = 8 if is_hdr else 4
-    in_flight = 1 if output_pixels > 3840 * 2160 else 2
+    in_flight = (1 if output_pixels > 3840 * 2160 else 2) if in_flight is None else max(1, min(3, int(in_flight)))
 
     # VSR owns one packed RGB input/output texture. DLSS owns color/output per
     # slot plus one zero-motion and one zero-depth target-resolution texture.

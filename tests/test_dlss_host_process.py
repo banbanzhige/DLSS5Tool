@@ -73,7 +73,7 @@ class ProcessLiveTests(unittest.TestCase):
         from dlss5tool import dlss_host_process
         for extra in ({'host_tiled_mode': True}, {'frame_format': 'rgba16f'}):
             with mock.patch.object(dlss_host_process, '_open_shared_memory') as memory:
-                with self.assertRaisesRegex(HostProcessError, 'SDR'):
+                with self.assertRaises(HostProcessError):
                     ProcessLive(11637,5120,{'guidance_mode':3, 'host_backend':'v2', **extra})
                 memory.assert_not_called()
 

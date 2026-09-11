@@ -47,6 +47,7 @@ from dlss5tool.preview_audio import PreviewAudio, ms_to_frame
 from dlss5tool.super_resolution import (
     ProcessSuperResolution, classify_resource_risk, estimate_resources,
     format_bytes, format_resource_hint, normalize_scale, query_gpu_memory,
+    cached_gpu_memory, select_in_flight, MAX_TEXTURE_DIMENSION,
     runtime_status as super_resolution_runtime_status, target_size as super_resolution_target_size,
     validate_dimensions as validate_super_resolution_dimensions, SuperResolutionError,
 )
@@ -573,13 +574,31 @@ def _preview_viewport(width, height, canvas_width, canvas_height,
 
 
 def _large_image_host_settings(width, height, settings):
-    """Use Feature 18 subrects when one full-frame feature exceeds safe limits."""
+    """Plan a still-image request without mutating the video preferences.
+
+    Static images have no temporal flow. Total VRAM (not fluctuating free RAM)
+    keeps tile topology stable across repeated previews of the same image.
+    """
     result = dict(settings or {})
+    mode = int(result.get('guidance_mode', 0))
+    if mode in (1, 3):
+        result['guidance_mode'] = 0 if mode == 1 else 2
+        result['_still_flow_skipped'] = True
     try:
         width, height = int(width), int(height)
     except (TypeError, ValueError):
         return result
-    if width <= 0 or height <= 0 or width * height < LARGE_IMAGE_TILE_THRESHOLD_PIXELS:
+    if width <= 0 or height <= 0:
+        return result
+    memory = cached_gpu_memory() or {}
+    total_gib = memory.get('total_bytes', 0) / 1024 ** 3
+    tile_width, tile_height = LARGE_IMAGE_TILE_WIDTH, LARGE_IMAGE_TILE_HEIGHT
+    threshold = LARGE_IMAGE_TILE_THRESHOLD_PIXELS
+    if 0 < total_gib <= 6:
+        tile_width, tile_height, threshold = 3000, 1500, 12_000_000
+    elif 0 < total_gib <= 8:
+        tile_width, tile_height, threshold = 4000, 2000, 24_000_000
+    if not (result.get('host_tiled_mode') or width * height >= threshold or max(width, height) > 8192):
         return result
     result.update({
         "host_backend": "v2",
@@ -587,8 +606,8 @@ def _large_image_host_settings(width, height, settings):
         "host_zero_fast_path": True,
         "host_in_flight": 1,
         "host_tiled_mode": True,
-        "host_tile_width": min(width, LARGE_IMAGE_TILE_WIDTH),
-        "host_tile_height": min(height, LARGE_IMAGE_TILE_HEIGHT),
+        "host_tile_width": min(width, tile_width),
+        "host_tile_height": min(height, tile_height),
     })
     return result
 
@@ -3655,13 +3674,13 @@ class App(PreviewComparison, GuidanceExportUI):
         custom_frame = ttk.Frame(output_group, style="Panel.TFrame")
         custom_frame.grid(row=3, column=1, sticky="w", pady=3)
         custom_width = self._chrome_spin(
-            custom_frame, from_=2, to=8192, increment=2,
+            custom_frame, from_=2, to=MAX_TEXTURE_DIMENSION, increment=2,
             textvariable=d['v_custom_width'], width=6,
         )
         custom_width.pack(side="left")
         ttk.Label(custom_frame, text="×").pack(side="left", padx=4)
         custom_height = self._chrome_spin(
-            custom_frame, from_=2, to=8192, increment=2,
+            custom_frame, from_=2, to=MAX_TEXTURE_DIMENSION, increment=2,
             textvariable=d['v_custom_height'], width=6,
         )
         custom_height.pack(side="left")
@@ -4392,6 +4411,9 @@ class App(PreviewComparison, GuidanceExportUI):
         elif mode:
             short_status = tr('guidance.status.checked' if getattr(self, '_guidance_preflight_info', None)
                               else 'guidance.status.unchecked')
+        if getattr(self, '_is_image', False) and mode == 1 and not pending:
+            short_status = tr('guidance.status.still')
+            status = tr('guidance.still_hint')
         d['w_guidance_status'].config(text=short_status)
         if 'guidance_status_tooltip' in d:
             d['guidance_status_tooltip'].text = status
@@ -4621,8 +4643,8 @@ class App(PreviewComparison, GuidanceExportUI):
             'super_resolution_scale': SUPER_RESOLUTION_CHOICES.get(
                 d['v_super_resolution'].get(), 1
             ),
-            'custom_output_width': max(2, min(8192, integer(d['v_custom_width'], 1920))),
-            'custom_output_height': max(2, min(8192, integer(d['v_custom_height'], 1080))),
+            'custom_output_width': max(2, min(MAX_TEXTURE_DIMENSION, integer(d['v_custom_width'], 1920))),
+            'custom_output_height': max(2, min(MAX_TEXTURE_DIMENSION, integer(d['v_custom_height'], 1080))),
             'rate_control': RATE_CONTROL_CHOICES.get(
                 d['v_rate_control'].get(), 'quality'
             ),
@@ -4735,6 +4757,10 @@ class App(PreviewComparison, GuidanceExportUI):
             parts = [tr("hint.hdr_main10").rstrip("。").rstrip(".")]
         elif color.get("is_hdr") and not export["hdr_mode"]:
             parts.append(tr("hint.tonemap_sdr"))
+        if self._is_image:
+            parts.append(tr('guidance.still_hint'))
+        elif color.get('is_hdr') and export['hdr_mode']:
+            parts.append(tr('guidance.hdr_hint'))
         if super_resolution_enabled:
             status = super_resolution_runtime_status()
             if not status["available"]:
@@ -8302,6 +8328,8 @@ class App(PreviewComparison, GuidanceExportUI):
     def _process_still_image(self, source_bgr, settings):
         """Process one standalone image without consulting or polluting preview caches."""
         height, width = source_bgr.shape[:2]
+        if int(settings.get('guidance_mode', 0)) in (1, 3):
+            self.logln(tr('guidance.still_hint'))
         rgba = cv2.cvtColor(source_bgr, cv2.COLOR_BGR2RGBA)
         scale = self._super_resolution_scale(settings)
         if scale > 1:
@@ -8399,8 +8427,9 @@ class App(PreviewComparison, GuidanceExportUI):
         scale = normalize_scale(export_settings.get('super_resolution_scale', 1))
         output_width, output_height = super_resolution_target_size(width, height, scale)
         dlss_settings = dict(settings)
-        if output_width * output_height > 3840 * 2160:
-            dlss_settings['host_in_flight'] = 1
+        # This path processes synchronously; extra in-flight textures cannot
+        # improve throughput until VSR/DLSS scheduling is pipelined.
+        dlss_settings['host_in_flight'] = 1
         writer = None
         sr_live = None
         live = None
@@ -8496,11 +8525,15 @@ class App(PreviewComparison, GuidanceExportUI):
             **settings,
             "frame_format": "rgba16f",
             "color_profile": color_info["profile"],
+            "color_primaries": color_info.get('color_primaries', 'bt2020'),
             "host_backend": "v2",
             "host_auto_fallback": False,
         }
-        if process_width * process_height > 3840 * 2160:
-            hdr_settings['host_in_flight'] = 1
+        hdr_settings['host_in_flight'] = select_in_flight(
+            width, height, scale, settings.get('host_in_flight', 2), is_hdr=True,
+            guidance=bool(settings.get('guidance_mode')),
+            gpu_memory=query_gpu_memory(),
+        )
         reader = None
         writer = None
         live = None
@@ -8525,6 +8558,8 @@ class App(PreviewComparison, GuidanceExportUI):
             if scale > 1:
                 sr_live = ProcessSuperResolution(width, height, scale, is_hdr=True)
             live = ProcessLive(process_width, process_height, hdr_settings, _on_guidance_ready=self._guidance_started)
+            if settings.get('guidance_mode'):
+                self.logln(tr('guidance.hdr_hint'))
             self.logln(
                 f"[HDR] {color_info.get('label')} → "
                 + (f"10-bit RTX VSR {scale}× → " if scale > 1 else "")

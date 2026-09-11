@@ -145,7 +145,7 @@ Start with the default settings and a short clip or single image. See the [user 
 ## Before you start
 
 - **Results and speed vary by source and hardware.** Interactive comparison does not mean real-time model processing. High resolutions, 4× scaling, and optical flow increase processing time and VRAM use.
-- **Optical flow is optional.** With Full or the add-on installed, select a mode under **Models**. The app remembers your selection and restores it after a startup environment check; a failed check turns it off and reports the reason. First use checks RAFT-Large before enabling it; a saved off mode remains off. Guidance currently supports only SDR, non-tiled processing; a single image has no inter-frame flow.
+- **Optical flow is optional.** With Full or the add-on installed, select a mode under **Models**. The app remembers your selection and restores it after a startup environment check; a failed check turns it off and reports the reason. First use checks RAFT-Large before enabling it; a saved off mode remains off. Supports SDR and separate HDR analysis copies, but not tiled temporal guidance. Still images skip flow without blocking tiling or changing video preferences.
 - **HDR metadata is not fully preserved.** Preview is tone-mapped to SDR. Export retains basic HDR10 / HLG color tags, but not Dolby Vision / HDR10+ dynamic metadata or some source HDR metadata. Static HDR images are not supported. See [output and quality](docs/USER_GUIDE.en.md#output-and-quality).
 
 ## FAQ

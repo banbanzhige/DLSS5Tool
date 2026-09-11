@@ -230,7 +230,7 @@ class ModPathsTests(unittest.TestCase):
         self.assertEqual(settings['guidance_device'], 'cpu')
         self.assertEqual(app_settings.validate({})['guidance_mode'], 1)
         for extra in ({'frame_format': 'rgba16f'}, {'host_tiled_mode': True}):
-            with self.assertRaisesRegex(ValueError, 'SDR'):
+            with self.assertRaises(ValueError):
                 guidance_client.validate({'guidance_mode': 1, **extra})
 
     def test_custom_module_and_model_paths(self):

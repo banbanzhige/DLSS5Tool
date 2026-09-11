@@ -12,6 +12,7 @@ from dlss5tool import guidance_client
 from dlss5tool.guidance_public import normalize_public_settings
 from dlss5tool import i18n
 from dlss5tool import paths
+from dlss5tool.guidance_color import analysis_rgba8
 
 BASE = str(paths.runtime_root())
 HOST_DLL_LEGACY = os.path.join(BASE, "dlssnr_host.dll")
@@ -343,7 +344,8 @@ class Live:
             if self._guidance is None:
                 self._guidance = guidance_client.GuidanceSession(self.settings, self._w, self._h)
             try:
-                self._mv, self._dp, reset = self._guidance.process(rgba, reset, copy_outputs=False)
+                proxy = analysis_rgba8(rgba, self.settings)
+                self._mv, self._dp, reset = self._guidance.process(proxy, reset, copy_outputs=False)
             except Exception:
                 self.close_guidance()
                 self._reset_next = True
@@ -352,8 +354,8 @@ class Live:
 
     def guidance_preview(self, rgba, reset=False, final=True):
         """Evaluate guidance without running DLSS; returned views expire next call."""
-        if rgba.dtype != np.uint8 or rgba.shape != (self._h, self._w, 4):
-            raise ValueError("Guidance preview requires same-size RGBA8 input")
+        if rgba.dtype != frame_dtype(self.settings) or rgba.shape != (self._h, self._w, 4):
+            raise ValueError("Guidance preview requires same-size input matching the frame contract")
         if not rgba.flags.c_contiguous:
             rgba = np.ascontiguousarray(rgba)
         reset = self._prepare_guidance(rgba, reset)

@@ -176,10 +176,10 @@ def validate(values):
         super_resolution_scale if super_resolution_scale in {1, 2, 4} else 1
     )
     result["custom_output_width"] = _clamp_int(
-        source.get("custom_output_width", result["custom_output_width"]), 2, 8192
+        source.get("custom_output_width", result["custom_output_width"]), 2, 16384
     )
     result["custom_output_height"] = _clamp_int(
-        source.get("custom_output_height", result["custom_output_height"]), 2, 8192
+        source.get("custom_output_height", result["custom_output_height"]), 2, 16384
     )
     if source.get("rate_control") in {"quality", "bitrate"}:
         result["rate_control"] = source["rate_control"]

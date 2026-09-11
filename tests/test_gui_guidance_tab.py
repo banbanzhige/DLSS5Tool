@@ -180,6 +180,7 @@ class GuidanceTabTests(unittest.TestCase):
         app._image_bgr = np.zeros((16, 32, 3), np.uint8)
         app.workspace_tabs.select(app._guidance_page)
         app._guidance_view = 'compare'
+        app.compare_target.set('depth')
         app._frame = 2
         stale_key = (app.video, 1, app._guidance_generation,
                      app._guidance_preview_epoch, app._settings_hash())
@@ -421,6 +422,10 @@ class GuidanceTabTests(unittest.TestCase):
         app._update_guidance_export_controls()
         self.assertTrue(widgets['button'].instate(['disabled']))
         app._guidance_export_target.set(gui.tr('view.flow'))
+        app._update_guidance_export_controls()
+        self.assertTrue(widgets['button'].instate(['disabled']))
+        app._source_kind = 'video'
+        app._video_color_info = {'is_hdr': True}
         app._update_guidance_export_controls()
         self.assertFalse(widgets['button'].instate(['disabled']))
         app._guidance_export_active = app._exporting = True

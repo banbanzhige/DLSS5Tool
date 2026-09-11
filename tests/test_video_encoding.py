@@ -283,7 +283,7 @@ class EncodingSettingsTests(unittest.TestCase):
         self.assertEqual(values["quality_profile"], "high")
         self.assertEqual(values["video_bitrate_mbps"], 20.0)
         self.assertEqual(values["custom_output_width"], 2)
-        self.assertEqual(values["custom_output_height"], 8192)
+        self.assertEqual(values["custom_output_height"], 16384)
 
 
 if __name__ == "__main__":

@@ -151,8 +151,8 @@ def _host_worker_main(
                 if live.pending:
                     raise ValueError('Drain DLSS frames before guidance preview')
                 mode = int(live.settings.get('guidance_mode', 0))
-                if not mode or input_frame.dtype != np.uint8:
-                    raise ValueError('Guidance preview requires enabled SDR guidance')
+                if not mode:
+                    raise ValueError('Guidance preview requires enabled guidance')
                 # Use the existing component/cache, without evaluating DLSS.
                 motion, depth, reset = live.guidance_preview(
                     input_frame, bool(message.get('reset')),
@@ -198,6 +198,8 @@ class _HostSession:
             guidance_client.validate(settings)
         self.width = int(width)
         self.height = int(height)
+        from dlss5tool.super_resolution import validate_dimensions
+        validate_dimensions(self.width, self.height, 1)
         self._closed = False
         self._process = None
         self._connection = None

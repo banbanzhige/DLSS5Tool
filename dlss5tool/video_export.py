@@ -508,7 +508,7 @@ def _zscale_decode_filter(color_info):
 class FFmpegHDRVideoReader:
     """Decode PQ/HLG frames as normalized transfer-coded RGBA16F."""
 
-    def __init__(self, source, width, height, color_info, ffmpeg=None):
+    def __init__(self, source, width, height, color_info, ffmpeg=None, *, start_frame=0):
         self.source = os.path.abspath(source)
         self.width = int(width)
         self.height = int(height)
@@ -516,13 +516,19 @@ class FFmpegHDRVideoReader:
         if not self.color_info["is_hdr"]:
             raise ValueError("HDR reader requires a PQ or HLG source")
         self.ffmpeg = ffmpeg or find_ffmpeg()
+        start_frame = max(0, int(start_frame))
+        decode_filter = _zscale_decode_filter(self.color_info)
+        if start_frame:
+            # Decode/trim by frame index, not timestamp seeking (also exact on
+            # VFR inputs). Used for adjacent-frame guidance inspection.
+            decode_filter = f'trim=start_frame={start_frame},' + decode_filter
         self._frame_bytes = self.width * self.height * 8
         self._stderr = deque(maxlen=100)
         self._proc = subprocess.Popen(
             [
                 self.ffmpeg, "-hide_banner", "-loglevel", "warning", "-i", self.source,
                 "-map", "0:v:0", "-an", "-sn", "-dn", "-fps_mode", "passthrough",
-                "-vf", _zscale_decode_filter(self.color_info),
+                "-vf", decode_filter,
                 "-f", "rawvideo", "-pix_fmt", "rgba64le", "pipe:1",
             ],
             stdin=subprocess.DEVNULL, stdout=subprocess.PIPE, stderr=subprocess.PIPE,

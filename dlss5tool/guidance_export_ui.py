@@ -49,7 +49,7 @@ class GuidanceExportUI:
         available = mode in ((1, 3) if target == 'flow' else (2, 3))
         if self._is_image:
             self._guidance_export_scope.set(tr('guidance.export.frame'))
-        enabled = bool(self.video) and available and not (self._video_color_info or {}).get('is_hdr') and not busy
+        enabled = bool(self.video) and available and not (self._is_image and target == 'flow') and not busy
         widgets['target'].config(state='disabled' if busy else 'readonly')
         widgets['scope'].config(state='disabled' if busy or self._is_image else 'readonly')
         widgets['button'].config(state='normal' if enabled else 'disabled')
@@ -77,8 +77,8 @@ class GuidanceExportUI:
         if mode not in ((1, 3) if target == 'flow' else (2, 3)):
             messagebox.showwarning(tr('tab.guidance'), tr('guidance.preview_disabled', view=tr('view.' + target)))
             return
-        if (self._video_color_info or {}).get('is_hdr'):
-            messagebox.showwarning(tr('tab.guidance'), tr('guidance.preview_sdr'))
+        if self._is_image and target == 'flow':
+            messagebox.showwarning(tr('tab.guidance'), tr('guidance.still_hint'))
             return
         try:
             guidance_client.validate(settings)
@@ -100,6 +100,7 @@ class GuidanceExportUI:
             messagebox.showerror(tr('tab.guidance'), tr('guidance.export.source_error'))
             return
         still = self._image_bgr.copy() if self._is_image else None
+        color_info = dict(self._video_color_info or {})
         frame = None if video else self._frame
         self.pause()
         self._freeze_preview_cache(resume_ms=None)
@@ -130,7 +131,7 @@ class GuidanceExportUI:
                         events.put(('progress', done, total))
                         last_report[0] = now
                 count = export_guidance(source, path, settings, target, frame=frame, still=still,
-                                         cancel=self._export_cancel_event, progress=progress)
+                                         cancel=self._export_cancel_event, progress=progress, color_info=color_info)
                 events.put(('done', count))
             except GuidanceExportCancelled:
                 events.put(('cancelled',))

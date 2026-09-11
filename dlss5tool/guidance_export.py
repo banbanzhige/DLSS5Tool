@@ -11,6 +11,7 @@ from dlss5tool.guidance_visualization import guidance_images
 from dlss5tool.guidance_parameters import analysis_edge
 from dlss5tool.guidance_public import normalize_public_settings
 from dlss5tool.video_export import FFmpegVideoWriter
+from dlss5tool.guidance_color import HDRAnalysisReader
 
 
 class GuidanceExportCancelled(Exception):
@@ -19,7 +20,7 @@ class GuidanceExportCancelled(Exception):
 
 def export_guidance(source, destination, settings, target, *, frame=None,
                     still=None, cancel=None, progress=None,
-                    session_factory=None, writer_factory=None):
+                    session_factory=None, writer_factory=None, color_info=None):
     """Write a clean visualization at source dimensions, without UI or audio.
 
     frame=None exports the entire video. Otherwise write exactly that PNG frame;
@@ -38,6 +39,7 @@ def export_guidance(source, destination, settings, target, *, frame=None,
     session_factory = session_factory or GuidanceSession
     writer_factory = writer_factory or FFmpegVideoWriter
     capture = session = writer = None
+    hdr_reader = None
     temporary = None
 
     def check_cancel():
@@ -55,10 +57,16 @@ def export_guidance(source, destination, settings, target, *, frame=None,
             if video and (not math.isfinite(fps) or fps <= 0):
                 raise ValueError('Invalid source frame rate')
             first = 0 if video else max(int(frame) - 1, 0)
-            if first:
-                capture.set(cv2.CAP_PROP_POS_FRAMES, first)
-            ok, image = capture.read()
-            if not ok:
+            if (color_info or {}).get('is_hdr'):
+                hdr_reader = HDRAnalysisReader(str(source_path), color_info, start_frame=first)
+                image = hdr_reader.read()
+            else:
+                if first:
+                    capture.set(cv2.CAP_PROP_POS_FRAMES, first)
+                ok, image = capture.read()
+                if not ok:
+                    image = None
+            if image is None:
                 raise RuntimeError('Cannot decode requested frame')
         else:
             image, fps, total, first = still, 1, 1, 0
@@ -97,7 +105,11 @@ def export_guidance(source, destination, settings, target, *, frame=None,
                 if not video:
                     break
             index += 1
-            ok, image = capture.read() if capture is not None else (False, None)
+            if hdr_reader is not None:
+                image = hdr_reader.read()
+                ok = image is not None
+            else:
+                ok, image = capture.read() if capture is not None else (False, None)
             if not ok:
                 if not count or (video and total > 0 and index < total):
                     raise RuntimeError('Source decoding stopped before export completed')
@@ -110,6 +122,8 @@ def export_guidance(source, destination, settings, target, *, frame=None,
         temporary = None
         return count
     finally:
+        if hdr_reader is not None:
+            hdr_reader.close()
         if writer is not None:
             writer.abort()  # idempotent temp cleanup, never deletes destination
         if session is not None:

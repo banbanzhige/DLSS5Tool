@@ -18,7 +18,7 @@ from dlss5tool.guidance_parameters import ANALYSIS_KEYS, parameters, check_param
 from dlss5tool.guidance_public import normalize_public_settings
 from dlss5tool.guidance_flow import flow_backend, flow_grid, check_flow_handshake
 
-KEYS = ("guidance_mode", "guidance_edge", "guidance_flow_direction",
+KEYS = ("frame_format", "color_profile", "color_primaries", "guidance_mode", "guidance_edge", "guidance_flow_direction",
         "guidance_depth_encoder", "guidance_device", "mods_directory",
         "guidance_flow_weights", "guidance_depth_weights", "guidance_transport", "guidance_depth_profile", "guidance_execution", "guidance_cache_mb", "guidance_cache_pool")
 
@@ -46,8 +46,13 @@ def validate(settings):
     mode = int(settings.get("guidance_mode", 0))
     if mode not in (0, 1, 2, 3):
         raise ValueError(i18n.tr_for(settings.get('ui_language'), 'guidance.error.mode'))
-    if mode and (settings.get("frame_format") == "rgba16f" or settings.get("host_tiled_mode")):
+    if mode and settings.get("host_tiled_mode"):
         raise ValueError(i18n.tr_for(settings.get('ui_language'), 'guidance.error.format'))
+    if mode and settings.get('frame_format') == 'rgba16f':
+        if (settings.get('color_profile') not in ('hdr10_pq', 'hdr10_hlg', 'scrgb')
+                or (settings.get('color_profile') != 'scrgb'
+                    and settings.get('color_primaries', 'bt2020') not in ('bt2020', 'bt709'))):
+            raise ValueError(i18n.tr_for(settings.get('ui_language'), 'guidance.error.hdr_profile'))
     profile = settings.get('guidance_depth_profile', 'fp32')
     if mode and profile not in ('fp32', 'sdpa_fp16'):
         raise ValueError(i18n.tr_for(settings.get('ui_language'), 'guidance.error.depth_profile'))

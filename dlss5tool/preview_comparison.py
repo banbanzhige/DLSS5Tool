@@ -11,14 +11,21 @@ from dlss5tool import ui_theme
 from dlss5tool.i18n import tr
 from dlss5tool.guidance_parameters import analysis_edge
 from dlss5tool.guidance_public import depth_enabled, public_targets, normalize_public_settings
+from dlss5tool.guidance_color import HDRAnalysisReader
 
 
-def guidance_input_pair(source, frame, still, settings):
+def guidance_input_pair(source, frame, still, settings, color_info=None):
     """Decode an owned adjacent pair on a worker, never through Tk state."""
     capture = None
+    hdr_reader = None
     try:
         if still is not None:
             original = still
+        elif (color_info or {}).get('is_hdr'):
+            hdr_reader = HDRAnalysisReader(source, color_info, start_frame=max(frame - 1, 0))
+            original = hdr_reader.read()
+            if original is None:
+                raise RuntimeError(tr('status.frame_read_failed', frame=frame))
         else:
             capture = cv2.VideoCapture(source)
             capture.set(cv2.CAP_PROP_POS_FRAMES, max(frame - 1, 0))
@@ -35,13 +42,20 @@ def guidance_input_pair(source, frame, still, settings):
         previous = None
         if still is None and frame > 0:
             previous = rgba(original)
-            ok, original = capture.read()
-            if not ok:
+            if hdr_reader is not None:
+                original = hdr_reader.read()
+            else:
+                ok, original = capture.read()
+                if not ok:
+                    original = None
+            if original is None:
                 raise RuntimeError(tr('status.frame_read_failed', frame=frame))
         return rgba(original), previous
     finally:
         if capture is not None:
             capture.release()
+        if hdr_reader is not None:
+            hdr_reader.close()
 
 
 class PreviewComparison:
@@ -201,8 +215,8 @@ class PreviewComparison:
         mode = self._collect_host_settings()['guidance_mode']
         if mode not in ((2, 3) if target == 'depth' else (1, 3)):
             return tr('guidance.preview_disabled', view=tr('view.' + target))
-        if (self._video_color_info or {}).get('is_hdr'):
-            return tr('guidance.preview_sdr')
+        if getattr(self, '_is_image', False) and target == 'flow':
+            return tr('guidance.still_hint')
         if self._switching_backend or self._queue_running or self._diagnosing:
             return tr('guidance.preview_busy')
         return ''
@@ -313,11 +327,12 @@ class PreviewComparison:
         settings = self._collect_settings()
         frame, source = key[1], key[0]
         still = self._image_bgr.copy() if self._is_image else None
+        color_info = dict(self._video_color_info or {})
         self._guidance_preview_busy = True
 
         def work():
             try:
-                current, previous_rgba = guidance_input_pair(source, frame, still, settings)
+                current, previous_rgba = guidance_input_pair(source, frame, still, settings, color_info)
                 size = (current.shape[1], current.shape[0])
                 with self._live_lock:
                     if key[2:4] != (self._guidance_generation, self._guidance_preview_epoch):
