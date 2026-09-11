@@ -301,6 +301,8 @@ def download_asset(asset, destination, progress=None, cancelled=None, timeout=30
                     chunk = response.read(DOWNLOAD_CHUNK_BYTES)
                     if not chunk:
                         break
+                    if asset.size and downloaded + len(chunk) > asset.size:
+                        raise UpdateError("更新包超出声明大小，已停止下载")
                     output.write(chunk)
                     hasher.update(chunk)
                     downloaded += len(chunk)

@@ -58,3 +58,18 @@ class ReleasePackagingTests(unittest.TestCase):
         script = (ROOT / 'scripts/build_release.ps1').read_text(encoding='utf-8')
         self.assertLess(script.index('check_release_contents.py'), script.index('Compress-Archive'))
         self.assertIn('Assert-ExternalSuccess "Checking release content isolation"', script)
+
+    def test_release_builds_independent_updater_before_archiving(self):
+        script = (ROOT / 'scripts/build_release.ps1').read_text(encoding='utf-8')
+        self.assertLess(script.index('build_update_helper.ps1'), script.index('Compress-Archive'))
+        helper = (ROOT / 'scripts/build_update_helper.ps1').read_text(encoding='utf-8')
+        self.assertIn('--onefile', helper)
+        self.assertIn('DLSS5Update', helper)
+
+    def test_release_rejects_update_staging_and_backup(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / 'DLSS5Tool.exe').touch()
+            (root / '.dlss5-update').mkdir()
+            (root / '.dlss5-update/state.json').touch()
+            self.assertEqual(forbidden_contents(root), ['.dlss5-update/state.json'])

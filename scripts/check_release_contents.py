@@ -10,7 +10,7 @@ USER_DOCUMENTS = {
 }
 DEVELOPER_ROOTS = {
     'scripts', 'tests', 'native_amd_probe', 'amd_backend', 'third_party',
-    'output', 'results', 'tmp', 'native', 'packaging', 'var',
+    'output', 'results', 'tmp', 'native', 'packaging', 'var', '.dlss5-update',
 }
 
 

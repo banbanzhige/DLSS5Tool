@@ -162,7 +162,7 @@ Lower playback quality, try smaller media or 2× scaling, and temporarily disabl
 
 **How do I update?**
 
-Use **More → Check for updates**, or download the latest Release. In-app downloads contain the lite edition. Close the old app, extract the new version into a new folder, and configure the runtime for your GPU. For model features, use the matching Full edition or add-on.
+Use **More → Check for updates**, or download the latest Release. The new updater downloads changed files for the installed edition when a matching payload exists, then asks again before exiting for the standalone helper to install it. Without a matching payload, Lite offers its complete archive; Full directs you to the release page for Full or Lite plus the matching add-on. Existing users must first manually extract a new release with the helper into a new folder. This feature requires both a newly built release and published update payloads. See the [update guide](docs/USER_GUIDE.en.md).
 
 **Still having trouble?**
 

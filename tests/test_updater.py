@@ -164,6 +164,14 @@ class ReleaseMetadataTests(unittest.TestCase):
 
 
 class DownloadTests(unittest.TestCase):
+    def test_download_stops_when_body_exceeds_declared_size(self):
+        asset = updater.ReleaseAsset('update.zip', 'https://github.com/a/update.zip', 1)
+        with tempfile.TemporaryDirectory() as folder:
+            with self.assertRaises(updater.UpdateError):
+                updater.download_asset(asset, os.path.join(folder, 'update.zip'),
+                                       opener=lambda *a, **k: FakeResponse(b'oversized'))
+            self.assertEqual(os.listdir(folder), [])
+
     def test_download_is_verified_and_atomically_published(self):
         content = (b"portable-release" * 1000) + b"done"
         digest = "sha256:" + hashlib.sha256(content).hexdigest()

@@ -41,6 +41,9 @@ from dlss5tool.shared_cache_budget import SharedCacheBudget
 from dlss5tool import mod_paths
 from dlss5tool import export_queue as export_queue_state
 from dlss5tool import updater
+from dlss5tool import delta_update
+from dlss5tool import update_helper
+from dlss5tool import paths
 from dlss5tool.dlss_host_process import ProcessLive
 from dlss5tool.parallel_export import export_parallel
 from dlss5tool.preview_audio import PreviewAudio, ms_to_frame
@@ -7579,6 +7582,24 @@ class App(PreviewComparison, GuidanceExportUI):
         self._prompt_for_update(release)
 
     def _prompt_for_update(self, release):
+        try:
+            edition = delta_update.installed_edition(paths.app_root(), self._collect_host_settings())
+            delta_asset = delta_update.select_asset(release, APP_VERSION, edition)
+            if (delta_asset is not None and getattr(sys, 'frozen', False)
+                    and os.name == 'nt' and (paths.app_root() / delta_update.HELPER).is_file()):
+                if messagebox.askyesno(
+                    tr('dialog.new_version'),
+                    tr('update.delta_offer', current=APP_VERSION, latest=release.tag,
+                       edition=tr('update.edition_' + edition), size=updater.format_size(delta_asset.size)),
+                ):
+                    self._start_delta_download(release, delta_asset, edition)
+                return
+            if edition == 'full':
+                self._delta_fallback(release, tr('update.no_delta'))
+                return
+        except Exception as error:
+            self._delta_fallback(release, str(error))
+            return
         asset = updater.select_portable_asset(release)
         notes = release.body.strip()
         if len(notes) > 900:
@@ -7606,6 +7627,112 @@ class App(PreviewComparison, GuidanceExportUI):
             ),
         ):
             self._start_update_download(release, asset)
+
+    def _delta_fallback(self, release, error):
+        self.logln('[更新] ' + str(error))
+        if messagebox.askyesno(tr('dialog.new_version'), tr('update.fallback', error=error)):
+            self._open_release_page(release.page_url)
+
+    def _start_delta_download(self, release, asset, edition):
+        root = paths.app_root()
+        try:
+            if delta_update.transaction_path(root).exists():
+                state = delta_update.status(root) or {}
+                if state.get('phase') == 'ready' and state.get('target') == release.tag:
+                    self._offer_delta_install(release)
+                    return
+                if not messagebox.askyesno(tr('dialog.new_version'), tr('update.discard', path=str(delta_update.transaction_path(root)))):
+                    return
+                delta_update.discard_transaction(root)
+        except Exception as error:
+            self._delta_fallback(release, str(error))
+            return
+        self._update_downloading = True
+        self._update_progress_percent = 0
+        self._update_cancel_event.clear()
+        self._update_action_labels()
+        self.logln(tr('update.preparing'))
+        events = queue.Queue()
+
+        def worker():
+            try:
+                delta_update.prepare(
+                    root, asset, APP_VERSION, release.tag, edition,
+                    progress=lambda done, total: events.put(('progress', done, total)),
+                    cancelled=self._update_cancel_event.is_set,
+                )
+                events.put(('complete', None, None))
+            except Exception as error:
+                events.put(('complete', str(error), None))
+
+        def poll():
+            complete = None
+            while True:
+                try:
+                    event = events.get_nowait()
+                except queue.Empty:
+                    break
+                if event[0] == 'progress':
+                    self._update_progress_percent = min(100, int(event[1] * 100 / event[2]))
+                    self._update_action_labels()
+                    if event[1] == event[2]:
+                        self.logln(tr('update.verifying'))
+                else:
+                    complete = event
+            if complete is None:
+                self.root.after(100, poll)
+                return
+            self._update_downloading = False
+            self._update_progress_percent = None
+            self._update_thread = None
+            self._update_action_labels()
+            if complete[1]:
+                if self._update_cancel_event.is_set():
+                    self.logln(tr('update.cancelled'))
+                else:
+                    self._delta_fallback(release, complete[1])
+                return
+            self._offer_delta_install(release)
+
+        self._update_thread = threading.Thread(target=worker, name='dlss5-file-update', daemon=True)
+        self._update_thread.start()
+        self.root.after(100, poll)
+
+    def _offer_delta_install(self, release):
+        if (self._exporting or self._queue_running or self._diagnosing or self._switching_backend
+                or getattr(self, '_module_reload_thread', None) is not None):
+            messagebox.showinfo(tr('dialog.busy'), tr('update.install_busy'))
+            return
+        if not messagebox.askyesno(tr('dialog.download_complete'), tr('update.install')):
+            return
+        try:
+            process = update_helper.launch(paths.app_root(), os.getpid(), i18n.get_language())
+        except Exception as error:
+            self._delta_fallback(release, str(error))
+            return
+        # Do not exit before the helper has acknowledged startup. Keep Tk responsive.
+        self._update_downloading = True
+        self._update_action_labels()
+        deadline = time.monotonic() + 30
+
+        def await_helper():
+            try:
+                state = delta_update.status(paths.app_root()) or {}
+                if state.get('phase') == 'waiting' and process.poll() is None:
+                    self._update_downloading = False
+                    self._update_action_labels()
+                    self._on_close()
+                    return
+                if process.poll() is not None or time.monotonic() > deadline:
+                    raise delta_update.DeltaError(tr('update.helper_failed'))
+            except Exception as error:
+                self._update_downloading = False
+                self._update_action_labels()
+                self._delta_fallback(release, str(error))
+                return
+            self.root.after(100, await_helper)
+
+        self.root.after(100, await_helper)
 
     def _start_update_download(self, release, asset):
         try:

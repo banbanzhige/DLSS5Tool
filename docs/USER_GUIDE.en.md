@@ -149,7 +149,15 @@ Per-frame models add processing time. A larger cache does not skip first-pass in
 
 **How do updates work?**
 
-The portable build checks GitHub Releases quietly at startup. You can also choose **More → Check for updates**. A prompt appears only for a newer release and asks before downloading. The download is the lite portable app; it does not include the full or add-on packages and never replaces the running application. Close the old copy, extract the new package into a new folder, then reinstall the matching add-on or use the full edition if you still need flow.
+The portable build checks GitHub Releases quietly at startup. You can also choose **More → Check for updates**. File updates require a new release containing `DLSS5Update.exe` and a published payload matching the installed version and edition. Existing releases such as 2.1.1/2.1.2 require one manual upgrade first.
+
+- Lite uses a Lite payload; an add-on beside the app selects Full. Only changed/new files between those releases are transferred; unchanged Torch/CUDA libraries and models are reused.
+- Download size and edition are shown before confirmation. A second confirmation exits for installation after verification. Exports, queue processing and diagnostics must finish first; check for updates again to install later.
+- The independent helper backs up and replaces official managed files only after the app exits. Errors trigger rollback. Settings, queue and unmanaged custom files are preserved. Modified/missing managed files, path conflicts or external component directories stop automatic updates and require manual compatibility review.
+- `.dlss5-update` beside the app holds staging files and the rollback backup. The next update asks before permanently cleaning it. Cancelled downloads may also leave staging files for confirmed cleanup. Only one GUI instance per installation may run at a time.
+- Start `DLSS5Tool.exe` manually after success. If the helper is interrupted, keep the update folder and follow the startup recovery command (`DLSS5Update.exe --root "installation folder" --recover`) after closing the app and other helpers. Do not delete an incomplete recovery backup.
+
+Without a matching payload, Lite offers the complete Lite archive; Full opens the release page for Full or Lite plus the matching add-on. Extract complete packages into a new folder, configure your GPU runtime, and do not replace only the EXE or mix an old worker with a new application without compatibility verification. See [file-update release and recovery details](release/FILE_UPDATES.md).
 
 ## Runtime selection and verification
 

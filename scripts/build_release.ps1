@@ -1,7 +1,9 @@
 [CmdletBinding()]
 param(
     [switch]$SkipInstall,
-    [switch]$SkipTests
+    [switch]$SkipTests,
+    [string]$OutputDirectory,
+    [string]$WorkDirectory
 )
 
 $ErrorActionPreference = "Stop"
@@ -56,14 +58,26 @@ try {
     }
 
     Write-Host "Building portable $version release..."
-    & $venvPython -m PyInstaller --noconfirm --clean (Join-Path $projectRoot "packaging\DLSS5Tool.spec")
+    $distRoot = if ($OutputDirectory) { [IO.Path]::GetFullPath($OutputDirectory) } else { Join-Path $projectRoot 'dist' }
+    $buildRoot = if ($WorkDirectory) { [IO.Path]::GetFullPath($WorkDirectory) } else { Join-Path $projectRoot 'build' }
+    if ((Test-Path -LiteralPath (Join-Path $distRoot "DLSS5Tool-$version")) -or
+        (Test-Path -LiteralPath (Join-Path $distRoot "DLSS5Tool-$version-win64.zip"))) {
+        throw 'Release target already exists; choose a new OutputDirectory to preserve previous packages.'
+    }
+    & $venvPython -m PyInstaller --noconfirm --clean --distpath $distRoot --workpath $buildRoot (Join-Path $projectRoot "packaging\DLSS5Tool.spec")
     Assert-ExternalSuccess "Building the portable application"
 
     $releaseName = "DLSS5Tool-$version"
-    $releaseDir = Join-Path $projectRoot "dist\$releaseName"
+    $releaseDir = Join-Path $distRoot $releaseName
     $releaseExe = Join-Path $releaseDir "DLSS5Tool.exe"
     if (-not (Test-Path -LiteralPath $releaseExe)) {
         throw "Build completed without the expected executable: $releaseExe"
+    }
+
+    & (Join-Path $projectRoot 'scripts\build_update_helper.ps1') `
+        -OutputDirectory $releaseDir -WorkDirectory (Join-Path $buildRoot 'update-helper')
+    if (-not (Test-Path -LiteralPath (Join-Path $releaseDir 'DLSS5Update.exe'))) {
+        throw 'Standalone update helper is missing.'
     }
 
     Copy-Item -LiteralPath (Join-Path $projectRoot "README.md") -Destination $releaseDir -Force
@@ -95,7 +109,7 @@ try {
     & $venvPython (Join-Path $projectRoot "scripts\check_release_contents.py") $releaseDir
     Assert-ExternalSuccess "Checking release content isolation"
 
-    $zipPath = Join-Path $projectRoot "dist\$releaseName-win64.zip"
+    $zipPath = Join-Path $distRoot "$releaseName-win64.zip"
     Compress-Archive -Path (Join-Path $releaseDir "*") -DestinationPath $zipPath -CompressionLevel Optimal -Force
 
     Write-Host "Release executable: $releaseExe"

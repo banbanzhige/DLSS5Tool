@@ -5,6 +5,7 @@ file against full, then tests real frozen app and inference worker on synthetic
 inputs. Child PATH contains only Windows System32, not the developer Python.
 """
 import argparse
+import hashlib
 import json
 import os
 from pathlib import Path
@@ -22,6 +23,8 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--packages', type=Path, required=True)
     parser.add_argument('--output', type=Path, required=True)
+    parser.add_argument('--stream-overlay', action='store_true',
+                        help='Verify every archived overlay byte against full without a second multi-GB extraction; run diagnostics on staged full')
     parser.add_argument('--allow-external-output', action='store_true',
                         help='Explicitly permit a new verification directory on another disk')
     args = parser.parse_args()
@@ -33,18 +36,30 @@ def main():
     report = json.loads((packages / 'package-report.json').read_text(encoding='utf-8'))
     if report['version'] != APP_VERSION:
         raise ValueError('Package version mismatch')
-    upgrade = output / 'lite-plus-addon'
-    upgrade.mkdir()
+    upgrade = (packages / f'DLSS5Tool-{APP_VERSION}-win64-full') if args.stream_overlay else (output / 'lite-plus-addon')
+    if not args.stream_overlay:
+        upgrade.mkdir()
+    overlay = {}
     for kind in ('lite', 'addon'):
         print('Extracting:', kind, flush=True)
         with zipfile.ZipFile(packages / report['editions'][kind]['name']) as zip:
             for item in zip.infolist():
                 if not (upgrade / item.filename).resolve().is_relative_to(upgrade):
                     raise ValueError('Unsafe ZIP path')
-            zip.extractall(upgrade)
+            if args.stream_overlay:
+                for item in zip.infolist():
+                    if item.is_dir():
+                        continue
+                    with zip.open(item) as source:
+                        overlay[item.filename] = {'size': item.file_size,
+                            'sha256': hashlib.file_digest(source, 'sha256').hexdigest()}
+            else:
+                zip.extractall(upgrade)
     expected = json.loads((packages / 'verification/full-files.json').read_text(encoding='utf-8'))
     if inventory(upgrade) != expected:
         raise RuntimeError('Extracted lite + add-on does not equal full package')
+    if args.stream_overlay and overlay != expected:
+        raise RuntimeError('Archive byte overlay does not equal staged full')
     print('Exact install overlay verified.', flush=True)
 
     from dlss5tool import app_settings
@@ -55,7 +70,9 @@ def main():
     child_env = dict(os.environ)
     child_env.pop('PYTHONPATH', None)
     child_env.pop('PYTHONHOME', None)
-    records = {'version': APP_VERSION, 'overlay_exact': True, 'frozen_app': [], 'addon_modes': []}
+    records = {'version': APP_VERSION, 'overlay_exact': True,
+               'overlay_method': 'streamed_archives_against_staged_full' if args.stream_overlay else 'fresh_extraction',
+               'fresh_extraction_verified': not args.stream_overlay, 'frozen_app': [], 'addon_modes': []}
 
     def frozen(kind, folder, mode, expected_ok):
         config = output / f'{kind}-{mode}-settings.json'
