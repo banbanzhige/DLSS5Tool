@@ -22,10 +22,12 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--packages', type=Path, required=True)
     parser.add_argument('--output', type=Path, required=True)
+    parser.add_argument('--allow-external-output', action='store_true',
+                        help='Explicitly permit a new verification directory on another disk')
     args = parser.parse_args()
     output = args.output.resolve()
-    if output.exists() or not output.is_relative_to(ROOT / 'output'):
-        parser.error('Use a NEW directory in workspace output')
+    if output.exists() or output == Path(output.anchor) or (not args.allow_external_output and not output.is_relative_to(ROOT / 'output')):
+        parser.error('Use a NEW directory in output, or explicitly opt into a new external output directory')
     output.mkdir(parents=True)
     packages = args.packages.resolve()
     report = json.loads((packages / 'package-report.json').read_text(encoding='utf-8'))

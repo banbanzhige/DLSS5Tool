@@ -1,5 +1,26 @@
 # 打包轻量化记录与索引
 
+## v2.1.3 本地发行打包 — 2026-09-11
+
+- 源码基点 `f46dd32`，仅更新版本资源、发布说明及打包入口；审查发现的三处问题按用户要求保留，已在 [Release notes](RELEASE_NOTES_v2.1.3.md) 注明使用建议。
+- `scripts/build_release.ps1 -SkipInstall` 构建基础程序；422 项单测中 414 项通过、8 项跳过，发行内容隔离通过，EXE 文件／产品版本均为 2.1.3。基础 ZIP CRC 通过，SHA256 `b9d9414abda7c533a2b002931f9611fd73cc722e0b96ee73d8e6fc53c4a8a30e`，230,700,546 B；位于 `dist/DLSS5Tool-v2.1.3-win64.zip`。
+- F 盘空间不足，经批准将三形态发行包放在 `D:/DLSS5Tool-Releases/v2.1.3/`。脚本新增显式 `--allow-external-output`，默认仍限制在项目内，并拒绝覆盖已有目录。
+- 增强组件使用已验证的新 worker，SHA256 `2b309510ef6f73ae73dc98d11842a8ef3ba2e012c19a7e1cfe38def9a3b9f450`；不裁依赖，仅附原始 RAFT-Large 权重，不附深度权重，不复制用户设置和队列。
+
+| 发行形态 | ZIP 字节数 | ZIP SHA256 |
+| --- | ---: | --- |
+| 轻量版／更新包 | 229,689,026 | `e26ee11022ef4607aa0de3275881587c4a20b067fe466c90d9bd68661ec5c522` |
+| 推理附加包 | 3,053,841,718 | `ed6f9c12da1eab4e6a89ccccb5193440a483af46184234beba295f8a51149ea2` |
+| 完整版 | 3,283,528,197 | `917ecef37141dac8a7a5c4bf41f187f3d28a109382a6bc44aa42d472f2fc0c1f` |
+
+- 上传集合：`D:/DLSS5Tool-Releases/v2.1.3/github-assets/`，含标准更新文件名的轻量 ZIP、完整／附加包各两卷、校验文件、合并脚本及简版发布说明。不要同时上传重复的 `-lite.zip`；不要将超过 2 GiB 的未分卷 ZIP 用作 GitHub 附件。
+- 三个 ZIP 逐文件 CRC、SHA256 清单和分卷重组验证通过；完整版逐文件等于轻量版叠加附加包。
+- `verify_editions.py` 解压安装验证通过：冻结轻量 EXE 普通诊断成功、缺组件明确失败；冻结完整 EXE 与叠加安装输出一致；安装组件 RAFT 连续帧及旧深度模式映射通过。报告：`D:/DLSS5Tool-Releases/v2.1.3-verification/report.json`。
+- 完整包 NVOFA 1×1 禁止回退的两帧检查通过（RTX 4070 SUPER），报告 `output/package-v2.1.3-nvofa/report.json`。打包专项单测 9 项通过。
+- 本次未上传发布、未打 Git tag，未提交版本改动；本机验证不代表干净环境、跨显卡认证或第三方公开分发授权。
+
+以下为历史记录。
+
 2026-09-10 维护补充：按维护者指定，深度下线与 NVOFA 候选统一归入 v2.1.2 源码版本，
 NVOFA 已写入默认 `mods/enhancement`，开发入口为根目录 `run.bat`。见 [集成实测](../experiments/NVOFA_INTEGRATION.md)、
 [深度状态](../experiments/DEPTH_REFERENCE_STATUS.md)。尚未生成新的三种完整发行包/分卷清单，

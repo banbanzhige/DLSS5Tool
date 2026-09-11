@@ -20,8 +20,8 @@ sys.path.insert(0, str(ROOT))
 from dlss5tool.app_version import APP_VERSION
 from scripts.check_release_contents import forbidden_contents
 
-# NVOFA grid 4/2/1 candidate verified in docs/experiments/NVOFA_INTEGRATION.md.
-WORKER_SHA = '56d36aa26334d4caa8ac70b881717f17d71045e02933cba2dd38c6379928167b'
+# Updated flow-edge component verified in docs/development/PROCESSING_LIMITS_20260911.md.
+WORKER_SHA = '2b309510ef6f73ae73dc98d11842a8ef3ba2e012c19a7e1cfe38def9a3b9f450'
 MODELS = ('raft_large_C_T_SKHT_V2-ff5fadd5.pth',)
 
 
@@ -115,12 +115,14 @@ def main():
     parser.add_argument('--models', type=Path, required=True)
     parser.add_argument('--licenses', type=Path, required=True)
     parser.add_argument('--output', type=Path, required=True)
+    parser.add_argument('--allow-external-output', action='store_true',
+                        help='Explicitly permit a new output directory on another disk; never overwrites existing paths')
     args = parser.parse_args()
     base, component, model_dir, license_dir = [p.resolve() for p in
                                              (args.base, args.component, args.models, args.licenses)]
     output = args.output.resolve()
-    if output.exists() or not output.is_relative_to(ROOT / 'dist'):
-        parser.error('Use a NEW output directory within workspace dist')
+    if output.exists() or output == Path(output.anchor) or (not args.allow_external_output and not output.is_relative_to(ROOT / 'dist')):
+        parser.error('Use a NEW output directory in dist, or explicitly opt into a new external output directory')
     if forbidden_contents(base):
         raise ValueError('Base package contains development/user data')
     if sha(component / 'guidance_worker.exe') != WORKER_SHA:
