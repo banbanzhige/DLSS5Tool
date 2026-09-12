@@ -1,5 +1,15 @@
 # 打包轻量化记录与索引
 
+## 后续发布固定入口 — 2026-09-12
+
+- `scripts/build_release.ps1` 只构建基础包；完整发布必须继续运行 `scripts/package_editions.py`。
+- `packaging/update-policy.json` 维护必需旧版基线，当前为正式 v2.2.0。三形态打包自动生成各旧版到目标版的 lite/full 差异包并收入 `github-assets`、校验清单和上传说明；失败即终止，不允许静默漏掉。
+- 构建前 `scripts/release_updates.py --preflight-version <目标版本>`；上传前 `scripts/release_updates.py --check-upload <github-assets目录>`。
+- 首次基线 v2.2.0 重建必须显式 `--initial-update-baseline`，未来版本不得使用。下面历史命令记录未包含此新参数，仅作追溯。
+- 具体流程及基线保留要求见 [文件更新工作流](FILE_UPDATES.md)。本次不重打、不修改已经交付的 v2.2.0 ZIP/清单，不自动上传。
+- 本次验证：51 项相关测试通过（含完整三形态入口使用微型组件生成并收集 lite/full 增量附件），`git diff --check` 通过；真实已保留 v2.2.0 lite/full 基线执行 `--preflight-version v2.2.1` 通过，只读检查未生成新发行包。
+- 测试 TEMP/TMP 统一为 `tmp/release-workflow-20260912`；合成夹具随测试清理，仅余 665 B 的 `TASK.md`（用途与重建登记，2026-09-19 复核），没有复制推理环境或遗留大型产物。未测新的真实版本对大体积差异包，未执行远程 GitHub Actions。
+
 ## v2.2.0 文件级更新基线 — 2026-09-11 构建，09-12 验证
 
 - 源码提交 `5d21f4d`（`feat: release v2.2.0 with file-level incremental updater`），本地提交，无推送/上传/tag；原有仓库卫生文档改动未混入功能提交。

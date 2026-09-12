@@ -12,9 +12,50 @@
 
 ## 构建与上传（不自动发布）
 
+### 固定打包工作流（防遗漏）
+
+`packaging/update-policy.json` 是必须支持的旧版本集合。当前登记已验证的 v2.2.0 基线目录
+`dist/v2.2.0-release-20260911/editions`；它是正式新更新器基线，不是历史同名实验 ZIP。
+后续版本不允许缺少增量包却完成打包。此工作流在**本地三形态打包入口**执行，GitHub Actions 的测试发现机制会运行工作流单测，但不会自动发布。
+
+1. 更新目标版本资源和 Release notes，阅读卫生守则、检查容量、登记任务目录。
+2. 主程序构建前先做只读基线检查，例如准备 v2.2.1 时：
+
+   ```powershell
+   .venv/Scripts/python.exe -B scripts/release_updates.py --preflight-version v2.2.1
+   ```
+
+3. 通过 `scripts/build_release.ps1` 构建新基础包（复用 `.venv`，选择全新输出），然后使用
+   `scripts/package_editions.py --base ... --component ... --models ... --licenses ... --output ...`
+   完成三形态打包。**无需额外手动调用差异包脚本**：入口默认读取策略，先核验全部旧版实际文件，
+   再构建完整包及每个源版本到当前 `APP_VERSION` 的 lite/full `.dlssupdate`。
+4. 增量包自动进入 `github-assets`、`SHA256SUMS.txt`，同时写入
+   `package-report.json` 的 `incremental_updates`（源版本、形态、大小、SHA）及 `README-UPLOAD.txt` 必传列表。
+   任一形态生成或校验失败，命令失败，不打印 `DONE`。失败目录不能上传，不能删策略条目来绕过失败。
+5. 打包入口自动执行最后一道检查；手动上传前再次运行：
+
+   ```powershell
+   .venv/Scripts/python.exe -B scripts/release_updates.py --check-upload "新发行目录/github-assets"
+   ```
+
+   检查器核对策略与报告覆盖的旧版本集合，以及每个版本的 lite/full 附件、SHA、大小、清单版本/形态和 SHA256SUMS。
+   上传仍需维护者确认，上传后核对 GitHub API 附件 digest。
+6. 新版完成冻结程序、组件与升级验收后，将其版本和正式 `editions` 路径加入策略 `baselines`，
+   使下一次发版覆盖该版用户；保留原条目，直到维护者明确决定停止支持。不自动将尚未验证的候选登记为基线。
+
+路径迁移时可重复传 `--update-baseline "旧版editions新位置"`（预检和三形态打包均支持）。
+参数只能重定位已登记版本，不会删除其他必需版本，也不能拿另一版本覆盖。多源版本先显式登记策略。
+
+**首次例外**：重建 v2.2.0 时必须显式传 `--initial-update-baseline`（预检和三形态打包都传）。
+仅策略中的首个更新器版本允许此例外，后续版本使用会报错。已有 v2.2.0 发行包保持原样；
+它早于此工作流，没有 `incremental_updates` 字段，不应用新检查器为其补造历史成功记录。
+历史命令记录保留用于追溯；如重新构建首次基线，须补此参数并使用全新输出。
+
+### 底层单包工具（维护与测试用）
+
 先阅读 `docs/development/REPOSITORY_HYGIENE.md`，检查磁盘和 tmp 容量，登记任务目录与峰值。复用已有 `.venv`。基础构建入口 `scripts/build_release.ps1` 会调用 `scripts/build_update_helper.ps1` 将独立 one-file 助手放到主 EXE 旁；不复制主程序的 `_internal` 给助手。助手不依赖系统 Python、Torch 或系统安装脚本。
 
-完成两个端点的冻结程序/组件验证后，分别针对 lite、full 运行以下形式的命令（路径和版本为占位符，替换为真实已验证输入）：
+以下工具由上述工作流自动调用；仅在独立维护/测试时手动使用，不能代替三形态打包和上传集合检查。完成两个端点的冻结程序/组件验证后，可针对单个形态运行（路径和版本为占位符）：
 
 ```powershell
 .venv/Scripts/python.exe -B scripts/build_file_update.py `
@@ -30,7 +71,7 @@ full 使用两套对应的完整目录、`--edition full` 和新的输出目录�
 - `DLSS5Tool-vX.Y.Z-to-vX.Y.N-win64-lite.dlssupdate`（或 full）；
 - `update-report.json`：实际 SHA-256、大小、变化/移除文件数量、未发布标记。
 
-只将通过验收的 `.dlssupdate` 加到**目标版本** GitHub Release，保留现有轻量 ZIP、完整分卷、附加包作为新安装和失败兜底。发布清单与旧版直达更新包由维护者维护，不自动上传。检查 GitHub Release API 返回此附件的 `digest=sha256:...` 与本地报告一致；若没有合法 SHA-256、没有精确版本/形态名称或 URL 不属于本仓库此 tag，客户端不自动安装，转整包。此首版以官方仓库 HTTPS/API 附件摘要为信任根，不宣称具备独立签名、抵御仓库账号被攻陷的能力。
+只将通过验收的 `.dlssupdate` 加到**目标版本** GitHub Release，保留现有轻量 ZIP、完整分卷、附加包作为新安装和失败兜底。必需源版本由策略维护，差异生成和上传目录收集已自动化，但不自动上传。检查 GitHub Release API 返回此附件的 `digest=sha256:...` 与本地报告一致；若没有合法 SHA-256、没有精确版本/形态名称或 URL 不属于本仓库此 tag，客户端不自动安装，转整包。此首版以官方仓库 HTTPS/API 附件摘要为信任根，不宣称具备独立签名、抵御仓库账号被攻陷的能力。
 
 ## 校验与受管范围
 

@@ -114,6 +114,8 @@ try {
 
     Write-Host "Release executable: $releaseExe"
     Write-Host "Release archive:    $zipPath"
+    Write-Host "Base build only. Complete the release with scripts/package_editions.py (required incremental workflow)."
+    Write-Host "Before upload, run scripts/release_updates.py --check-upload <editions/github-assets>."
 }
 finally {
     Pop-Location

@@ -27,7 +27,7 @@ def inventory(root, edition):
     return files
 
 
-def build(before, after, output, old, new, edition):
+def build(before, after, output, old, new, edition, *, expected_before=None, expected_after=None):
     before, after, output = (Path(p).absolute() for p in (before, after, output))
     if (output.exists() or output.is_relative_to(before) or output.is_relative_to(after)
             or before == after):
@@ -36,6 +36,10 @@ def build(before, after, output, old, new, edition):
         'schema': 1, 'from': old, 'to': new, 'edition': edition,
         'before': inventory(before, edition), 'after': inventory(after, edition),
     })
+    if expected_before is not None and manifest['before'] != expected_before:
+        raise delta.DeltaError('Baseline changed after release preflight')
+    if expected_after is not None and manifest['after'] != expected_after:
+        raise delta.DeltaError('Target files differ from the packaged release inventory')
     changed = [p for p in delta.changes(manifest) if p in manifest['after']]
     payload_bytes = sum(manifest['after'][p]['size'] for p in changed)
     # Conservative bound for ZIP + metadata, no staging copy is made.

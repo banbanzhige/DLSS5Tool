@@ -1,0 +1,10 @@
+{
+  "schema": 1,
+  "first_updater_version": "v2.2.0",
+  "baselines": [
+    {
+      "version": "v2.2.0",
+      "packages": "dist/v2.2.0-release-20260911/editions"
+    }
+  ]
+}

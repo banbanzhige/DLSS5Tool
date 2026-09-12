@@ -19,6 +19,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 from dlss5tool.app_version import APP_VERSION
 from scripts.check_release_contents import forbidden_contents
+from scripts.release_updates import plan_updates, build_updates, verify_upload_updates
 
 # Updated flow-edge component verified in docs/development/PROCESSING_LIMITS_20260911.md.
 WORKER_SHA = '2b309510ef6f73ae73dc98d11842a8ef3ba2e012c19a7e1cfe38def9a3b9f450'
@@ -115,6 +116,10 @@ def main():
     parser.add_argument('--models', type=Path, required=True)
     parser.add_argument('--licenses', type=Path, required=True)
     parser.add_argument('--output', type=Path, required=True)
+    parser.add_argument('--update-baseline', type=Path, action='append', default=[],
+                        help='Relocate a required baseline editions directory; repeat for multiple versions. Defaults come from packaging/update-policy.json')
+    parser.add_argument('--initial-update-baseline', action='store_true',
+                        help='Explicit first-updater-release exemption only (v2.2.0); forbidden for later releases')
     parser.add_argument('--allow-external-output', action='store_true',
                         help='Explicitly permit a new output directory on another disk; never overwrites existing paths')
     args = parser.parse_args()
@@ -123,8 +128,11 @@ def main():
     output = args.output.resolve()
     if output.exists() or output == Path(output.anchor) or (not args.allow_external_output and not output.is_relative_to(ROOT / 'dist')):
         parser.error('Use a NEW output directory in dist, or explicitly opt into a new external output directory')
+    update_plan = plan_updates(APP_VERSION, initial=args.initial_update_baseline, overrides=args.update_baseline)
     if forbidden_contents(base):
         raise ValueError('Base package contains development/user data')
+    if not (base / 'DLSS5Update.exe').is_file():
+        raise ValueError('Base package lacks the standalone update helper; rebuild it before packaging editions')
     if sha(component / 'guidance_worker.exe') != WORKER_SHA:
         raise ValueError('Component differs from the fully verified optimized candidate')
     for name in MODELS:
@@ -232,7 +240,7 @@ def main():
     # Existing updaters match DLSS5Tool-vX.Y.Z-win64.zip and, if that is
     # missing, prefer the largest remaining ZIP. Never upload unsplit
     # full/add-on archives; publish the lite bytes under the canonical name.
-    canonical = portable_update_name()
+    canonical = portable_update_name(APP_VERSION)
     records['lite']['github_name'] = canonical
     link_or_copy(output / records['lite']['name'], assets / canonical)
     root_checks = [f"{records['lite']['sha256']}  {canonical}"]
@@ -243,22 +251,31 @@ def main():
         for part in record['volumes']:
             root_checks.append(f"{part['sha256']}  github-assets/{part['name']}")
             asset_checks.append(f"{part['sha256']}  {part['name']}")
+    incremental = build_updates(update_plan, folders, manifests, output, assets)
+    for record in incremental['assets']:
+        root_checks.append(f"{record['sha256']}  github-assets/{record['name']}")
+        asset_checks.append(f"{record['sha256']}  {record['name']}")
     (output / 'SHA256SUMS.txt').write_text('\n'.join(root_checks) + '\n', encoding='utf-8')
     report = {'version': APP_VERSION, 'built_at': time.strftime('%Y-%m-%d %H:%M:%S'),
               'component_sha256': WORKER_SHA, 'models': model_records, 'editions': records,
               'full_equals_lite_plus_addon': True, 'license_review': 'Publisher review required; RAFT weights only; depth architecture retained',
-              'github_portable_asset': canonical, 'published': False}
+              'github_portable_asset': canonical, 'incremental_updates': incremental, 'published': False}
     (output / 'package-report.json').write_text(json.dumps(report, indent=2), encoding='utf-8')
     shutil.copy2(output / 'package-report.json', assets / 'package-report.json')
     shutil.copy2(ROOT / 'scripts/Join-ReleaseArchive.ps1', assets / 'Join-ReleaseArchive.ps1')
     shutil.copy2(release_notes_path(), output / f'RELEASE_NOTES_{APP_VERSION}.md')
     shutil.copy2(release_notes_path(), assets / f'RELEASE_NOTES_{APP_VERSION}.md')
     (assets / 'SHA256SUMS.txt').write_text('\n'.join(asset_checks) + '\n', encoding='utf-8')
+    verify_upload_updates(assets, report)
     (assets / 'README-UPLOAD.txt').write_text(
         'GitHub Release upload set. Do not publish this folder automatically.\n\n'
         f'Required portable app (in-app updater): {canonical}\n'
         'Do not also upload *-lite.zip; it is the same bytes.\n'
         'Upload full/add-on as .zip.001 .002 .003 only. Unsplit archives exceed 2 GiB.\n'
+        + ('First updater baseline: old clients must manually install this release. No delta payloads.\n'
+           if incremental['mode'] == 'initial_baseline' else
+           'REQUIRED incremental payloads (upload every file):\n' +
+           ''.join(f"  {r['name']}\n" for r in incremental['assets'])) +
         'Optional: 30系.zip, 50系.zip, Join-ReleaseArchive.ps1, SHA256SUMS.txt.\n'
         'No depth weights included; publisher must review third-party terms before public upload.\n',
         encoding='utf-8')

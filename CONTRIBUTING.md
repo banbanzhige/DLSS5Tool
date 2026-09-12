@@ -29,6 +29,14 @@
 
 ## 提交前检查
 
+发布打包必须包含增量阶段：`packaging/update-policy.json` 指定必需旧版基线，
+`scripts/package_editions.py` 自动生成 lite/full 差异包并校验上传集合。
+`build_release.ps1` 仅完成基础构建，不代表已完成发布交付。
+固定命令与禁止跳过项见 [文件更新工作流](docs/release/FILE_UPDATES.md)。
+
+构建、打包和实验前须遵守 [仓库卫生守则](docs/development/REPOSITORY_HYGIENE.md)：
+检查磁盘预算，登记临时目录，在任务结束时回收可重建产物；Git 忽略规则不等于自动清理。
+
 目录约定见 [项目目录与文档索引](docs/README.md)。应用模块放入 `dlss5tool/`，
 技术文档放入 `docs/`，构建配置放入 `packaging/`，维护脚本放入 `scripts/`；
 不要将 DLL、设置或编译中间产物重新输出到根目录。
