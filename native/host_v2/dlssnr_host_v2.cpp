@@ -2,6 +2,7 @@
 #define NOMINMAX
 #include <windows.h>
 #include <d3d12.h>
+#include <dxgi1_6.h>
 #include <DirectXPackedVector.h>
 
 #include <algorithm>
@@ -20,6 +21,25 @@ namespace {
 
 constexpr int kMaxSlots = 3;
 constexpr NVSDK_NGX_Feature kFeatureId = static_cast<NVSDK_NGX_Feature>(18);
+constexpr unsigned int kNvidiaVendorId = 0x10DE;
+constexpr unsigned int kAdapterSoftware = 1u;
+constexpr unsigned int kAdapterD3D12Level11 = 2u;
+constexpr unsigned int kAdapterD3D12Level12 = 4u;
+
+struct DlssnrAdapterInfo
+{
+    unsigned int struct_size = sizeof(DlssnrAdapterInfo);
+    unsigned int preference_index = 0;
+    unsigned int vendor_id = 0;
+    unsigned int device_id = 0;
+    unsigned int subsys_id = 0;
+    unsigned int revision = 0;
+    unsigned int flags = 0;
+    unsigned long long dedicated_video_memory = 0;
+    long luid_high = 0;
+    unsigned long luid_low = 0;
+    wchar_t description[128] = {};
+};
 
 template <typename T>
 void Release(T *&value)
@@ -151,6 +171,10 @@ UINT64 g_fence_value = 0;
 Slot g_slots[kMaxSlots];
 ID3D12Resource *g_zero_motion = nullptr;
 ID3D12Resource *g_zero_depth = nullptr;
+bool g_adapter_explicit = false;
+LUID g_requested_adapter_luid = {};
+bool g_has_selected_adapter = false;
+DlssnrAdapterInfo g_selected_adapter = {};
 
 HMODULE g_runtime = nullptr;
 PFN_InitExt g_init_ext = nullptr;
@@ -1130,23 +1154,157 @@ void ReleaseDeviceObjects()
     Release(g_fence);
     Release(g_queue);
     Release(g_device);
+    g_has_selected_adapter = false;
+    g_selected_adapter = {};
     g_fence_value = 0;
+}
+
+bool SameLuid(const LUID &left, const LUID &right)
+{
+    return left.HighPart == right.HighPart && left.LowPart == right.LowPart;
+}
+
+std::vector<DlssnrAdapterInfo> EnumerateAdapterInfos()
+{
+    std::vector<DlssnrAdapterInfo> infos;
+    IDXGIFactory1 *base_factory = nullptr;
+    if (FAILED(CreateDXGIFactory1(IID_PPV_ARGS(&base_factory))))
+        return infos;
+    IDXGIFactory6 *preference_factory = nullptr;
+    base_factory->QueryInterface(IID_PPV_ARGS(&preference_factory));
+    for (UINT index = 0;; ++index)
+    {
+        IDXGIAdapter1 *adapter = nullptr;
+        const HRESULT enumerated = preference_factory != nullptr
+            ? preference_factory->EnumAdapterByGpuPreference(
+                index, DXGI_GPU_PREFERENCE_HIGH_PERFORMANCE, IID_PPV_ARGS(&adapter))
+            : base_factory->EnumAdapters1(index, &adapter);
+        if (enumerated == DXGI_ERROR_NOT_FOUND)
+            break;
+        if (FAILED(enumerated) || adapter == nullptr)
+            continue;
+        DXGI_ADAPTER_DESC1 description = {};
+        if (SUCCEEDED(adapter->GetDesc1(&description)))
+        {
+            DlssnrAdapterInfo info = {};
+            info.struct_size = sizeof(info);
+            info.preference_index = index;
+            info.vendor_id = description.VendorId;
+            info.device_id = description.DeviceId;
+            info.subsys_id = description.SubSysId;
+            info.revision = description.Revision;
+            info.dedicated_video_memory = description.DedicatedVideoMemory;
+            info.luid_high = description.AdapterLuid.HighPart;
+            info.luid_low = description.AdapterLuid.LowPart;
+            if (description.Flags & DXGI_ADAPTER_FLAG_SOFTWARE)
+                info.flags |= kAdapterSoftware;
+            if (SUCCEEDED(D3D12CreateDevice(
+                    adapter, D3D_FEATURE_LEVEL_11_0, __uuidof(ID3D12Device), nullptr)))
+                info.flags |= kAdapterD3D12Level11;
+            if (SUCCEEDED(D3D12CreateDevice(
+                    adapter, D3D_FEATURE_LEVEL_12_0, __uuidof(ID3D12Device), nullptr)))
+                info.flags |= kAdapterD3D12Level12;
+            wcsncpy_s(info.description, description.Description, _TRUNCATE);
+            infos.push_back(info);
+        }
+        adapter->Release();
+    }
+    Release(preference_factory);
+    Release(base_factory);
+    return infos;
+}
+
+bool OpenAdapterByLuid(const LUID &luid, IDXGIAdapter1 **result)
+{
+    if (result == nullptr)
+        return false;
+    *result = nullptr;
+    IDXGIFactory1 *base_factory = nullptr;
+    if (FAILED(CreateDXGIFactory1(IID_PPV_ARGS(&base_factory))))
+        return false;
+    IDXGIFactory4 *luid_factory = nullptr;
+    base_factory->QueryInterface(IID_PPV_ARGS(&luid_factory));
+    if (luid_factory != nullptr)
+        luid_factory->EnumAdapterByLuid(luid, IID_PPV_ARGS(result));
+    if (*result == nullptr)
+    {
+        for (UINT index = 0;; ++index)
+        {
+            IDXGIAdapter1 *adapter = nullptr;
+            const HRESULT enumerated = base_factory->EnumAdapters1(index, &adapter);
+            if (enumerated == DXGI_ERROR_NOT_FOUND)
+                break;
+            if (FAILED(enumerated) || adapter == nullptr)
+                continue;
+            DXGI_ADAPTER_DESC1 description = {};
+            adapter->GetDesc1(&description);
+            if (SameLuid(description.AdapterLuid, luid))
+            {
+                *result = adapter;
+                break;
+            }
+            adapter->Release();
+        }
+    }
+    Release(luid_factory);
+    Release(base_factory);
+    return *result != nullptr;
 }
 
 bool SetupD3D12()
 {
-    HMODULE d3d12 = LoadLibraryW(L"d3d12.dll");
-    if (d3d12 == nullptr)
+    g_has_selected_adapter = false;
+    g_selected_adapter = {};
+    const std::vector<DlssnrAdapterInfo> adapters = EnumerateAdapterInfos();
+    const DlssnrAdapterInfo *selected = nullptr;
+    for (const auto &adapter : adapters)
+    {
+        Log("adapter[%u]: %ls vendor=%04X device=%04X luid=%08lX:%08lX vram=%llu MiB flags=0x%X",
+            adapter.preference_index, adapter.description, adapter.vendor_id, adapter.device_id,
+            adapter.luid_high, adapter.luid_low,
+            adapter.dedicated_video_memory / (1024ull * 1024ull), adapter.flags);
+        const LUID luid = {adapter.luid_low, adapter.luid_high};
+        const bool requested = !g_adapter_explicit || SameLuid(luid, g_requested_adapter_luid);
+        const bool usable = adapter.vendor_id == kNvidiaVendorId &&
+            !(adapter.flags & kAdapterSoftware) && (adapter.flags & kAdapterD3D12Level11);
+        if (selected == nullptr && requested && usable)
+            selected = &adapter;
+    }
+    if (selected == nullptr)
+    {
+        if (g_adapter_explicit)
+            Log("requested NVIDIA adapter is unavailable or does not support D3D12");
+        else
+            Log("no compatible NVIDIA D3D12 adapter found");
         return false;
-    using PFN_CreateDevice = HRESULT(WINAPI *)(IUnknown *, D3D_FEATURE_LEVEL, REFIID, void **);
-    auto create_device = reinterpret_cast<PFN_CreateDevice>(GetProcAddress(d3d12, "D3D12CreateDevice"));
-    if (create_device == nullptr)
+    }
+    const LUID selected_luid = {selected->luid_low, selected->luid_high};
+    IDXGIAdapter1 *adapter = nullptr;
+    if (!OpenAdapterByLuid(selected_luid, &adapter))
+    {
+        Log("selected adapter disappeared before D3D12 device creation");
         return false;
-    HRESULT result = create_device(nullptr, D3D_FEATURE_LEVEL_12_0, __uuidof(ID3D12Device), reinterpret_cast<void **>(&g_device));
+    }
+    HRESULT result = D3D12CreateDevice(
+        adapter, D3D_FEATURE_LEVEL_12_0, IID_PPV_ARGS(&g_device));
+    D3D_FEATURE_LEVEL feature_level = D3D_FEATURE_LEVEL_12_0;
     if (FAILED(result))
-        result = create_device(nullptr, D3D_FEATURE_LEVEL_11_0, __uuidof(ID3D12Device), reinterpret_cast<void **>(&g_device));
+    {
+        feature_level = D3D_FEATURE_LEVEL_11_0;
+        result = D3D12CreateDevice(
+            adapter, D3D_FEATURE_LEVEL_11_0, IID_PPV_ARGS(&g_device));
+    }
+    adapter->Release();
     if (FAILED(result) || g_device == nullptr)
+    {
+        Log("D3D12 device creation failed for selected NVIDIA adapter: 0x%08X", result);
         return false;
+    }
+    g_selected_adapter = *selected;
+    g_has_selected_adapter = true;
+    Log("selected adapter: %ls policy=%s luid=%08lX:%08lX feature_level=0x%X",
+        selected->description, g_adapter_explicit ? "explicit" : "auto-nvidia",
+        selected->luid_high, selected->luid_low, feature_level);
 
     D3D12_COMMAND_QUEUE_DESC queue_description = {};
     queue_description.Type = D3D12_COMMAND_LIST_TYPE_DIRECT;
@@ -1219,6 +1377,45 @@ void ShutdownInternal()
 }
 
 } // namespace
+
+extern "C" __declspec(dllexport) int dlssnr_enumerate_adapters(
+    DlssnrAdapterInfo *items, int capacity)
+{
+    const std::vector<DlssnrAdapterInfo> adapters = EnumerateAdapterInfos();
+    if (items != nullptr && capacity > 0)
+    {
+        if (items[0].struct_size != sizeof(DlssnrAdapterInfo))
+            return -1;
+        const int count = std::min(capacity, static_cast<int>(adapters.size()));
+        for (int index = 0; index < count; ++index)
+            items[index] = adapters[index];
+    }
+    return static_cast<int>(adapters.size());
+}
+
+extern "C" __declspec(dllexport) void dlssnr_select_adapter(
+    long luid_high, unsigned long luid_low)
+{
+    g_adapter_explicit = true;
+    g_requested_adapter_luid.HighPart = luid_high;
+    g_requested_adapter_luid.LowPart = luid_low;
+}
+
+extern "C" __declspec(dllexport) void dlssnr_select_adapter_auto()
+{
+    g_adapter_explicit = false;
+    g_requested_adapter_luid = {};
+}
+
+extern "C" __declspec(dllexport) int dlssnr_selected_adapter(
+    DlssnrAdapterInfo *info)
+{
+    if (!g_has_selected_adapter || info == nullptr ||
+        info->struct_size != sizeof(DlssnrAdapterInfo))
+        return 0;
+    *info = g_selected_adapter;
+    return 1;
+}
 
 extern "C" __declspec(dllexport) void dlssnr_configure(
     int zero_guidance_fast_path, int persistent_buffers, int merged_submission,

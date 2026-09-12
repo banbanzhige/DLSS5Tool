@@ -175,6 +175,7 @@ def main():
             "wall_seconds": time.perf_counter() - started,
             "encoder": writer.encoder_name,
             "host_backend": live.backend if live else "unknown",
+            "adapter_info": dict(getattr(live, "adapter_info", {})) if live else {},
             "in_flight": live.max_in_flight if live else 1,
         })
     except Exception as ex:

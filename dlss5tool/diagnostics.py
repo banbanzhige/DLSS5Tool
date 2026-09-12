@@ -256,6 +256,10 @@ def _probe_hints(probe):
         hints.append("宿主超过 45 秒未响应；检查驱动、GPU 占用或安全软件拦截。")
     if "D3D12 setup failed" in combined:
         hints.append("D3D12 设备创建失败；检查系统、驱动、远程桌面和高性能 GPU 选择。")
+    if "no compatible NVIDIA D3D12 adapter found" in combined:
+        hints.append("宿主没有找到可用的 NVIDIA D3D12 适配器；核对显卡是否启用及 NVIDIA 驱动。")
+    if "requested NVIDIA adapter is unavailable" in combined:
+        hints.append("手动选择的 DLSS 渲染 GPU 当前不可用；刷新 GPU 列表并重新选择。")
     if "load nvngx_dlssnr.dll failed" in combined:
         hints.append("运行时加载失败；检查实际替换路径、文件完整性和安全软件。")
     if "missing runtime exports" in combined:
@@ -348,7 +352,7 @@ def _render_report(context, files, gpu, probes):
         lines.extend(["", f"[宿主探针: {backend}]", f"结果: {outcome}"])
         for key in (
             "backend_actual", "elapsed_seconds", "wall_seconds", "output_shape",
-            "output_sha256", "error_type", "error", "process_returncode",
+            "output_sha256", "adapter_info", "error_type", "error", "process_returncode",
             "timed_out", "launch_error", "traceback", "worker_stdout", "worker_stderr",
         ):
             if key in probe and probe[key] not in (None, ""):
@@ -449,6 +453,10 @@ def diagnostic_worker_main(arguments):
             "frame_format": "rgba8",
             "color_profile": "srgb",
         })
+        if backend == "legacy":
+            # Legacy has no adapter-selection ABI; probe its historical auto path
+            # independently instead of misreporting an explicit-v2 choice as a failure.
+            settings["render_gpu"] = "auto"
         dlss_engine.LOG_PATH = os.path.abspath(native_log_path)
         frame = np.zeros((360, 640, 4), dtype=np.uint8)
         frame[..., 0] = np.arange(640, dtype=np.uint16)[None, :] % 256
@@ -462,6 +470,7 @@ def diagnostic_worker_main(arguments):
         payload.update({
             "ok": True,
             "backend_actual": live.backend,
+            "adapter_info": dict(getattr(live, "adapter_info", {})),
             "output_shape": list(output.shape),
             "output_sha256": hashlib.sha256(memoryview(output).cast("B")).hexdigest().upper(),
         })

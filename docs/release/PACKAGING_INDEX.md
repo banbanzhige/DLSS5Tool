@@ -1,5 +1,22 @@
 # 打包轻量化记录与索引
 
+## v2.2.0 首次正式候选 — 2026-09-12
+
+- 当前工作区重新冻结 v2.2.0，加入 NVIDIA D3D12 适配器自动选择、物理 GPU 手动选择、会话安全切换与实际设备诊断。此前 `dist/v2.2.0-release-20260911/editions` 从未正式发布；新验收目录 `dist/v2.2.0-release-20260912/editions` 已登记为后续版本唯一 v2.2.0 基线，旧目录保持不动。
+- 基础构建复用现有 `.venv`，未下载或复制开发环境；486 项 `unittest` 全部通过，8 项可选 Torch 用例跳过。发行内容隔离、主程序和独立更新助手冻结通过。
+- 首发按 `--initial-update-baseline` 构建，不生成 v2.1.x 或 v2.2.0→v2.2.0 伪增量包。2.1.x 用户须完整解压升级一次；未来 v2.2.1 起再为正式 v2.2.0 lite/full 生成增量包。
+
+| 形态 | ZIP 字节数 | 解压字节数 | ZIP SHA-256 |
+| --- | ---: | ---: | --- |
+| 轻量 | 238,920,115 | 475,784,335 | `3598909dcd4d5e050a4171787d08104cc80d10c224ca3c6b7f3da0a7d4a0c670` |
+| 附加 | 3,054,781,145 | 4,783,937,157 | `eaa28e32101efaf857ad20daba2c119343c1fe834e2cc939ad226367678cb1e4` |
+| 完整 | 3,293,698,713 | 5,259,717,371 | `aaf2dc47e19b9b24535ab667d97135322a6d7f9bf7143e1a3c6be75297646358` |
+
+- 三包 CRC、完整包等于轻量＋附加逐文件叠加、GitHub 分卷重组清单及 `--check-upload` 均通过。上传目录为 `dist/v2.2.0-release-20260912/editions/github-assets`。
+- `verify_editions.py --stream-overlay` 通过：冻结轻量基础 DLSS、完整包、轻量叠加附加包及 RAFT 连续帧均通过；轻量缺增强组件按预期明确失败。三条 DLSS 诊断均记录实际适配器 `NVIDIA GeForce RTX 4070 SUPER`、CUDA 0、PCI `0000:01:00.0`；不是干净机器或跨显卡认证。
+- 完整包 NVOFA 1×1 禁止回退探针通过，实际后端 `nvofa`、设备 RTX 4070 SUPER；报告位于 `output/package-v220-release-20260912-nvofa/`。
+- 本地打包不等于已上传、创建 Release 或完成第三方分发授权复核；这些动作仍需维护者单独确认。
+
 ## 后续发布固定入口 — 2026-09-12
 
 - `scripts/build_release.ps1` 只构建基础包；完整发布必须继续运行 `scripts/package_editions.py`。

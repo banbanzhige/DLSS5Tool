@@ -42,6 +42,6 @@ if not exist "%NGX_LIB%" (
 )
 
 cl /nologo /std:c++17 /O2 /EHsc /MT /LD /I"%NGX_INCLUDE%" /Fo"%INTERMEDIATE%\dlssnr_host_v2.obj" ^
-  "%~dp0dlssnr_host_v2.cpp" "%NGX_LIB%" Advapi32.lib User32.lib ^
+  "%~dp0dlssnr_host_v2.cpp" "%NGX_LIB%" D3D12.lib DXGI.lib Advapi32.lib User32.lib ^
   /link /OUT:"%OUTPUT%\dlssnr_host_v2.dll" /PDB:"%INTERMEDIATE%\dlssnr_host_v2.pdb" /IMPLIB:"%INTERMEDIATE%\dlssnr_host_v2.lib"
 exit /b %errorlevel%

@@ -131,6 +131,8 @@ Fully extract the archive, keep `_internal` beside the EXE, install the x64 Visu
 
 Check the GPU generation, DLL path, and hash. Then use **More → Diagnostics**; no media needs to be imported first. When reporting an issue, include the application version, GPU, driver, reproduction steps, and diagnostic `.log`. Review local paths and other private data before posting a log publicly.
 
+By default, the v2 host's **DLSS render GPU** setting selects the first available NVIDIA D3D12 adapter in high-performance order, regardless of whether the display is connected to the integrated or discrete GPU. Systems with multiple NVIDIA GPUs can select one explicitly; changing it rebuilds the isolated DLSS session. If the selected GPU is disabled or removed, the application reports an error instead of silently using the integrated GPU. The legacy host does not support manual selection.
+
 **Preview is slow or high-multiplier super resolution fails.**
 
 Lower Playback quality under Preview performance and adjust the cache budget to available memory (the first-run default is `8192 MiB`). Validate high-resolution or 4× jobs with smaller media or 2× first, and review the resource warning. Preview zoom does not change export dimensions.

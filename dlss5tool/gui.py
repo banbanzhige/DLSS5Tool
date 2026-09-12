@@ -782,6 +782,9 @@ class App(PreviewComparison, GuidanceExportUI):
         self._exporting = False
         self._export_cancel_event = threading.Event()
         self._switching_backend = False
+        self._render_gpu_scan_thread = None
+        self._render_gpu_scan_after = None
+        self._render_gpu_scan_queue = queue.SimpleQueue()
         self._module_reload_thread = None
         self._module_reload_after = None
         self._close_after_module_reload = False
@@ -3849,8 +3852,17 @@ class App(PreviewComparison, GuidanceExportUI):
 
     def _build_host_settings(self, parent):
         saved = self._saved_settings
+        render_gpu_id = saved.get('render_gpu', dlss_engine.RENDER_GPU_AUTO)
         d = {
             'v_backend': tk.StringVar(value=HOST_BACKEND_NAMES[saved['host_backend']]),
+            'v_render_gpu': tk.StringVar(value=(
+                tr('gpu.auto_nvidia') if render_gpu_id == dlss_engine.RENDER_GPU_AUTO
+                else tr('gpu.detecting_saved')
+            )),
+            'render_gpu_selected_id': render_gpu_id,
+            'render_gpu_choices': {
+                tr('gpu.auto_nvidia'): dlss_engine.RENDER_GPU_AUTO,
+            },
             'v_submission': tk.StringVar(
                 value=HOST_SUBMISSION_NAMES[saved['host_submission']]
             ),
@@ -3884,37 +3896,61 @@ class App(PreviewComparison, GuidanceExportUI):
         ttk.Label(host_group, text=tr("label.backend")).grid(row=0, column=0, sticky="w", pady=3)
         backend.grid(row=0, column=1, sticky="ew", pady=3)
 
+        render_gpu_wrap = ttk.Frame(host_group, style="Panel.TFrame")
+        render_gpu_wrap.grid(row=1, column=1, sticky="ew", pady=(3, 0))
+        render_gpu_wrap.columnconfigure(0, weight=1)
+        render_gpu = self._chrome_combo(
+            render_gpu_wrap, d['v_render_gpu'], [tr('gpu.auto_nvidia')],
+        )
+        render_gpu.grid(row=0, column=0, sticky="ew")
+        render_gpu_refresh = ttk.Button(
+            render_gpu_wrap, text=tr('gpu.refresh'), width=7,
+            command=self._start_render_gpu_scan,
+        )
+        render_gpu_refresh.grid(row=0, column=1, sticky="e", padx=(4, 0))
+        ttk.Label(host_group, text=tr("label.render_gpu")).grid(
+            row=1, column=0, sticky="w", pady=(3, 0),
+        )
+        render_gpu_status = ttk.Label(
+            host_group, text=tr('gpu.status.loading'), style='Hint.TLabel',
+            wraplength=260, justify='left',
+        )
+        render_gpu_status.grid(row=2, column=1, sticky='ew', pady=(1, 3))
+
         submission = self._chrome_combo(
             host_group, d['v_submission'], list(HOST_SUBMISSION_CHOICES),
         )
-        ttk.Label(host_group, text=tr("label.submission")).grid(row=1, column=0, sticky="w", pady=3)
-        submission.grid(row=1, column=1, sticky="ew", pady=3)
+        ttk.Label(host_group, text=tr("label.submission")).grid(row=3, column=0, sticky="w", pady=3)
+        submission.grid(row=3, column=1, sticky="ew", pady=3)
 
         in_flight = self._chrome_spin(
             host_group, from_=1, to=3, textvariable=d['v_in_flight'], width=7,
             command=self._on_host_settings_change,
         )
-        ttk.Label(host_group, text=tr("label.gpu_queue_frames")).grid(row=2, column=0, sticky="w", pady=3)
-        in_flight.grid(row=2, column=1, sticky="w", pady=3)
+        ttk.Label(host_group, text=tr("label.gpu_queue_frames")).grid(row=4, column=0, sticky="w", pady=3)
+        in_flight.grid(row=4, column=1, sticky="w", pady=3)
 
         zero_fast = CheckToggle(
             host_group, tr("label.zero_guidance_fast"), d['v_zero_fast'],
             command=self._on_host_settings_change, ui=self._ui,
         )
-        zero_fast.grid(row=3, column=0, columnspan=2, sticky="w", pady=(8, 2))
+        zero_fast.grid(row=5, column=0, columnspan=2, sticky="w", pady=(8, 2))
         persistent = CheckToggle(
             host_group, tr("label.persistent_buffers"), d['v_persistent'],
             command=self._on_host_settings_change, ui=self._ui,
         )
-        persistent.grid(row=4, column=0, columnspan=2, sticky="w", pady=2)
+        persistent.grid(row=6, column=0, columnspan=2, sticky="w", pady=2)
         fallback = CheckToggle(
             host_group, tr("label.auto_fallback"), d['v_fallback'],
             command=self._on_host_settings_change, ui=self._ui,
         )
-        fallback.grid(row=5, column=0, columnspan=2, sticky="w", pady=2)
+        fallback.grid(row=7, column=0, columnspan=2, sticky="w", pady=2)
         self._theme_widgets.extend((zero_fast, persistent, fallback))
         d.update({
             'w_backend': backend,
+            'w_render_gpu': render_gpu,
+            'w_render_gpu_refresh': render_gpu_refresh,
+            'w_render_gpu_status': render_gpu_status,
             'w_submission': submission,
             'w_zero_fast': zero_fast,
             'w_persistent': persistent,
@@ -3922,11 +3958,103 @@ class App(PreviewComparison, GuidanceExportUI):
             'w_fallback': fallback,
         })
         backend.bind("<<ComboboxSelected>>", lambda e: self._on_host_settings_change())
+        render_gpu.bind("<<ComboboxSelected>>", self._on_render_gpu_selected)
         submission.bind("<<ComboboxSelected>>", lambda e: self._on_host_settings_change())
         in_flight.bind("<FocusOut>", lambda e: self._on_host_settings_change())
         in_flight.bind("<Return>", lambda e: self._on_host_settings_change())
+        self.root.after_idle(self._start_render_gpu_scan)
         self.root.after_idle(self._update_host_control_states)
         return d
+
+    def _set_render_gpu_display(self, adapter_id):
+        d = self._host_settings
+        adapter_id = str(adapter_id or dlss_engine.RENDER_GPU_AUTO)
+        label = next((name for name, value in d.get('render_gpu_choices', {}).items()
+                      if value == adapter_id), None)
+        if label is None:
+            label = tr('gpu.saved_unavailable')
+            d.setdefault('render_gpu_choices', {})[label] = adapter_id
+            values = list(d['render_gpu_choices'])
+            d['w_render_gpu'].config(values=values)
+        d['render_gpu_selected_id'] = adapter_id
+        d['v_render_gpu'].set(label)
+
+    def _on_render_gpu_selected(self, _event=None):
+        d = self._host_settings
+        selected = d.get('render_gpu_choices', {}).get(d['v_render_gpu'].get())
+        if selected is None or selected == d.get('render_gpu_selected_id'):
+            return
+        d['render_gpu_selected_id'] = selected
+        self._on_host_settings_change()
+
+    def _start_render_gpu_scan(self):
+        if not hasattr(self, '_host_settings'):
+            return
+        if self._render_gpu_scan_thread is not None and self._render_gpu_scan_thread.is_alive():
+            return
+        d = self._host_settings
+        d['w_render_gpu_status'].config(text=tr('gpu.status.loading'))
+        d['w_render_gpu'].config(state='disabled')
+        d['w_render_gpu_refresh'].config(state='disabled')
+        generation = time.monotonic_ns()
+        self._render_gpu_scan_generation = generation
+
+        def worker():
+            try:
+                result = dlss_engine.available_render_adapters()
+                error = ''
+            except Exception as exc:
+                result = []
+                error = str(exc)
+            self._render_gpu_scan_queue.put((generation, result, error))
+
+        self._render_gpu_scan_thread = threading.Thread(
+            target=worker, name='dlss-gpu-scan', daemon=True,
+        )
+        self._render_gpu_scan_thread.start()
+        self._poll_render_gpu_scan()
+
+    def _poll_render_gpu_scan(self):
+        self._render_gpu_scan_after = None
+        try:
+            generation, adapters, error = self._render_gpu_scan_queue.get_nowait()
+        except queue.Empty:
+            thread = self._render_gpu_scan_thread
+            if thread is not None and thread.is_alive():
+                self._render_gpu_scan_after = self.root.after(50, self._poll_render_gpu_scan)
+            return
+        if generation != getattr(self, '_render_gpu_scan_generation', None):
+            return
+        self._render_gpu_scan_thread = None
+        d = self._host_settings
+        choices = {tr('gpu.auto_nvidia'): dlss_engine.RENDER_GPU_AUTO}
+        labels = {}
+        for adapter in adapters:
+            memory = int(adapter.get('dedicated_video_memory', 0))
+            base = adapter.get('name') or 'NVIDIA GPU'
+            if memory:
+                base += ' · ' + format_bytes(memory)
+            count = labels.get(base, 0) + 1
+            labels[base] = count
+            label = base if count == 1 else f'{base} · #{count}'
+            choices[label] = adapter['id']
+        selected = d.get('render_gpu_selected_id', dlss_engine.RENDER_GPU_AUTO)
+        if selected not in choices.values():
+            choices[tr('gpu.saved_unavailable')] = selected
+        d['render_gpu_choices'] = choices
+        d['w_render_gpu'].config(values=list(choices))
+        self._set_render_gpu_display(selected)
+        if error:
+            status = tr('gpu.status.failed', error=error)
+        elif not adapters:
+            status = tr('gpu.status.none')
+        elif selected not in {adapter['id'] for adapter in adapters} and selected != dlss_engine.RENDER_GPU_AUTO:
+            status = tr('gpu.saved_unavailable')
+        else:
+            status = tr('gpu.status.ready', count=len(adapters))
+        d['render_gpu_scan_status'] = status
+        d['w_render_gpu_status'].config(text=status)
+        self._update_host_control_states()
 
     def _build_guidance_settings(self, parent):
         from dlss5tool.guidance_settings_ui import build_guidance_settings
@@ -4349,6 +4477,7 @@ class App(PreviewComparison, GuidanceExportUI):
             'guidance_execution': option('v_guidance_execution', ('serial', 'raft_streams'), 'serial'),
             **paths,
             'host_backend': HOST_BACKEND_CHOICES.get(d['v_backend'].get(), 'auto'),
+            'render_gpu': d.get('render_gpu_selected_id', dlss_engine.RENDER_GPU_AUTO),
             'host_submission': HOST_SUBMISSION_CHOICES.get(
                 d['v_submission'].get(), 'merged'
             ),
@@ -4472,14 +4601,39 @@ class App(PreviewComparison, GuidanceExportUI):
             self._update_guidance_export_controls()
         if self._exporting or self._queue_running or self._switching_backend or self._diagnosing:
             for name in (
-                'w_backend', 'w_submission', 'w_zero_fast', 'w_persistent',
-                'w_in_flight', 'w_fallback',
+                'w_backend', 'w_render_gpu', 'w_render_gpu_refresh', 'w_submission',
+                'w_zero_fast', 'w_persistent', 'w_in_flight', 'w_fallback',
             ):
                 self._host_settings[name].config(state="disabled")
             return
         host = self._collect_host_settings()
         self._host_settings['w_backend'].config(state="readonly")
         v2_enabled = host['host_backend'] != 'legacy'
+        scanning = (
+            self._render_gpu_scan_thread is not None
+            and self._render_gpu_scan_thread.is_alive()
+        )
+        self._host_settings['w_render_gpu'].config(
+            state="readonly" if v2_enabled and not scanning else "disabled"
+        )
+        self._host_settings['w_render_gpu_refresh'].config(
+            state="normal" if v2_enabled and not scanning else "disabled"
+        )
+        if not v2_enabled:
+            self._host_settings['w_render_gpu_status'].config(
+                text=tr('gpu.status.legacy')
+            )
+        elif not scanning:
+            adapter_name = (
+                getattr(getattr(self, '_live', None), 'adapter_info', {}).get('name')
+                if getattr(self, '_live', None) is not None
+                and getattr(self._live, 'backend', None) == 'v2'
+                else ''
+            )
+            self._host_settings['w_render_gpu_status'].config(text=(
+                tr('gpu.status.active', name=adapter_name) if adapter_name
+                else self._host_settings.get('render_gpu_scan_status', tr('gpu.status.loading'))
+            ))
         self._host_settings['w_submission'].config(
             state="readonly" if v2_enabled else "disabled"
         )
@@ -4513,43 +4667,68 @@ class App(PreviewComparison, GuidanceExportUI):
         if self._live:
             old_preference = self._live.preference
             old_backend = self._live.backend
+            old_render_gpu = self._live.settings.get(
+                'render_gpu', dlss_engine.RENDER_GPU_AUTO,
+            )
             backend_changed = settings['host_backend'] != old_preference
-            if backend_changed:
+            adapter_changed = settings.get(
+                'render_gpu', dlss_engine.RENDER_GPU_AUTO,
+            ) != old_render_gpu
+            session_changed = backend_changed or adapter_changed
+            if session_changed:
                 self.pause()
                 self._wait_play_dlss()
                 self._switching_backend = True
                 self._update_host_control_states()
                 self.root.config(cursor="wait")
-                self.set_status(tr("status.switching_backend"))
+                self.set_status(tr(
+                    "status.switching_render_gpu" if adapter_changed
+                    else "status.switching_backend"
+                ))
                 self.root.update_idletasks()
             try:
                 with self._live_lock:
                     self._live.update(settings)
             except Exception as ex:
-                if backend_changed:
+                if session_changed:
                     self._switching_backend = False
                     self.root.config(cursor="")
-                    self._host_settings['v_backend'].set(
-                        HOST_BACKEND_NAMES.get(old_preference, HOST_BACKEND_NAMES['auto'])
-                    )
+                    if backend_changed:
+                        self._host_settings['v_backend'].set(
+                            HOST_BACKEND_NAMES.get(old_preference, HOST_BACKEND_NAMES['auto'])
+                        )
+                    if adapter_changed:
+                        self._set_render_gpu_display(old_render_gpu)
                     self._update_host_control_states()
-                self.logln("[DLSS 后端] 设置应用失败，继续使用原后端：" + str(ex))
-                if backend_changed:
+                self.logln("[DLSS 主机] 设置应用失败，继续使用原会话：" + str(ex))
+                if adapter_changed:
+                    self.set_status(tr("status.host_apply_failed", backend=self._live.backend))
+                elif backend_changed:
                     self.set_status(tr("status.backend_switch_failed", backend=self._live.backend))
                 else:
                     self.set_status(tr("status.host_apply_failed", backend=self._live.backend))
                 self._schedule_settings_save()
-                if backend_changed:
+                if session_changed:
                     messagebox.showerror(
-                        tr("dialog.backend_switch_failed"),
-                        tr("message.backend_switch_failed", error=ex),
+                        tr("dialog.render_gpu_switch_failed" if adapter_changed
+                           else "dialog.backend_switch_failed"),
+                        tr("message.render_gpu_switch_failed" if adapter_changed
+                           else "message.backend_switch_failed", error=ex),
                     )
                 return
-            if backend_changed:
+            if session_changed:
                 self._switching_backend = False
                 self.root.config(cursor="")
                 self._update_host_control_states()
-                if self._live.backend != old_backend:
+                if adapter_changed:
+                    adapter = self._live.adapter_info
+                    name = adapter.get('name') or tr('gpu.auto_nvidia')
+                    self._host_settings['w_render_gpu_status'].config(
+                        text=tr('gpu.status.active', name=name)
+                    )
+                    self.logln(f"[DLSS GPU] 已切换到 {name}")
+                    self.set_status(tr("status.host_applied", backend=self._live.backend))
+                elif self._live.backend != old_backend:
                     self.logln(
                         f"[DLSS 后端] 已热切换到 {self._live.backend}（GUI 无需重启）"
                     )
@@ -4938,6 +5117,7 @@ class App(PreviewComparison, GuidanceExportUI):
         self._cancel_after('_clear_preview_after')
         self._cancel_after('_module_reload_after')
         self._cancel_after('_guidance_preview_after')
+        self._cancel_after('_render_gpu_scan_after')
         self._save_settings_now()
         self._save_queue_state()
         self.pause()
@@ -4967,7 +5147,7 @@ class App(PreviewComparison, GuidanceExportUI):
         return (
             s['style'], s['intensity'], s['local_tone'], s['local_struct'],
             s['use_auto_mask'], s['skin_struct'],
-            s.get('host_backend'), s.get('host_submission'),
+            s.get('host_backend'), s.get('render_gpu'), s.get('host_submission'),
             s.get('host_zero_fast_path'), s.get('host_persistent_buffers'),
             s.get('host_in_flight'),
             s.get('dlss_runtime'), guidance_client.contract(s),
@@ -5070,6 +5250,12 @@ class App(PreviewComparison, GuidanceExportUI):
                     self._live.update(settings)
                     self._live_w, self._live_h = w, h
                     self._last_dlss_frame = -1
+                    adapter_name = self._live.adapter_info.get('name')
+                    if adapter_name and threading.current_thread() is threading.main_thread():
+                        self._host_settings['w_render_gpu_status'].config(
+                            text=tr('gpu.status.active', name=adapter_name)
+                        )
+                        self.logln(f"[DLSS GPU] {adapter_name}")
                 else:
                     self._live.update(settings)
                 return self._live
@@ -8588,7 +8774,8 @@ class App(PreviewComparison, GuidanceExportUI):
                 "DLSS 5"
             )
             self.logln(
-                f"[DLSS 主机] {live.backend}；目标分辨率队列 {live.max_in_flight} 帧"
+                f"[DLSS 主机] {live.backend}；目标分辨率队列 {live.max_in_flight} 帧；"
+                f"GPU {live.adapter_info.get('name', 'unknown')}"
             )
             decode_buffer = 1
             for index, frame in self._iter_frames(
@@ -8694,7 +8881,8 @@ class App(PreviewComparison, GuidanceExportUI):
                 f"{writer.encoder_name}"
             )
             self.logln(
-                f"[DLSS 主机] {live.backend}；HDR GPU 队列 {live.max_in_flight} 帧"
+                f"[DLSS 主机] {live.backend}；HDR GPU 队列 {live.max_in_flight} 帧；"
+                f"GPU {live.adapter_info.get('name', 'unknown')}"
             )
             pending = deque()
             index = 0
@@ -8948,7 +9136,8 @@ class App(PreviewComparison, GuidanceExportUI):
                 self.logln(f"[导出] 编码器: {result['encoder']}")
                 self.logln(
                     f"[DLSS 主机] {', '.join(result['host_backends'])}；"
-                    f"队列 {result['in_flight']} 帧/进程"
+                    f"队列 {result['in_flight']} 帧/进程；"
+                    f"GPU {', '.join(result.get('render_gpus', ['unknown']))}"
                 )
                 self.logln(f"[导出] 音频: {result['audio_mode']}")
                 self.logln(
@@ -9017,7 +9206,8 @@ class App(PreviewComparison, GuidanceExportUI):
                             live.update(settings)
                             self.logln(
                                 f"[DLSS 主机] {live.backend}；"
-                                f"GPU 队列 {live.max_in_flight} 帧"
+                                f"GPU 队列 {live.max_in_flight} 帧；"
+                                f"GPU {live.adapter_info.get('name', 'unknown')}"
                             )
 
                         dlss_started = time.perf_counter()

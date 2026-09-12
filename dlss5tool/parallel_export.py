@@ -212,6 +212,10 @@ def export_parallel(
             "host_backends": sorted({
                 item.get("host_backend", "unknown") for item in results if item
             }),
+            "render_gpus": sorted({
+                item.get("adapter_info", {}).get("name", "unknown")
+                for item in results if item
+            }),
             "in_flight": max(
                 [int(item.get("in_flight", 1)) for item in results if item] or [1]
             ),

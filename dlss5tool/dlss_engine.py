@@ -30,6 +30,26 @@ FRAME_FORMAT_RGBA16F = "rgba16f"
 COLOR_PROFILES = {"srgb": 0, "scrgb": 1, "hdr10_pq": 2, "hdr10_hlg": 3}
 DEFAULT_TILE_WIDTH = 6000
 DEFAULT_TILE_HEIGHT = 3000
+RENDER_GPU_AUTO = "auto"
+_NVIDIA_VENDOR_ID = 0x10DE
+_ADAPTER_SOFTWARE = 1
+_ADAPTER_D3D12_LEVEL_11 = 2
+
+
+class _NativeAdapterInfo(ctypes.Structure):
+    _fields_ = [
+        ("struct_size", ctypes.c_uint32),
+        ("preference_index", ctypes.c_uint32),
+        ("vendor_id", ctypes.c_uint32),
+        ("device_id", ctypes.c_uint32),
+        ("subsys_id", ctypes.c_uint32),
+        ("revision", ctypes.c_uint32),
+        ("flags", ctypes.c_uint32),
+        ("dedicated_video_memory", ctypes.c_uint64),
+        ("luid_high", ctypes.c_int32),
+        ("luid_low", ctypes.c_uint32),
+        ("description", ctypes.c_wchar * 128),
+    ]
 
 
 def frame_dtype(settings=None):
@@ -92,6 +112,18 @@ def _bind_library(lib):
     if hasattr(lib, "dlssnr_configure_format"):
         lib.dlssnr_configure_format.argtypes = [ctypes.c_int, ctypes.c_int]
         lib.dlssnr_configure_format.restype = None
+    if hasattr(lib, "dlssnr_enumerate_adapters"):
+        lib.dlssnr_enumerate_adapters.argtypes = [
+            ctypes.POINTER(_NativeAdapterInfo), ctypes.c_int,
+        ]
+        lib.dlssnr_enumerate_adapters.restype = ctypes.c_int
+    if hasattr(lib, "dlssnr_select_adapter"):
+        lib.dlssnr_select_adapter.argtypes = [ctypes.c_int32, ctypes.c_uint32]
+        lib.dlssnr_select_adapter.restype = None
+        lib.dlssnr_select_adapter_auto.argtypes = []
+        lib.dlssnr_select_adapter_auto.restype = None
+        lib.dlssnr_selected_adapter.argtypes = [ctypes.POINTER(_NativeAdapterInfo)]
+        lib.dlssnr_selected_adapter.restype = ctypes.c_int
     lib._dlss5tool_bound = True
     return lib
 
@@ -115,6 +147,194 @@ def _load(settings=None, forced=None):
     if preference not in {"v2", "legacy"}:
         preference = "legacy"
     return _load_backend(preference)
+
+
+def _cuda_adapter_luids():
+    """Map physical CUDA devices to DXGI LUIDs without importing CUDA toolkits."""
+    if os.name != "nt":
+        return {}
+    try:
+        cuda = ctypes.WinDLL("nvcuda.dll")
+        cuda.cuInit.argtypes = [ctypes.c_uint]
+        cuda.cuInit.restype = ctypes.c_int
+        if cuda.cuInit(0) != 0:
+            return {}
+        count_fn = getattr(cuda, "cuDeviceGetCount_v2", None) or cuda.cuDeviceGetCount
+        count_fn.argtypes = [ctypes.POINTER(ctypes.c_int)]
+        count_fn.restype = ctypes.c_int
+        count = ctypes.c_int()
+        if count_fn(ctypes.byref(count)) != 0 or count.value < 0 or count.value > 64:
+            return {}
+        cuda.cuDeviceGet.argtypes = [ctypes.POINTER(ctypes.c_int), ctypes.c_int]
+        cuda.cuDeviceGet.restype = ctypes.c_int
+        cuda.cuDeviceGetLuid.argtypes = [
+            ctypes.c_void_p, ctypes.POINTER(ctypes.c_uint), ctypes.c_int,
+        ]
+        cuda.cuDeviceGetLuid.restype = ctypes.c_int
+        bus_fn = getattr(cuda, "cuDeviceGetPCIBusId", None)
+        if bus_fn is not None:
+            bus_fn.argtypes = [ctypes.c_char_p, ctypes.c_int, ctypes.c_int]
+            bus_fn.restype = ctypes.c_int
+        result = {}
+        for ordinal in range(count.value):
+            device = ctypes.c_int()
+            luid = (ctypes.c_ubyte * 8)()
+            node_mask = ctypes.c_uint()
+            if cuda.cuDeviceGet(ctypes.byref(device), ordinal) != 0:
+                continue
+            if cuda.cuDeviceGetLuid(luid, ctypes.byref(node_mask), device.value) != 0:
+                continue
+            luid_low = int.from_bytes(bytes(luid[:4]), "little", signed=False)
+            luid_high = int.from_bytes(bytes(luid[4:]), "little", signed=True)
+            pci_bus_id = ""
+            if bus_fn is not None:
+                bus = ctypes.create_string_buffer(32)
+                if bus_fn(bus, len(bus), device.value) == 0:
+                    pci_bus_id = bus.value.decode("ascii", errors="replace")
+            result[(luid_high, luid_low)] = {
+                "cuda_index": ordinal,
+                "pci_bus_id": pci_bus_id,
+            }
+        return result
+    except (AttributeError, OSError, TypeError, ValueError):
+        return {}
+
+
+def _adapter_records(native_infos, cuda_luids=None):
+    """Return stable, persistable NVIDIA D3D12 choices from native DXGI data."""
+    records = []
+    seen = set()
+    cuda_luids = dict(cuda_luids or {})
+    for native in native_infos:
+        if (
+            int(native.vendor_id) != _NVIDIA_VENDOR_ID
+            or int(native.flags) & _ADAPTER_SOFTWARE
+            or not int(native.flags) & _ADAPTER_D3D12_LEVEL_11
+        ):
+            continue
+        base = "dxgi:%04X:%04X:%08X:%08X:%016X" % (
+            int(native.vendor_id), int(native.device_id), int(native.subsys_id),
+            int(native.revision), int(native.dedicated_video_memory),
+        )
+        luid = (int(native.luid_high), int(native.luid_low))
+        cuda = cuda_luids.get(luid)
+        if cuda_luids and cuda is None:
+            continue
+        pci_token = "".join(
+            character for character in str((cuda or {}).get("pci_bus_id", "")).upper()
+            if character in "0123456789ABCDEF"
+        )
+        suffix = (
+            ":P" + pci_token if len(pci_token) == 9
+            else ":C%d" % cuda["cuda_index"] if cuda else ""
+        )
+        adapter_id = base + suffix
+        # Hybrid/partitioned Windows drivers can publish several DXGI LUIDs for
+        # one physical adapter. CUDA's driver LUID identifies physical NVIDIA
+        # devices; when unavailable, retain the first high-performance view.
+        if adapter_id in seen:
+            continue
+        seen.add(adapter_id)
+        records.append({
+            "id": adapter_id,
+            "name": str(native.description).strip() or "NVIDIA GPU",
+            "preference_index": int(native.preference_index),
+            "vendor_id": int(native.vendor_id),
+            "device_id": int(native.device_id),
+            "subsys_id": int(native.subsys_id),
+            "revision": int(native.revision),
+            "dedicated_video_memory": int(native.dedicated_video_memory),
+            "luid_high": int(native.luid_high),
+            "luid_low": int(native.luid_low),
+            "d3d12_feature_level": "12_0" if int(native.flags) & 4 else "11_0",
+            "cuda_index": cuda["cuda_index"] if cuda else None,
+            "pci_bus_id": cuda["pci_bus_id"] if cuda else "",
+        })
+    return records
+
+
+def _native_adapter_infos(lib):
+    if not hasattr(lib, "dlssnr_enumerate_adapters"):
+        return []
+    count = int(lib.dlssnr_enumerate_adapters(None, 0))
+    if count < 0 or count > 64:
+        raise RuntimeError("DLSS 宿主返回了无效的显卡数量")
+    if not count:
+        return []
+    items = (_NativeAdapterInfo * count)()
+    for item in items:
+        item.struct_size = ctypes.sizeof(_NativeAdapterInfo)
+    returned = int(lib.dlssnr_enumerate_adapters(items, count))
+    if returned < 0:
+        raise RuntimeError("DLSS 宿主无法枚举图形适配器")
+    return list(items[:min(returned, count)])
+
+
+def available_render_adapters():
+    """List selectable NVIDIA D3D12 adapters without initializing NGX."""
+    lib, _ = _load_backend("v2")
+    if not hasattr(lib, "dlssnr_enumerate_adapters"):
+        raise RuntimeError("当前 v2 宿主不支持显卡选择，请更新 dlssnr_host_v2.dll")
+    return _adapter_records(_native_adapter_infos(lib), _cuda_adapter_luids())
+
+
+def _configure_render_adapter(lib, settings, backend):
+    requested = str((settings or {}).get("render_gpu", RENDER_GPU_AUTO))
+    if backend != "v2":
+        if requested != RENDER_GPU_AUTO:
+            raise RuntimeError("手动选择 DLSS 渲染 GPU 需要 v2 宿主")
+        return [], {}
+    if not hasattr(lib, "dlssnr_select_adapter"):
+        if requested != RENDER_GPU_AUTO:
+            raise RuntimeError("当前 v2 宿主不支持手动选择显卡，请更新宿主 DLL")
+        return [], {}
+    records = _adapter_records(_native_adapter_infos(lib), _cuda_adapter_luids())
+    if not records:
+        raise RuntimeError("未检测到可用于 DLSS 的 NVIDIA D3D12 GPU")
+    if requested == RENDER_GPU_AUTO:
+        lib.dlssnr_select_adapter_auto()
+        return records, records[0]
+    selected = next((record for record in records if record["id"] == requested), None)
+    if selected is None:
+        names = "、".join(record["name"] for record in records) or "无"
+        raise RuntimeError("此前选择的 DLSS 渲染 GPU 当前不可用；已检测到：" + names)
+    lib.dlssnr_select_adapter(selected["luid_high"], selected["luid_low"])
+    return records, selected
+
+
+def _selected_render_adapter(lib, records, expected):
+    if not hasattr(lib, "dlssnr_selected_adapter"):
+        return {}
+    native = _NativeAdapterInfo()
+    native.struct_size = ctypes.sizeof(_NativeAdapterInfo)
+    if not lib.dlssnr_selected_adapter(ctypes.byref(native)):
+        return {}
+    matched = next((record for record in records if (
+        record["luid_high"] == int(native.luid_high)
+        and record["luid_low"] == int(native.luid_low)
+    )), None)
+    if matched is not None:
+        return dict(matched)
+    result = dict(expected or {})
+    result.update({
+        "name": str(native.description).strip() or result.get("name", "NVIDIA GPU"),
+        "vendor_id": int(native.vendor_id),
+        "device_id": int(native.device_id),
+        "dedicated_video_memory": int(native.dedicated_video_memory),
+        "luid_high": int(native.luid_high),
+        "luid_low": int(native.luid_low),
+    })
+    return result
+
+
+def is_render_adapter_error(error):
+    text = str(error or "")
+    return any(marker in text for marker in (
+        "未检测到可用于 DLSS 的 NVIDIA D3D12 GPU",
+        "此前选择的 DLSS 渲染 GPU 当前不可用",
+        "no compatible NVIDIA D3D12 adapter found",
+        "requested NVIDIA adapter is unavailable",
+    ))
 
 
 def _host_config(settings):
@@ -213,6 +433,7 @@ class Live:
         guidance_client.validate(self.settings)
         self._guidance = None
         self._reset_next = True
+        self.adapter_info = {}
         self.runtime_path = mod_paths.runtime_path(self.settings)
         self._preference = str(self.settings.get("host_backend", "auto"))
         self._lib, self.backend = _load(self.settings)
@@ -235,6 +456,9 @@ class Live:
             self._lib.dlssnr_shutdown()
         except Exception:
             pass
+        adapters, expected_adapter = _configure_render_adapter(
+            self._lib, s, self.backend,
+        )
         if not self._lib.dlssnr_init(self._w, self._h, int(s.get('preset', 1)), self.runtime_path, LOG_PATH):
             log = _read_log_tail(LOG_PATH)
             detail = "dlssnr_init failed (D3D12/gate). See dlss_run.log"
@@ -244,15 +468,22 @@ class Live:
         if not self._lib.dlssnr_create_feature(self._w, self._h, int(s.get('preset', 1))):
             log = _read_log_tail(LOG_PATH)
             raise RuntimeError("Feature 18 create failed.\n" + log[-800:])
+        self.adapter_info = _selected_render_adapter(
+            self._lib, adapters, expected_adapter,
+        )
         self._config = _host_config(s)
         self._refresh_capabilities()
 
     def _open_with_fallback(self):
         try:
             self._open()
-        except Exception:
+        except Exception as error:
             allow = bool(self.settings.get("host_auto_fallback", True))
-            if self._preference != "auto" or self.backend != "v2" or not allow:
+            if (
+                self._preference != "auto" or self.backend != "v2" or not allow
+                or self.settings.get("render_gpu", RENDER_GPU_AUTO) != RENDER_GPU_AUTO
+                or is_render_adapter_error(error)
+            ):
                 raise
             try:
                 self._lib.dlssnr_shutdown()
@@ -278,6 +509,10 @@ class Live:
                                         for key in ('dlss_runtime', 'mods_directory'))
         if runtime_selection_changed and mod_paths.runtime_path(updated) != self.runtime_path:
             raise RuntimeError(i18n.tr_for(updated.get('ui_language'), 'guidance.error.runtime_switch'))
+        if updated.get("render_gpu", RENDER_GPU_AUTO) != self.settings.get(
+            "render_gpu", RENDER_GPU_AUTO,
+        ):
+            raise RuntimeError("进程内 Live 不支持切换 DLSS 渲染 GPU；请新建会话或使用 ProcessLive。")
         changed_guidance = guidance_client.contract(updated) != guidance_client.contract(self.settings)
         if changed_guidance and self.pending:
             raise RuntimeError(i18n.tr_for(updated.get('ui_language'), 'guidance.error.pending'))

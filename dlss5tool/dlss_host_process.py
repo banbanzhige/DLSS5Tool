@@ -62,6 +62,7 @@ def _error_payload(operation, exception, log_path=None):
 def _metadata(live):
     return {
         "backend": live.backend,
+        "adapter_info": dict(getattr(live, "adapter_info", {})),
         "max_in_flight": int(live.max_in_flight),
         "supports_async": bool(live.supports_async),
         "tiled": bool(getattr(live, "tiled", False)),
@@ -208,6 +209,7 @@ class _HostSession:
         self._input_frame = None
         self._output_frame = None
         self.backend = "unknown"
+        self.adapter_info = {}
         self.max_in_flight = 1
         self.supports_async = False
         self.tiled = False
@@ -293,6 +295,8 @@ class _HostSession:
         raise HostProcessError(detail)
 
     def _apply_metadata(self, response):
+        if "adapter_info" in response:
+            self.adapter_info = dict(response["adapter_info"])
         if 'guidance_info' in response:
             self.guidance_info = dict(response['guidance_info'])
         if 'guidance_metrics' in response:
@@ -406,7 +410,11 @@ class ProcessLive:
         if dlss_engine.frame_format_id(settings) == 1:
             return ["v2"]
         candidates = ["v2"]
-        if bool(settings.get("host_auto_fallback", True)):
+        if (
+            bool(settings.get("host_auto_fallback", True))
+            and settings.get("render_gpu", dlss_engine.RENDER_GPU_AUTO)
+                == dlss_engine.RENDER_GPU_AUTO
+        ):
             candidates.append("legacy")
         return candidates
 
@@ -428,12 +436,15 @@ class ProcessLive:
                 )
             except Exception as exception:
                 failures.append("%s: %s" % (backend, exception))
+                if backend == "v2" and dlss_engine.is_render_adapter_error(exception):
+                    break
         raise HostProcessError(
             "无法启动 DLSS 后端：\n" + "\n\n".join(failures)
         )
 
     def _sync_metadata(self):
         self.backend = self._session.backend
+        self.adapter_info = dict(getattr(self._session, "adapter_info", {}))
         self.max_in_flight = self._session.max_in_flight
         self.supports_async = self._session.supports_async
         self.tiled = self._session.tiled
@@ -467,6 +478,8 @@ class ProcessLive:
             or dlss_engine.frame_contract(updated) != dlss_engine.frame_contract(self.settings)
             or guidance_client.contract(updated) != guidance_client.contract(self.settings)
             or updated.get("dlss_runtime", "") != self.settings.get("dlss_runtime", "")
+            or updated.get("render_gpu", dlss_engine.RENDER_GPU_AUTO)
+                != self.settings.get("render_gpu", dlss_engine.RENDER_GPU_AUTO)
         ):
             self._replace(self._w, self._h, updated)
             return

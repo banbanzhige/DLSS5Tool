@@ -64,6 +64,7 @@ class DiagnosticReportTests(unittest.TestCase):
         probes = {
             "v2": {
                 "backend_requested": "v2", "ok": True,
+                "adapter_info": {"name": "RTX Test", "device_id": 1234},
                 "native_log": "Feature 18 ready", "timed_out": False,
             },
             "legacy": {
@@ -99,11 +100,13 @@ class DiagnosticReportTests(unittest.TestCase):
             self.assertIn(f"应用版本: {diagnostics.APP_VERSION}", report)
             self.assertIn("FeatureNotSupported", report)
             self.assertIn("RTX Test, 999.0", report)
+            self.assertIn("adapter_info: {'name': 'RTX Test'", report)
             self.assertFalse(os.path.exists(output + ".tmp"))
 
     def test_worker_publishes_machine_readable_result(self):
         class FakeLive:
             backend = "v2"
+            adapter_info = {"name": "RTX Worker"}
 
             def __init__(self, width, height, settings):
                 self.width = width
@@ -128,6 +131,7 @@ class DiagnosticReportTests(unittest.TestCase):
                 payload = json.load(handle)
             self.assertTrue(payload["ok"])
             self.assertEqual(payload["backend_actual"], "v2")
+            self.assertEqual(payload["adapter_info"]["name"], "RTX Worker")
             self.assertEqual(payload["output_shape"], [360, 640, 4])
 
 

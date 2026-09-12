@@ -11,6 +11,7 @@ import numpy as np
 
 from dlss5tool import app_settings
 from dlss5tool import diagnostics
+from dlss5tool import dlss_engine
 from dlss5tool import updater
 from dlss5tool.app_version import APP_VERSION
 from dlss5tool import ui_icons
@@ -572,6 +573,7 @@ class SettingsPanelPersistenceTests(unittest.TestCase):
             "warmup_frames": 8,
             "decode_buffer": 4,
             "host_backend": "auto",
+            "render_gpu": "auto",
             "host_submission": "compatibility",
             "host_in_flight": 3,
             "host_zero_fast_path": False,
@@ -1337,6 +1339,16 @@ class WidgetSmokeTests(unittest.TestCase):
                                     side_effect=lambda values: original({**values, 'guidance_mode': 0}))
         patcher.start()
         self.addCleanup(patcher.stop)
+        self.render_gpu_id = "dxgi:10DE:2684:12345678:00000001:0000000300000000:P000001000"
+        gpu_patcher = mock.patch.object(
+            dlss_engine, 'available_render_adapters', return_value=[{
+                'id': self.render_gpu_id,
+                'name': 'Fixture RTX',
+                'dedicated_video_memory': 12 * 1024 ** 3,
+            }],
+        )
+        gpu_patcher.start()
+        self.addCleanup(gpu_patcher.stop)
 
     def test_automatic_update_check_only_prompts_for_a_newer_release(self):
         logs = []
@@ -1744,6 +1756,17 @@ class WidgetSmokeTests(unittest.TestCase):
                 app._host_settings['v_depth_profile'].set(gui.tr('guidance.option.fp32'))
                 app._host_settings['v_guidance_execution'].set(gui.tr('guidance.option.serial'))
                 collected = app._collect_host_settings()
+                self.assertEqual(collected['render_gpu'], 'auto')
+                gpu_label = next(
+                    label for label, adapter_id in app._host_settings['render_gpu_choices'].items()
+                    if adapter_id == self.render_gpu_id
+                )
+                previous_hash = app._settings_hash()
+                app._host_settings['v_render_gpu'].set(gpu_label)
+                app._on_render_gpu_selected()
+                self.assertEqual(app._collect_host_settings()['render_gpu'], self.render_gpu_id)
+                self.assertNotEqual(app._settings_hash(), previous_hash)
+                app._set_render_gpu_display('auto')
                 self.assertEqual(collected['guidance_device'], 'cuda')
                 self.assertEqual(collected['guidance_flow_direction'], 'forward_negated')
                 self.assertEqual(collected['guidance_depth_encoder'], 'vitb')

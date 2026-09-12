@@ -52,6 +52,7 @@ DEFAULTS = {
     "video_bitrate_mbps": 20.0,
     "hdr_mode": True,
     "host_backend": "auto",
+    "render_gpu": "auto",
     "dlss_runtime": "",
     "mods_directory": "",
     "guidance_flow_weights": "",
@@ -192,6 +193,14 @@ def validate(values):
     result["video_bitrate_mbps"] = max(0.5, min(500.0, bitrate))
     if source.get("host_backend") in {"auto", "v2", "legacy"}:
         result["host_backend"] = source["host_backend"]
+    render_gpu = str(source.get("render_gpu", result["render_gpu"])).strip()
+    if render_gpu == "auto" or re.fullmatch(
+        r"dxgi:[0-9A-F]{4}:[0-9A-F]{4}:[0-9A-F]{8}:[0-9A-F]{8}:[0-9A-F]{16}"
+        r"(?::(?:P[0-9A-F]{9}|C\d+))?",
+        render_gpu,
+        flags=re.I,
+    ):
+        result["render_gpu"] = render_gpu
     for name in ("dlss_runtime", "mods_directory",
                  "guidance_flow_weights", "guidance_depth_weights"):
         if isinstance(source.get(name), str):

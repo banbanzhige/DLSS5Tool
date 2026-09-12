@@ -17,10 +17,15 @@ class FakeLive:
         self.settings = dict(settings)
         self.backend = self.settings.get("host_backend", "legacy")
         if self.settings.get("fake_fail_backend") == self.backend:
-            raise RuntimeError("requested fake backend failure: " + self.backend)
+            raise RuntimeError(self.settings.get(
+                "fake_fail_message", "requested fake backend failure: " + self.backend,
+            ))
         self.tiled = bool(self.settings.get("host_tiled_mode", False))
         self.max_in_flight = 2 if self.backend == "v2" and not self.tiled else 1
         self.supports_async = self.max_in_flight > 1
+        self.adapter_info = ({
+            "name": "Fixture RTX", "id": self.settings.get("render_gpu", "auto"),
+        } if self.backend == "v2" else {})
         self._pending = []
         self.guidance_info = {}
         self._guidance_previous = None
@@ -133,6 +138,19 @@ class ProcessLiveTests(unittest.TestCase):
         finally:
             live.close()
 
+    def test_render_gpu_selection_replaces_worker_and_reports_adapter(self):
+        adapter_id = "dxgi:10DE:2684:12345678:00000001:0000000300000000:P000001000"
+        live = self.make_live('v2')
+        try:
+            previous = live._session
+            self.assertEqual(live.adapter_info['name'], 'Fixture RTX')
+            live.update({'render_gpu': adapter_id})
+            self.assertIsNot(previous, live._session)
+            self.assertTrue(previous._closed)
+            self.assertEqual(live.adapter_info['id'], adapter_id)
+        finally:
+            live.close()
+
     def make_live(self, backend="legacy", **extra):
         settings = {
             "host_backend": backend,
@@ -181,6 +199,32 @@ class ProcessLiveTests(unittest.TestCase):
                 self.assertEqual(live.backend, "legacy")
             finally:
                 live.close()
+        finally:
+            dlss_engine.HOST_DLL_V2 = original_v2_path
+
+    def test_explicit_gpu_never_falls_back_to_legacy(self):
+        original_v2_path = dlss_engine.HOST_DLL_V2
+        dlss_engine.HOST_DLL_V2 = os.path.abspath(__file__)
+        try:
+            with self.assertRaises(HostProcessError):
+                self.make_live(
+                    "auto",
+                    render_gpu="dxgi:10DE:2684:12345678:00000001:0000000300000000:P000001000",
+                    fake_fail_backend="v2",
+                )
+        finally:
+            dlss_engine.HOST_DLL_V2 = original_v2_path
+
+    def test_missing_nvidia_adapter_never_falls_back_to_legacy(self):
+        original_v2_path = dlss_engine.HOST_DLL_V2
+        dlss_engine.HOST_DLL_V2 = os.path.abspath(__file__)
+        try:
+            with self.assertRaisesRegex(HostProcessError, "未检测到可用于 DLSS"):
+                self.make_live(
+                    "auto",
+                    fake_fail_backend="v2",
+                    fake_fail_message="未检测到可用于 DLSS 的 NVIDIA D3D12 GPU",
+                )
         finally:
             dlss_engine.HOST_DLL_V2 = original_v2_path
 

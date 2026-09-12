@@ -1,7 +1,10 @@
-# v2.2.0 · 文件级增量更新
+# v2.2.0 · 文件级增量更新与 DLSS 渲染 GPU 选择
 
 ## 新增
 
+- v2 宿主不再使用系统的未指定默认适配器：自动模式按高性能顺序选择可用的 NVIDIA D3D12 GPU，即使显示器由核显输出，也不会因此把 DLSS 创建在核显上。
+- 「设置 → 高级宿主」新增「DLSS 渲染 GPU」。多张 NVIDIA 显卡可手动指定；选择按物理 GPU 与 PCI 位置持久化，切换时安全重建隔离会话，所选设备不可用时明确报错且不静默改用核显。
+- 一键诊断和导出日志记录实际 DLSS 适配器、DXGI LUID、CUDA 序号、PCI 总线、显存与 D3D12 特性级别，便于区分显示输出 GPU 和真正的渲染 GPU。
 - 引入版本对文件级更新包，只下载新增或变化的文件，复用未变化的运行依赖和模型。
 - 自动匹配轻量版或完整安装；轻量版叠加附加包按完整安装处理。没有匹配差异包时提供整包升级入口，完整安装不再默认下载轻量包。
 - 独立 `DLSS5Update.exe` 更新助手：下载和退出安装分别确认；程序退出后校验、备份和替换，失败时尝试回滚，中断时提供恢复入口。
@@ -23,6 +26,8 @@ v2.2.0 是新更新器的首次正式基线，之后仍需发布者提供对应�
 - 本机验证不等于干净机器、跨显卡认证或第三方分发许可审核通过。
 
 ## English
+
+The optimized v2 host now selects an explicit NVIDIA D3D12 adapter instead of the unspecified system default, so an integrated GPU can remain connected to the display without receiving the DLSS device. A new **DLSS render GPU** selector supports automatic high-performance selection and explicit multi-NVIDIA-GPU selection. Changes rebuild the isolated session safely, and diagnostics report the adapter actually used.
 
 File-level updates transfer changed/new files only, selecting Lite or Full according to installed components. A standalone helper verifies, backs up and replaces files after the app exits, with rollback and interrupted-update recovery. Modified managed files or custom component paths require manual upgrade.
 
