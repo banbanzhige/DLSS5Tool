@@ -58,6 +58,65 @@ class GuidanceTabTests(unittest.TestCase):
             time.sleep(0.005)
         self.assertIsNone(self.app._module_reload_thread)
 
+    def test_zero_fast_toggle_tracks_guidance_and_persists_off_default(self):
+        app = self.app
+        host = app._host_settings
+        self.assertFalse(host['v_zero_fast'].get())
+        self.assertEqual(str(host['w_zero_fast'].cget('state')), 'disabled')
+        host['v_guidance'].set(gui.tr('guidance.mode.0'))
+        app._on_mod_settings_change()
+        self.wait_for_reload()
+        self.assertTrue(host['v_zero_fast'].get())
+        self.assertEqual(str(host['w_zero_fast'].cget('state')), 'normal')
+        saved = app_settings.save(app._collect_persisted_settings())
+        self.assertTrue(saved['host_zero_fast_path'])
+        self.assertTrue(app_settings.startup_settings(saved)['host_zero_fast_path'])
+        host['v_guidance'].set(gui.tr('guidance.mode.1'))
+        app._on_mod_settings_change()
+        self.wait_for_reload()
+        self.assertFalse(host['v_zero_fast'].get())
+        self.assertEqual(str(host['w_zero_fast'].cget('state')), 'disabled')
+        self.assertFalse(app._collect_persisted_settings()['host_zero_fast_path'])
+
+    def test_extended_queue_range_and_actual_session_label(self):
+        app = self.app
+        host = app._host_settings
+        self.assertNotIn('w_queue_hint', host)
+        self.assertEqual(int(float(host['w_in_flight'].cget('to'))), 16)
+        host['v_in_flight'].set(16)
+        self.assertEqual(app._collect_host_settings()['host_in_flight'], 16)
+        self.assertEqual(app_settings.validate(app._collect_persisted_settings())['host_in_flight'], 16)
+        app._update_queue_depth_status()
+        self.assertEqual(host['w_queue_status'].cget('text'), gui.tr('queue.depth_serial', requested=16))
+        with mock.patch.object(app, '_live', mock.Mock(max_in_flight=8)):
+            app._update_queue_depth_status()
+            self.assertEqual(host['w_queue_status'].cget('text'),
+                             gui.tr('queue.depth_limited', requested=16, actual=8))
+
+    def test_still_flow_toggle_keyboard_persistence_and_busy_state(self):
+        app = self.app
+        toggle = app._host_settings['guidance_controls']['skip_still_flow']
+        self.assertTrue(app._collect_persisted_settings()['guidance_skip_still_flow'])
+        self.assertEqual(toggle.cget('text'), gui.tr('guidance.skip_still_flow'))
+        before = app._settings_hash()
+        toggle._on_key()
+        self.wait_for_reload()
+        self.assertFalse(app._collect_settings()['guidance_skip_still_flow'])
+        self.assertNotEqual(before, app._settings_hash())
+        app._save_settings_now()
+        self.assertFalse(app_settings.load()['guidance_skip_still_flow'])
+        app._exporting = True
+        app._update_host_control_states()
+        self.assertEqual(toggle.cget('state'), 'disabled')
+        toggle._on_key()
+        self.assertFalse(app._collect_settings()['guidance_skip_still_flow'])
+        app._exporting = False
+        app._update_host_control_states()
+        self.assertEqual(toggle.cget('state'), 'normal')
+        toggle._on_key()
+        self.wait_for_reload()
+        self.assertTrue(app._collect_settings()['guidance_skip_still_flow'])
+
     def test_navigation_uses_one_guidance_page_and_does_not_change_settings(self):
         app = self.app
         self.assertEqual([app.workspace_tabs.tab(i, 'text') for i in range(4)],
@@ -211,7 +270,8 @@ class GuidanceTabTests(unittest.TestCase):
                 self.wait_for_reload()
                 self.root.update_idletasks()
                 for name, widget in app._host_settings['guidance_controls'].items():
-                    self.assertEqual(widget.instate(['disabled']), name not in active, name)
+                    self.assertEqual(str(widget.cget('state')) == 'disabled',
+                                     name not in active and name != 'skip_still_flow', name)
                 collected = app._collect_host_settings()
                 self.assertEqual({key: collected[key] for key in before}, {**before, 'guidance_mode': mode})
                 self.assertNotIn('w_guidance_summary', app._settings)
@@ -233,7 +293,7 @@ class GuidanceTabTests(unittest.TestCase):
                     'guidance_depth_smoothing', 'guidance_depth_low', 'guidance_flow_range',
                     'profile', 'execution'}
         tooltips = app._host_settings['guidance_tooltips']
-        self.assertEqual(set(tooltips), expected)
+        self.assertEqual(set(tooltips), expected | {'skip_still_flow'})
         self.assertNotIn('guidance_help', app._host_settings)
         self.assertEqual(tooltips['flow'].text, gui.tr('guidance.direction_hint'))
         for key, tooltip in tooltips.items():
@@ -456,11 +516,11 @@ class GuidanceTabTests(unittest.TestCase):
             with self.subTest(flag=flag):
                 setattr(app, flag, True)
                 app._update_host_control_states()
-                self.assertTrue(all(control.instate(['disabled'])
+                self.assertTrue(all(str(control.cget('state')) == 'disabled'
                                     for control in app._host_settings['guidance_controls'].values()))
                 setattr(app, flag, False)
                 app._update_host_control_states()
-                self.assertTrue(all(control.instate(['disabled']) == (name in inactive)
+                self.assertTrue(all((str(control.cget('state')) == 'disabled') == (name in inactive)
                                     for name, control in app._host_settings['guidance_controls'].items()))
 
     def test_edits_reach_preview_export_queue_and_saved_settings(self):

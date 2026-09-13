@@ -8,6 +8,8 @@ import re
 import sys
 
 from dlss5tool import i18n
+from dlss5tool.host_queue import MAX_IN_FLIGHT
+from dlss5tool.performance_profiles import profiles as validate_performance_profiles
 from dlss5tool.guidance_parameters import parameters as guidance_parameters
 from dlss5tool.guidance_public import normalize_public_settings
 
@@ -59,6 +61,7 @@ DEFAULTS = {
     "guidance_depth_weights": "",
     "ui_modules_open": False,
     "guidance_mode": 1,
+    "guidance_skip_still_flow": True,
     "guidance_flow_backend": "raft",
     "guidance_flow_grid": 1,
     "guidance_edge": 720,
@@ -72,6 +75,7 @@ DEFAULTS = {
     "host_submission": "compatibility",
     "host_in_flight": 3,
     "host_auto_fallback": True,
+    "host_mode_profiles": {},
     "ui_export_open": False,
     "ui_host_open": False,
     "ui_preview_open": False,
@@ -239,6 +243,7 @@ def validate(values):
         "use_intensity", "use_local_tone", "use_local_struct",
         "use_output_mix", "use_auto_mask",
         "hdr_mode",
+        "guidance_skip_still_flow",
         "host_zero_fast_path", "host_persistent_buffers", "host_auto_fallback",
         "ui_export_open", "ui_host_open", "ui_preview_open", "ui_modules_open", "preview_detached",
     ):
@@ -258,7 +263,7 @@ def validate(values):
     if isinstance(queue_output_dir, str):
         result["queue_output_dir"] = queue_output_dir.strip()
     result["host_in_flight"] = _clamp_int(
-        source.get("host_in_flight", result["host_in_flight"]), 1, 3
+        source.get("host_in_flight", result["host_in_flight"]), 1, MAX_IN_FLIGHT
     )
     if source.get("preview_quality") in {"auto", "1080p", "1440p", "original"}:
         result["preview_quality"] = source["preview_quality"]
@@ -280,7 +285,13 @@ def validate(values):
     result["preview_scrub_ms"] = _clamp_int(
         source.get("preview_scrub_ms", result["preview_scrub_ms"]), 0, 400
     )
-    return normalize_public_settings(result)
+    result = normalize_public_settings(result)
+    # With no explicit override, base rendering should skip zero-input uploads.
+    # Keep a manual opt-out (and saved queue snapshots) intact.
+    if "host_zero_fast_path" not in source:
+        result["host_zero_fast_path"] = not result["guidance_mode"]
+    result['host_mode_profiles'] = validate_performance_profiles(source.get('host_mode_profiles'), result)
+    return result
 
 
 def startup_settings(values):

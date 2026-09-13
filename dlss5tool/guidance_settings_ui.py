@@ -5,7 +5,7 @@ from tkinter import ttk
 from dlss5tool.guidance_parameters import NUMERIC, parameters
 from dlss5tool.guidance_public import depth_enabled, public_modes
 from dlss5tool.i18n import tr
-from dlss5tool.ui_widgets import CollapsibleSection, Tooltip
+from dlss5tool.ui_widgets import CheckToggle, CollapsibleSection, Tooltip
 
 
 def build_guidance_settings(app, parent):
@@ -22,6 +22,7 @@ def build_guidance_settings(app, parent):
     d['v_flow_grid'] = tk.StringVar(value=tr('guidance.option.grid_' + str(saved_grid)))
     d['flow_rows_raft'] = []
     d['flow_rows_nvofa'] = []
+    d['v_skip_still_flow'] = tk.BooleanVar(value=app._saved_settings.get('guidance_skip_still_flow', True))
     body = ttk.Frame(parent, style='Panel.TFrame')
     body.pack(fill='x', padx=16, pady=(12, 8))
     app._guidance_settings_frame = body
@@ -117,6 +118,16 @@ def build_guidance_settings(app, parent):
     help_for('mode', 'guidance.page_hint' if depth_enabled() else 'guidance.flow_page_hint')
 
     flow, _ = group('guidance.flow_section')
+    skip_still = CheckToggle(flow, tr('guidance.skip_still_flow'), d['v_skip_still_flow'],
+                             command=app._on_mod_settings_change, ui=app._ui)
+    skip_still.grid(row=7, column=0, columnspan=2, sticky='ew', pady=(8, 2))
+    app._theme_widgets.append(skip_still)
+    d['guidance_controls']['skip_still_flow'] = skip_still
+    help_for('skip_still_flow', 'guidance.skip_still_flow_hint')
+    skip_hint = ttk.Label(flow, text=tr('guidance.skip_still_flow_hint'),
+                          style='Hint.TLabel', wraplength=250, justify='left')
+    skip_hint.grid(row=8, column=0, columnspan=2, sticky='ew')
+    flow.bind('<Configure>', lambda e: skip_hint.configure(wraplength=max(100, e.width)), add='+')
     combo(flow, 0, 'flow_backend', 'guidance.flow_backend', 'v_flow_backend',
           [tr('guidance.option.' + value) for value in ('raft', 'nvofa')])
     help_for('flow_backend', 'guidance.nvofa_hint')

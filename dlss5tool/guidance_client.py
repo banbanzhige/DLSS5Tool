@@ -5,6 +5,7 @@ import os
 import queue
 import secrets
 import subprocess
+import sys
 import threading
 import uuid
 import time
@@ -12,7 +13,7 @@ import time
 import numpy as np
 from dlss5tool import mod_paths
 from dlss5tool import i18n
-from dlss5tool.guidance_transport import GuidanceBuffers, TRANSPORT
+from dlss5tool.guidance_transport import GuidanceBuffers, TRANSPORT, FLOW_TRANSPORT, FLOW_ONLY
 from dlss5tool.guidance_execution import execution_contract
 from dlss5tool.guidance_parameters import ANALYSIS_KEYS, parameters, check_parameter_handshake
 from dlss5tool.guidance_public import normalize_public_settings
@@ -20,7 +21,7 @@ from dlss5tool.guidance_flow import flow_backend, flow_grid, check_flow_handshak
 
 KEYS = ("frame_format", "color_profile", "color_primaries", "guidance_mode", "guidance_edge", "guidance_flow_direction",
         "guidance_depth_encoder", "guidance_device", "mods_directory",
-        "guidance_flow_weights", "guidance_depth_weights", "guidance_transport", "guidance_depth_profile", "guidance_execution", "guidance_cache_mb", "guidance_cache_pool")
+        "guidance_flow_weights", "guidance_depth_weights", "guidance_transport", "guidance_output_layout", "guidance_depth_profile", "guidance_execution", "guidance_cache_mb", "guidance_cache_pool")
 
 
 def contract(settings):
@@ -142,12 +143,17 @@ class GuidanceSession:
         self._buffers = None
         self._sequence = 0
         self.transport = 'pipe'
+        self._flow_only = False
+        self._zero_depth = None
         self.width, self.height = width, height
         self.language = settings.get('ui_language') or i18n.get_language()
         self.info = {}
         self.last_metrics = {}
         files = validate(settings)
         worker_settings = dict(settings)
+        if (int(settings.get('guidance_mode', 0)) == 1
+                and settings.get('guidance_output_layout', FLOW_ONLY) != 'full_v1'):
+            worker_settings['guidance_output_layout'] = FLOW_ONLY
         if int(settings.get('guidance_mode', 0)) in (2, 3):
             worker_settings['guidance_depth_encoder'] = mod_paths.depth_encoder(settings)
         token = secrets.token_bytes(32)
@@ -173,10 +179,18 @@ class GuidanceSession:
                 raise ValueError('Invalid guidance transport')
             if requested_transport != 'pipe':
                 self._buffers = GuidanceBuffers(width, height)
-            self._process = subprocess.Popen([files["worker"],
+            command = [files['worker']]
+            source_python = os.environ.get('DLSS5TOOL_GUIDANCE_PYTHON', '')
+            source_root = None
+            if source_python and not getattr(sys, 'frozen', False):
+                if not os.path.isfile(source_python):
+                    raise FileNotFoundError('Configured guidance Python is missing: ' + source_python)
+                source_root = str(mod_paths.app_root())
+                command = [source_python, '-B', '-m', 'dlss5tool.guidance_worker']
+            self._process = subprocess.Popen(command + [
                 "--address", address, "--token", token.hex(), "--parent", str(os.getpid())],
                 stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
-                env=env, creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
+                cwd=source_root, env=env, creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
             connection = result.get(timeout=20)
             if isinstance(connection, Exception):
                 raise connection
@@ -209,10 +223,28 @@ class GuidanceSession:
             if self.transport == 'pipe' and self._buffers is not None:
                 self._buffers.close()
                 self._buffers = None
+            layout = ready.get('output_layout', 'full_v1')
+            if layout not in ('full_v1', FLOW_ONLY) or (layout == FLOW_ONLY and
+                    (settings.get('guidance_mode') != 1 or worker_settings.get('guidance_output_layout') != FLOW_ONLY)):
+                raise RuntimeError('Invalid guidance output layout acknowledgement')
+            self._flow_only = layout == FLOW_ONLY
+            if self._flow_only and self._buffers is not None:
+                compact = GuidanceBuffers(width, height, flow_only=True)
+                try:
+                    self._send({'configure_flow_transport': compact.descriptor})
+                    if self._reply().get('transport') != FLOW_TRANSPORT:
+                        raise RuntimeError('Invalid flow transport acknowledgement')
+                except BaseException:
+                    compact.close()
+                    raise
+                self._buffers.close()
+                self._buffers = compact
+                self.transport = FLOW_TRANSPORT
             self.info = {key: ready.get(key) for key in ('device', 'device_name', 'precision', 'load_ms',
                 'depth_profile', 'depth_precision', 'depth_attention', 'execution', 'raft_output', 'schedule',
                 'cache_version', 'cache_limit_bytes', 'analysis_parameters')}
             self.info['transport'] = self.transport
+            self.info['output_layout'] = layout
             self.info.update({key: ready.get(key) for key in ('flow_grid', 'flow_quality', 'flow_temporal_hints')})
             self.info['flow_backend'] = ready.get('flow_backend', 'raft')
         except Exception as exc:
@@ -240,12 +272,14 @@ class GuidanceSession:
             raise RuntimeError(i18n.tr_for(self.language, 'guidance.error.worker', error=value.get('error', '')))
         return value
 
-    def process(self, rgba, reset=False, *, copy_outputs=True):
+    def process(self, rgba, reset=False, *, copy_outputs=True, allow_missing_depth=False):
         """Return independent arrays by default.
 
         Native callers may borrow shared outputs with copy_outputs=False. These
         views expire at the next process()/close(); native enqueue must have
-        copied them into its own upload slot before returning.
+        copied them into its own upload slot before returning. Internal callers
+        may opt into None depth for negotiated flow-only sessions; default callers
+        retain independent zero depth arrays for API compatibility.
         """
         if rgba.dtype != np.uint8 or rgba.shape != (self.height, self.width, 4):
             raise ValueError(i18n.tr_for(self.language, 'guidance.error.input'))
@@ -263,12 +297,21 @@ class GuidanceSession:
                     raise RuntimeError('Guidance frame acknowledgement mismatch')
                 mv, dp = self._buffers.motion, self._buffers.depth
                 if copy_outputs:
-                    mv, dp = mv.copy(), dp.copy()
+                    mv, dp = mv.copy(), dp.copy() if dp is not None else None
             else:
                 mv = np.frombuffer(self._connection.recv_bytes(self.width * self.height * 8), np.float32).reshape(self.height, self.width, 2).copy()
-                dp = np.frombuffer(self._connection.recv_bytes(self.width * self.height * 4), np.float32).reshape(self.height, self.width).copy()
-            if not np.isfinite(mv).all() or not np.isfinite(dp).all():
+                dp = (None if self._flow_only else np.frombuffer(self._connection.recv_bytes(
+                    self.width * self.height * 4), np.float32).reshape(self.height, self.width).copy())
+            if not np.isfinite(mv).all() or (dp is not None and not np.isfinite(dp).all()):
                 raise ValueError(i18n.tr_for(self.language, 'guidance.error.nonfinite'))
+            if dp is None and not allow_missing_depth:
+                if copy_outputs:
+                    dp = np.zeros((self.height, self.width), np.float32)
+                else:
+                    if self._zero_depth is None:
+                        self._zero_depth = np.zeros((self.height, self.width), np.float32)
+                        self._zero_depth.flags.writeable = False
+                    dp = self._zero_depth
             self.last_metrics = {**response.get('metrics', {}), 'roundtrip_ms': (time.perf_counter() - started) * 1000}
             return mv, dp, bool(response.get("reset"))
         except Exception:
@@ -276,6 +319,7 @@ class GuidanceSession:
             raise
 
     def close(self):
+        self._zero_depth = None
         if self._connection is not None:
             self._connection.close()
             self._connection = None

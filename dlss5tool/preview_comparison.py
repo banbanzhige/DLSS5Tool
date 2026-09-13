@@ -10,7 +10,7 @@ import cv2
 from dlss5tool import ui_theme
 from dlss5tool.i18n import tr
 from dlss5tool.guidance_parameters import analysis_edge
-from dlss5tool.guidance_public import depth_enabled, public_targets, normalize_public_settings
+from dlss5tool.guidance_public import depth_enabled, public_targets, normalize_public_settings, still_image_settings
 from dlss5tool.guidance_color import HDRAnalysisReader
 
 
@@ -216,7 +216,7 @@ class PreviewComparison:
         if mode not in ((2, 3) if target == 'depth' else (1, 3)):
             return tr('guidance.preview_disabled', view=tr('view.' + target))
         if getattr(self, '_is_image', False) and target == 'flow':
-            return tr('guidance.still_hint')
+            return tr('guidance.still_flow_unavailable')
         if self._switching_backend or self._queue_running or self._diagnosing:
             return tr('guidance.preview_busy')
         return ''
@@ -327,6 +327,8 @@ class PreviewComparison:
         settings = self._collect_settings()
         frame, source = key[1], key[0]
         still = self._image_bgr.copy() if self._is_image else None
+        if still is not None:
+            settings = still_image_settings(settings)
         color_info = dict(self._video_color_info or {})
         self._guidance_preview_busy = True
 

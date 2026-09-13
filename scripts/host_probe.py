@@ -27,7 +27,7 @@ def main():
     parser.add_argument("--submission", choices=("merged", "compatibility"), default="merged")
     parser.add_argument("--persistent", type=int, choices=(0, 1), default=1)
     parser.add_argument("--zero-fast", type=int, choices=(0, 1), default=1)
-    parser.add_argument("--in-flight", type=int, choices=(1, 2, 3), default=2)
+    parser.add_argument("--in-flight", type=int, choices=range(1, 17), default=2)
     args = parser.parse_args()
 
     capture = cv2.VideoCapture(os.path.abspath(args.video))

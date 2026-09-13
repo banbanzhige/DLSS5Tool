@@ -12,7 +12,7 @@ import numpy as np
 
 from dlss5tool.dlss_host_process import ProcessLive
 from dlss5tool.guidance_client import GuidanceSession
-from dlss5tool.guidance_transport import TRANSPORT
+from dlss5tool.guidance_transport import TRANSPORT, FLOW_TRANSPORT
 from dlss5tool.guidance_execution import execution_contract
 
 
@@ -81,14 +81,14 @@ def main():
                 while pending:
                     output.append(live.dequeue())
                     pending -= 1
-                assert live.guidance_info['transport'] == TRANSPORT
+                assert live.guidance_info['transport'] in (TRANSPORT, FLOW_TRANSPORT)
                 assert all(frame is not None for frame in output)
                 results.append(output)
             finally:
                 live.close()
         for serial, queued in zip(*results):
             np.testing.assert_array_equal(serial, queued)
-        report.append({'mode': mode, 'transport': TRANSPORT, 'frames': len(frames),
+        report.append({'mode': mode, 'transport': session.transport, 'frames': len(frames),
                        'depth_profile_requested': args.depth_profile,
                        'execution_requested': args.execution,
                        'three_slot_output_equal': True, 'reset_and_inactive_zero': True})

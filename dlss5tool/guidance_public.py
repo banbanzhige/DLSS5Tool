@@ -33,3 +33,14 @@ def normalize_public_settings(settings):
             if result.get(key) == 'depth':
                 result[key] = 'flow'
     return result
+
+
+def still_image_settings(settings):
+    """Apply the still-only flow preference to a copy, never a queue snapshot."""
+    result = dict(settings or {})
+    result.pop('_still_flow_skipped', None)
+    mode = int(result.get('guidance_mode', 0))
+    if result.get('guidance_skip_still_flow', True) and mode in (1, 3):
+        result['guidance_mode'] = 0 if mode == 1 else 2
+        result['_still_flow_skipped'] = True
+    return result

@@ -27,7 +27,7 @@ def run(args):
     settings = {'host_backend': 'v2', 'host_auto_fallback': False,
         'host_submission': 'compatibility' if args.case == 'compatibility' else 'merged',
         'host_persistent_buffers': args.case != 'transient',
-        'host_zero_fast_path': args.case == 'zero_fast', 'host_in_flight': 3 if args.case == 'async' else 1,
+        'host_zero_fast_path': args.case == 'zero_fast', 'host_in_flight': 3 if args.case in ('async', 'flow_async') else 1,
         'guidance_mode': 0, 'style': 0, 'intensity': 1.0}
     w, h = (641, 359) if args.case == 'odd' else (1440, 1440)
     cap = cv2.VideoCapture(str(args.source))
@@ -52,7 +52,7 @@ def run(args):
         hashes.append(hashlib.sha256(memoryview(output)).hexdigest())
     started = time.perf_counter()
     for index, rgba in enumerate(frames):
-        mode = 0 if args.case.startswith('zero') else modes[index]
+        mode = 0 if args.case.startswith('zero') else 1 if args.case.startswith('flow') else modes[index]
         engine._set_options(lib, {**settings, 'guidance_mode': mode})
         mv[...,0] = (index - 6) * .125
         mv[...,1] = (index + 1) * -.1875
@@ -61,7 +61,7 @@ def run(args):
         ptr_mv = None if index == 6 else ctypes.c_void_p(mv.ctypes.data)
         ptr_dp = None if index == 7 else ctypes.c_void_p(dp.ctypes.data)
         tick = time.perf_counter()
-        if args.case == 'async':
+        if args.case in ('async', 'flow_async'):
             if not lib.dlssnr_enqueue(ctypes.c_void_p(rgba.ctypes.data), ptr_mv, ptr_dp, int(index in (0,8))):
                 raise RuntimeError('enqueue failed')
             pending += 1
@@ -95,7 +95,7 @@ def main():
         run(args); return
     args.output.mkdir(parents=True,exist_ok=False)
     report=[]
-    for case in ('zero_fast','zero_upload','mixed','async','odd','transient','compatibility'):
+    for case in ('zero_fast','zero_upload','flow','flow_async','mixed','async','odd','transient','compatibility'):
         results=[]
         for label,dll in (('old',args.old),('new',args.new)):
             directory=args.output/f'{case}-{label}'

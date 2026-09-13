@@ -3,6 +3,7 @@
 """Crash-isolated RTX Video Super Resolution bridge and resource estimates."""
 
 import ctypes
+from dlss5tool.host_queue import clamp_in_flight
 import multiprocessing
 from multiprocessing import shared_memory
 import os
@@ -121,7 +122,7 @@ def select_in_flight(width, height, scale, requested, *, is_hdr=False, guidance=
     Unknown VRAM stays single-frame; this is a conservative estimate, not an
     allocation guarantee. Never change the saved preference or temporal order.
     """
-    requested = max(1, min(3, int(requested)))
+    requested = clamp_in_flight(requested)
     ow, oh = target_size(width, height, scale)
     if ow * oh <= 3840 * 2160:
         return requested
@@ -142,7 +143,7 @@ def estimate_resources(width, height, scale, is_hdr=False, *, in_flight=None):
     source_pixels = max(width * height, 0)
     output_pixels = max(output_width * output_height, 0)
     frame_bpp = 8 if is_hdr else 4
-    in_flight = (1 if output_pixels > 3840 * 2160 else 2) if in_flight is None else max(1, min(3, int(in_flight)))
+    in_flight = (1 if output_pixels > 3840 * 2160 else 2) if in_flight is None else clamp_in_flight(in_flight)
 
     # VSR owns one packed RGB input/output texture. DLSS owns color/output per
     # slot plus one zero-motion and one zero-depth target-resolution texture.
@@ -154,9 +155,11 @@ def estimate_resources(width, height, scale, is_hdr=False, *, in_flight=None):
     # plus two application-side target frames used for compose/write overlap.
     shared = (source_pixels + output_pixels) * frame_bpp
     staging = (source_pixels + output_pixels) * 4
+    # DLSS upload/readback staging is allocated per queue slot, unlike IPC.
+    dlss_staging = output_pixels * frame_bpp * 2 * in_flight
     dlss_shared = output_pixels * frame_bpp * 2
     application_frames = output_pixels * frame_bpp * 2
-    known_ram = shared + staging + dlss_shared + application_frames
+    known_ram = shared + staging + dlss_staging + dlss_shared + application_frames
     recommended_gpu = int(known_gpu * 1.35 + 1536 * _MIB)
     recommended_ram = int(known_ram * 1.20 + 512 * _MIB)
     return {

@@ -7,6 +7,7 @@ import threading
 import numpy as np
 
 from dlss5tool import guidance_worker
+from dlss5tool.guidance_transport import FLOW_ONLY
 
 
 class FakeModels:
@@ -22,14 +23,17 @@ class FakeModels:
         if self.settings.get('fixture_error'):
             raise RuntimeError('fixture inference failure')
         h, w = rgba.shape[:2]
-        mv, dp = outputs if outputs is not None else (np.empty((h, w, 2), np.float32), np.empty((h, w), np.float32))
+        compact = self.settings.get('guidance_output_layout') == FLOW_ONLY and self.settings.get('guidance_mode') == 1
+        mv, dp = outputs if outputs is not None else (np.empty((h, w, 2), np.float32),
+                                                      None if compact else np.empty((h, w), np.float32))
         mv[..., 0] = rgba[..., 0] * 0.5
         mv[..., 1] = -rgba[..., 1].astype(np.float32)
-        dp[:] = rgba[..., 2] / np.float32(255)
+        if dp is not None:
+            dp[:] = rgba[..., 2] / np.float32(255) if self.settings.get('guidance_mode') in (2, 3) else 0
         if reset:
             mv.fill(0)
         if self.settings.get('fixture_nonfinite'):
-            dp[0, 0] = np.nan
+            mv[0, 0, 0] = np.nan
         return mv, dp, bool(reset)
 
 
@@ -39,11 +43,14 @@ def main():
     parser.add_argument('--token')
     parser.add_argument('--parent', type=int)
     parser.add_argument('--legacy', action='store_true')
+    parser.add_argument('--legacy-shared', action='store_true')
     args = parser.parse_args()
     threading.Thread(target=guidance_worker.watch_parent, args=(args.parent,), daemon=True).start()
     conn = Client(args.address, family='AF_PIPE', authkey=bytes.fromhex(args.token))
     try:
         settings = json.loads(conn.recv_bytes())
+        if args.legacy or args.legacy_shared:
+            settings.pop('guidance_output_layout', None)
         if args.legacy:
             # Original v1 behavior: ignore descriptor, do not acknowledge transport.
             model = FakeModels(settings)

@@ -9,11 +9,27 @@ from unittest import mock
 import numpy as np
 
 from dlss5tool import guidance_client
-from dlss5tool.guidance_transport import GuidanceBuffers, TRANSPORT
+from dlss5tool.guidance_transport import GuidanceBuffers, TRANSPORT, FLOW_TRANSPORT
 
 
 @depth_test_case
 class BufferTests(unittest.TestCase):
+    def test_compact_layout_has_no_depth_storage(self):
+        with self.subTest(layout='flow'):
+            owner = GuidanceBuffers(8, 6, flow_only=True)
+            peer = GuidanceBuffers(8, 6, owner.descriptor)
+            try:
+                self.assertEqual(owner.descriptor['size'], 8 * 6 * 12)
+                self.assertIsNone(owner.depth)
+                self.assertIsNone(peer.depth)
+                owner.rgba.fill(7)
+                peer.motion.fill(3)
+                np.testing.assert_array_equal(peer.rgba, 7)
+                np.testing.assert_array_equal(owner.motion, 3)
+            finally:
+                peer.close()
+                owner.close()
+
     def test_layout_attach_and_cleanup(self):
         owner = GuidanceBuffers(8, 6)
         descriptor = owner.descriptor
@@ -54,12 +70,14 @@ class SessionTests(unittest.TestCase):
         with self.assertRaisesRegex(RuntimeError,'component|组件'):
             self.session(guidance_cache_pool='Local\\DLSS5-cache-fixture')
 
-    def session(self, transport='auto', legacy=False, **extra):
+    def session(self, transport='auto', legacy=False, legacy_shared=False, **extra):
         popen = subprocess.Popen
         def launch(command, **kwargs):
             args = [sys.executable, '-m', 'tests.guidance_worker_fixture']
             if legacy:
                 args.append('--legacy')
+            if legacy_shared:
+                args.append('--legacy-shared')
             return popen(args + command[1:], **kwargs)
         with mock.patch.object(guidance_client, 'validate', return_value={'worker': 'fixture.exe'}), \
                 mock.patch.object(guidance_client.subprocess, 'Popen', side_effect=launch):
@@ -70,7 +88,7 @@ class SessionTests(unittest.TestCase):
 
     def test_shared_and_pipe_match_reset_and_noncontiguous_input(self):
         shared, pipe = self.session(), self.session('pipe')
-        self.assertEqual(shared.info['transport'], TRANSPORT)
+        self.assertEqual(shared.info['transport'], FLOW_TRANSPORT)
         self.assertEqual(pipe.transport, 'pipe')
         frame = np.arange(6 * 8 * 4, dtype=np.uint8).reshape(6, 8, 4)[:, ::-1]
         for reset in (True, False, False, True):
@@ -95,12 +113,65 @@ class SessionTests(unittest.TestCase):
 
     def test_borrowed_outputs_are_buffer_views(self):
         session = self.session()
-        mv, dp, _ = session.process(np.ones((6, 8, 4), np.uint8), copy_outputs=False)
+        mv, dp, _ = session.process(np.ones((6, 8, 4), np.uint8), copy_outputs=False, allow_missing_depth=True)
         self.assertIs(mv, session._buffers.motion)
         self.assertIs(dp, session._buffers.depth)
         session.process(np.zeros((6, 8, 4), np.uint8), True, copy_outputs=False)
         np.testing.assert_array_equal(mv, 0)
+        self.assertIsNone(dp)
+
+    def test_new_client_old_shared_worker_retains_v1_without_extra_message(self):
+        session = self.session(legacy_shared=True)
+        self.assertEqual(session.transport, TRANSPORT)
+        self.assertEqual(session.info['output_layout'], 'full_v1')
+        mv, dp, _ = session.process(np.ones((6, 8, 4), np.uint8), allow_missing_depth=True)
+        self.assertIsNotNone(dp)
         np.testing.assert_array_equal(dp, 0)
+
+    def test_old_layout_request_with_new_worker_and_upgrade_failure_cleanup(self):
+        old_request = self.session(guidance_output_layout='full_v1')
+        self.assertEqual(old_request.transport, TRANSPORT)
+        self.assertFalse(old_request._flow_only)
+        real_reply = guidance_client.GuidanceSession._reply
+        def bad_ack(session):
+            value = real_reply(session)
+            if value.get('transport') == FLOW_TRANSPORT:
+                value['transport'] = 'invalid'
+            return value
+        created = []
+        factory = guidance_client.GuidanceBuffers
+        def record(*args, **kwargs):
+            buffer = factory(*args, **kwargs)
+            created.append(buffer.descriptor)
+            return buffer
+        with mock.patch.object(guidance_client.GuidanceSession, '_reply', bad_ack), \
+                mock.patch.object(guidance_client, 'GuidanceBuffers', side_effect=record):
+            with self.assertRaisesRegex(RuntimeError, 'flow transport acknowledgement'):
+                self.session()
+        self.assertEqual(len(created), 2)
+        for descriptor in created:
+            with self.assertRaises(FileNotFoundError):
+                GuidanceBuffers(8, 6, descriptor)
+
+    def test_full_modes_keep_depth_and_compact_pipe_can_omit_it(self):
+        for mode in (2, 3):
+            session = self.session(guidance_mode=mode)
+            self.assertEqual(session.transport, TRANSPORT)
+            _mv, dp, _ = session.process(np.full((6, 8, 4), 255, np.uint8), allow_missing_depth=True)
+            np.testing.assert_array_equal(dp, 1)
+        pipe = self.session('pipe')
+        for reset in (True, False, True):
+            _mv, dp, actual_reset = pipe.process(np.ones((6, 8, 4), np.uint8), reset, allow_missing_depth=True)
+            self.assertIsNone(dp)
+            self.assertEqual(reset, actual_reset)
+
+    def test_compatibility_zero_depth_borrow_is_cached_and_readonly(self):
+        session = self.session()
+        frame = np.ones((6, 8, 4), np.uint8)
+        first = session.process(frame, copy_outputs=False)[1]
+        second = session.process(frame, copy_outputs=False)[1]
+        self.assertIs(first, second)
+        self.assertFalse(first.flags.writeable)
 
     def test_old_component_falls_back_only_when_allowed(self):
         old = self.session(legacy=True)

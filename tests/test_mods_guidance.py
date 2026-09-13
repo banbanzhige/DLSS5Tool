@@ -339,6 +339,27 @@ class EngineGuidanceTests(unittest.TestCase):
         live.close_guidance()
         self.assertIsNone(live._guidance)
 
+    def test_compact_depth_is_null_only_for_capable_native_hosts(self):
+        for capable in (False, True):
+            live = self.make_live(1)
+            live.supports_optional_depth = capable
+            live._allocate_buffers()
+            if capable:
+                self.assertIsNone(live._dp)
+            worker = mock.Mock()
+            motion = np.ones((6, 8, 2), np.float32)
+            worker.process.return_value = (motion, None if capable else np.zeros((6, 8), np.float32), True)
+            with mock.patch.object(guidance_client, 'GuidanceSession', return_value=worker):
+                for process in (live.process, live.enqueue):
+                    process(np.ones((6, 8, 4), np.uint8))
+            self.assertEqual(worker.process.call_args.kwargs['allow_missing_depth'], capable)
+            for native_call in (live._lib.dlssnr_process, live._lib.dlssnr_enqueue):
+                self.assertEqual(native_call.call_args.args[2] is None, capable)
+                self.assertEqual(native_call.call_args.args[1].value, motion.ctypes.data)
+            live.close_guidance()
+            if capable:
+                self.assertIsNone(live._dp)
+
     def test_full_async_queue_does_not_advance_model(self):
         live = self.make_live(1)
         live._lib.dlssnr_pending.return_value = 2

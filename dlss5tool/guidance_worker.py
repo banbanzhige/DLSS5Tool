@@ -8,7 +8,7 @@ from pathlib import Path
 import sys
 import threading
 import time
-from dlss5tool.guidance_transport import GuidanceBuffers, TRANSPORT
+from dlss5tool.guidance_transport import GuidanceBuffers, TRANSPORT, FLOW_TRANSPORT, FLOW_ONLY
 from dlss5tool.guidance_execution import execution_contract
 from dlss5tool.guidance_parameters import parameters, analysis_parameters, analysis_size
 from dlss5tool.guidance_cache import RawGuidanceCache, frame_digest, cache_budget_mib, CACHE_VERSION
@@ -258,7 +258,7 @@ class Models:
         reset = bool(reset or cut or self.prev is None)
         params = parameters(self.settings, strict=True)
         fw, fh = self._flow_size(w, h)
-        dw, dh = analysis_size(w, h, params['guidance_depth_edge'])
+        dw, dh = analysis_size(w, h, params['guidance_depth_edge']) if self.depth is not None else (fw, fh)
         small = cv2.resize(rgb, (fw, fh))
         # Both branches resize from the original input, never from each other.
         depth_small = small if (dw, dh) == (fw, fh) else cv2.resize(rgb, (dw, dh))
@@ -277,13 +277,14 @@ class Models:
         self._flow_hit = self._cached_flow is not None
         if outputs is None:
             mv = np.zeros((h, w, 2), np.float32)
-            dp = np.zeros((h, w), np.float32)
+            dp = (None if self.mode == 1 and self.settings.get('guidance_output_layout') == FLOW_ONLY
+                  else np.zeros((h, w), np.float32))
         else:
             mv, dp = outputs
             # Reused buffers must never leak a prior frame on reset/inactive mode.
             if not self.has_flow or reset:
                 mv.fill(0)
-            if self.depth is None:
+            if self.depth is None and dp is not None:
                 dp.fill(0)
         flow_ms = depth_ms = 0.0
         bounds = self.depth_range
@@ -343,12 +344,13 @@ class Models:
                 flow = self._cached_flow if self._flow_hit else self._infer_flow(self._flow_input(small))
                 self._finish_flow(flow, mv, w, h, fw, fh)
             flow_ms = (time.perf_counter() - flow_start) * 1000
-            depth_start = time.perf_counter()
+            depth_ms = 0.0
             if self.depth is not None:
+                depth_start = time.perf_counter()
                 prediction = self._cached_depth if self._depth_hit else self._infer_depth(self._depth_input(
                     small if depth_small is None else depth_small, dw or fw, dh or fh))
                 bounds = self._finish_depth(prediction, dp, reset, w, h)
-            depth_ms = (time.perf_counter() - depth_start) * 1000
+                depth_ms = (time.perf_counter() - depth_start) * 1000
         return flow_ms, depth_ms, bounds
 
     def close(self):
@@ -383,7 +385,10 @@ def serve(conn, settings, model_factory=Models):
     buffers = models = None
     try:
         w, h = int(settings['width']), int(settings['height'])
+        flow_only = settings.get('guidance_output_layout') == FLOW_ONLY and int(settings.get('guidance_mode', 0)) == 1
         if settings.get('shared_memory') is not None:
+            if settings['shared_memory'].get('transport') != TRANSPORT:
+                raise ValueError('Initial guidance transport must use the v1 handshake')
             buffers = GuidanceBuffers(w, h, settings['shared_memory'])
         load_start = time.perf_counter()
         models = model_factory(settings)
@@ -398,7 +403,19 @@ def serve(conn, settings, model_factory=Models):
                'cache_limit_bytes': models.raw_cache.limit_bytes if hasattr(models, 'raw_cache') else 0,
                **getattr(models, 'execution_info', execution_contract(settings, getattr(models, 'device', None))),
                'load_ms': (time.perf_counter() - load_start) * 1000,
-               'protocol': 1, 'transport': TRANSPORT if buffers else 'pipe'})
+               'protocol': 1, 'transport': TRANSPORT if buffers else 'pipe',
+               'output_layout': FLOW_ONLY if flow_only else 'full_v1'})
+        if flow_only and buffers is not None:
+            # Upgrade only after explicit capability acknowledgement. Old clients
+            # never request this; old workers ignore the request and stay on v1.
+            request = json.loads(conn.recv_bytes(65536))
+            descriptor = request.get('configure_flow_transport')
+            if not isinstance(descriptor, dict) or descriptor.get('transport') != FLOW_TRANSPORT:
+                raise ValueError('Invalid flow transport configuration')
+            compact = GuidanceBuffers(w, h, descriptor)
+            buffers.close()
+            buffers = compact
+            reply({'ok': True, 'transport': FLOW_TRANSPORT})
         sequence = 0
         while True:
             # Reclaim after a reduced GUI budget even while preview is paused.
@@ -420,7 +437,8 @@ def serve(conn, settings, model_factory=Models):
                    'sequence': request.get('sequence')})
             if buffers is None:
                 conn.send_bytes(mv.tobytes())
-                conn.send_bytes(dp.tobytes())
+                if not flow_only:
+                    conn.send_bytes(dp.tobytes())
     finally:
         # Drop ndarray aliases before unmapping, including on inference failure.
         frame = mv = dp = None

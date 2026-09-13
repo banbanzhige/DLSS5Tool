@@ -78,7 +78,7 @@ class GuidanceExportUI:
             messagebox.showwarning(tr('tab.guidance'), tr('guidance.preview_disabled', view=tr('view.' + target)))
             return
         if self._is_image and target == 'flow':
-            messagebox.showwarning(tr('tab.guidance'), tr('guidance.still_hint'))
+            messagebox.showwarning(tr('tab.guidance'), tr('guidance.still_flow_unavailable'))
             return
         try:
             guidance_client.validate(settings)

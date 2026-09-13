@@ -16,10 +16,12 @@
 #include <nvsdk_ngx.h>
 #include "guidance_upload.h"
 #include "tile_blend.h"
+#include "host_queue.h"
 
 namespace {
 
-constexpr int kMaxSlots = 3;
+constexpr int kMaxSlots = host_queue::kMaxSlots;
+IDXGIAdapter3 *g_budget_adapter = nullptr;
 constexpr NVSDK_NGX_Feature kFeatureId = static_cast<NVSDK_NGX_Feature>(18);
 constexpr unsigned int kNvidiaVendorId = 0x10DE;
 constexpr unsigned int kAdapterSoftware = 1u;
@@ -581,6 +583,12 @@ void PrepareDepth(Staging &staging, const float *depth)
         enabled ? depth : nullptr);
 }
 
+bool UsesDepth()
+{
+    return !g_config.zero_guidance_fast_path &&
+        (g_options.guidance_mode == 2 || g_options.guidance_mode == 3);
+}
+
 int ScalingRatioCallback(NVSDK_NGX_Parameter *parameters)
 {
     parameters->Set("DLSSNR.ScalingRatio", 1.0f);
@@ -623,7 +631,7 @@ void SetEvaluationParameters(
     UINT rect_width = 0, UINT rect_height = 0)
 {
     ID3D12Resource *motion = g_config.zero_guidance_fast_path ? g_zero_motion : slot.motion;
-    ID3D12Resource *depth = g_config.zero_guidance_fast_path ? g_zero_depth : slot.depth;
+    ID3D12Resource *depth = UsesDepth() ? slot.depth : g_zero_depth;
     g_params->Set("DLSSNR.Color", slot.color);
     g_params->Set("DLSSNR.Output", slot.output);
     g_params->Set("DLSSNR.MVec", motion);
@@ -710,19 +718,21 @@ bool InitializeZeroTextures()
     Slot &slot = g_slots[0];
     Staging motion_upload;
     Staging depth_upload;
-    if (!CreateStaging(g_zero_motion, D3D12_HEAP_TYPE_UPLOAD, motion_upload) ||
+    if ((g_zero_motion && !CreateStaging(g_zero_motion, D3D12_HEAP_TYPE_UPLOAD, motion_upload)) ||
         !CreateStaging(g_zero_depth, D3D12_HEAP_TYPE_UPLOAD, depth_upload))
     {
         ReleaseStaging(motion_upload);
         ReleaseStaging(depth_upload);
         return false;
     }
-    memset(motion_upload.mapped, 0, static_cast<size_t>(motion_upload.total_size));
+    if (g_zero_motion)
+        memset(motion_upload.mapped, 0, static_cast<size_t>(motion_upload.total_size));
     memset(depth_upload.mapped, 0, static_cast<size_t>(depth_upload.total_size));
     const bool recorded = BeginCommands(slot);
     if (recorded)
     {
-        RecordUpload(slot.list, motion_upload, g_zero_motion);
+        if (g_zero_motion)
+            RecordUpload(slot.list, motion_upload, g_zero_motion);
         RecordUpload(slot.list, depth_upload, g_zero_depth);
     }
     const bool ok = recorded && SubmitCommands(slot, true);
@@ -736,6 +746,29 @@ bool CreateFrameResources()
     g_slot_count = (!g_config.tiled_subrects && g_config.merged_submission && g_config.persistent_buffers)
         ? std::clamp(g_config.in_flight, 1, kMaxSlots)
         : 1;
+    const int requested_slots = g_slot_count;
+    if (g_slot_count > 1)
+    {
+        DXGI_QUERY_VIDEO_MEMORY_INFO memory = {};
+        const bool known = g_budget_adapter && SUCCEEDED(g_budget_adapter->QueryVideoMemoryInfo(
+            0, DXGI_MEMORY_SEGMENT_GROUP_LOCAL, &memory));
+        const uint64_t available = memory.Budget > memory.CurrentUsage ? memory.Budget - memory.CurrentUsage : 0;
+        const uint64_t frame_bpp = g_frame_format == FrameFormat::Rgba16Float ? 8 : 4;
+        // Row-pitch and resource alignment padding included conservatively.
+        const uint64_t frame = ((uint64_t(g_width) * frame_bpp + 255) / 256 * 256 * g_height + 65535) / 65536 * 65536;
+        const uint64_t map = ((uint64_t(g_width) * 4 + 255) / 256 * 256 * g_height + 65535) / 65536 * 65536;
+        const uint64_t slot_gpu = 2 * frame + (g_config.zero_guidance_fast_path ? 0 : 2 * map);
+        const uint64_t reserve = (1536 + (g_options.guidance_mode ? 1024ull : 0ull)) * host_queue::kMiB;
+        g_slot_count = host_queue::Limit(g_slot_count, slot_gpu, available, reserve, known);
+        MEMORYSTATUSEX ram = {};
+        ram.dwLength = sizeof(ram);
+        const bool ram_known = GlobalMemoryStatusEx(&ram) != FALSE;
+        // Upload/readback staging plus the caller's retained original/output frames.
+        g_slot_count = host_queue::Limit(g_slot_count, slot_gpu + 2 * frame,
+            std::min(ram.ullAvailPhys, ram.ullAvailPageFile), 512 * host_queue::kMiB, ram_known);
+        Log("queue budget: requested=%d selected=%d gpu_budget_known=%d available=%llu MiB slot=%llu MiB",
+            requested_slots, g_slot_count, known, available / host_queue::kMiB, slot_gpu / host_queue::kMiB);
+    }
     for (int index = 0; index < g_slot_count; ++index)
     {
         Slot &slot = g_slots[index];
@@ -764,10 +797,15 @@ bool CreateFrameResources()
     if (g_config.zero_guidance_fast_path)
     {
         g_zero_motion = CreateTexture(DXGI_FORMAT_R16G16_FLOAT, D3D12_RESOURCE_FLAG_NONE);
-        g_zero_depth = CreateTexture(DXGI_FORMAT_R32_FLOAT, D3D12_RESOURCE_FLAG_NONE);
-        if (g_zero_motion == nullptr || g_zero_depth == nullptr || !InitializeZeroTextures())
+        if (g_zero_motion == nullptr)
             return false;
     }
+    // A valid, immutable zero texture remains bound when depth is inactive.
+    // Keep slot depth resources for safe in-flight mode switches, but do not
+    // clear/copy/upload their unused contents every frame.
+    g_zero_depth = CreateTexture(DXGI_FORMAT_R32_FLOAT, D3D12_RESOURCE_FLAG_NONE);
+    if (g_zero_depth == nullptr || !InitializeZeroTextures())
+        return false;
     ResetPending();
     return true;
 }
@@ -828,6 +866,8 @@ bool SubmitMotionImmediate(Slot &slot, const float *motion)
 
 bool SubmitDepthImmediate(Slot &slot, const float *depth)
 {
+    if (!UsesDepth())
+        return true;
     Staging temporary;
     Staging *staging = g_config.persistent_buffers ? &slot.depth_upload : &temporary;
     if (!g_config.persistent_buffers && !CreateStaging(slot.depth, D3D12_HEAP_TYPE_UPLOAD, temporary))
@@ -978,7 +1018,7 @@ bool ProcessMergedTransient(
               CreateStaging(slot.output, D3D12_HEAP_TYPE_READBACK, readback);
     if (ok && !g_config.zero_guidance_fast_path)
         ok = CreateStaging(slot.motion, D3D12_HEAP_TYPE_UPLOAD, motion_upload) &&
-             CreateStaging(slot.depth, D3D12_HEAP_TYPE_UPLOAD, depth_upload);
+             (!UsesDepth() || CreateStaging(slot.depth, D3D12_HEAP_TYPE_UPLOAD, depth_upload));
     if (!ok)
         goto cleanup;
 
@@ -986,7 +1026,8 @@ bool ProcessMergedTransient(
     if (!g_config.zero_guidance_fast_path)
     {
         PrepareMotion(motion_upload, motion);
-        PrepareDepth(depth_upload, depth);
+        if (UsesDepth())
+            PrepareDepth(depth_upload, depth);
     }
     if (!BeginCommands(slot))
     {
@@ -997,7 +1038,8 @@ bool ProcessMergedTransient(
     if (!g_config.zero_guidance_fast_path)
     {
         RecordUpload(slot.list, motion_upload, slot.motion);
-        RecordUpload(slot.list, depth_upload, slot.depth);
+        if (UsesDepth())
+            RecordUpload(slot.list, depth_upload, slot.depth);
     }
     SetEvaluationParameters(slot, reset);
     {
@@ -1037,7 +1079,8 @@ bool EnqueueFrame(const void *color, const float *motion, const float *depth, bo
     if (!g_config.zero_guidance_fast_path)
     {
         PrepareMotion(slot.motion_upload, motion);
-        PrepareDepth(slot.depth_upload, depth);
+        if (UsesDepth())
+            PrepareDepth(slot.depth_upload, depth);
     }
     if (!BeginCommands(slot))
         return false;
@@ -1045,7 +1088,8 @@ bool EnqueueFrame(const void *color, const float *motion, const float *depth, bo
     if (!g_config.zero_guidance_fast_path)
     {
         RecordUpload(slot.list, slot.motion_upload, slot.motion);
-        RecordUpload(slot.list, slot.depth_upload, slot.depth);
+        if (UsesDepth())
+            RecordUpload(slot.list, slot.depth_upload, slot.depth);
     }
     SetEvaluationParameters(slot, reset);
     const NVSDK_NGX_Result evaluated = SafeEvaluate(slot.list);
@@ -1154,6 +1198,7 @@ void ReleaseDeviceObjects()
     Release(g_fence);
     Release(g_queue);
     Release(g_device);
+    Release(g_budget_adapter);
     g_has_selected_adapter = false;
     g_selected_adapter = {};
     g_fence_value = 0;
@@ -1294,6 +1339,7 @@ bool SetupD3D12()
         result = D3D12CreateDevice(
             adapter, D3D_FEATURE_LEVEL_11_0, IID_PPV_ARGS(&g_device));
     }
+    adapter->QueryInterface(IID_PPV_ARGS(&g_budget_adapter));
     adapter->Release();
     if (FAILED(result) || g_device == nullptr)
     {
@@ -1473,11 +1519,18 @@ extern "C" __declspec(dllexport) void dlssnr_configure_format(
 extern "C" __declspec(dllexport) int dlssnr_capabilities()
 {
     int result = 1; // v2 host
+    result |= 8; // inactive depth accepts null and reuses an immutable zero texture
     if (!g_config.tiled_subrects && g_config.merged_submission && g_config.persistent_buffers)
         result |= 2; // asynchronous enqueue/dequeue
     if (g_config.tiled_subrects)
         result |= 4; // Feature 18 subrect tiling
     return result;
+}
+
+extern "C" __declspec(dllexport) int dlssnr_queue_capacity()
+{
+    // Report allocated slots, never just the configured/requested upper bound.
+    return g_ready ? g_slot_count : 1;
 }
 
 extern "C" __declspec(dllexport) void dlssnr_set_options(

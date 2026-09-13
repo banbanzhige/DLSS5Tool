@@ -34,7 +34,7 @@ from dlss5tool.app_version import APP_VERSION
 from dlss5tool import diagnostics
 from dlss5tool import dlss_engine
 from dlss5tool import guidance_client
-from dlss5tool.guidance_public import depth_enabled, public_mode
+from dlss5tool.guidance_public import depth_enabled, public_mode, still_image_settings
 from dlss5tool.preview_comparison import PreviewComparison
 from dlss5tool.guidance_export_ui import GuidanceExportUI
 from dlss5tool.shared_cache_budget import SharedCacheBudget
@@ -44,6 +44,9 @@ from dlss5tool import updater
 from dlss5tool import delta_update
 from dlss5tool import update_helper
 from dlss5tool import paths
+from dlss5tool.host_queue import MAX_IN_FLIGHT, clamp_in_flight
+from dlss5tool import performance_profiles
+from dlss5tool.preview_decoder import PreviewDecoder
 from dlss5tool.dlss_host_process import ProcessLive
 from dlss5tool.parallel_export import export_parallel
 from dlss5tool.preview_audio import PreviewAudio, ms_to_frame
@@ -582,11 +585,7 @@ def _large_image_host_settings(width, height, settings):
     Static images have no temporal flow. Total VRAM (not fluctuating free RAM)
     keeps tile topology stable across repeated previews of the same image.
     """
-    result = dict(settings or {})
-    mode = int(result.get('guidance_mode', 0))
-    if mode in (1, 3):
-        result['guidance_mode'] = 0 if mode == 1 else 2
-        result['_still_flow_skipped'] = True
+    result = still_image_settings(settings)
     try:
         width, height = int(width), int(height)
     except (TypeError, ValueError):
@@ -603,6 +602,8 @@ def _large_image_host_settings(width, height, settings):
         tile_width, tile_height, threshold = 4000, 2000, 24_000_000
     if not (result.get('host_tiled_mode') or width * height >= threshold or max(width, height) > 8192):
         return result
+    if int(result.get('guidance_mode', 0)) in (1, 3):
+        raise ValueError(i18n.tr_for(result.get('ui_language'), 'guidance.error.still_flow_tiled'))
     result.update({
         "host_backend": "v2",
         "host_auto_fallback": False,
@@ -1625,6 +1626,7 @@ class App(PreviewComparison, GuidanceExportUI):
             self._refresh_preview_surface()
 
     def _refresh_status_chips(self):
+        self._update_queue_depth_status()
         if not hasattr(self, "_status_chips"):
             return
         for label in getattr(self, "_status_chip_labels", ()):
@@ -3924,11 +3926,14 @@ class App(PreviewComparison, GuidanceExportUI):
         submission.grid(row=3, column=1, sticky="ew", pady=3)
 
         in_flight = self._chrome_spin(
-            host_group, from_=1, to=3, textvariable=d['v_in_flight'], width=7,
+            host_group, from_=1, to=MAX_IN_FLIGHT, textvariable=d['v_in_flight'], width=7,
             command=self._on_host_settings_change,
         )
-        ttk.Label(host_group, text=tr("label.gpu_queue_frames")).grid(row=4, column=0, sticky="w", pady=3)
+        queue_label = ttk.Label(host_group, text=tr("label.gpu_queue_frames"))
+        queue_label.grid(row=4, column=0, sticky="w", pady=3)
         in_flight.grid(row=4, column=1, sticky="w", pady=3)
+        Tooltip(queue_label, tr('queue.depth_hint'))
+        Tooltip(in_flight, tr('queue.depth_hint'))
 
         zero_fast = CheckToggle(
             host_group, tr("label.zero_guidance_fast"), d['v_zero_fast'],
@@ -3945,6 +3950,9 @@ class App(PreviewComparison, GuidanceExportUI):
             command=self._on_host_settings_change, ui=self._ui,
         )
         fallback.grid(row=7, column=0, columnspan=2, sticky="w", pady=2)
+        d['w_queue_status'] = ttk.Label(host_group, style='Muted.TLabel', wraplength=290)
+        d['w_queue_status'].grid(row=8, column=0, columnspan=2, sticky='w', pady=(5, 0))
+        Tooltip(d['w_queue_status'], tr('queue.depth_hint'))
         self._theme_widgets.extend((zero_fast, persistent, fallback))
         d.update({
             'w_backend': backend,
@@ -4257,10 +4265,24 @@ class App(PreviewComparison, GuidanceExportUI):
         if self._exporting or self._queue_running or self._switching_backend or self._diagnosing:
             return
         settings = self._collect_host_settings()
+        previous_settings = getattr(self, '_last_module_settings', None)
+        if previous_settings is not None and bool(settings.get('guidance_mode')) != bool(previous_settings.get('guidance_mode')):
+            self._switch_performance_profile(previous_settings, settings.get('guidance_mode', 0))
+            settings = self._collect_host_settings()
+        zero_fast = getattr(self, '_host_settings', {}).get('v_zero_fast')
+        if zero_fast is not None:
+            if settings.get('guidance_mode'):
+                # Reflect the effective state: real guidance must never be
+                # replaced by the fast path's shared zero textures.
+                zero_fast.set(False)
+            elif previous_settings and previous_settings.get('guidance_mode'):
+                # Switching back to base rendering restores the fast default;
+                # unrelated edits while already off keep a manual opt-out.
+                zero_fast.set(True)
+            settings = self._collect_host_settings()
         if settings == getattr(self, '_last_module_settings', None):
             return
         from dlss5tool.guidance_parameters import DISPLAY_KEYS
-        previous_settings = getattr(self, '_last_module_settings', None)
         if previous_settings is not None and (
                 {k: v for k, v in settings.items() if k not in DISPLAY_KEYS} ==
                 {k: v for k, v in previous_settings.items() if k not in DISPLAY_KEYS}):
@@ -4278,11 +4300,13 @@ class App(PreviewComparison, GuidanceExportUI):
         self._guidance_preflight_info = None
         self._module_reload_error = ''
         self._module_pending_settings = settings
+        probe_settings = still_image_settings(settings) if getattr(self, '_is_image', False) else settings
         # If media is already open in the analysis workspace, validate using the
         # real preview session and retain it. A disposable probe would load the
         # same weights a second time immediately afterwards.
         warm_preview = None
-        if (settings.get('guidance_mode') and self.video
+        if (probe_settings.get('guidance_mode') and self.video
+                and not getattr(self, '_is_image', False)
                 and getattr(self, '_guidance_context', False)
                 and not (self._video_color_info or {}).get('is_hdr')):
             warm_preview = (self.video, self._frame,
@@ -4323,10 +4347,13 @@ class App(PreviewComparison, GuidanceExportUI):
                     previous.join()
                 self._close_live()
                 if settings.get('guidance_mode'):
+                    if not probe_settings.get('guidance_mode'):
+                        result.put({'info': {}, 'still_flow_skipped': True})
+                        return
                     if warm_preview is not None:
                         result.put(self._warm_guidance_preview(warm_preview))
                         return
-                    info = guidance_client.preflight(settings, require_shared_cache=True)
+                    info = guidance_client.preflight(probe_settings, require_shared_cache=True)
                     result.put({'info': info})
                     return
             except Exception as exc:
@@ -4380,6 +4407,7 @@ class App(PreviewComparison, GuidanceExportUI):
         self._module_pending_settings = None
         self._startup_guidance_mode = 0
         warmed = None
+        still_flow_skipped = isinstance(error, dict) and error.get('still_flow_skipped', False)
         if isinstance(error, dict):
             warmed = error.get('preview')
             self._guidance_preflight_info = error['info']
@@ -4393,6 +4421,10 @@ class App(PreviewComparison, GuidanceExportUI):
         elif error is not None and pending and pending.get('guidance_mode'):
             self._guidance_preflight_error = tr('guidance.check_failed', error=error)
             self._guidance_edit_mode = pending['guidance_mode']
+            self._switch_performance_profile(pending, 0)
+            zero_fast = self._host_settings.get('v_zero_fast')
+            if zero_fast is not None:
+                zero_fast.set(True)
         self._module_reload_error = str(error) if error is not None else ''
         # A retiring worker may have entered _ensure_live after the initial
         # invalidation. It is now gone: invalidate any last queued notification.
@@ -4430,7 +4462,8 @@ class App(PreviewComparison, GuidanceExportUI):
                 # attempted parameters so the user can fix paths and retry.
                 self._schedule_preview_cache_resume(0)
             return
-        self.set_status(tr('guidance.checked' if pending and pending.get('guidance_mode') else 'guidance.changed'))
+        self.set_status(tr('guidance.still_hint' if still_flow_skipped else
+                           'guidance.checked' if pending and pending.get('guidance_mode') else 'guidance.changed'))
         self._schedule_preview_cache_resume(0)
 
     def _collect_host_settings(self):
@@ -4466,6 +4499,7 @@ class App(PreviewComparison, GuidanceExportUI):
             **analysis,
             'dlss_runtime': '' if runtime == tr('mods.auto') else ('__bundled__' if runtime == tr('mods.bundled') else runtime),
             'guidance_mode': mode,
+            'guidance_skip_still_flow': bool(value('v_skip_still_flow', True)),
             'guidance_flow_backend': option('v_flow_backend', ('raft', 'nvofa'), 'raft'),
             'guidance_flow_grid': next((n for n in (4, 2, 1)
                                         if value('v_flow_grid', '') == tr('guidance.option.grid_' + str(n))), 4),
@@ -4483,7 +4517,7 @@ class App(PreviewComparison, GuidanceExportUI):
             ),
             'host_zero_fast_path': bool(d['v_zero_fast'].get()) and not mode,
             'host_persistent_buffers': bool(d['v_persistent'].get()),
-            'host_in_flight': max(1, min(3, in_flight)),
+            'host_in_flight': clamp_in_flight(in_flight),
             'host_auto_fallback': bool(d['v_fallback'].get()),
         }
 
@@ -4543,7 +4577,8 @@ class App(PreviewComparison, GuidanceExportUI):
         elif mode:
             short_status = tr('guidance.status.checked' if getattr(self, '_guidance_preflight_info', None)
                               else 'guidance.status.unchecked')
-        if getattr(self, '_is_image', False) and mode == 1 and not pending:
+        if (getattr(self, '_is_image', False) and mode == 1 and not pending
+                and host.get('guidance_skip_still_flow', True)):
             short_status = tr('guidance.status.still')
             status = tr('guidance.still_hint')
         d['w_guidance_status'].config(text=short_status)
@@ -4578,6 +4613,7 @@ class App(PreviewComparison, GuidanceExportUI):
             mode = host['guidance_mode'] or getattr(self, '_guidance_edit_mode', 0)
             enabled = {
                 'mode': True, 'device': bool(mode), 'edge': bool(mode),
+                'skip_still_flow': True,
                 'flow': mode in (1, 3), 'flow_backend': True, 'depth': mode in (2, 3),
                 'profile': mode in (2, 3), 'execution': mode == 3,
                 'palette': mode in (2, 3), 'invert': mode in (2, 3),
@@ -4648,6 +4684,40 @@ class App(PreviewComparison, GuidanceExportUI):
         self._host_settings['w_in_flight'].config(
             state="normal" if queue_enabled else "disabled"
         )
+
+    def _switch_performance_profile(self, previous, mode):
+        profiles = performance_profiles.profiles(
+            getattr(self, '_mode_performance_profiles',
+                    getattr(self, '_saved_settings', {}).get('host_mode_profiles')), previous)
+        self._mode_performance_profiles = profiles
+        target = profiles[performance_profiles.mode_key(mode)]
+        d = self._host_settings
+        for key, variable in (('host_in_flight', 'v_in_flight'),
+                              ('host_persistent_buffers', 'v_persistent'),
+                              ('host_zero_fast_path', 'v_zero_fast')):
+            if variable in d:
+                d[variable].set(target[key])
+        if 'v_submission' in d:
+            d['v_submission'].set(HOST_SUBMISSION_NAMES[target['host_submission']])
+
+    def _update_queue_depth_status(self):
+        d = getattr(self, '_host_settings', {})
+        label = d.get('w_queue_status')
+        if label is None:
+            return
+        host = self._collect_host_settings()
+        requested = host['host_in_flight']
+        live = getattr(self, '_live', None)
+        if live is not None:
+            key = 'queue.depth_active' if requested == live.max_in_flight else 'queue.depth_limited'
+            text = tr(key, requested=requested, actual=live.max_in_flight)
+        elif (host['host_backend'] == 'legacy' or host['host_submission'] != 'merged'
+              or not host['host_persistent_buffers']):
+            text = tr('queue.depth_serial', requested=requested)
+        else:
+            text = tr('queue.depth_pending', requested=requested)
+        if label.cget('text') != text:
+            label.config(text=text)
 
     def _on_host_settings_change(self):
         if self._switching_backend:
@@ -4744,6 +4814,8 @@ class App(PreviewComparison, GuidanceExportUI):
                 self.root.after_idle(lambda: self.display_view(quality="full"))
         else:
             self.set_status(tr("status.host_saved"))
+        self._update_queue_depth_status()
+        self._last_module_settings = self._collect_host_settings()
         self._schedule_settings_save()
 
     def _remembered_dlss(self):
@@ -4940,7 +5012,8 @@ class App(PreviewComparison, GuidanceExportUI):
         elif color.get("is_hdr") and not export["hdr_mode"]:
             parts.append(tr("hint.tonemap_sdr"))
         if self._is_image:
-            parts.append(tr('guidance.still_hint'))
+            if still_image_settings(self._collect_host_settings()).get('_still_flow_skipped'):
+                parts.append(tr('guidance.still_hint'))
         elif color.get('is_hdr') and export['hdr_mode']:
             parts.append(tr('guidance.hdr_hint'))
         if super_resolution_enabled:
@@ -5005,6 +5078,14 @@ class App(PreviewComparison, GuidanceExportUI):
         host = self._collect_host_settings()
         if getattr(self, '_startup_guidance_mode', 0):
             host['guidance_mode'] = self._startup_guidance_mode
+        if getattr(self, '_module_pending_settings', None):
+            host.update(self._module_pending_settings)
+        # Activation temporarily displays mode=off; save the intended profile,
+        # not those temporary disabled controls.
+        profile_host = getattr(self, '_module_pending_settings', None) or host
+        self._mode_performance_profiles = performance_profiles.profiles(
+            getattr(self, '_mode_performance_profiles',
+                    self._saved_settings.get('host_mode_profiles')), profile_host)
         return {
             "preview_view": self._normal_preview_view if self._guidance_context else self.view_var.get(),
             "preview_compare_layout": self.compare_layout.get(),
@@ -5050,6 +5131,7 @@ class App(PreviewComparison, GuidanceExportUI):
             ),
             **self._collect_preview_settings(),
             **host,
+            'host_mode_profiles': self._mode_performance_profiles,
         }
 
     def _schedule_settings_save(self, event=None):
@@ -5121,6 +5203,9 @@ class App(PreviewComparison, GuidanceExportUI):
         self._save_settings_now()
         self._save_queue_state()
         self.pause()
+        decoder = getattr(self, '_background_preview_decoder', None)
+        if decoder is not None:
+            decoder.close()
         self._wait_play_dlss()
         self._audio.close()
         if getattr(self, "_cap", None):
@@ -5151,6 +5236,7 @@ class App(PreviewComparison, GuidanceExportUI):
             s.get('host_zero_fast_path'), s.get('host_persistent_buffers'),
             s.get('host_in_flight'),
             s.get('dlss_runtime'), guidance_client.contract(s),
+            s.get('guidance_skip_still_flow', True),
             normalize_scale(s.get('super_resolution_scale', 1)),
         )
 
@@ -5537,6 +5623,10 @@ class App(PreviewComparison, GuidanceExportUI):
 
     def _cache_clear(self, keep_source=False):
         """Invalidate processed frames; only parameter edits can retain decoded sources."""
+        if not keep_source:
+            decoder = getattr(self, '_background_preview_decoder', None)
+            if decoder is not None:
+                decoder.invalidate()
         with self._cache_lock:
             self._dlss_frame_cache.clear()
             if not keep_source:
@@ -7132,12 +7222,10 @@ class App(PreviewComparison, GuidanceExportUI):
         self._pre_rendering = True
         self._active_preview_size = target_size or self._playback_preview_size()
         source = self._source_cache_get(self._frame)
-        if source is None:
+        if source is None and self._is_image:
             source = self._read_frame(self._frame)
-        if source is None:
-            self._pre_rendering = False
-            return False
-        self._source_cache_store(self._frame, source)
+        if source is not None:
+            self._source_cache_store(self._frame, source)
         started = (
             self._start_prefetch(preview_size=target_size)
             if target_size is not None else self._start_prefetch()
@@ -7146,7 +7234,8 @@ class App(PreviewComparison, GuidanceExportUI):
             self._pre_rendering = False
             self._schedule_preview_cache_resume(PREVIEW_WORKER_POLL_MS)
             return False
-        self._queue_preview_frame(self._frame, source)
+        if source is not None:
+            self._queue_preview_frame(self._frame, source)
         self._schedule_preview_decode(0)
         return True
 
@@ -7195,6 +7284,7 @@ class App(PreviewComparison, GuidanceExportUI):
         target_size = self._active_preview_size or self._playback_preview_size()
         sk = self._settings_hash()
         waiting_on_worker = False
+        queued_this_tick = 0
         for next_frame in range(self._frame, target_end + 1):
             processed_ready = self._cached_dlss_sk(next_frame, sk, target_size) is not None
             source = self._source_cache_get(next_frame)
@@ -7205,7 +7295,18 @@ class App(PreviewComparison, GuidanceExportUI):
                     waiting_on_worker = True
                     continue
             if source is None:
-                source = self._read_frame(next_frame)
+                if self._is_image:
+                    source = self._read_frame(next_frame)
+                else:
+                    decoder = getattr(self, '_background_preview_decoder', None)
+                    if decoder is None:
+                        decoder = self._background_preview_decoder = PreviewDecoder()
+                    try:
+                        source = decoder.get(self.video, next_frame, self._video_color_info)
+                    except Exception as exc:
+                        self._preview_worker_error = str(exc)
+                        self._schedule_preview_decode(20)
+                        return
                 if source is None:
                     self._schedule_preview_decode(20)
                     return
@@ -7214,8 +7315,11 @@ class App(PreviewComparison, GuidanceExportUI):
                     self._schedule_preview_decode(1)
                     return
             self._queue_preview_frame(next_frame, source)
-            self._schedule_preview_decode(1)
-            return
+            waiting_on_worker = True
+            queued_this_tick += 1
+            if queued_this_tick >= 4:
+                self._schedule_preview_decode(1)
+                return
         if waiting_on_worker:
             self._schedule_preview_decode(20)
             return
@@ -7646,6 +7750,9 @@ class App(PreviewComparison, GuidanceExportUI):
         return True
 
     def pause(self):
+        decoder = getattr(self, '_background_preview_decoder', None)
+        if decoder is not None:
+            decoder.invalidate()
         was_playing = self.playing
         self.playing = False
         self._buffering = False
@@ -8641,7 +8748,7 @@ class App(PreviewComparison, GuidanceExportUI):
     def _process_still_image(self, source_bgr, settings):
         """Process one standalone image without consulting or polluting preview caches."""
         height, width = source_bgr.shape[:2]
-        if int(settings.get('guidance_mode', 0)) in (1, 3):
+        if still_image_settings(settings).get('_still_flow_skipped'):
             self.logln(tr('guidance.still_hint'))
         rgba = cv2.cvtColor(source_bgr, cv2.COLOR_BGR2RGBA)
         scale = self._super_resolution_scale(settings)

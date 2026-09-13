@@ -20,7 +20,7 @@ import numpy as np
 
 from dlss5tool.dlss_host_process import ProcessLive
 from dlss5tool.guidance_client import GuidanceSession
-from dlss5tool.guidance_transport import TRANSPORT
+from dlss5tool.guidance_transport import TRANSPORT, FLOW_TRANSPORT
 
 
 def main():
@@ -91,9 +91,11 @@ def main():
                             digest.update(bytes([result[2]]))
                         hashes.append(digest.hexdigest())
                     info = live.guidance_info if args.native else live.info
-                    assert info['transport'] == transport, info
+                    assert info['transport'] == transport or (transport == TRANSPORT and
+                                                               info['transport'] == FLOW_TRANSPORT), info
                     reference = references.setdefault(mode, hashes)
-                    record = {'mode': mode, 'round': run, 'transport': transport,
+                    record = {'mode': mode, 'round': run, 'transport': info['transport'],
+                        'requested_transport': transport,
                         'component': str(component.resolve()), 'native': args.native,
                         'source': str(args.source.resolve()), 'dimensions': [w, h],
                         'frames': len(timings), 'warmup_seconds': warmup,

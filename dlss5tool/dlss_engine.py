@@ -12,6 +12,7 @@ from dlss5tool import guidance_client
 from dlss5tool.guidance_public import normalize_public_settings
 from dlss5tool import i18n
 from dlss5tool import paths
+from dlss5tool.host_queue import clamp_in_flight, LEGACY_MAX_IN_FLIGHT
 from dlss5tool.guidance_color import analysis_rgba8
 
 BASE = str(paths.runtime_root())
@@ -109,6 +110,9 @@ def _bind_library(lib):
     if hasattr(lib, "dlssnr_configure_tiling"):
         lib.dlssnr_configure_tiling.argtypes = [ctypes.c_int] * 3
         lib.dlssnr_configure_tiling.restype = None
+    if hasattr(lib, "dlssnr_queue_capacity"):
+        lib.dlssnr_queue_capacity.argtypes = []
+        lib.dlssnr_queue_capacity.restype = ctypes.c_int
     if hasattr(lib, "dlssnr_configure_format"):
         lib.dlssnr_configure_format.argtypes = [ctypes.c_int, ctypes.c_int]
         lib.dlssnr_configure_format.restype = None
@@ -343,7 +347,7 @@ def _host_config(settings):
         bool(s.get("host_zero_fast_path", True)) and not int(s.get("guidance_mode", 0)),
         bool(s.get("host_persistent_buffers", True)),
         str(s.get("host_submission", "merged")) == "merged",
-        max(1, min(3, int(s.get("host_in_flight", 2)))),
+        clamp_in_flight(s.get("host_in_flight", 2)),
         bool(s.get("host_auto_fallback", True)),
         bool(s.get("host_tiled_mode", False)),
         max(64, min(8192, int(s.get("host_tile_width", DEFAULT_TILE_WIDTH)))),
@@ -354,6 +358,8 @@ def _host_config(settings):
 def _configure_host(lib, settings):
     if hasattr(lib, "dlssnr_configure"):
         zero_fast, persistent, merged, in_flight, fallback, *_ = _host_config(settings)
+        if not hasattr(lib, "dlssnr_queue_capacity"):
+            in_flight = min(in_flight, LEGACY_MAX_IN_FLIGHT)
         lib.dlssnr_configure(
             int(zero_fast), int(persistent), int(merged),
             in_flight, int(fallback),
@@ -443,7 +449,7 @@ class Live:
     def _allocate_buffers(self):
         """Allocate the large zero-guidance/output buffers once per resolution."""
         self._mv = np.zeros((self._h, self._w, 2), np.float32)
-        self._dp = np.zeros((self._h, self._w), np.float32)
+        self._dp = None if getattr(self, 'supports_optional_depth', False) else np.zeros((self._h, self._w), np.float32)
         self._output = np.empty(
             (self._h, self._w, 4), frame_dtype(self.settings),
         )
@@ -497,9 +503,12 @@ class Live:
             int(self._lib.dlssnr_capabilities())
             if hasattr(self._lib, "dlssnr_capabilities") else 0
         )
-        requested = max(1, min(3, int(self.settings.get("host_in_flight", 2))))
+        requested = clamp_in_flight(self.settings.get("host_in_flight", 2))
         self.tiled = bool(capabilities & 4)
-        self.max_in_flight = requested if capabilities & 2 and not self.tiled else 1
+        self.supports_optional_depth = bool(capabilities & 8)
+        capacity = (max(1, int(self._lib.dlssnr_queue_capacity()))
+                    if hasattr(self._lib, "dlssnr_queue_capacity") else LEGACY_MAX_IN_FLIGHT)
+        self.max_in_flight = min(requested, capacity) if capabilities & 2 and not self.tiled else 1
         self.supports_async = self.max_in_flight > 1
 
     def update(self, settings):
@@ -561,7 +570,7 @@ class Live:
         if self._guidance is not None:
             # Discard borrowed shared-memory views before the session unmaps.
             self._mv = np.zeros((self._h, self._w, 2), np.float32)
-            self._dp = np.zeros((self._h, self._w), np.float32)
+            self._dp = None if getattr(self, 'supports_optional_depth', False) else np.zeros((self._h, self._w), np.float32)
             self._guidance.close()
             self._guidance = None
 
@@ -580,12 +589,22 @@ class Live:
                 self._guidance = guidance_client.GuidanceSession(self.settings, self._w, self._h)
             try:
                 proxy = analysis_rgba8(rgba, self.settings)
-                self._mv, self._dp, reset = self._guidance.process(proxy, reset, copy_outputs=False)
+                self._mv, self._dp, reset = self._guidance.process(
+                    proxy, reset, copy_outputs=False,
+                    allow_missing_depth=getattr(self, 'supports_optional_depth', False))
             except Exception:
                 self.close_guidance()
                 self._reset_next = True
                 raise
         return reset
+
+    def _depth_pointer(self):
+        if self._dp is None:
+            if getattr(self, 'supports_optional_depth', False):
+                return None
+            # Older native libraries keep their non-null input contract.
+            self._dp = np.zeros((self._h, self._w), np.float32)
+        return self._dp.ctypes.data_as(ctypes.c_void_p)
 
     def guidance_preview(self, rgba, reset=False, final=True):
         """Evaluate guidance without running DLSS; returned views expire next call."""
@@ -613,7 +632,7 @@ class Live:
         ok = self._lib.dlssnr_process(
             rgba.ctypes.data_as(ctypes.c_void_p),
             self._mv.ctypes.data_as(ctypes.c_void_p),
-            self._dp.ctypes.data_as(ctypes.c_void_p),
+            self._depth_pointer(),
             self._output.ctypes.data_as(ctypes.c_void_p),
             1 if reset else 0)
         self._reset_next = not bool(ok)
@@ -635,7 +654,7 @@ class Live:
         accepted = bool(self._lib.dlssnr_enqueue(
             rgba.ctypes.data_as(ctypes.c_void_p),
             self._mv.ctypes.data_as(ctypes.c_void_p),
-            self._dp.ctypes.data_as(ctypes.c_void_p),
+            self._depth_pointer(),
             1 if reset else 0,
         ))
         self._reset_next = not accepted
