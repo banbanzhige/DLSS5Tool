@@ -31,6 +31,18 @@ NVIDIA SDK 许可证包含专有权利、分发、商标、通知和使用范围
 - 在本项目中的用途：运行时加载的 Neural Rendering 模型/运行时
 - 分发策略：不纳入源码仓库，也不作为独立文件再分发；用户必须从合法授权来源取得
 
+## NVIDIA DLSS Frame Generation / RTX40MFG temporal adapter
+
+- `nvngx_dlssg.dll` is the official, hash-pinned NVIDIA DLSSG provider from the locally installed SDK.
+  It is not committed to this source repository. Local portable builds retain NVIDIA's original SDK terms;
+  public redistribution remains subject to the publisher's NVIDIA license review.
+- `scripts/rtxmfg_temporal` adapts a limited baseline temporal correction from
+  RTX40MFG-Unlock commit `33b41835dc39c5d8ab1ef93efb2449be31139c09`.
+  Copyright (c) 2026 Michael Robles, MIT; the full license is retained in the source folder and
+  portable `licenses/RTX40MFG-Unlock/LICENSE.txt`.
+- This is not the complete upstream optimized build. The experimental 3×/4× path retains known
+  temporal-position deviations and does not imply general video-quality certification.
+
 ## NVIDIA RTX Video SDK / Video Super Resolution
 
 - 上游：[NVIDIA RTX Video SDK](https://developer.nvidia.com/rtx-video-sdk)
@@ -65,6 +77,11 @@ RTX Video SDK 1.1 或兼容版本。公开或商业发布前，发行者仍需�
 版权与许可声明。
 
 ## Python 与媒体组件
+
+v2.2.1 本地便携包另收集已验证的 FFmpeg 7.1.1 full-build 的 ffmpeg/ffprobe 可执行文件，
+用于 HDR 处理和逐帧时间戳检查；原始 GPLv3 LICENSE 与构建 README 保留于
+`licenses/FFmpeg-full/`。公开分发前发行者须落实该构建对应源码及相关分发义务；
+本地打包不表示已公开发布或完成发行许可复核。
 
 运行时依赖由 PyPI 单独安装，当前清单位于 `requirements.txt`：NumPy、OpenCV Python、
 imageio-ffmpeg、Pillow 和 tkinterdnd2。它们不受本项目 MIT 许可证重新许可。

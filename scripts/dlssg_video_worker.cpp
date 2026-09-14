@@ -1,0 +1,132 @@
+// Experimental streaming worker. Binary frames on stdout, diagnostics on stderr.
+// Reuses the tested native resource/compatibility helpers without calling probe::Run.
+#define wmain unused_probe_main
+#include "dlssg_probe.cpp"
+#undef wmain
+#include <io.h>
+#include <fcntl.h>
+
+namespace video_worker {
+using probe::Check;
+using probe::Ngx;
+FILE* wire = nullptr;
+void Send(const void* data, size_t bytes) {
+    Check(fwrite(data, 1, bytes, wire) == bytes, "output pipe");
+}
+void Receive(void* data, size_t bytes) {
+    Check(fread(data, 1, bytes, stdin) == bytes, "input pipe truncated");
+}
+int Run(int argc, wchar_t** argv) {
+    Check(argc == 7, "worker runtime-dir log-dir width height multiplier sdr|hdr-coded");
+    g_width = _wtoi(argv[3]); g_height = _wtoi(argv[4]);
+    const unsigned multiplier = _wtoi(argv[5]);
+    const bool hdr = !wcscmp(argv[6], L"hdr-coded");
+    Check(hdr || !wcscmp(argv[6], L"sdr"), "format");
+    Check(g_width >= 128 && g_height >= 128 && g_width <= 8192 && g_height <= 8192
+        && multiplier >= 2 && multiplier <= 4, "dimensions or multiplier");
+    g_frame_format = hdr ? FrameFormat::Rgba16Float : FrameFormat::Rgba8;
+    g_log = stderr;
+    Check(SetupD3D12(), "D3D12 device");
+    if (multiplier > 2) {
+        Check(g_selected_adapter.vendor_id == 0x10de && g_selected_adapter.device_id == 0x2783,
+            "Experimental 3x/4x currently pinned to RTX 4070 SUPER");
+        const auto path = std::wstring(argv[1]) + L"\\nvngx_dlssg.dll";
+        auto provider = LoadLibraryExW(path.c_str(), nullptr, LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR | LOAD_LIBRARY_SEARCH_DEFAULT_DIRS);
+        Check(dlssg_ada_gate::PresetB(provider), "pinned preset compatibility");
+    }
+    const wchar_t* paths[] = {argv[1]};
+    NVSDK_NGX_FeatureCommonInfo info{};
+    info.PathListInfo = {paths, 1};
+    info.LoggingInfo = {probe::Callback, NVSDK_NGX_LOGGING_LEVEL_ON, true};
+    Ngx(NVSDK_NGX_D3D12_Init_with_ProjectID("3bfc79f4-8b20-4815-b317-e9da984d942f", NVSDK_NGX_ENGINE_TYPE_CUSTOM,
+        "DLSS5Tool-Experimental-Video", argv[2], g_device, &info), "init");
+    NVSDK_NGX_Parameter* params = nullptr;
+    Ngx(NVSDK_NGX_D3D12_GetCapabilityParameters(&params), "capabilities");
+    if (multiplier > 2) {
+        auto provider = GetModuleHandleW(L"nvngx_dlssg.dll");
+        Check(dlssg_ada_gate::Apply(provider, g_selected_adapter.vendor_id, g_selected_adapter.device_id), "pinned Ada gate");
+        Check(midpoint_fix::ObserveD3D12Device(g_device) && midpoint_fix::PatchProvider(provider, nullptr), "temporal compatibility");
+    }
+    std::array<probe::Texture, 2> colors;
+    std::array<probe::Texture, 3> outputs;
+    probe::Texture motion, depth;
+    probe::Validity validity;
+    for (auto& color : colors) color.Init(FrameDxgiFormat());
+    for (unsigned i=0;i<multiplier-1;++i) outputs[i].Init(FrameDxgiFormat(), true);
+    motion.Init(DXGI_FORMAT_R16G16_FLOAT); depth.Init(DXGI_FORMAT_R32_FLOAT); validity.Init();
+    std::vector<float> planar(size_t(g_width)*g_height, .5f);
+    CopyRowsToStaging(depth.upload, planar.data(), size_t(g_width)*4);
+    NVSDK_NGX_Handle* feature=nullptr;
+    NVSDK_NGX_DLSSG_Create_Params create={g_width,g_height,unsigned(FrameDxgiFormat()),g_width,g_height,false};
+    params->Set(NVSDK_NGX_DLSSG_Parameter_MultiFrameCount,multiplier-1);
+    auto& slot=g_slots[0];
+    Check(BeginCommands(slot),"begin create");
+    Ngx(NGX_D3D12_CREATE_DLSSG(slot.list,1,1,&feature,params,&create),"create");
+    Check(SubmitCommands(slot,false)&&WaitFence(slot.fence_value,15000),"create fence");
+    NVSDK_NGX_DLSSG_Opt_Eval_Params opts{};
+    for(int i=0;i<4;++i) opts.cameraViewToClip[i][i]=opts.clipToCameraView[i][i]=opts.clipToLensClip[i][i]
+        =opts.clipToPrevClip[i][i]=opts.prevClipToClip[i][i]=1;
+    opts.cameraUp[1]=opts.cameraRight[0]=opts.cameraFwd[2]=1;
+    opts.cameraNear=.1f; opts.cameraFar=1000; opts.cameraFOV=1.04719755f;
+    opts.cameraAspectRatio=float(g_width)/g_height;
+    opts.mvecScale[0]=1.f/g_width; opts.mvecScale[1]=1.f/g_height;
+    opts.cameraMotionIncluded=true; opts.orthoProjection=true; opts.colorBuffersHDR=hdr;
+    opts.motionVectorsInvalidValue=-65504; opts.multiFrameCount=multiplier-1;
+    opts.mvecsSubrectSize=opts.depthSubrectSize=opts.hudLessSubrectSize={g_width,g_height};
+    opts.backbufferSubrectSize=opts.outputInterpSubrectSize={g_width,g_height};
+    NVSDK_NGX_D3D12_DLSSG_Eval_Params eval{};
+    eval.pDepth=depth.resource; eval.pMVecs=motion.resource; eval.pOutputDisableInterpolation=validity.gpu;
+    const uint32_t ready[]={0x31474746,g_selected_adapter.luid_low,uint32_t(g_selected_adapter.luid_high)};
+    Send(ready,sizeof(ready)); fflush(wire);
+    std::vector<unsigned char> input(size_t(g_height)*FrameRowPitch()), output(input.size());
+    std::vector<float> mv(size_t(g_width)*g_height*2);
+    std::vector<uint16_t> half(mv.size());
+    for(unsigned frame=0;;++frame) {
+        uint32_t command=0;
+        const size_t commandBytes=fread(&command,1,4,stdin);
+        if(commandBytes==0) break;
+        Check(commandBytes==4,"truncated command");
+        Check(command==0 || command==1 || command==2,"frame command");
+        if(command==2) break;
+        Receive(input.data(),input.size()); Receive(mv.data(),mv.size()*4);
+        for(size_t i=0;i<mv.size();++i) {Check(std::isfinite(mv[i]) && std::abs(mv[i])<65504,"finite motion");half[i]=DirectX::PackedVector::XMConvertFloatToHalf(mv[i]);}
+        auto& color=colors[frame%2];
+        CopyRowsToStaging(color.upload,input.data(),FrameRowPitch());
+        CopyRowsToStaging(motion.upload,half.data(),size_t(g_width)*4);
+        eval.pBackbuffer=eval.pHudless=color.resource;
+        opts.reset=command==1;
+        params->Set(NVSDK_NGX_DLSSG_Parameter_BackbufferFrameID,static_cast<unsigned long long>(frame));
+        for(unsigned sub=1;sub<multiplier;++sub) {
+            auto& out=outputs[sub-1]; eval.pOutputInterpFrame=out.resource; opts.multiFrameIndex=sub;
+            Check(BeginCommands(slot),"begin frame");
+            if(sub==1) {RecordUpload(slot.list,color.upload,color.resource);RecordUpload(slot.list,motion.upload,motion.resource);RecordUpload(slot.list,depth.upload,depth.resource);}
+            for(auto* t:{&color,&motion,&depth}) t->State(slot.list,D3D12_RESOURCE_STATE_COMMON,D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+            out.State(slot.list,D3D12_RESOURCE_STATE_COMMON,D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+            validity.Before(slot.list,sub==1);
+            Ngx(NGX_D3D12_EVALUATE_DLSSG(slot.list,feature,params,&eval,&opts),"evaluate");
+            validity.After(slot.list);
+            out.State(slot.list,D3D12_RESOURCE_STATE_UNORDERED_ACCESS,D3D12_RESOURCE_STATE_COMMON);
+            for(auto* t:{&color,&motion,&depth}) t->State(slot.list,D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE,D3D12_RESOURCE_STATE_COMMON);
+            RecordReadback(slot.list,out.resource,out.readback);
+            Check(SubmitCommands(slot,false)&&WaitFence(slot.fence_value,15000),"frame fence");
+            CopyRowsFromStaging(out.readback,output.data(),FrameRowPitch());
+            const uint32_t valid=validity.Read()==0;
+            Send(&valid,4); Send(output.data(),output.size()); fflush(wire);
+        }
+    }
+    Ngx(NVSDK_NGX_D3D12_ReleaseFeature(feature),"release");
+    Ngx(NVSDK_NGX_D3D12_DestroyParameters(params),"parameters");
+    // Explicit process lifetime; the parent records exit/timeout independently.
+    return 0;
+}
+}
+int wmain(int argc,wchar_t** argv) {
+    SetErrorMode(SEM_FAILCRITICALERRORS|SEM_NOGPFAULTERRORBOX);
+    _setmode(_fileno(stdin),_O_BINARY);
+    const int binary=_dup(_fileno(stdout));
+    if(binary<0) return 2;
+    _setmode(binary,_O_BINARY); video_worker::wire=_fdopen(binary,"wb");
+    _dup2(_fileno(stderr),_fileno(stdout));
+    try {int code=video_worker::Run(argc,argv);fflush(nullptr);ExitProcess(code);}
+    catch(const std::exception& error){fprintf(stderr,"FG_ERROR: %s\n",error.what());fflush(nullptr);ExitProcess(2);}
+}

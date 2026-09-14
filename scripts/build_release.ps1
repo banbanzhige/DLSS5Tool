@@ -42,7 +42,7 @@ try {
     }
 
     foreach ($requiredFile in @(
-        "dlssnr_host_v2.dll", "nvngx_dlssnr.dll", "vsr_host.dll", "nvngx_vsr.dll"
+        "dlssnr_host_v2.dll", "nvngx_dlssnr.dll", "vsr_host.dll", "nvngx_vsr.dll", "dlssg_video_worker.exe"
     )) {
         if (-not (Test-Path -LiteralPath (Join-Path $projectRoot "runtime\$requiredFile"))) {
             throw "Missing required runtime file: $requiredFile"

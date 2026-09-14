@@ -12,6 +12,19 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 class ReleasePackagingTests(unittest.TestCase):
+    def test_frame_generation_payload_and_nvofa_are_included(self):
+        spec = (ROOT / 'packaging/DLSS5Tool.spec').read_text(encoding='utf-8')
+        self.assertIn('dlssg_video_worker.exe', spec)
+        self.assertIn('PINNED_RUNTIME', spec)
+        tree = ast.parse(spec)
+        analysis = next(node for node in ast.walk(tree) if isinstance(node, ast.Call)
+                        and isinstance(node.func, ast.Name) and node.func.id == 'Analysis')
+        excludes = ast.literal_eval(next(key.value for key in analysis.keywords if key.arg == 'excludes'))
+        self.assertNotIn('dlss5tool.nvofa', excludes)
+        self.assertIn('RTX40MFG-Unlock', spec)
+        self.assertIn('find_ffprobe', spec)
+        self.assertIn('licenses/FFmpeg-full', spec)
+
     def test_version_resources_match_application(self):
         resource = (ROOT / 'packaging/DLSS5Tool.version.txt').read_text(encoding='utf-8')
         version_tuple = tuple(map(int, app_version.__version__.split('.'))) + (0,)

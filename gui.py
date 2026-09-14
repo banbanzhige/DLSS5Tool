@@ -7,7 +7,7 @@ if __name__ == '__main__':
     # Worker dispatch must happen before the portable GUI installation mutex.
     multiprocessing.freeze_support()
     if getattr(sys, 'frozen', False) and not any(
-            flag in sys.argv for flag in ('--diagnostic-worker', '--parallel-worker', '--selftest', '--vsr-selftest')):
+            flag in sys.argv for flag in ('--diagnostic-worker', '--parallel-worker', '--selftest', '--vsr-selftest', '--frame-generation-check')):
         from pathlib import Path
         from dlss5tool import delta_update, update_helper
         root = Path(sys.executable).parent

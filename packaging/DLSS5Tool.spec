@@ -15,6 +15,9 @@ from dlss5tool.app_version import APP_VERSION
 
 datas = []
 datas.append((os.path.join(project_root, 'licenses', 'torchvision-LICENSE.txt'), 'licenses'))
+datas.append((os.path.join(project_root, 'licenses', 'NVIDIA-Optical-Flow-Headers-LICENSE.txt'), 'licenses'))
+datas.append((os.path.join(project_root, 'scripts', 'rtxmfg_temporal', 'LICENSE.txt'), 'licenses/RTX40MFG-Unlock'))
+datas.append((os.path.join(project_root, 'third_party', 'NVIDIA-DLSS', 'LICENSE.txt'), 'licenses/NVIDIA-DLSS'))
 binaries = []
 hiddenimports = []
 
@@ -30,12 +33,37 @@ for filename, required in (
     ("dlssnr_host.dll", False),
     ("vsr_host.dll", True),
     ("nvngx_vsr.dll", True),
+    ("dlssg_video_worker.exe", True),
 ):
     source = os.path.join(project_root, 'runtime', filename)
     if os.path.isfile(source):
         binaries.append((source, "."))
     elif required:
         raise SystemExit(f"Missing required runtime file: {source}")
+
+# Frame generation uses the pinned official provider; never collect the SDK tree.
+import hashlib
+from dlss5tool.frame_generation import runtime_files, PINNED_RUNTIME
+fg_worker, fg_provider = runtime_files()
+with fg_provider.open('rb') as provider_file:
+    provider_sha = hashlib.file_digest(provider_file, 'sha256').hexdigest()
+if provider_sha != PINNED_RUNTIME:
+    raise SystemExit('DLSSG provider does not match the verified release hash')
+binaries.append((str(fg_provider), '.'))
+
+# CFR validation needs ffprobe; HDR processing needs the verified full FFmpeg.
+from pathlib import Path
+from dlss5tool.video_export import find_ffmpeg, find_ffprobe
+media_ffmpeg = Path(find_ffmpeg())
+media_probe = find_ffprobe(str(media_ffmpeg))
+if not media_probe:
+    raise SystemExit('Full FFmpeg and ffprobe are required for this release')
+binaries += [(str(media_ffmpeg), '.'), (media_probe, '.')]
+media_license = media_ffmpeg.parent.parent / 'LICENSE'
+media_readme = media_ffmpeg.parent.parent / 'README.txt'
+if not media_license.is_file() or not media_readme.is_file():
+    raise SystemExit('Verified FFmpeg distribution license/README are required')
+datas += [(str(media_license), 'licenses/FFmpeg-full'), (str(media_readme), 'licenses/FFmpeg-full')]
 
 for filename in ("LICENSE", "README.md", "README.en.md", "THIRD_PARTY_NOTICES.md", "docs/guidance/GUIDANCE_PARAMETERS.md"):
     source = os.path.join(project_root, filename)
@@ -69,7 +97,7 @@ a = Analysis(
     # Repository-only tools must never enter the main application's PYZ.
     excludes=["torch", "torchvision", "depth_anything_v2", "guidance_worker",
               "amd_devtest", "amd_devtest_ui", "scripts", "tests",
-              "dlss5tool.guidance_worker", "dlss5tool.nvofa", "dlss5tool.amd_devtest", "dlss5tool.amd_devtest_ui"],
+              "dlss5tool.guidance_worker", "dlss5tool.amd_devtest", "dlss5tool.amd_devtest_ui"],
     noarchive=False,
     optimize=0,
 )

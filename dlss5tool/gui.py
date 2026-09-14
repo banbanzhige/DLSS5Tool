@@ -21,6 +21,7 @@ import time
 import traceback
 import webbrowser
 from collections import deque
+from fractions import Fraction
 import tkinter as tk
 from concurrent.futures import ThreadPoolExecutor
 from tkinter import ttk, filedialog, messagebox, scrolledtext
@@ -37,6 +38,7 @@ from dlss5tool import guidance_client
 from dlss5tool.guidance_public import depth_enabled, public_mode, still_image_settings
 from dlss5tool.preview_comparison import PreviewComparison
 from dlss5tool.guidance_export_ui import GuidanceExportUI
+from dlss5tool.shared_render_preview import SharedRenderPreview
 from dlss5tool.shared_cache_budget import SharedCacheBudget
 from dlss5tool import mod_paths
 from dlss5tool import export_queue as export_queue_state
@@ -134,6 +136,8 @@ OUTPUT_RESOLUTION_MAX_EDGES = {
 }
 SUPER_RESOLUTION_CHOICES = {tr("common.off"): 1, "2×": 2, "4×": 4}
 SUPER_RESOLUTION_NAMES = {value: name for name, value in SUPER_RESOLUTION_CHOICES.items()}
+FRAME_GENERATION_CHOICES = {tr('common.off'): 1, '2×': 2, '3×': 3, '4×': 4}
+FRAME_GENERATION_NAMES = {value: name for name, value in FRAME_GENERATION_CHOICES.items()}
 RATE_CONTROL_CHOICES = {
     tr("rate.quality"): "quality",
     tr("rate.bitrate"): "bitrate",
@@ -742,7 +746,7 @@ def compose_preview_frame(original, processed, output_view=0, output_mix=1.0):
 
 
 
-class App(PreviewComparison, GuidanceExportUI):
+class App(SharedRenderPreview, PreviewComparison, GuidanceExportUI):
     def __init__(self, root):
         self.root = root
         self._saved_settings = app_settings.startup_settings(app_settings.load())
@@ -2296,6 +2300,9 @@ class App(PreviewComparison, GuidanceExportUI):
         )
         hdr_active = bool(export.get("hdr_mode") and (job.color_info or {}).get("is_hdr"))
         codec = "HEVC10" if hdr_active else "H.264"
+        fg = export.get('frame_generation_multiplier', 1)
+        if fg in (2, 3, 4):
+            scale_note += ' · ' + tr('status.frame_generation', scale=fg)
         return (
             f"{style} · {OUTPUT_CONTAINER_LABELS[container]}/{codec} · "
             f"{quality} · {mode}{scale_note}"
@@ -2328,6 +2335,9 @@ class App(PreviewComparison, GuidanceExportUI):
             )
         if scale > 1:
             bits.append(tr("queue.upscale", scale=scale))
+        fg = export.get('frame_generation_multiplier', 1)
+        if job.media_kind == 'video' and fg in (2, 3, 4):
+            bits.append(tr('status.frame_generation', scale=fg))
         return " · ".join(bits)
 
     @staticmethod
@@ -2676,6 +2686,8 @@ class App(PreviewComparison, GuidanceExportUI):
                     effective_export["mode"] = "single"
                 if normalize_scale(effective_export.get("super_resolution_scale", 1)) > 1:
                     effective_export["mode"] = "single"
+                if media_kind == 'video' and effective_export.get('frame_generation_multiplier', 1) > 1:
+                    effective_export['mode'] = 'single'
                 job = export_queue_state.ExportJob.create(
                     path, output, settings, effective_export, metadata, color_info,
                     media_kind=media_kind,
@@ -2787,6 +2799,8 @@ class App(PreviewComparison, GuidanceExportUI):
                 job.export_settings["mode"] = "single"
             if normalize_scale(job.export_settings.get("super_resolution_scale", 1)) > 1:
                 job.export_settings["mode"] = "single"
+            if job.media_kind == 'video' and job.export_settings.get('frame_generation_multiplier', 1) > 1:
+                job.export_settings['mode'] = 'single'
             job.output_path = self._new_queue_output_path(
                 job.source_path, job.media_kind, job.export_settings,
                 exclude_job_id=job.job_id,
@@ -3636,6 +3650,8 @@ class App(PreviewComparison, GuidanceExportUI):
             'v_super_resolution': tk.StringVar(value=SUPER_RESOLUTION_NAMES.get(
                 normalize_scale(saved.get('super_resolution_scale', 1)), tr("common.off")
             )),
+            'v_frame_generation': tk.StringVar(value=FRAME_GENERATION_NAMES.get(
+                saved.get('frame_generation_multiplier', 1), tr('common.off'))),
             'v_custom_width': tk.IntVar(value=saved.get('custom_output_width', 1920)),
             'v_custom_height': tk.IntVar(value=saved.get('custom_output_height', 1080)),
             'v_rate_control': tk.StringVar(value=RATE_CONTROL_NAMES.get(
@@ -3646,6 +3662,8 @@ class App(PreviewComparison, GuidanceExportUI):
             )),
             'v_video_bitrate': tk.DoubleVar(value=saved.get('video_bitrate_mbps', 20.0)),
             'v_hdr': tk.BooleanVar(value=saved.get('hdr_mode', True)),
+            'v_preview_super_resolution': tk.BooleanVar(value=saved.get('preview_super_resolution', False)),
+            'v_preview_frame_generation': tk.BooleanVar(value=saved.get('preview_frame_generation', False)),
         }
 
         # Keep controls in compact, equal-width field groups.  The previous flat
@@ -3725,12 +3743,18 @@ class App(PreviewComparison, GuidanceExportUI):
         )
         ttk.Label(output_group, text=tr("label.ai_upscale")).grid(row=8, column=0, sticky="w", pady=3)
         super_resolution.grid(row=8, column=1, sticky="ew", pady=3)
+        frame_generation = self._chrome_combo(
+            output_group, d['v_frame_generation'], list(FRAME_GENERATION_CHOICES))
+        ttk.Label(output_group, text=tr('label.frame_generation')).grid(row=9, column=0, sticky='w', pady=3)
+        frame_generation.grid(row=9, column=1, sticky='ew', pady=3)
+        frame_generation.bind('<<ComboboxSelected>>', lambda e: self._on_export_settings_change())
+        Tooltip(frame_generation, tr('tooltip.frame_generation'))
 
         hdr = CheckToggle(
             output_group, tr("label.hdr_precision"), d['v_hdr'],
             command=self._on_export_settings_change, ui=self._ui,
         )
-        hdr.grid(row=9, column=0, columnspan=2, sticky="w", pady=(6, 2))
+        hdr.grid(row=10, column=0, columnspan=2, sticky="w", pady=(6, 2))
         self._theme_widgets.append(hdr)
 
         hint = ttk.Label(
@@ -3738,7 +3762,7 @@ class App(PreviewComparison, GuidanceExportUI):
             text=tr("hint.hdr_main10"),
             style="Hint.TLabel", wraplength=320, justify="left",
         )
-        hint.grid(row=10, column=0, columnspan=2, sticky="ew", pady=(2, 0))
+        hint.grid(row=11, column=0, columnspan=2, sticky="ew", pady=(2, 0))
         Tooltip(
             hdr,
             tr("tooltip.hdr_precision"),
@@ -3776,6 +3800,7 @@ class App(PreviewComparison, GuidanceExportUI):
             'w_nvenc_preset': preset,
             'w_output_resolution': resolution,
             'w_super_resolution': super_resolution,
+            'w_frame_generation': frame_generation,
             'w_custom_label': custom_label,
             'w_custom_frame': custom_frame,
             'w_custom_width': custom_width,
@@ -3828,8 +3853,11 @@ class App(PreviewComparison, GuidanceExportUI):
              "w_output_resolution", lambda _event: self._on_export_settings_change()),
             (tr("label.upscale"), d["v_super_resolution"], list(SUPER_RESOLUTION_CHOICES),
              "w_super_resolution", lambda _event: self._on_super_resolution_change()),
+            (tr('label.frame_generation'), d['v_frame_generation'], list(FRAME_GENERATION_CHOICES),
+             'w_frame_generation', lambda _event: self._on_export_settings_change()),
         )
         self._export_quick_fields = {}
+        self._effect_preview_controls = {}
         for label, variable, values, key, command in fields:
             row = ttk.Frame(parent, style="Panel.TFrame")
             row.pack(fill="x", pady=3)
@@ -3838,6 +3866,16 @@ class App(PreviewComparison, GuidanceExportUI):
             combo.pack(side="left", fill="x", expand=True)
             combo.bind("<<ComboboxSelected>>", command)
             self._export_quick_fields[key] = combo
+            effect = {'w_super_resolution': 'super_resolution', 'w_frame_generation': 'frame_generation'}.get(key)
+            if effect:
+                toggle = CheckToggle(row, text=tr('action.effect_preview'),
+                    variable=d['v_preview_'+effect], command=self._on_effect_preview_change, ui=self._ui)
+                toggle.pack(side='right', padx=(8, 0))
+                self._theme_widgets.append(toggle)
+                self._effect_preview_controls[effect] = toggle
+                Tooltip(toggle, tr('tooltip.effect_preview'))
+            if key == 'w_frame_generation':
+                Tooltip(combo, tr('tooltip.frame_generation'))
         self._export_summary = ttk.Label(
             parent, text="", style="Hint.TLabel", wraplength=320, justify="left",
         )
@@ -4263,6 +4301,13 @@ class App(PreviewComparison, GuidanceExportUI):
 
     def _on_mod_settings_change(self):
         if self._exporting or self._queue_running or self._switching_backend or self._diagnosing:
+            return
+        if getattr(self, '_render_cache_manager', None):
+            self.pause()
+            self._shared_retire()
+        retiring = getattr(self, '_shared_retiring', None)
+        if retiring and retiring.is_alive():
+            self._module_reload_after = self.root.after(50, self._on_mod_settings_change)
             return
         settings = self._collect_host_settings()
         previous_settings = getattr(self, '_last_module_settings', None)
@@ -4817,6 +4862,12 @@ class App(PreviewComparison, GuidanceExportUI):
         self._update_queue_depth_status()
         self._last_module_settings = self._collect_host_settings()
         self._schedule_settings_save()
+        if self._uses_shared_render():
+            manager = getattr(self, '_render_cache_manager', None)
+            if manager:
+                manager.set_limit(self._preview_cache_bytes())
+            self._shared_display()
+            return
 
     def _remembered_dlss(self):
         for commit in getattr(self, "_slider_committers", ()):
@@ -4897,6 +4948,8 @@ class App(PreviewComparison, GuidanceExportUI):
             'super_resolution_scale': SUPER_RESOLUTION_CHOICES.get(
                 d['v_super_resolution'].get(), 1
             ),
+            'frame_generation_multiplier': FRAME_GENERATION_CHOICES.get(
+                d['v_frame_generation'].get(), 1) if 'v_frame_generation' in d else 1,
             'custom_output_width': max(2, min(MAX_TEXTURE_DIMENSION, integer(d['v_custom_width'], 1920))),
             'custom_output_height': max(2, min(MAX_TEXTURE_DIMENSION, integer(d['v_custom_height'], 1080))),
             'rate_control': RATE_CONTROL_CHOICES.get(
@@ -4917,16 +4970,17 @@ class App(PreviewComparison, GuidanceExportUI):
         export = self._collect_export_settings()
         super_resolution_scale = normalize_scale(export['super_resolution_scale'])
         super_resolution_enabled = super_resolution_scale > 1
+        fg_enabled = export.get('frame_generation_multiplier', 1) > 1 and not self._is_image
         color = getattr(self, "_video_color_info", None) or {}
         effective_hdr = bool(export['hdr_mode'] and color.get('is_hdr'))
         video_controls_enabled = not self._is_image
-        if (effective_hdr or super_resolution_enabled) and export['mode'] == 'parallel':
+        if (effective_hdr or super_resolution_enabled or fg_enabled) and export['mode'] == 'parallel':
             self._export_settings['v_mode'].set(EXPORT_MODE_NAMES['single'])
             export['mode'] = 'single'
         state = (
             "normal"
             if video_controls_enabled and export['mode'] == 'parallel'
-            and not effective_hdr and not super_resolution_enabled
+            and not effective_hdr and not super_resolution_enabled and not fg_enabled
             else "disabled"
         )
         self._export_settings['w_workers'].config(state=state)
@@ -4935,9 +4989,11 @@ class App(PreviewComparison, GuidanceExportUI):
             state="normal" if video_controls_enabled else "disabled"
         )
         self._export_settings['w_mode'].config(
-            state="disabled" if self._is_image or effective_hdr or super_resolution_enabled else "readonly"
+            state="disabled" if self._is_image or effective_hdr or super_resolution_enabled or fg_enabled else "readonly"
         )
         self._export_settings['w_super_resolution'].config(state="readonly")
+        if 'w_frame_generation' in self._export_settings:
+            self._export_settings['w_frame_generation'].config(state='readonly' if video_controls_enabled else 'disabled')
         self._export_settings['w_output_container'].config(
             state="readonly" if video_controls_enabled else "disabled"
         )
@@ -5032,7 +5088,13 @@ class App(PreviewComparison, GuidanceExportUI):
                 export.get("nvenc_preset"), tr("preset.p7"),
             )
             try:
-                self._export_summary.config(text=f"{current} · {preset_name}")
+                for marker in ('（推荐）', '(Recommended)', '(recommended)'):
+                    current = current.replace(marker, '').strip()
+                    preset_name = preset_name.replace(marker, '').strip()
+                note = f"{current} · {preset_name}"
+                if fg_enabled and export['frame_generation_multiplier'] > 2:
+                    note += ' · ' + tr('frame_generation.experimental')
+                self._export_summary.config(text=note)
             except Exception:
                 pass
         for key, widget in getattr(self, "_export_quick_fields", {}).items():
@@ -5043,9 +5105,16 @@ class App(PreviewComparison, GuidanceExportUI):
                 widget.config(state=str(main.cget("state")))
             except Exception:
                 pass
+        for effect, toggle in getattr(self, '_effect_preview_controls', {}).items():
+            self._set_ttk_enabled(toggle, bool(self.video) and not self._is_image and not self._exporting
+                and export['super_resolution_scale' if effect == 'super_resolution' else 'frame_generation_multiplier'] > 1)
 
     def _on_super_resolution_change(self):
-        scale = self._super_resolution_scale()
+        scale = self._collect_export_settings()['super_resolution_scale']
+        if not self._preview_effect_enabled('super_resolution') and not self._is_image:
+            self._update_export_control_states()
+            self._schedule_settings_save()
+            return
         width, height = self._source_size()
         color = getattr(self, '_video_color_info', None) or {}
         export = self._collect_export_settings()
@@ -5065,12 +5134,21 @@ class App(PreviewComparison, GuidanceExportUI):
         self._update_export_control_states()
         self._schedule_settings_save()
         if self.video and self.view_var.get() in ("dlss", "compare"):
+            if self._uses_shared_render():
+                self._shared_feedback()
+                return
             self.display_view(quality="fast")
             self._schedule_preview_cache_resume()
 
     def _on_export_settings_change(self):
         self._update_export_control_states()
         self._schedule_settings_save()
+        if getattr(self, 'video', None) and not getattr(self, '_exporting', False):
+            self.pause()
+            if self._uses_shared_render():
+                self._shared_feedback()
+                return
+            self.display_view(quality='fast')
 
     def _collect_persisted_settings(self):
         d = self._settings
@@ -5102,6 +5180,9 @@ class App(PreviewComparison, GuidanceExportUI):
             "output_container": export['output_container'],
             "output_resolution": export['output_resolution'],
             "super_resolution_scale": export['super_resolution_scale'],
+            "frame_generation_multiplier": export.get('frame_generation_multiplier', 1),
+            "preview_super_resolution": self._preview_effect_enabled('super_resolution'),
+            "preview_frame_generation": self._preview_effect_enabled('frame_generation'),
             "custom_output_width": export['custom_output_width'],
             "custom_output_height": export['custom_output_height'],
             "rate_control": export['rate_control'],
@@ -5189,6 +5270,14 @@ class App(PreviewComparison, GuidanceExportUI):
             ):
                 return
             self._update_cancel_event.set()
+        if getattr(self, '_render_cache_manager', None):
+            self._shared_closing = True
+            self.pause()
+            self._shared_retire()
+        retiring = getattr(self, '_shared_retiring', None)
+        if retiring and retiring.is_alive():
+            self.root.after(50, self._on_close)
+            return
         self._cancel_after("_settings_save_after")
         self._cancel_after("_live_debounce")
         self._cancel_after("_output_preview_after")
@@ -5248,7 +5337,7 @@ class App(PreviewComparison, GuidanceExportUI):
             return normalize_scale(settings['super_resolution_scale'])
         if hasattr(self, '_export_settings'):
             return normalize_scale(
-                self._collect_export_settings()['super_resolution_scale']
+                (self._collect_export_settings() if getattr(self, '_is_image', False) else self._preview_effect_settings())['super_resolution_scale']
             )
         return 1
 
@@ -5407,7 +5496,7 @@ class App(PreviewComparison, GuidanceExportUI):
         settings = settings or self._collect_settings()
         sk = self._hash_settings_dict(settings)
         source_size = self._source_size(source_bgr)
-        sr_scale = self._super_resolution_scale(settings)
+        sr_scale = self._super_resolution_scale(settings) if getattr(self, '_is_image', False) else self._preview_effect_settings()['super_resolution_scale']
         if target_size is None:
             target_size = (
                 super_resolution_target_size(*source_size, sr_scale)
@@ -5660,6 +5749,7 @@ class App(PreviewComparison, GuidanceExportUI):
         """Retire in-flight work, then regenerate without changing media or settings."""
         if not self._can_clear_preview_cache():
             return
+        self._shared_retire()
         self.pause()
         self._freeze_preview_cache(resume_ms=None)
         self._cancel_after('_live_debounce')
@@ -5675,6 +5765,10 @@ class App(PreviewComparison, GuidanceExportUI):
     def _poll_clear_preview_cache(self):
         self._clear_preview_after = None
         if not getattr(self, '_clear_preview_pending', False):
+            return
+        retiring = getattr(self, '_shared_retiring', None)
+        if retiring and retiring.is_alive():
+            self._clear_preview_after = self.root.after(50, self._poll_clear_preview_cache)
             return
         thread = getattr(self, '_play_dlss_thread', None)
         if ((thread is not None and thread.is_alive()) or any(
@@ -5775,7 +5869,18 @@ class App(PreviewComparison, GuidanceExportUI):
         self._paint_empty_button()
 
     def display_view(self, quality="full"):
-        if getattr(self, "_exporting", False) or getattr(self, '_clear_preview_pending', False):
+        if (getattr(self, "_exporting", False) or getattr(self, '_clear_preview_pending', False)
+                or getattr(self, '_shared_closing', False)):
+            return
+        if self._uses_shared_render():
+            self._shared_display()
+            return
+        if getattr(self, '_render_cache_manager', None):
+            self._shared_retire()
+        retiring = getattr(self, '_shared_retiring', None)
+        if retiring and retiring.is_alive():
+            self._cancel_after('_shared_preview_after')
+            self._shared_preview_after = self.root.after(50, self.display_view)
             return
         if self.playing:
             self._present_play_frame(self._frame)
@@ -6508,8 +6613,16 @@ class App(PreviewComparison, GuidanceExportUI):
     def _sync_transport_labels(self):
         last = self._last_frame_index()
         try:
+            position, rate = self._frame, self.fps
+            duration = last
+            if self._uses_shared_render():
+                session = getattr(self, '_shared_session', None)
+                if session and session.metadata:
+                    position = getattr(self, '_shared_output_index', 0)
+                    rate = float(Fraction(session.metadata['output_rate']))
+                    duration = session.metadata['source_frames']*session.multiplier
             self.time_label.config(
-                text=f"{_format_timecode(self._frame, self.fps)} / {_format_timecode(last, self.fps)}"
+                text=f"{_format_timecode(position, rate)} / {_format_timecode(duration, rate)}"
             )
         except Exception:
             pass
@@ -6523,6 +6636,11 @@ class App(PreviewComparison, GuidanceExportUI):
         last = self._last_frame_index()
         frame = _clamp_frame(frame, last)
         self._frame = frame
+        if self._uses_shared_render():
+            self._shared_output_index = frame*self._preview_effect_settings()['frame_generation_multiplier']
+            self._shared_clock = None
+            self._shared_display()
+            return
         if getattr(self, "timeline", None) is not None and self.timeline.get() != frame:
             self.timeline.set(frame)
         self._sync_transport_labels()
@@ -6556,6 +6674,9 @@ class App(PreviewComparison, GuidanceExportUI):
 
     def _apply_full_preview(self):
         self._scrub_after = None
+        if self._uses_shared_render():
+            self._shared_display()
+            return
         if (
             getattr(self, "_preview_cache_frozen", False)
             or self.playing or not self.video or self._exporting
@@ -6579,6 +6700,9 @@ class App(PreviewComparison, GuidanceExportUI):
             self._update_preview_timeline_and_status(force=True)
 
     def _display_precise_preview(self):
+        if self._uses_shared_render():
+            self._shared_display()
+            return
         source_size = self._source_size()
         precise_size = self._precise_preview_size()
         sr_scale = self._super_resolution_scale()
@@ -6721,6 +6845,9 @@ class App(PreviewComparison, GuidanceExportUI):
     def step_frame(self, delta):
         if not self.video or self._exporting:
             return
+        if self._uses_shared_render():
+            self._shared_step(delta)
+            return
         self.pause()
         self._freeze_preview_cache()
         self._goto_frame(self._frame + int(delta), quality="fast")
@@ -6776,6 +6903,10 @@ class App(PreviewComparison, GuidanceExportUI):
         if not self.video:
             self._draw_empty()
             return
+        if self._uses_shared_render():
+            self._split_size = None
+            self._shared_display()
+            return
         if self.view_var.get() == "original":
             self._stop_paused_prerender()
             self._cancel_after("_preview_cache_resume_after")
@@ -6801,6 +6932,9 @@ class App(PreviewComparison, GuidanceExportUI):
         self._freeze_preview_cache(resume_ms=None)
         self._update_dlss_control_states()
         self._schedule_settings_save()
+        if self._uses_shared_render():
+            self._shared_feedback()
+            return
         self._cancel_after("_live_debounce")
         self._live_debounce = self.root.after(60, self._refresh_dlss)
 
@@ -6808,6 +6942,9 @@ class App(PreviewComparison, GuidanceExportUI):
         """Refresh the composed preview while keeping the expensive DLSS cache intact."""
         self._update_dlss_control_states()
         self._schedule_settings_save()
+        if self._uses_shared_render():
+            self._shared_feedback()
+            return
         self._cancel_after("_output_preview_after")
         self._output_preview_after = self.root.after(16, self._refresh_output_preview)
 
@@ -7038,6 +7175,9 @@ class App(PreviewComparison, GuidanceExportUI):
             )
         except Exception:
             pass
+        if self.playing and self._uses_shared_render():
+            self._shared_clock = None
+            return
         if self.playing and not self._buffering and not self._audio.muted:
             self._audio.play(self._frame, self.fps)
 
@@ -7049,6 +7189,9 @@ class App(PreviewComparison, GuidanceExportUI):
             return
         if self._is_image or self.nframes <= 1:
             self.display_view(quality="full")
+            return
+        if self._uses_shared_render():
+            self._shared_play()
             return
         last = self._last_frame_index()
         if self._frame >= last:
@@ -7170,6 +7313,13 @@ class App(PreviewComparison, GuidanceExportUI):
 
     def _resume_preview_cache(self):
         self._preview_cache_resume_after = None
+        retiring = getattr(self, '_shared_retiring', None)
+        if retiring and retiring.is_alive():
+            self._preview_cache_resume_after = self.root.after(50, self._resume_preview_cache)
+            return
+        if self._uses_shared_render():
+            self._shared_display()
+            return
         if (getattr(self, '_module_reload_thread', None) is not None
                 or getattr(self, '_clear_preview_pending', False)):
             return
@@ -7211,6 +7361,9 @@ class App(PreviewComparison, GuidanceExportUI):
             self._queued_preview_frames.clear()
 
     def _start_paused_prerender(self, target_size=None):
+        if self._uses_shared_render():
+            self._shared_display()
+            return False
         if (
             getattr(self, "_preview_cache_frozen", False)
             or self.playing or not self.video or self._exporting
@@ -7358,6 +7511,8 @@ class App(PreviewComparison, GuidanceExportUI):
         return True
 
     def _update_preview_timeline_and_status(self, force=False):
+        if self._uses_shared_render():
+            return
         if not self.video or self.view_var.get() not in ("dlss", "compare"):
             return
         if getattr(self, "_preview_cache_frozen", False) and not force:
@@ -7460,6 +7615,9 @@ class App(PreviewComparison, GuidanceExportUI):
     def _play_tick(self):
         if not self.playing:
             return
+        if self._uses_shared_render():
+            self._shared_tick()
+            return
         if getattr(self, '_guidance_context', False) and self._guidance_view != 'original':
             self._guidance_play_tick()
             return
@@ -7505,6 +7663,9 @@ class App(PreviewComparison, GuidanceExportUI):
         self._play_after = self.root.after(delay, self._play_tick)
 
     def _present_play_frame(self, frame, orig=None):
+        if self._uses_shared_render():
+            self._shared_display()
+            return
         if not self.video:
             return
         last = self._last_frame_index()
@@ -7570,6 +7731,11 @@ class App(PreviewComparison, GuidanceExportUI):
         self._blit_split(cw, ch)
 
     def _start_prefetch(self, preview_size=None):
+        if self._uses_shared_render():
+            return False
+        retiring = getattr(self, '_shared_retiring', None)
+        if retiring and retiring.is_alive():
+            return False
         if not self._preview_session_active():
             return False
         if self.view_var.get() == "original":
@@ -7585,6 +7751,7 @@ class App(PreviewComparison, GuidanceExportUI):
         self._prefetch_stop = stop
         self._preview_worker_error = None
         settings = self._collect_settings()
+        settings = {**settings, 'super_resolution_scale': self._preview_effect_settings()['super_resolution_scale']}
         preview_size = preview_size or self._playback_preview_size()
         self._active_preview_size = preview_size
         frame_queue = queue.Queue(
@@ -7750,6 +7917,7 @@ class App(PreviewComparison, GuidanceExportUI):
         return True
 
     def pause(self):
+        self._shared_clock = None
         decoder = getattr(self, '_background_preview_decoder', None)
         if decoder is not None:
             decoder.invalidate()
@@ -8290,12 +8458,19 @@ class App(PreviewComparison, GuidanceExportUI):
         return getattr(event, "action", None)
 
     def _begin_source_load(self):
+        self._shared_revision = getattr(self, '_shared_revision', 0)+1
+        self._shared_painted_position = None
+        self._shared_source_result = None
+        self._shared_not_before = 0
+        self._shared_output_index = 0
+        self._shared_clock = None
         self._clear_preview_pending = False
         self._guidance_preview_epoch = getattr(self, '_guidance_preview_epoch', 0) + 1
         self._guidance_result = None
         self._guidance_ready = self._guidance_presented = None
         self._guidance_display_signature = None
         self.pause()
+        self._cancel_after('_shared_preview_after')
         self._cancel_after('_clear_preview_after')
         self._freeze_preview_cache(resume_ms=None)
         if getattr(self,'_shared_cache_pool',None):
@@ -8554,6 +8729,9 @@ class App(PreviewComparison, GuidanceExportUI):
         if message != "ok":
             return
         self.logln(tr("log.audio_ready"))
+        if self.playing and self._uses_shared_render():
+            self._shared_clock = None
+            return
         if self.playing and not self._buffering and not self._audio.muted:
             self._audio.play(self._frame, self.fps)
 
@@ -9084,6 +9262,45 @@ class App(PreviewComparison, GuidanceExportUI):
             dict(self._video_color_info or {}), notify=True,
         )
 
+    def _export_frame_generated_video(self, source_path, out_path, settings, export_settings):
+        from dlss5tool.frame_generation import Cancelled
+        from dlss5tool.render_cache import encode_cached
+        events = queue.Queue()
+        config = {**settings, **export_settings}
+        manager = self._shared_manager()
+        setup = getattr(self, '_shared_setup_thread', None)
+        retiring = getattr(self, '_shared_retiring', None)
+        def worker():
+            try:
+                for pending in (setup, retiring):
+                    if pending:
+                        pending.join()
+                session = manager.session(source_path, config)
+                result = encode_cached(session, out_path, config, self._export_cancel_event,
+                    lambda message, fraction: events.put(('progress', (message, fraction))))
+                events.put(('done', result))
+            except BaseException as error:
+                events.put(('error', error))
+        thread = threading.Thread(target=worker, name='dlss-fg-export', daemon=True)
+        thread.start()
+        while True:
+            self.root.update()
+            try:
+                kind, value = events.get(timeout=.05)
+            except queue.Empty:
+                continue
+            if kind == 'progress':
+                message, fraction = value
+                self.set_progress(round(fraction * 1000), 1000, message)
+            elif kind == 'error':
+                thread.join(timeout=1)
+                if isinstance(value, Cancelled):
+                    raise _ExportCancelled() from value
+                raise value
+            else:
+                thread.join(timeout=1)
+                return value
+
     def _export_video_source(
         self, source_path, settings, export_settings, color_info,
         out_path=None, notify=True,
@@ -9092,9 +9309,15 @@ class App(PreviewComparison, GuidanceExportUI):
         source_path = os.path.abspath(os.path.normpath(source_path))
         settings = {**self._collect_settings(), **dict(settings or {})}
         settings['guidance_cache_pool'] = self._ensure_shared_cache_pool().name
+        saved_fg_multiplier = (
+            export_settings.get('frame_generation_multiplier', 1)
+            if export_settings is not None else None
+        )
         export_settings = {
             **self._collect_export_settings(), **dict(export_settings or {}),
         }
+        if saved_fg_multiplier is not None:
+            export_settings['frame_generation_multiplier'] = saved_fg_multiplier
         color_info = dict(color_info or {})
         resolved_container = resolve_output_container(
             source_path, export_settings.get("output_container", "mp4")
@@ -9115,6 +9338,7 @@ class App(PreviewComparison, GuidanceExportUI):
             export_settings.get('super_resolution_scale', 1)
         )
         settings['super_resolution_scale'] = super_resolution_scale
+        fg_multiplier = export_settings.get('frame_generation_multiplier', 1)
         if super_resolution_scale > 1:
             output_width, output_height = super_resolution_target_size(
                 w, h, super_resolution_scale,
@@ -9139,7 +9363,7 @@ class App(PreviewComparison, GuidanceExportUI):
                 "success": False, "cancelled": True, "error": "用户取消超分导出",
                 "output_path": out_path or "", "frames": 0,
             }
-        if super_resolution_scale > 1:
+        if super_resolution_scale > 1 or fg_multiplier > 1:
             self._wait_play_dlss(timeout=3.0)
             self._close_super_resolution()
             self._close_live()
@@ -9179,7 +9403,15 @@ class App(PreviewComparison, GuidanceExportUI):
                 f"输出 {output_width}×{output_height}；{encoding_note}；"
                 f"编码速度 {export_settings['nvenc_preset']}"
             )
-            if hdr_active:
+            if fg_multiplier > 1 or super_resolution_scale > 1:
+                if fg_multiplier > 1:
+                    self.logln('[DLSSG] ' + tr('tooltip.frame_generation'))
+                result = self._export_frame_generated_video(source_path, out_path, settings, export_settings)
+                exported_frames = result['real_frames']
+                self.logln(f"[渲染] {result['output_rate']} fps · {result['generated_frames']} 生成帧")
+                self.logln(f"[缓存] 复用 {result.get('cache_hits', 0)} 帧 · 新计算 {result.get('new_frames', 0)} 帧")
+                success = True
+            elif hdr_active:
                 result = self._export_hdr_video(
                     source_path, color_info, out_path, n, fps, w, h,
                     settings, export_settings, view, mix,
@@ -9503,6 +9735,10 @@ def main():
 def cli():
     # Required for ProcessLive's spawn worker in a PyInstaller build.
     multiprocessing.freeze_support()
+    if '--frame-generation-check' in sys.argv:
+        from dlss5tool.frame_generation import frozen_check_main
+        frozen_check_main(sys.argv[sys.argv.index('--frame-generation-check')+1:])
+        return
     if "--diagnostic-worker" in sys.argv:
         worker_index = sys.argv.index("--diagnostic-worker")
         raise SystemExit(diagnostics.diagnostic_worker_main(

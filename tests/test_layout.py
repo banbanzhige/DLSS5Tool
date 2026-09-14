@@ -109,6 +109,10 @@ class LayoutTests(unittest.TestCase):
                         'docs/guidance/GUIDANCE_PARAMETERS.md', 'licenses/torchvision-LICENSE.txt',
                         'runtime/dlssnr_host_v2.dll', 'runtime/nvngx_dlssnr.dll',
                         'runtime/vsr_host.dll', 'runtime/nvngx_vsr.dll',
+                        'runtime/dlssg_video_worker.exe', 'runtime/nvngx_dlssg.dll',
+                        'licenses/NVIDIA-Optical-Flow-Headers-LICENSE.txt', 'scripts/rtxmfg_temporal/LICENSE.txt',
+                        'third_party/NVIDIA-DLSS/LICENSE.txt',
+                        'media/bin/ffmpeg.exe', 'media/bin/ffprobe.exe', 'media/LICENSE', 'media/README.txt',
                         'build/amd_probe/amd_probe.exe',
                         'third_party/FidelityFX-1.1.4/PrebuiltSignedDLL/amd_fidelityfx_dx12.dll',
                         'third_party/FidelityFX-1.1.4/LICENSE.txt', 'depth/depth_anything_v2/dpt.py')
@@ -129,7 +133,11 @@ class LayoutTests(unittest.TestCase):
                 namespace = {'SPECPATH': str(root / 'packaging'), 'Analysis': capture,
                              'collect_all': lambda _: ([], [], []), 'copy_metadata': lambda _: []}
                 with mock.patch.object(sys, 'path', list(sys.path)), \
-                        mock.patch.dict(os.environ, {'DLSS5_DEPTH_SOURCE': str(root / 'depth')}):
+                        mock.patch.dict(os.environ, {'DLSS5_DEPTH_SOURCE': str(root / 'depth')}), \
+                        mock.patch('dlss5tool.frame_generation.runtime_files', return_value=(root/'runtime/dlssg_video_worker.exe', root/'runtime/nvngx_dlssg.dll')), \
+                        mock.patch('dlss5tool.frame_generation.PINNED_RUNTIME', __import__('hashlib').sha256(b'').hexdigest()), \
+                        mock.patch('dlss5tool.video_export.find_ffmpeg', return_value=str(root/'media/bin/ffmpeg.exe')), \
+                        mock.patch('dlss5tool.video_export.find_ffprobe', return_value=str(root/'media/bin/ffprobe.exe')):
                     exec(compile(ast.Module(body=prefix, type_ignores=[]), str(recipe), 'exec'), namespace)
                 self.assertEqual(capture.call_count, 1)
                 call = capture.call_args

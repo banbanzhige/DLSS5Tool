@@ -26,7 +26,9 @@ def once(text, old, new):
 
 
 def variant_source(variant):
-    base = subprocess.check_output(['git', 'show', 'HEAD:native/host_v2/dlssnr_host_v2.cpp'],
+    # The isolation experiment compares the pre-queue host, not a moving HEAD
+    # which already contains the changes after the experiment was committed.
+    base = subprocess.check_output(['git', 'show', '35b59a8201e777b1379642a9f96be0ce6acf0fad:native/host_v2/dlssnr_host_v2.cpp'],
                                    cwd=ROOT).decode('utf-8').replace('\r\n', '\n')
     current = (ROOT / 'native/host_v2/dlssnr_host_v2.cpp').read_text(encoding='utf-8')
     budget_start = current.index('    const int requested_slots = g_slot_count;')

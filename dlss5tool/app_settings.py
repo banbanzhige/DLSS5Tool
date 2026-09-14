@@ -47,6 +47,9 @@ DEFAULTS = {
     "output_container": "mp4",
     "output_resolution": "source",
     "super_resolution_scale": 1,
+    "frame_generation_multiplier": 1,
+    "preview_super_resolution": False,
+    "preview_frame_generation": False,
     "custom_output_width": 1920,
     "custom_output_height": 1080,
     "rate_control": "quality",
@@ -180,6 +183,8 @@ def validate(values):
     result["super_resolution_scale"] = (
         super_resolution_scale if super_resolution_scale in {1, 2, 4} else 1
     )
+    fg = source.get('frame_generation_multiplier', 1)
+    result['frame_generation_multiplier'] = fg if type(fg) is int and fg in (1, 2, 3, 4) else 1
     result["custom_output_width"] = _clamp_int(
         source.get("custom_output_width", result["custom_output_width"]), 2, 16384
     )
@@ -243,6 +248,7 @@ def validate(values):
         "use_intensity", "use_local_tone", "use_local_struct",
         "use_output_mix", "use_auto_mask",
         "hdr_mode",
+        "preview_super_resolution", "preview_frame_generation",
         "guidance_skip_still_flow",
         "host_zero_fast_path", "host_persistent_buffers", "host_auto_fallback",
         "ui_export_open", "ui_host_open", "ui_preview_open", "ui_modules_open", "preview_detached",

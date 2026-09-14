@@ -246,7 +246,9 @@ def find_ffprobe(ffmpeg=None):
     configured = os.environ.get("FFPROBE_EXE")
     suffix = ".exe" if os.name == "nt" else ""
     sibling = os.path.join(os.path.dirname(ffmpeg), "ffprobe" + suffix) if ffmpeg else None
-    for candidate in (configured, sibling, shutil.which("ffprobe")):
+    from dlss5tool.paths import resource_root
+    bundled = os.path.join(str(resource_root()), 'ffprobe' + suffix)
+    for candidate in (configured, bundled, sibling, shutil.which("ffprobe")):
         if candidate and os.path.isfile(candidate):
             return os.path.abspath(candidate)
     return None
