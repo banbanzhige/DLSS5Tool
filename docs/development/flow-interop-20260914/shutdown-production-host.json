@@ -1,0 +1,7 @@
+{
+  "host": "F:\\project\\DLSS5Tool\\runtime\\dlssnr_host_v2.dll",
+  "torch_imported": false,
+  "interop": false,
+  "stage": "NGX shutdown watchdog timeout",
+  "status": "shutdown_timeout"
+}

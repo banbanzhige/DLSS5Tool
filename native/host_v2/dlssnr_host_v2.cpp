@@ -4,6 +4,9 @@
 #include <d3d12.h>
 #include <dxgi1_6.h>
 #include <DirectXPackedVector.h>
+#include <d3dcompiler.h>
+#include <cmath>
+#pragma comment(lib, "d3dcompiler.lib")
 
 #include <algorithm>
 #include <cstdarg>
@@ -810,9 +813,12 @@ bool CreateFrameResources()
     return true;
 }
 
+#include "gpu_flow.h"
+
 void ReleaseFeatureResources()
 {
     WaitAll();
+    gpu_flow::Close();
     SafeReleaseFeature();
     if (g_params != nullptr)
     {
@@ -851,6 +857,14 @@ bool SubmitUploadImmediate(
 
 bool SubmitMotionImmediate(Slot &slot, const float *motion)
 {
+    const int index = static_cast<int>(&slot - g_slots);
+    if (gpu_flow::armed_slot == index)
+    {
+        gpu_flow::armed_slot = -1;
+        if (!BeginCommands(slot)) return false;
+        gpu_flow::Record(slot, index, gpu_flow::clear_frame);
+        return SubmitCommands(slot, true);
+    }
     Staging temporary;
     Staging *staging = g_config.persistent_buffers ? &slot.motion_upload : &temporary;
     if (!g_config.persistent_buffers && !CreateStaging(slot.motion, D3D12_HEAP_TYPE_UPLOAD, temporary))
@@ -1074,11 +1088,13 @@ bool EnqueueFrame(const void *color, const float *motion, const float *depth, bo
     Slot &slot = g_slots[index];
     if (slot.pending || !WaitFence(slot.fence_value))
         return false;
+    const bool gpu_motion = gpu_flow::armed_slot == index;
+    gpu_flow::armed_slot = -1;
 
     CopyRowsToStaging(slot.color_upload, color, FrameRowPitch());
     if (!g_config.zero_guidance_fast_path)
     {
-        PrepareMotion(slot.motion_upload, motion);
+        if (!gpu_motion) PrepareMotion(slot.motion_upload, motion);
         if (UsesDepth())
             PrepareDepth(slot.depth_upload, depth);
     }
@@ -1087,7 +1103,8 @@ bool EnqueueFrame(const void *color, const float *motion, const float *depth, bo
     RecordUpload(slot.list, slot.color_upload, slot.color);
     if (!g_config.zero_guidance_fast_path)
     {
-        RecordUpload(slot.list, slot.motion_upload, slot.motion);
+        if (gpu_motion) gpu_flow::Record(slot, index, reset);
+        else RecordUpload(slot.list, slot.motion_upload, slot.motion);
         if (UsesDepth())
             RecordUpload(slot.list, slot.depth_upload, slot.depth);
     }
@@ -1660,6 +1677,8 @@ extern "C" __declspec(dllexport) int dlssnr_process(
     if (g_needs_recreate && !CreateFeatureResources(g_width, g_height, static_cast<int>(g_options.preset)))
         return 0;
 
+    const bool used_gpu_motion = gpu_flow::armed_slot >= 0;
+    gpu_flow::clear_frame = reset != 0;
     bool ok = false;
     if (g_config.tiled_subrects)
         ok = ProcessTiledSubrects(
@@ -1679,7 +1698,7 @@ extern "C" __declspec(dllexport) int dlssnr_process(
             color_rgba8, static_cast<const float *>(motion_float2),
             static_cast<const float *>(depth_float), output_rgba8, reset != 0);
 
-    if (!ok && !g_config.tiled_subrects && g_config.auto_fallback &&
+    if (!ok && !used_gpu_motion && !g_config.tiled_subrects && g_config.auto_fallback &&
         g_config.merged_submission && g_pending_count == 0)
     {
         Log("merged path failed; retrying current frame with compatibility submission");
@@ -1693,6 +1712,41 @@ extern "C" __declspec(dllexport) int dlssnr_process(
 extern "C" __declspec(dllexport) void dlssnr_shutdown()
 {
     ShutdownInternal();
+}
+
+extern "C" __declspec(dllexport) int dlssnr_gpu_flow_create(unsigned int fw, unsigned int fh)
+{
+    const bool ok = gpu_flow::Create(fw, fh);
+    if (!ok) gpu_flow::Close();
+    return ok ? g_slot_count : 0;
+}
+
+extern "C" __declspec(dllexport) void *dlssnr_gpu_flow_handle(int slot, unsigned long long *size)
+{
+    if (slot < 0 || slot >= g_slot_count || !size || !gpu_flow::probe_pipeline) return nullptr;
+    *size = gpu_flow::probe_size;
+    return gpu_flow::probe_handles[slot];
+}
+
+extern "C" __declspec(dllexport) int dlssnr_gpu_flow_reserve()
+{
+    if (!g_ready || !gpu_flow::probe_pipeline || g_needs_recreate ||
+        g_pending_count >= g_slot_count || g_slots[g_enqueue_cursor].pending) return -1;
+    return WaitFence(g_slots[g_enqueue_cursor].fence_value, 5000) ? g_enqueue_cursor : -1;
+}
+
+extern "C" __declspec(dllexport) int dlssnr_gpu_flow_arm(int slot)
+{
+    if (!gpu_flow::probe_pipeline || slot != g_enqueue_cursor || slot < 0 || slot >= g_slot_count ||
+        g_slots[slot].pending || g_needs_recreate) return 0;
+    gpu_flow::armed_slot = slot;
+    return 1;
+}
+
+extern "C" __declspec(dllexport) void dlssnr_gpu_flow_close()
+{
+    // Caller stops the CUDA worker before destroying exporter resources.
+    gpu_flow::Close();
 }
 
 BOOL WINAPI DllMain(HINSTANCE instance, DWORD reason, LPVOID)

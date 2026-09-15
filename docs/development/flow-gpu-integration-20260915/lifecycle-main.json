@@ -1,0 +1,217 @@
+{
+  "status": "completed",
+  "results": [
+    {
+      "size": [
+        256,
+        256
+      ],
+      "mode": "off",
+      "changed": 0,
+      "info": {
+        "device": "cuda",
+        "device_name": "NVIDIA GeForce RTX 4070 SUPER",
+        "precision": "float32",
+        "load_ms": 3857.6210999999603,
+        "depth_profile": "fp32",
+        "depth_precision": "float32",
+        "depth_attention": "original",
+        "execution": "serial",
+        "raft_output": "all",
+        "schedule": "serial",
+        "cache_version": "raw_lru_v2_shared",
+        "cache_limit_bytes": 16777216,
+        "analysis_parameters": {
+          "guidance_flow_edge": 128,
+          "guidance_flow_updates": 6
+        },
+        "transport": "shared_memory_flow_v2",
+        "output_layout": "flow_only_v2",
+        "flow_grid": null,
+        "flow_quality": null,
+        "flow_temporal_hints": false,
+        "flow_backend": "raft",
+        "gpu_flow_capability": "cuda_d3d12_flow_v1",
+        "gpu_flow_transport": null,
+        "gpu_flow_attempted": true
+      }
+    },
+    {
+      "size": [
+        256,
+        256
+      ],
+      "mode": "auto",
+      "changed": 0,
+      "info": {
+        "device": "cuda",
+        "device_name": "NVIDIA GeForce RTX 4070 SUPER",
+        "precision": "float32",
+        "load_ms": 3636.537800000042,
+        "depth_profile": "fp32",
+        "depth_precision": "float32",
+        "depth_attention": "original",
+        "execution": "serial",
+        "raft_output": "all",
+        "schedule": "serial",
+        "cache_version": "raw_lru_v2_shared",
+        "cache_limit_bytes": 16777216,
+        "analysis_parameters": {
+          "guidance_flow_edge": 128,
+          "guidance_flow_updates": 6
+        },
+        "transport": "shared_memory_flow_v2",
+        "output_layout": "flow_only_v2",
+        "flow_grid": null,
+        "flow_quality": null,
+        "flow_temporal_hints": false,
+        "flow_backend": "raft",
+        "gpu_flow_capability": "cuda_d3d12_flow_v1",
+        "gpu_flow_transport": "cuda_d3d12_flow_v1",
+        "gpu_flow_attempted": true
+      }
+    },
+    {
+      "size": [
+        320,
+        192
+      ],
+      "mode": "off",
+      "changed": 0,
+      "info": {
+        "device": "cuda",
+        "device_name": "NVIDIA GeForce RTX 4070 SUPER",
+        "precision": "float32",
+        "load_ms": 3669.8606999998447,
+        "depth_profile": "fp32",
+        "depth_precision": "float32",
+        "depth_attention": "original",
+        "execution": "serial",
+        "raft_output": "all",
+        "schedule": "serial",
+        "cache_version": "raw_lru_v2_shared",
+        "cache_limit_bytes": 16777216,
+        "analysis_parameters": {
+          "guidance_flow_edge": 128,
+          "guidance_flow_updates": 6
+        },
+        "transport": "shared_memory_flow_v2",
+        "output_layout": "flow_only_v2",
+        "flow_grid": null,
+        "flow_quality": null,
+        "flow_temporal_hints": false,
+        "flow_backend": "raft",
+        "gpu_flow_capability": "cuda_d3d12_flow_v1",
+        "gpu_flow_transport": null,
+        "gpu_flow_attempted": true
+      }
+    },
+    {
+      "size": [
+        320,
+        192
+      ],
+      "mode": "auto",
+      "changed": 0,
+      "info": {
+        "device": "cuda",
+        "device_name": "NVIDIA GeForce RTX 4070 SUPER",
+        "precision": "float32",
+        "load_ms": 3695.7941000000574,
+        "depth_profile": "fp32",
+        "depth_precision": "float32",
+        "depth_attention": "original",
+        "execution": "serial",
+        "raft_output": "all",
+        "schedule": "serial",
+        "cache_version": "raw_lru_v2_shared",
+        "cache_limit_bytes": 16777216,
+        "analysis_parameters": {
+          "guidance_flow_edge": 128,
+          "guidance_flow_updates": 6
+        },
+        "transport": "shared_memory_flow_v2",
+        "output_layout": "flow_only_v2",
+        "flow_grid": null,
+        "flow_quality": null,
+        "flow_temporal_hints": false,
+        "flow_backend": "raft",
+        "gpu_flow_capability": "cuda_d3d12_flow_v1",
+        "gpu_flow_transport": "cuda_d3d12_flow_v1",
+        "gpu_flow_attempted": true
+      }
+    },
+    {
+      "size": [
+        256,
+        256
+      ],
+      "mode": "off",
+      "changed": 0,
+      "info": {
+        "device": "cuda",
+        "device_name": "NVIDIA GeForce RTX 4070 SUPER",
+        "precision": "float32",
+        "load_ms": 3700.98119999966,
+        "depth_profile": "fp32",
+        "depth_precision": "float32",
+        "depth_attention": "original",
+        "execution": "serial",
+        "raft_output": "all",
+        "schedule": "serial",
+        "cache_version": "raw_lru_v2_shared",
+        "cache_limit_bytes": 16777216,
+        "analysis_parameters": {
+          "guidance_flow_edge": 128,
+          "guidance_flow_updates": 6
+        },
+        "transport": "shared_memory_flow_v2",
+        "output_layout": "flow_only_v2",
+        "flow_grid": null,
+        "flow_quality": null,
+        "flow_temporal_hints": false,
+        "flow_backend": "raft",
+        "gpu_flow_capability": "cuda_d3d12_flow_v1",
+        "gpu_flow_transport": null,
+        "gpu_flow_attempted": true
+      }
+    },
+    {
+      "size": [
+        256,
+        256
+      ],
+      "mode": "auto",
+      "changed": 0,
+      "info": {
+        "device": "cuda",
+        "device_name": "NVIDIA GeForce RTX 4070 SUPER",
+        "precision": "float32",
+        "load_ms": 3625.4367999999886,
+        "depth_profile": "fp32",
+        "depth_precision": "float32",
+        "depth_attention": "original",
+        "execution": "serial",
+        "raft_output": "all",
+        "schedule": "serial",
+        "cache_version": "raw_lru_v2_shared",
+        "cache_limit_bytes": 16777216,
+        "analysis_parameters": {
+          "guidance_flow_edge": 128,
+          "guidance_flow_updates": 6
+        },
+        "transport": "shared_memory_flow_v2",
+        "output_layout": "flow_only_v2",
+        "flow_grid": null,
+        "flow_quality": null,
+        "flow_temporal_hints": false,
+        "flow_backend": "raft",
+        "gpu_flow_capability": "cuda_d3d12_flow_v1",
+        "gpu_flow_transport": "cuda_d3d12_flow_v1",
+        "gpu_flow_attempted": true
+      }
+    }
+  ],
+  "main_imported_torch": false,
+  "close_seconds": 0.10807380000005651
+}

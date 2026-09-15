@@ -14,15 +14,16 @@
 
 ### 固定打包工作流（防遗漏）
 
-`packaging/update-policy.json` 是必须支持的旧版本集合。当前登记已验证的 v2.2.0 基线目录
-`dist/v2.2.0-release-20260911/editions`；它是正式新更新器基线，不是历史同名实验 ZIP。
+`packaging/update-policy.json` 是必须支持的旧版本集合。当前登记已验证的 v2.2.0 基线
+`dist/v2.2.0-release-20260912/editions` 以及 v2.2.1 基线
+`dist/v2.2.1-release-20260914/editions`。v2.2.0 是正式新更新器首个基线，不是历史同名实验 ZIP。
 后续版本不允许缺少增量包却完成打包。此工作流在**本地三形态打包入口**执行，GitHub Actions 的测试发现机制会运行工作流单测，但不会自动发布。
 
 1. 更新目标版本资源和 Release notes，阅读卫生守则、检查容量、登记任务目录。
-2. 主程序构建前先做只读基线检查，例如准备 v2.2.1 时：
+2. 主程序构建前先做只读基线检查，例如准备 v2.2.2 时：
 
    ```powershell
-   .venv/Scripts/python.exe -B scripts/release_updates.py --preflight-version v2.2.1
+   .venv/Scripts/python.exe -B scripts/release_updates.py --preflight-version v2.2.2
    ```
 
 3. 通过 `scripts/build_release.ps1` 构建新基础包（复用 `.venv`，选择全新输出），然后使用

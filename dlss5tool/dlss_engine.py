@@ -438,6 +438,7 @@ class Live:
         self.settings = normalize_public_settings(settings)
         guidance_client.validate(self.settings)
         self._guidance = None
+        self._gpu_flow = None
         self._reset_next = True
         self.adapter_info = {}
         self.runtime_path = mod_paths.runtime_path(self.settings)
@@ -554,6 +555,7 @@ class Live:
         init (which is one-time per process and crashes if re-initialized)."""
         if preset is None:
             preset = int(self.settings.get('preset', 1))
+        self.close_guidance()
         self.settings['preset'] = preset
         _set_options(self._lib, self.settings)
         if not self._lib.dlssnr_resize(w, h, preset):
@@ -573,6 +575,9 @@ class Live:
             self._dp = None if getattr(self, 'supports_optional_depth', False) else np.zeros((self._h, self._w), np.float32)
             self._guidance.close()
             self._guidance = None
+        if getattr(self, '_gpu_flow', None) is not None:
+            self._gpu_flow.close()
+            self._gpu_flow = None
 
     @property
     def guidance_info(self):
@@ -582,16 +587,38 @@ class Live:
     def guidance_metrics(self):
         return dict(self._guidance.last_metrics) if self._guidance is not None else {}
 
-    def _prepare_guidance(self, rgba, reset):
+    def _prepare_guidance(self, rgba, reset, *, allow_gpu=True):
         reset = bool(reset or self._reset_next)
         if int(self.settings.get('guidance_mode', 0)):
             if self._guidance is None:
                 self._guidance = guidance_client.GuidanceSession(self.settings, self._w, self._h)
+            if allow_gpu and not self._guidance.info.get('gpu_flow_attempted'):
+                self._guidance.info['gpu_flow_attempted'] = True
+                from dlss5tool.gpu_flow import NativeFlow, TRANSPORT as GPU_TRANSPORT, eligible
+                if (allow_gpu and eligible(self.settings) and self.backend == 'v2'
+                        and hasattr(self._lib, 'dlssnr_gpu_flow_create')
+                        and self._guidance.info.get('gpu_flow_capability') == GPU_TRANSPORT):
+                    candidate = None
+                    try:
+                        candidate = NativeFlow(self._lib, self.settings, self._w, self._h, self.adapter_info)
+                        if self._guidance.enable_gpu_flow(candidate.descriptor):
+                            self._gpu_flow = candidate
+                        else:
+                            candidate.close()
+                    except Exception as error:
+                        if candidate is not None:
+                            candidate.close()
+                        self._guidance.info['gpu_flow_fallback_reason'] = str(error)
             try:
                 proxy = analysis_rgba8(rgba, self.settings)
-                self._mv, self._dp, reset = self._guidance.process(
-                    proxy, reset, copy_outputs=False,
-                    allow_missing_depth=getattr(self, 'supports_optional_depth', False))
+                flow = getattr(self, '_gpu_flow', None) if allow_gpu else None
+                kwargs = dict(copy_outputs=False, allow_missing_depth=getattr(self, 'supports_optional_depth', False))
+                if flow is not None:
+                    slot = flow.reserve()
+                    kwargs['gpu_slot'] = slot
+                self._mv, self._dp, reset = self._guidance.process(proxy, reset, **kwargs)
+                if flow is not None:
+                    flow.arm(slot)
             except Exception:
                 self.close_guidance()
                 self._reset_next = True
@@ -612,7 +639,7 @@ class Live:
             raise ValueError("Guidance preview requires same-size input matching the frame contract")
         if not rgba.flags.c_contiguous:
             rgba = np.ascontiguousarray(rgba)
-        reset = self._prepare_guidance(rgba, reset)
+        reset = self._prepare_guidance(rgba, reset, allow_gpu=False)
         # This inspection advances guidance history but not DLSS; make the next
         # production call explicitly reset its own temporal state.
         self._reset_next = bool(final)
@@ -631,7 +658,7 @@ class Live:
         reset = self._prepare_guidance(rgba, reset)
         ok = self._lib.dlssnr_process(
             rgba.ctypes.data_as(ctypes.c_void_p),
-            self._mv.ctypes.data_as(ctypes.c_void_p),
+            self._mv.ctypes.data_as(ctypes.c_void_p) if self._mv is not None else None,
             self._depth_pointer(),
             self._output.ctypes.data_as(ctypes.c_void_p),
             1 if reset else 0)
@@ -653,7 +680,7 @@ class Live:
         reset = self._prepare_guidance(rgba, reset)
         accepted = bool(self._lib.dlssnr_enqueue(
             rgba.ctypes.data_as(ctypes.c_void_p),
-            self._mv.ctypes.data_as(ctypes.c_void_p),
+            self._mv.ctypes.data_as(ctypes.c_void_p) if self._mv is not None else None,
             self._depth_pointer(),
             1 if reset else 0,
         ))

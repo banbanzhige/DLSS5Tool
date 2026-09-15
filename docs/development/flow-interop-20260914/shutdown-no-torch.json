@@ -1,0 +1,7 @@
+{
+  "host": "F:\\project\\DLSS5Tool\\tmp\\flow-interop-20260914\\candidate.dll",
+  "torch_imported": false,
+  "interop": false,
+  "stage": "NGX shutdown watchdog timeout",
+  "status": "shutdown_timeout"
+}

@@ -21,7 +21,7 @@ from dlss5tool.guidance_flow import flow_backend, flow_grid, check_flow_handshak
 
 KEYS = ("frame_format", "color_profile", "color_primaries", "guidance_mode", "guidance_edge", "guidance_flow_direction",
         "guidance_depth_encoder", "guidance_device", "mods_directory",
-        "guidance_flow_weights", "guidance_depth_weights", "guidance_transport", "guidance_output_layout", "guidance_depth_profile", "guidance_execution", "guidance_cache_mb", "guidance_cache_pool")
+        "guidance_flow_weights", "guidance_depth_weights", "guidance_transport", "guidance_output_layout", "guidance_depth_profile", "guidance_execution", "guidance_cache_mb", "guidance_cache_pool", "guidance_gpu_transport")
 
 
 def contract(settings):
@@ -199,6 +199,7 @@ class GuidanceSession:
             self._listener = None
             self._send({**worker_settings, **files, "protocol": mod_paths.GUIDANCE_PROTOCOL, "width": width, "height": height,
                         "shared_memory": self._buffers.descriptor if self._buffers else None,
+                        "gpu_host_pid": os.getpid(),
                         "mods_root": str(mod_paths.mods_root(settings))})
             ready = self._reply()
             if ready.get('protocol') != mod_paths.GUIDANCE_PROTOCOL:
@@ -247,6 +248,8 @@ class GuidanceSession:
             self.info['output_layout'] = layout
             self.info.update({key: ready.get(key) for key in ('flow_grid', 'flow_quality', 'flow_temporal_hints')})
             self.info['flow_backend'] = ready.get('flow_backend', 'raft')
+            self.info['gpu_flow_capability'] = ready.get('gpu_flow_transport')
+            self.info['gpu_flow_transport'] = None
         except Exception as exc:
             self.close()
             detail = str(exc) or i18n.tr_for(self.language, 'guidance.error.connection')
@@ -272,7 +275,20 @@ class GuidanceSession:
             raise RuntimeError(i18n.tr_for(self.language, 'guidance.error.worker', error=value.get('error', '')))
         return value
 
-    def process(self, rgba, reset=False, *, copy_outputs=True, allow_missing_depth=False):
+    def enable_gpu_flow(self, descriptor):
+        from dlss5tool.gpu_flow import TRANSPORT as GPU_TRANSPORT
+        if (self.info.get('gpu_flow_capability') != GPU_TRANSPORT
+                or self._buffers is None):
+            return False
+        self._send({'configure_gpu_flow': descriptor})
+        reply = self._reply()
+        if reply.get('gpu_flow_transport') != GPU_TRANSPORT:
+            self.info['gpu_flow_fallback_reason'] = reply.get('reason', 'Worker declined GPU flow')
+            return False
+        self.info['gpu_flow_transport'] = GPU_TRANSPORT
+        return True
+
+    def process(self, rgba, reset=False, *, copy_outputs=True, allow_missing_depth=False, gpu_slot=None):
         """Return independent arrays by default.
 
         Native callers may borrow shared outputs with copy_outputs=False. These
@@ -283,15 +299,26 @@ class GuidanceSession:
         """
         if rgba.dtype != np.uint8 or rgba.shape != (self.height, self.width, 4):
             raise ValueError(i18n.tr_for(self.language, 'guidance.error.input'))
+        if gpu_slot is not None and (not self.info.get('gpu_flow_transport') or copy_outputs
+                                    or not allow_missing_depth):
+            raise ValueError('GPU flow is only available to the negotiated native caller')
         try:
             started = time.perf_counter()
             self._sequence += 1
             if self._buffers is not None:
                 np.copyto(self._buffers.rgba, rgba)
-            self._send({"reset": bool(reset), "sequence": self._sequence})
+            request = {"reset": bool(reset), "sequence": self._sequence}
+            if gpu_slot is not None:
+                request['gpu_slot'] = gpu_slot
+            self._send(request)
             if self._buffers is None:
                 self._connection.send_bytes(np.ascontiguousarray(rgba).tobytes())
             response = self._reply()
+            if gpu_slot is not None:
+                if response.get('sequence') != self._sequence or response.get('gpu_slot') != gpu_slot:
+                    raise RuntimeError('GPU flow frame acknowledgement mismatch')
+                self.last_metrics = {**response.get('metrics', {}), 'roundtrip_ms': (time.perf_counter() - started)*1000}
+                return None, None, bool(response.get('reset'))
             if self._buffers is not None:
                 if response.get('sequence') != self._sequence:
                     raise RuntimeError('Guidance frame acknowledgement mismatch')

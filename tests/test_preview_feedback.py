@@ -5,7 +5,14 @@ from types import SimpleNamespace
 from unittest import mock
 
 import numpy as np
-import pytest
+try:
+    import pytest
+except ImportError:
+    class pytest:  # unittest discover does not collect these pytest-style functions
+        class mark:
+            @staticmethod
+            def parametrize(*_args, **_kwargs):
+                return lambda fn: fn
 
 from dlss5tool import render_cache as rc
 from dlss5tool.shared_render_preview import SharedRenderPreview

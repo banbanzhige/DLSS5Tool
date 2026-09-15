@@ -72,6 +72,8 @@ class Models:
         except ValueError as exc:
             raise ModelConfigurationError(str(exc)) from exc
         self._nvof = None
+        self.gpu_flow = None
+        self.gpu_slot = None
         requested = settings.get("guidance_device", "auto")
         self.device = select_device(requested, torch.cuda.is_available() if requested != 'cpu' else False)
         self.device_name = torch.cuda.get_device_name() if self.device == 'cuda' else 'CPU'
@@ -198,6 +200,23 @@ class Models:
 
     def _finish_flow(self, flow, mv, w, h, fw, fh):
         cv2, np = self.cv2, self.np
+        if getattr(self, 'gpu_slot', None) is not None:
+            # Keep raw CPU cache semantics. Cache misses may still read back the
+            # small raw flow; full-size resize/conversion/upload stay on GPU.
+            if isinstance(flow, np.ndarray):
+                if not np.isfinite(flow).all():
+                    raise ModelConfigurationError('guidance.error.nonfinite')
+                tensor = self.torch.from_numpy(np.ascontiguousarray(flow.transpose(2, 0, 1)[None])).to(self.device)
+            else:
+                if not self.torch.isfinite(flow).all().item():
+                    raise ModelConfigurationError('guidance.error.nonfinite')
+                tensor = flow
+                if self._flow_key is not None and not self._flow_hit:
+                    self.raw_cache.put(self._flow_key, flow[0].permute(1, 2, 0).cpu().numpy())
+            if self.settings.get('guidance_flow_direction', 'backward') == 'forward_negated':
+                tensor = -tensor
+            self.gpu_flow.send(tensor.contiguous(), self.gpu_slot)
+            return
         values = flow if isinstance(flow, np.ndarray) else flow[0].permute(1, 2, 0).cpu().numpy()
         if not np.isfinite(values).all():
             raise ModelConfigurationError('guidance.error.nonfinite')
@@ -323,6 +342,7 @@ class Models:
             'depth_size': [max(14, round(dw / 14) * 14), max(14, round(dh / 14) * 14)] if self.depth is not None else None,
             'flow_updates': params['guidance_flow_updates'] if self.has_flow and getattr(self, 'flow_backend', 'raft') == 'raft' else None,
             'flow_backend': getattr(self, 'flow_backend', 'raft'),
+            'gpu_flow': getattr(self, 'gpu_slot', None) is not None,
             'timing_kind': 'overlapping_gpu_events' if dual else 'serial_wall_with_postprocess',
             'schedule': self.execution_info['schedule'],
             **self.raw_cache.metrics(),
@@ -357,6 +377,9 @@ class Models:
         if self._closed:
             return
         self._closed = True
+        if getattr(self, 'gpu_flow', None) is not None:
+            self.gpu_flow.close()
+            self.gpu_flow = None
         # Exception paths may still have kernels using the persistent weights.
         # Drain side streams before dropping any model/activation references.
         for stream in (self.flow_stream, self.depth_stream):
@@ -404,7 +427,10 @@ def serve(conn, settings, model_factory=Models):
                **getattr(models, 'execution_info', execution_contract(settings, getattr(models, 'device', None))),
                'load_ms': (time.perf_counter() - load_start) * 1000,
                'protocol': 1, 'transport': TRANSPORT if buffers else 'pipe',
-               'output_layout': FLOW_ONLY if flow_only else 'full_v1'})
+               'output_layout': FLOW_ONLY if flow_only else 'full_v1',
+               'gpu_flow_transport': ('cuda_d3d12_flow_v1' if buffers is not None
+                   and getattr(models, 'device', None) == 'cuda' and flow_only
+                   and getattr(models, 'flow_backend', None) == 'raft' else None)})
         if flow_only and buffers is not None:
             # Upgrade only after explicit capability acknowledgement. Old clients
             # never request this; old workers ignore the request and stay on v1.
@@ -423,6 +449,29 @@ def serve(conn, settings, model_factory=Models):
                 models.raw_cache.trim()
                 if not conn.poll(0.25):continue
             request = json.loads(conn.recv_bytes(65536))
+            if 'configure_gpu_flow' in request:
+                from dlss5tool.gpu_flow import CudaFlow, TRANSPORT as GPU_TRANSPORT
+                if getattr(models, 'gpu_flow', None) is not None:
+                    raise ValueError('GPU flow can only be configured once per model session')
+                try:
+                    if (buffers is None or not flow_only or models.device != 'cuda'
+                            or models.flow_backend != 'raft'):
+                        raise ValueError('GPU flow is not supported by this model session')
+                    descriptor = request['configure_gpu_flow']
+                    # Windows venv launchers add a process between the host and
+                    # real Python. Use the authenticated handshake identity.
+                    if descriptor.get('owner_pid') != settings.get('gpu_host_pid'):
+                        raise ValueError('GPU flow exporter is not the parent host')
+                    models.gpu_flow = CudaFlow(descriptor, w, h, models._flow_size(w, h), models.torch)
+                    reply({'ok': True, 'gpu_flow_transport': GPU_TRANSPORT})
+                except Exception as error:
+                    reply({'ok': True, 'gpu_flow_transport': None, 'reason': str(error)})
+                continue
+            slot = request.get('gpu_slot')
+            if slot is not None and (getattr(models, 'gpu_flow', None) is None
+                    or type(slot) is not int or not 0 <= slot < len(models.gpu_flow.mappings)):
+                raise ValueError('Invalid GPU flow frame slot')
+            models.gpu_slot = slot
             if buffers is not None:
                 sequence += 1
                 if request.get('sequence') != sequence:
@@ -434,6 +483,7 @@ def serve(conn, settings, model_factory=Models):
                 frame = models.np.frombuffer(conn.recv_bytes(w * h * 4), models.np.uint8).reshape(h, w, 4)
                 mv, dp, reset = models.process(frame, request.get('reset', False))
             reply({'ok': True, 'reset': reset, 'metrics': models.last_metrics,
+                   'gpu_slot': slot,
                    'sequence': request.get('sequence')})
             if buffers is None:
                 conn.send_bytes(mv.tobytes())
@@ -466,6 +516,8 @@ def main():
         conn.send_bytes(json.dumps(value).encode("utf-8"))
     try:
         settings = json.loads(conn.recv_bytes(65536))
+        if 'gpu_host_pid' in settings and settings['gpu_host_pid'] != args.parent:
+            raise ValueError('Authenticated GPU host does not match the watched parent')
         serve(conn, settings)
     except (EOFError, BrokenPipeError):
         pass

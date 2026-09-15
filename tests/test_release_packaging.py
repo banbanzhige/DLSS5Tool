@@ -21,9 +21,15 @@ class ReleasePackagingTests(unittest.TestCase):
                         and isinstance(node.func, ast.Name) and node.func.id == 'Analysis')
         excludes = ast.literal_eval(next(key.value for key in analysis.keywords if key.arg == 'excludes'))
         self.assertNotIn('dlss5tool.nvofa', excludes)
+        self.assertNotIn('dlss5tool.gpu_flow', excludes)
         self.assertIn('RTX40MFG-Unlock', spec)
         self.assertIn('find_ffprobe', spec)
         self.assertIn('licenses/FFmpeg-full', spec)
+
+    def test_guidance_worker_includes_gpu_flow(self):
+        spec = (ROOT / 'packaging/GuidanceWorker.spec').read_text(encoding='utf-8')
+        self.assertIn('dlss5tool.gpu_flow', spec)
+        self.assertIn('dlss5tool.nvofa', spec)
 
     def test_version_resources_match_application(self):
         resource = (ROOT / 'packaging/DLSS5Tool.version.txt').read_text(encoding='utf-8')

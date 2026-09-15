@@ -575,7 +575,7 @@ class SettingsPanelPersistenceTests(unittest.TestCase):
             "host_backend": "auto",
             "render_gpu": "auto",
             "host_submission": "compatibility",
-            "host_in_flight": 3,
+            "host_in_flight": 6,
             "host_zero_fast_path": False,
             "host_persistent_buffers": True,
             "host_auto_fallback": True,

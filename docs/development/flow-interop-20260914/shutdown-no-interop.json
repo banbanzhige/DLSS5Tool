@@ -1,0 +1,131 @@
+{
+  "dimensions": [
+    1440,
+    1440
+  ],
+  "flow_dimensions": [
+    512,
+    512
+  ],
+  "source": "F:\\project\\test\\dlss5\\测试素材\\9月1日.mp4",
+  "torch": "2.8.0+cu128",
+  "cuda": "12.8",
+  "gpu": {
+    "id": "dxgi:10DE:2783:27831ED3:000000A1:00000002EDD00000:P000001000",
+    "name": "NVIDIA GeForce RTX 4070 SUPER",
+    "preference_index": 0,
+    "vendor_id": 4318,
+    "device_id": 10115,
+    "subsys_id": 662904531,
+    "revision": 161,
+    "dedicated_video_memory": 12579766272,
+    "luid_high": 0,
+    "luid_low": 84760,
+    "d3d12_feature_level": "12_0",
+    "cuda_index": 0,
+    "pci_bus_id": "0000:01:00.0"
+  },
+  "smoke": false,
+  "frames": 4,
+  "rounds": 1,
+  "no_interop": true,
+  "settings": {
+    "host_backend": "v2",
+    "host_auto_fallback": false,
+    "host_submission": "merged",
+    "host_in_flight": 1,
+    "host_zero_fast_path": false,
+    "host_persistent_buffers": true,
+    "guidance_mode": 1,
+    "style": 0,
+    "intensity": 1,
+    "local_tone": 1,
+    "local_struct": 1,
+    "use_auto_mask": true,
+    "skin_struct": 1,
+    "flow_updates": 6,
+    "precision": "FP32"
+  },
+  "scope": "same-process serial flow-to-DLSS only; no IPC, decode, encoding or GUI",
+  "shader": "D3D12 bilinear resize + production half conversion",
+  "runtime_sha256": "ceb6432f6fbdf44d886014bcd47241932bf8b67439feef9bbdd0961436662650",
+  "candidate_sha256": "05ebf52650f5e23b9d31e9d4fcf4069eda716b5114a5b2e1970bfeebf5bc948e",
+  "motion_audit": [],
+  "quality": [
+    {
+      "path": "cpu",
+      "comparisons": [
+        {
+          "frame": 0,
+          "max_abs": 0,
+          "mae": 0,
+          "changed": 0,
+          "rgb_values": 6220800,
+          "sha256": "061502029d96368ea65b6db26e570041935880be3a73b31ba8d880ddbb170cb2"
+        },
+        {
+          "frame": 1,
+          "max_abs": 0,
+          "mae": 0,
+          "changed": 0,
+          "rgb_values": 6220800,
+          "sha256": "7d0f209211870857808eba62a0036493df69dc5674c73001cfa21901c3147c0f"
+        },
+        {
+          "frame": 2,
+          "max_abs": 0,
+          "mae": 0,
+          "changed": 0,
+          "rgb_values": 6220800,
+          "sha256": "54c21f655a4d3d5dc30ffba9e735a5699746d95f0e11f82e576d6ef44a6a3055"
+        },
+        {
+          "frame": 3,
+          "max_abs": 0,
+          "mae": 0,
+          "changed": 0,
+          "rgb_values": 6220800,
+          "sha256": "05edfce27ded1fb8c0c82ce1b662d9e7c898cd2af22d3c93d1c8315f694a2e1e"
+        }
+      ]
+    }
+  ],
+  "timings": [
+    {
+      "phase": "transport_dlss",
+      "repeat": 0,
+      "path": "cpu",
+      "samples_ms": [
+        13.919800003350247,
+        15.665099999750964,
+        14.149899994663429,
+        15.494299994315952
+      ],
+      "mean_ms": 14.807274998020148,
+      "fps": 67.53437078285559
+    },
+    {
+      "phase": "raft_transport_dlss",
+      "repeat": 0,
+      "path": "cpu",
+      "samples_ms": [
+        14.221800003724638,
+        40.094600000884384,
+        14.820599993981887,
+        37.996600003680214
+      ],
+      "mean_ms": 26.78340000056778,
+      "fps": 37.33655921125776
+    }
+  ],
+  "summary": {
+    "transport_dlss": {
+      "cpu": 14.807274998020148
+    },
+    "raft_transport_dlss": {
+      "cpu": 26.78340000056778
+    }
+  },
+  "status": "cleanup_failed",
+  "cleanup": "timed_out_after_20_seconds; isolated probe process terminated"
+}

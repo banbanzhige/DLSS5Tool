@@ -5,6 +5,10 @@
     {
       "version": "v2.2.0",
       "packages": "dist/v2.2.0-release-20260912/editions"
+    },
+    {
+      "version": "v2.2.1",
+      "packages": "dist/v2.2.1-release-20260914/editions"
     }
   ]
 }

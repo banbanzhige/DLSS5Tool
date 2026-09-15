@@ -17,16 +17,19 @@ class DefaultTuningTests(unittest.TestCase):
         values = app_settings.validate({})
         expected = dict(guidance_mode=1, guidance_flow_edge=512, guidance_depth_edge=512,
                         guidance_flow_updates=6, guidance_flow_backend='raft', guidance_flow_grid=1,
-                        guidance_depth_encoder='vitl',
+                        guidance_depth_encoder='vitl', guidance_gpu_transport='auto',
                         guidance_depth_profile='sdpa_fp16', guidance_execution='raft_streams',
                         guidance_flow_range=5.0, local_tone=1.0, local_struct=1.0,
                         nvenc_preset='p5', quality_profile='high', host_submission='compatibility',
+                        host_in_flight=6,
                         preview_prefetch=120, preview_cache=400, preview_cache_mb=8192,
                         preview_view='compare', guidance_preview_view='flow',
                         guidance_compare_target='flow', ui_theme='light')
         for key, value in expected.items():
             self.assertEqual(values[key], value, key)
         self.assertFalse(values['host_zero_fast_path'])
+        self.assertEqual(values['host_mode_profiles']['guidance']['host_in_flight'], 6)
+        self.assertEqual(values['host_mode_profiles']['zero']['host_in_flight'], 3)
         saved = {**values, 'guidance_mode': 3, 'guidance_flow_edge': 960,
                  'guidance_depth_profile': 'fp32', 'guidance_execution': 'serial'}
         startup = app_settings.startup_settings(saved)

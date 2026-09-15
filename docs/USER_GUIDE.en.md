@@ -2,7 +2,7 @@
 
 [Back to product overview](../README.en.md) · [简体中文](USER_GUIDE.md)
 
-For installation and GPU selection, start with [Quick start](../README.en.md#quick-start). This guide covers source version v2.1.2 (release packages have not been uploaded).
+For installation and GPU selection, start with [Quick start](../README.en.md#quick-start). This guide covers v2.2.2.
 
 - [Controls and shortcuts](#controls-and-shortcuts)
 - [Optional optical flow](#optional-optical-flow)
@@ -76,6 +76,7 @@ A successful check does not guarantee enough VRAM for every source. Auto/GPU doe
 | Flow model, analysis long edge, updates | RAFT-Large, 512 px, six updates; alternative NVOFA grid: 1×1 |
 | Flow direction and precision | Current → previous frame, FP32 |
 | Flow display range | 5 px/frame; visualization only |
+| GPU queue and direct path | 6 in-flight frames when flow is on; same-GPU RAFT uses the direct path by default |
 
 Model alignment may slightly change the actual input dimensions. Larger inputs, more updates, or larger models do not guarantee better final images. Explicit saved settings are not overwritten by this table. See [parameter notes](../docs/guidance/GUIDANCE_PARAMETERS.md).
 
@@ -87,6 +88,7 @@ Export a complete MP4 or the current PNG at source dimensions/frame rate, withou
 
 ## Performance and compatibility
 
+- When RAFT runs on the same NVIDIA GPU as DLSS, optical flow can go to DLSS directly. Compatibility and merged queues both support this. Older components, CPU, and NVOFA keep the previous path; the model does not change.
 - Flow supports SDR and a separate SDR analysis copy of HDR input; rendering and encoding retain the high-precision original. Flow previews/exports are SDR visualizations, not HDR footage.
 - Still images skip temporal flow without changing video preferences or blocking image tiling. Tiled video temporal guidance remains unsupported.
 - Flow analysis supports long edges up to 2048. Above 1280 is experimental and requires an updated enhancement component; defaults are unchanged. High-resolution RAFT costs substantially more memory/time and is not an export-size limit.

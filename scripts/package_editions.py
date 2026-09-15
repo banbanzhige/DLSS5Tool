@@ -21,8 +21,8 @@ from dlss5tool.app_version import APP_VERSION
 from scripts.check_release_contents import forbidden_contents
 from scripts.release_updates import plan_updates, build_updates, verify_upload_updates
 
-# Updated flow-edge component verified in docs/development/PROCESSING_LIMITS_20260911.md.
-WORKER_SHA = '2b309510ef6f73ae73dc98d11842a8ef3ba2e012c19a7e1cfe38def9a3b9f450'
+# CUDA RAFT worker with GPU flow; rebuilt for v2.2.2. See FLOW_GPU_INTEGRATION_20260915.md.
+WORKER_SHA = '17650318624cbf75604ee550bbd73203cb434f4dc59e82cacde1c84685d8aec0'
 MODELS = ('raft_large_C_T_SKHT_V2-ff5fadd5.pth',)
 
 
