@@ -15,7 +15,7 @@
 </p>
 
 <p align="center">
-  <a href="CHANGELOG.md"><img src="https://img.shields.io/badge/release-v2.1.2-0E7490?style=flat&amp;labelColor=475569" alt="源码版本 v2.1.2" height="20"></a>
+  <a href="CHANGELOG.md"><img src="https://img.shields.io/badge/release-v2.2.2-0E7490?style=flat&amp;labelColor=475569" alt="源码版本 v2.2.2" height="20"></a>
   <a href="#快速开始"><img src="https://img.shields.io/badge/platform-Windows_x64-0369A1?style=flat&amp;labelColor=475569" alt="平台 Windows x64" height="20"></a>
   <a href="#2-选择显卡运行库"><img src="https://img.shields.io/badge/GPU-NVIDIA_RTX-0E7490?style=flat&amp;labelColor=475569" alt="显卡 NVIDIA RTX；请按代际选择运行库" height="20"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-0369A1?style=flat&amp;labelColor=475569" alt="项目自有源码采用 MIT 许可证" height="20"></a>
@@ -35,10 +35,13 @@ DLSS5Tool 使用 **DLSS 5 Neural Rendering** 增强本地视频与图片，无�
 
 - **画面增强**：默认 / 自然 / 电影三种风格，可调整强度、色调、结构与皮肤蒙版。
 - **2× / 4× 超分**：先用 RTX Video 放大，再进行增强；也可保持原尺寸处理。
+- **视频插帧**：导出可选 2× / 3× / 4×；3× / 4× 为实验模式，可能出现运动偏差。超分与插帧各有独立预览开关，默认关闭。
 - **交互对比**：滑动分界、左右并排、缩放与逐帧查看，支持全屏和独立预览窗口。
 - **批量导出**：图片与视频混合排队，每项独立保存参数；视频支持 MP4 / MKV / MOV，兼容的原音轨优先保留。
 - **HDR 视频**：支持 HDR10 / HLG 高精度处理与 10-bit 导出，使用前请查看下方 HDR 注意事项。
 - **光流引导**：模型反推帧间运动，为连续画面增强提供时序参考。更接近真实的画面稳定性和光影准确性。
+- **DLSS 渲染 GPU**：默认选用高性能 NVIDIA 显卡；显示器接在核显上时，DLSS 仍运行在 NVIDIA GPU。多卡可在设置中指定。
+- **文件级更新**：安装含更新助手的发行包后，可通过「更多 → 检查更新」只下载变化文件。
 
 界面支持简体中文 / English、浅色 / 暗色主题。通过「更多 → 语言」切换语言，重启后生效。
 
@@ -113,7 +116,7 @@ DLSS5Tool 使用 **DLSS 5 Neural Rendering** 增强本地视频与图片，无�
 
 | 你的需求 | 选择哪个包 |
 | --- | --- |
-| 普通增强、2× / 4× 超分 | **轻量版（推荐）**：`DLSS5Tool-v版本号-win64.zip` |
+| 普通增强、2× / 4× 超分、插帧 | **轻量版（推荐）**：`DLSS5Tool-v版本号-win64.zip` |
 | 还需要光流模型 | **完整版**：`DLSS5Tool-v版本号-win64-full.zip.001` 起的所有分卷 |
 | 已有轻量版，只补充模型功能 | **推理附加包**：`DLSS5Tool-v版本号-win64-addon.zip.001` 起的所有分卷 |
 
@@ -123,34 +126,38 @@ DLSS5Tool 使用 **DLSS 5 Neural Rendering** 增强本地视频与图片，无�
 
 ### 2. 选择显卡运行库
 
+提前确认自己的显卡型号，前往 [Releases](https://github.com/banbanzhige/DLSS5Tool/releases/tag/zip) 下载显卡运行库
+
 | 显卡 | 使用方式 |
 | --- | --- |
 | RTX 40 系 | 直接使用包内默认运行库 |
 | RTX 30 系 | 下载同一 Release 的 `30系.zip`，按下方说明放置 DLL |
 | RTX 50 系 | 下载同一 Release 的 `50系.zip`，按下方说明放置 DLL |
 
-RTX 30 / 50 系请先关闭程序，将对应附件中的 `nvngx_dlssnr.dll` 放入程序同级的 `mods` 文件夹：
+将匹配显卡的[nvngx_dlssnr.dll](https://github.com/banbanzhige/DLSS5Tool/releases/tag/zip)下载解压，请先关闭程序，将对应附件中的 `nvngx_dlssnr.dll` 放入程序同级的 `mods` 文件夹：
 
 ```text
 mods\nvngx_dlssnr.dll
 ```
 
-无需覆盖 `_internal`。如果曾手动配置 DLL 路径，请一并检查设置。RTX 30 系使用社区适配运行库，兼容性取决于显卡与驱动组合，并非 NVIDIA 官方支持承诺。
+或者覆盖 `_internal`内的.dll也可以运行。如果曾手动配置 DLL 路径，请一并检查设置。RTX 30 系使用社区适配运行库，兼容性取决于显卡与驱动组合，并非 NVIDIA 官方支持承诺。
 
 ### 3. 导入、对比、导出
 
 1. 打开 `DLSS5Tool.exe`，拖入图片或视频，或点击「选择文件」。
 2. 切换到「DLSS」或「对比」，在「画面效果」页选择风格、调整强度。按 `3` 可快速进入分界对比。
-3. 在「设置」页选择输出格式和画质；需要放大时再开启 2× / 4× 超分。
+3. 在「画面效果」的导出区或「设置」页选择输出格式和画质；需要放大或插帧时再开启对应选项。超分 / 插帧旁的预览开关默认关闭，不影响导出。
 4. 导出当前素材，或「加入队列」后批量处理。
 
 首次使用可先保持默认设置，从短视频或单张图片试起。详细操作见[使用指南](docs/USER_GUIDE.md)。
 
 ## 使用须知
 
-- **效果与速度因素材和硬件而异**：交互对比不代表模型能实时处理。高分辨率、4× 超分和光流会增加耗时及显存占用。
-- **光流按需开启**：安装完整版或附加包后，在「推理模型」中选择模式；重启会记住上次选择，环境检查通过后自动恢复，检查失败才关闭并提示原因。首次使用检查默认 RAFT-Large，通过后启用；已保存的关闭模式保持关闭。支持 SDR 和 HDR 独立分析副本，不支持分块时序引导；静态图片自动跳过光流，不影响大图分块，也不改动视频偏好。
-- **HDR 并非完整元数据透传**：界面预览会映射为 SDR；导出保留基础 HDR10 / HLG 色彩标签，不保留 Dolby Vision / HDR10+ 动态元数据及部分源 HDR 元数据。暂不支持静态 HDR 图片，详见[输出与画质说明](docs/USER_GUIDE.md#输出与画质说明)。
+- **效果与速度因素材和硬件而异**：交互对比不代表模型能实时处理。高分辨率、4× 超分、插帧和光流会增加耗时及显存占用。
+- **插帧**：导出可选 2× / 3× / 4×；3× / 4× 为实验模式，可能出现运动偏差。超分与插帧预览默认关闭，不改变导出选择。
+- **光流按需开启**：安装完整版或附加包后，在「推理模型」中选择模式；重启会记住上次选择，环境检查通过后自动恢复，检查失败才关闭并提示原因。首次使用检查默认 RAFT-Large，通过后启用；已保存的关闭模式保持关闭。轻量版未装附加包时，首次检查失败并保持关闭是正常的。同一张 NVIDIA 显卡上使用 RAFT 时，光流可自动直连 DLSS。支持 SDR 和 HDR 独立分析副本，不支持分块时序引导；静态图片自动跳过光流，不影响大图分块，也不改动视频偏好。
+- **DLSS 渲染 GPU**：默认按高性能顺序使用 NVIDIA 显卡，显示器接在核显上时仍在独显上运行；多卡可在设置中指定。
+- **HDR 导出与预览**：导出写入 HDR10 / HLG 色彩标签（BT.2020、PQ/HLG、limited range）与 10-bit HEVC；界面预览仍映射为 SDR。不复制 Dolby Vision / HDR10+ 动态元数据。暂不支持静态 HDR 图片。详见[输出与画质说明](docs/USER_GUIDE.md#输出与画质说明)。
 
 ## 常见问题
 
@@ -158,7 +165,7 @@ mods\nvngx_dlssnr.dll
 
 确认已完整解压，EXE 与 `_internal` 在一起，并安装 x64 Visual C++ 运行库；不要混用不同版本的程序文件。
 
-如果运行的是 `Source code` 源码包，安装 Python 依赖并不会补齐原生 DLL，请按下方[从源码构建与启动](#从源码构建与启动)准备运行环境。`missing dlssnr_host.dll` 也可能是找不到 v2 宿主后尝试旧版宿主的结果，不代表必须下载旧版 DLL。
+如果运行的是 `Source code` 源码包，安装 Python 依赖并不会补齐原生 DLL，请按[开发指南](docs/development/BUILDING.md)准备运行环境。`missing dlssnr_host.dll` 也可能是找不到 v2 宿主后尝试旧版宿主的结果，不代表必须下载旧版 DLL。
 
 **预览卡顿，或高倍率超分失败？**
 
@@ -172,65 +179,6 @@ mods\nvngx_dlssnr.dll
 
 通过「更多 → 一键诊断」生成报告，在 [Issues](https://github.com/banbanzhige/DLSS5Tool/issues) 附上软件版本、显卡、驱动、复现步骤及诊断日志。公开前请检查日志中的本地路径等隐私信息。
 
-## 从源码构建与启动
-
-以下步骤适用于**当前源码布局**。普通使用请选择免安装版；GitHub 的 `Source code` 包不包含编译后的 DLL 和 NVIDIA SDK。`setup.bat` **只安装 Python 依赖，不编译宿主，也不安装 NVIDIA 运行库**；即使界面能打开，缺少这些组件仍无法处理素材。
-
-### 1. 准备构建环境
-
-- Windows 10 / 11 x64、Python 3.10+（含 Tkinter 和 `py` 启动器）、Git。
-- Visual Studio 2022 Build Tools，安装「使用 C++ 的桌面开发」工作负载及 Windows SDK。仅安装 Visual C++ 运行库不足以编译。
-- 实际处理需要兼容的 NVIDIA 显卡、驱动，以及有权使用且匹配显卡的 NVIDIA 运行库。
-
-在源码根目录执行以下命令，每一步成功后再继续。
-
-### 2. 安装 Python 依赖并编译 DLSS 宿主
-
-```powershell
-.\setup.bat
-git clone --depth 1 https://github.com/NVIDIA/DLSS.git third_party/NVIDIA-DLSS
-# 阅读并接受 SDK 许可证后执行：
-.\native\host_v2\build.bat
-```
-
-若 SDK 已存在，无需重复 clone。编译成功会生成 `runtime\dlssnr_host_v2.dll`。默认自动选择 v2 宿主，不需要另行寻找或将它重命名为旧版 `dlssnr_host.dll`。
-
-### 3. 准备 DLSS 运行库
-
-提前确认自己的显卡型号，将有权使用、匹配显卡的[nvngx_dlssnr.dll](https://github.com/banbanzhige/DLSS5Tool/releases/tag/zip)放到源码根目录下的 `runtime` 文件夹。已有同版本免安装包时，可从其 `_internal` 提取适用的运行库；RTX 30 / 50 系需按对应附件选择，参见[显卡运行库说明](#2-选择显卡运行库)。
-
-`dlssnr_host_v2.dll` 是本项目编译的宿主，`nvngx_dlssnr.dll` 是另行提供的 NVIDIA 运行库；编译宿主不会生成后者。已有 `mods` 替换库或自定义运行库路径时，请在「运行库与模型路径」确认实际选中的文件。
-
-### 4. 可选：构建 2× / 4× 超分组件
-
-需要超分时，另行准备 RTX Video SDK 1.1，阅读并接受其许可证，解压到 `third_party\RTX_Video_SDK`，或设置环境变量 `NV_RTX_VIDEO_SDK` 指向 SDK 根目录，然后执行：
-
-```powershell
-.\native\vsr_host\build.bat
-```
-
-脚本会生成 `runtime\vsr_host.dll`，并从 SDK 复制 `nvngx_vsr.dll` 到 `runtime`。不需要超分时可跳过此步。
-
-### 5. 检查文件并启动
-
-```text
-源码根目录/
-├── run.bat
-├── gui.py
-└── runtime/
-    ├── dlssnr_host_v2.dll
-    ├── nvngx_dlssnr.dll
-    ├── vsr_host.dll          # 仅超分需要
-    └── nvngx_vsr.dll         # 仅超分需要
-```
-
-```powershell
-.\run.bat
-```
-
-源码开发统一通过 `run.bat` 启动，优先使用 `.venv`；设置、队列和开发日志保存在 `var`。上述步骤用于基础增强及可选超分，模型推理组件需[独立构建](mods/README.md#维护者深度与构建)。测试及生成免安装 EXE 的步骤见[开发指南](docs/development/BUILDING.md#测试与打包)。
-
-**旧版路径提醒：** v2.1.1 使用 `native_host_v2\build.bat`、`native_vsr_host\build.bat`，DLL 放在源码根目录；当前版本使用 `native\host_v2`、`native\vsr_host` 和 `runtime`。请按所用版本的说明操作，不要混用目录或宿主二进制。
 
 ## 更多文档
 
@@ -241,4 +189,4 @@ git clone --depth 1 https://github.com/NVIDIA/DLSS.git third_party/NVIDIA-DLSS
 
 ## 许可证
 
-项目自有源码按 [MIT License](LICENSE) 发布。免安装版附带的 `nvngx_dlssnr.dll`、NVIDIA SDK、FFmpeg 和 Python 依赖仍受各自上游许可约束，不属于本仓库 MIT 授权范围。本候选的完整/附加包策略仅附 RAFT 权重。详见 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) 及包内 `mods/enhancement/licenses`。
+项目自有源码按 [MIT License](LICENSE) 发布。免安装版附带的 `nvngx_dlssnr.dll`、NVIDIA SDK、FFmpeg 和 Python 依赖仍受各自上游许可约束，不属于本仓库 MIT 授权范围。完整版 / 附加包仅附 RAFT 权重。详见 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) 及包内 `mods/enhancement/licenses`。

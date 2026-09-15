@@ -119,7 +119,7 @@ Export a complete MP4 or the current PNG at source dimensions/frame rate, withou
 
 - High-precision HDR processing applies only to correctly tagged PQ/HLG video; static HDR images are not currently supported.
 - Large HDR jobs may use the requested 2/3 in-flight frames when estimated free VRAM permits, otherwise 1. Strict single-session temporal order is unchanged; estimates are not allocation guarantees.
-- HDR export uses HEVC Main10, 10-bit 4:2:0, and preserves basic HDR10/HLG color tags. Dolby Vision, HDR10+ dynamic metadata, and source mastering-display/MaxCLL SEI are not copied.
+- HDR export uses HEVC Main10, 10-bit 4:2:0, and writes HDR10/HLG color tags (primaries, transfer, matrix, range). Dolby Vision, HDR10+ dynamic metadata, and source mastering-display/MaxCLL SEI are not copied.
 - The UI tone-maps HDR previews to SDR and should not be used to judge final HDR brightness. Disabling high-precision processing tone-maps HDR video to SDR before export.
 - The experimental 5× control range is disabled by default. Values up to 500% can cause clipping, artifacts, or over-processing, and some runtimes may clamp them internally.
 
