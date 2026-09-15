@@ -1,5 +1,30 @@
 # 打包轻量化记录与索引
 
+## v2.2.2 — 2026-09-15 · 光流 GPU 直连与开发版默认参数
+
+- 源码提交 `caeb17a`（`feat: release v2.2.2 with GPU flow interop and maintainer defaults`）。不推送、不创建 Release、不上传附件。
+- 新用户默认参数对齐当前开发版：仅光流、RAFT-Large 512／6 次、引导队列 6、`guidance_gpu_transport=auto`。已有显式设置保留。
+- 因 GPU 直连写入引导 worker，用 `tmp/guidance-cuda-env` 重打冻结 CUDA 组件；worker SHA-256 `17650318624cbf75604ee550bbd73203cb434f4dc59e82cacde1c84685d8aec0`。未分发 `nvofapi64.dll`。
+- 全量 unittest：574 通过、8 跳过。预检通过 v2.2.0 与 v2.2.1 正式 lite/full 基线。基础构建复用 `.venv`，EXE 文件/产品版本均为 2.2.2。
+- 三形态输出 `dist/v2.2.2-release-20260915/editions/`。增量包覆盖 v2.2.0 与 v2.2.1 的 lite/full。助手 SHA-256 `0a9c24a9a7a05908480ff06d246491d5de4db603e6db6c4e6f9041bc75c254ba`。
+
+| 形态 | ZIP 字节数 | 解压字节数 | ZIP SHA-256 |
+| --- | ---: | ---: | --- |
+| 轻量 | 363,990,687 | 779,882,660 | `81e3f69710ba4d9774d954e58f5beb31d03c509583277ec98490bd75c21784f1` |
+| 附加 | 3,053,781,983 | 4,781,528,697 | `1e57cd88503176a1a06220650dccf2a6612ffd3efffbf4a4d275f575bbf753df` |
+| 完整 | 3,417,770,135 | 5,561,407,236 | `7cf7dd7e1bb7f14d9071b9492cd064f128018f476f508c6bca297905fd2a7941` |
+
+| 增量 | 变化文件 | 附件字节 | SHA-256 |
+| --- | ---: | ---: | --- |
+| v2.2.0 → lite | 58 | 141,169,759 | `03d256c970c3d0f8500e123e09d949217e7284d1ad06876960798b09ab919379` |
+| v2.2.0 → full | 101 | 175,450,432 | `188ebc019db36add34558a7a3e50307c6caa6ab236eeaab0386daaa39607d9b3` |
+| v2.2.1 → lite | 45 | 15,880,878 | `fdbe8e0152d5d095505fd8eb81a486db6e02d987f4bb3b54b534198612305407` |
+| v2.2.1 → full | 88 | 50,161,546 | `e500e4b5138e12c0bd14ff6ad1d927067036499e6078baec2e6afdc978daf284` |
+
+- 三包 CRC、完整包等于轻量＋附加、`--check-upload` 及增量流式叠加还原均通过。上传目录 `dist/v2.2.2-release-20260915/editions/github-assets`。
+- `verify_editions.py --stream-overlay` 通过：冻结轻量基础 DLSS 成功、缺组件按预期失败；完整包与叠加安装输出一致；安装组件 RAFT 连续帧通过。冻结 worker 声明 `gpu_flow_capability=cuda_d3d12_flow_v1`。诊断适配器 `NVIDIA GeForce RTX 4070 SUPER`。
+- 完整包 NVOFA 1×1 禁止回退探针通过。本机打包不等于已上传或跨显卡认证。发布说明见 [v2.2.2](RELEASE_NOTES_v2.2.2.md)。
+
 ## v2.2.0 首次正式候选 — 2026-09-12
 
 - 当前工作区重新冻结 v2.2.0，加入 NVIDIA D3D12 适配器自动选择、物理 GPU 手动选择、会话安全切换与实际设备诊断。此前 `dist/v2.2.0-release-20260911/editions` 从未正式发布；新验收目录 `dist/v2.2.0-release-20260912/editions` 已登记为后续版本唯一 v2.2.0 基线，旧目录保持不动。

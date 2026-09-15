@@ -15,8 +15,9 @@
 ### 固定打包工作流（防遗漏）
 
 `packaging/update-policy.json` 是必须支持的旧版本集合。当前登记已验证的 v2.2.0 基线
-`dist/v2.2.0-release-20260912/editions` 以及 v2.2.1 基线
-`dist/v2.2.1-release-20260914/editions`。v2.2.0 是正式新更新器首个基线，不是历史同名实验 ZIP。
+`dist/v2.2.0-release-20260912/editions`、v2.2.1 基线
+`dist/v2.2.1-release-20260914/editions` 以及 v2.2.2 基线
+`dist/v2.2.2-release-20260915/editions`。v2.2.0 是正式新更新器首个基线，不是历史同名实验 ZIP。
 后续版本不允许缺少增量包却完成打包。此工作流在**本地三形态打包入口**执行，GitHub Actions 的测试发现机制会运行工作流单测，但不会自动发布。
 
 1. 更新目标版本资源和 Release notes，阅读卫生守则、检查容量、登记任务目录。

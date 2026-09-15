@@ -9,6 +9,10 @@
     {
       "version": "v2.2.1",
       "packages": "dist/v2.2.1-release-20260914/editions"
+    },
+    {
+      "version": "v2.2.2",
+      "packages": "dist/v2.2.2-release-20260915/editions"
     }
   ]
 }
