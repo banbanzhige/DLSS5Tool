@@ -197,7 +197,7 @@ git clone --depth 1 https://github.com/NVIDIA/DLSS.git third_party/NVIDIA-DLSS
 
 ### 3. 准备 DLSS 运行库
 
-将有权使用、匹配显卡的 `nvngx_dlssnr.dll` 放到源码根目录下的 `runtime` 文件夹。已有同版本免安装包时，可从其 `_internal` 提取适用的运行库；RTX 30 / 50 系需按对应附件选择，参见[显卡运行库说明](#2-选择显卡运行库)。
+提前确认自己的显卡型号，将有权使用、匹配显卡的[nvngx_dlssnr.dll](https://github.com/banbanzhige/DLSS5Tool/releases/tag/zip)放到源码根目录下的 `runtime` 文件夹。已有同版本免安装包时，可从其 `_internal` 提取适用的运行库；RTX 30 / 50 系需按对应附件选择，参见[显卡运行库说明](#2-选择显卡运行库)。
 
 `dlssnr_host_v2.dll` 是本项目编译的宿主，`nvngx_dlssnr.dll` 是另行提供的 NVIDIA 运行库；编译宿主不会生成后者。已有 `mods` 替换库或自定义运行库路径时，请在「运行库与模型路径」确认实际选中的文件。
 
