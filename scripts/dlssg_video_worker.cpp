@@ -5,6 +5,9 @@
 #undef wmain
 #include <io.h>
 #include <fcntl.h>
+#ifdef GPU_PIPELINE_PROBE
+#include "gpu_dlssg_bridge.h"
+#endif
 
 namespace video_worker {
 using probe::Check;
@@ -78,6 +81,10 @@ int Run(int argc, wchar_t** argv) {
     eval.pDepth=depth.resource; eval.pMVecs=motion.resource; eval.pOutputDisableInterpolation=validity.gpu;
     const uint32_t ready[]={0x31474746,g_selected_adapter.luid_low,uint32_t(g_selected_adapter.luid_high)};
     Send(ready,sizeof(ready)); fflush(wire);
+#ifdef GPU_PIPELINE_PROBE
+    Check(multiplier==2 && !hdr,"residency probe is SDR 2x only");
+    gpu_pipeline_probe::Init(wire,outputs[0].resource);
+#endif
     std::vector<unsigned char> input(size_t(g_height)*FrameRowPitch()), output(input.size());
     std::vector<float> mv(size_t(g_width)*g_height*2);
     std::vector<uint16_t> half(mv.size());
@@ -86,6 +93,12 @@ int Run(int argc, wchar_t** argv) {
         const size_t commandBytes=fread(&command,1,4,stdin);
         if(commandBytes==0) break;
         Check(commandBytes==4,"truncated command");
+#ifdef GPU_PIPELINE_PROBE
+        const bool resident=(command&4)!=0;
+        command&=~4u;
+#else
+        const bool resident=false;
+#endif
         Check(command==0 || command==1 || command==2,"frame command");
         if(command==2) break;
         Receive(input.data(),input.size()); Receive(mv.data(),mv.size()*4);
@@ -107,11 +120,15 @@ int Run(int argc, wchar_t** argv) {
             validity.After(slot.list);
             out.State(slot.list,D3D12_RESOURCE_STATE_UNORDERED_ACCESS,D3D12_RESOURCE_STATE_COMMON);
             for(auto* t:{&color,&motion,&depth}) t->State(slot.list,D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE,D3D12_RESOURCE_STATE_COMMON);
+#ifdef GPU_PIPELINE_PROBE
+            if(resident) gpu_pipeline_probe::Record(slot.list,out.resource);
+            else
+#endif
             RecordReadback(slot.list,out.resource,out.readback);
             Check(SubmitCommands(slot,false)&&WaitFence(slot.fence_value,15000),"frame fence");
-            CopyRowsFromStaging(out.readback,output.data(),FrameRowPitch());
+            if(!resident) CopyRowsFromStaging(out.readback,output.data(),FrameRowPitch());
             const uint32_t valid=validity.Read()==0;
-            Send(&valid,4); Send(output.data(),output.size()); fflush(wire);
+            Send(&valid,4); if(!resident) Send(output.data(),output.size()); fflush(wire);
         }
     }
     Ngx(NVSDK_NGX_D3D12_ReleaseFeature(feature),"release");

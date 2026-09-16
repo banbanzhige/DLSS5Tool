@@ -48,6 +48,8 @@
 
 ## 文档导航
 
+- 下一轮研究交接：[光流性能与质量 TODO（用户决策、缓存收益、异步时序安全）](development/TODO_FLOW_PERFORMANCE_20260915.md)
+
 - 仓库维护：[卫生守则与空间预算](development/REPOSITORY_HYGIENE.md)、[2026-09-11 临时目录盘点](development/TMP_AUDIT_20260911.md)
 
 - 当前源码版本：[v2.1.2 说明](release/RELEASE_NOTES_v2.1.2.md)、[NVOFA 集成验证](experiments/NVOFA_INTEGRATION.md)、[深度下线状态](experiments/DEPTH_REFERENCE_STATUS.md)、[实施核对](development/IMPLEMENTATION_READINESS.md)

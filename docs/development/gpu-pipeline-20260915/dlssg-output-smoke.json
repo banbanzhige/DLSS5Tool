@@ -1,0 +1,15 @@
+{
+  "scope": "Isolate SDR 2x DLSSG output residency through real NVENC.\n\nReal decoded pictures, fixed ZERO motion to isolate transport; NOT an optical\nflow/interpolation quality test. Input remains a CPU pipe in BOTH variants.\nOnly generated frames are encoded, reset outputs omitted in both variants.\n",
+  "source": "tmp\\hdr-e2e\\source-sdr.mp4",
+  "dimensions": [
+    320,
+    180
+  ],
+  "frames": 24,
+  "cases": [],
+  "encoder_policy": "H264 P5 low-latency CONSTQP19 no B/no lookahead",
+  "script_sha256": "13168ac050d66a37a54c9de4f40b9c368e5d2cac4419ebf0c4a9b5eb94ce70eb",
+  "worker_sha256": "de196704324527d2b347921beb91185560310f566e175805dd2e808ffffc5b51",
+  "status": "failed",
+  "error": "RuntimeError('插帧工作进程退出或输出不完整，请查看 native.log')"
+}

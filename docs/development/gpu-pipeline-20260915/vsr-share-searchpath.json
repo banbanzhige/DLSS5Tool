@@ -1,0 +1,35 @@
+{
+  "scope": "SDR two processes/D3D12 devices; shared buffer; CPU fence waits retained; input IPC same in A/B; no encoding",
+  "input_size": [
+    320,
+    180
+  ],
+  "output_size": [
+    640,
+    360
+  ],
+  "settings": {
+    "host_backend": "v2",
+    "host_auto_fallback": false,
+    "host_submission": "compatibility",
+    "host_in_flight": 1,
+    "host_zero_fast_path": true,
+    "host_persistent_buffers": true,
+    "guidance_mode": 0,
+    "style": 0,
+    "intensity": 1.0,
+    "local_tone": 1.0,
+    "local_struct": 1.0,
+    "skin_struct": 1.0,
+    "use_auto_mask": true
+  },
+  "cases": [],
+  "source": "tmp\\hdr-e2e\\source-sdr.mp4",
+  "start": 0,
+  "frames": 24,
+  "scale": 2,
+  "script_sha256": "993b4246b2cb832b62d93df2a16c107e93d83608faf3529a747d9602e2132fcb",
+  "host_sha256": "cc65c46feca1886a45eb254126f9f69136b1c55166984d6ab2255f3be9191000",
+  "status": "failed",
+  "error": "TimeoutError('VSR worker timed out; abort both GPU owners')"
+}
