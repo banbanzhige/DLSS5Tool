@@ -60,7 +60,7 @@ from dlss5tool.super_resolution import (
     validate_dimensions as validate_super_resolution_dimensions, SuperResolutionError,
 )
 from dlss5tool.video_export import (
-    FFmpegHDRVideoReader, FFmpegVideoWriter, compose_hdr_frame,
+    FFmpegHDRVideoReader, FFmpegVideoWriter, compose_hdr_frame, resize_original,
     compose_output_frame, find_ffmpeg, output_container_extension,
     probe_video_stream, resolve_output_container, tone_map_hdr_preview,
 )
@@ -8320,12 +8320,54 @@ class App(SharedRenderPreview, PreviewComparison, GuidanceExportUI):
                 "fps": self.fps,
                 "color": dict(self._video_color_info or {}),
             }
+        recent = []
+        last = getattr(self, "_last_export_record", None)
+        if last:
+            recent.append(last)
+        preview_size = None
+        try:
+            preview_size = self._precise_preview_size()
+        except Exception:
+            preview_size = None
+        session = getattr(self, "_shared_session", None)
+        shared_ready = False
+        if session is not None:
+            try:
+                shared_ready = session.peek(
+                    int(getattr(self, "_shared_output_index", 0) or 0)
+                ) is not None
+            except Exception:
+                shared_ready = False
+        guidance_info = {}
+        if self._live is not None:
+            try:
+                guidance_info = dict(getattr(self._live, "guidance_info", None) or {})
+            except Exception:
+                guidance_info = {}
         context = {
             "settings": self._collect_settings(),
             "export_settings": self._collect_export_settings(),
+            "preview_super_resolution": self._preview_effect_enabled("super_resolution"),
+            "preview_frame_generation": self._preview_effect_enabled("frame_generation"),
             "active_host": active_host,
             "media": media,
+            "media_path": self.video,
+            "preview": {
+                "view": self.view_var.get() if getattr(self, "view_var", None) else "",
+                "hold_original": bool(getattr(self, "_hold_original", False)),
+                "shared_render": bool(self._uses_shared_render()),
+                "shared_ready": shared_ready,
+                "dlss_pending": bool(getattr(self, "_dlss_pending", False)),
+                "source_size": [getattr(self, "_media_w", 0), getattr(self, "_media_h", 0)],
+                "preview_size": list(preview_size) if preview_size else None,
+            },
+            "guidance_info": guidance_info,
             "ui_log": ui_log,
+            "recent_exports": recent,
+            "queue_jobs": [
+                job.to_dict() for job in getattr(self, "_queue_jobs", [])
+                if getattr(job, "state", "") in {"completed", "failed", "cancelled", "interrupted"}
+            ],
         }
         self._diagnosing = True
         self.root.config(cursor="wait")
@@ -8384,6 +8426,14 @@ class App(SharedRenderPreview, PreviewComparison, GuidanceExportUI):
         )
         self._diagnostic_thread.start()
         self.root.after(100, poll_result)
+
+    def _remember_export(self, **kwargs):
+        try:
+            record = diagnostics.make_export_record(**kwargs)
+            diagnostics.append_export_history(record)
+            self._last_export_record = record
+        except Exception:
+            return
 
     def _setup_drag_and_drop(self):
         """Register both the window and video-facing widgets as file drop targets."""
@@ -8961,19 +9011,34 @@ class App(SharedRenderPreview, PreviewComparison, GuidanceExportUI):
             self.logln(tr("log.export_error", error=error))
             if notify:
                 messagebox.showerror(tr("dialog.export_failed"), error)
-            return {
+            result = {
                 "success": False, "cancelled": False, "error": error,
                 "output_path": out_path or "", "frames": 0,
             }
+            self._remember_export(
+                source_path=source_path, output_path=result["output_path"], kind="image",
+                export_settings=self._collect_export_settings() if hasattr(self, "_export_settings") else {},
+                result=result,
+            )
+            return result
         scale = self._super_resolution_scale(settings)
+        source_height, source_width = orig.shape[:2]
+        planned = super_resolution_target_size(source_width, source_height, scale)
         if not self._confirm_super_resolution_export(
-            orig.shape[1], orig.shape[0], scale, is_hdr=False, notify=notify,
+            source_width, source_height, scale, is_hdr=False, notify=notify,
         ):
-            return {
+            result = {
                 "success": False, "cancelled": True,
                 "error": tr("message.super_resolution_cancelled"),
                 "output_path": out_path or "", "frames": 0,
             }
+            self._remember_export(
+                source_path=source_path, output_path=result["output_path"], kind="image",
+                export_settings={"super_resolution_scale": scale},
+                result=result, source_width=source_width, source_height=source_height,
+                source_frames=1, planned=planned,
+            )
+            return result
         ext = os.path.splitext(source_path)[1].lower()
         if ext not in IMAGE_ENCODE_EXTS:
             ext = ".png"
@@ -8993,7 +9058,8 @@ class App(SharedRenderPreview, PreviewComparison, GuidanceExportUI):
                 raise RuntimeError("DLSS 处理失败")
             view = settings["output_view"]
             mix = float(settings["output_mix"])
-            orig = self._preview_composition_source(0, orig, processed)
+            orig = (resize_original(orig, (processed.shape[1], processed.shape[0]))
+                    if view else self._preview_composition_source(0, orig, processed))
             composed = compose_output_frame(orig, processed, view, mix)
             out_path = _write_image_bgr(out_path, composed)
             success = True
@@ -9011,10 +9077,24 @@ class App(SharedRenderPreview, PreviewComparison, GuidanceExportUI):
             error_message=error_message,
             notify=notify,
         )
-        return {
+        result = {
             "success": success, "cancelled": False, "error": error_message,
             "output_path": out_path, "frames": 1 if success else 0,
         }
+        if success:
+            planned = (w, h)
+        elapsed = None
+        try:
+            elapsed = time.perf_counter() - started_at
+        except Exception:
+            pass
+        self._remember_export(
+            source_path=source_path, output_path=out_path, kind="image",
+            export_settings={"super_resolution_scale": scale},
+            result=result, source_width=source_width, source_height=source_height,
+            source_frames=1, planned=planned, elapsed=elapsed if success else None,
+        )
+        return result
 
     # ---------- export ----------
     def _export_sdr_upscaled_video(
@@ -9081,7 +9161,8 @@ class App(SharedRenderPreview, PreviewComparison, GuidanceExportUI):
                     raise RuntimeError(f"DLSS 处理第 {index} 帧失败")
                 processed_bgr = cv2.cvtColor(processed_rgba, cv2.COLOR_RGBA2BGR)
                 writer.write(compose_output_frame(
-                    upscaled_bgr, processed_bgr, view=view, mix=mix,
+                    resize_original(frame, (output_width, output_height)) if view else upscaled_bgr,
+                    processed_bgr, view=view, mix=mix,
                 ))
                 written = index + 1
                 if written == 1 or written % 2 == 0 or written >= total_frames:
@@ -9195,6 +9276,7 @@ class App(SharedRenderPreview, PreviewComparison, GuidanceExportUI):
                 frame = reader.read()
                 if frame is None:
                     break
+                comparison = resize_original(frame, (process_width, process_height)).copy() if view else None
                 if sr_live is not None:
                     sr_started = time.perf_counter()
                     frame = sr_live.process(frame)
@@ -9213,7 +9295,7 @@ class App(SharedRenderPreview, PreviewComparison, GuidanceExportUI):
                     if processed is None:
                         raise RuntimeError(f"HDR DLSS 处理第 {index} 帧失败")
                     writer.write(compose_hdr_frame(
-                        frame, processed, view=view, mix=mix,
+                        comparison if view else frame, processed, view=view, mix=mix,
                         profile=color_info["profile"],
                     ))
                     written += 1
@@ -9276,11 +9358,14 @@ class App(SharedRenderPreview, PreviewComparison, GuidanceExportUI):
                     if pending:
                         pending.join()
                 session = manager.session(source_path, config)
-                result = encode_cached(session, out_path, config, self._export_cancel_event,
-                    lambda message, fraction: events.put(('progress', (message, fraction))))
+                result = encode_cached(
+                    session, out_path, config, self._export_cancel_event, on_progress,
+                )
                 events.put(('done', result))
             except BaseException as error:
                 events.put(('error', error))
+        def on_progress(message, fraction, counts=None):
+            events.put(('progress', (message, fraction, counts)))
         thread = threading.Thread(target=worker, name='dlss-fg-export', daemon=True)
         thread.start()
         while True:
@@ -9290,8 +9375,11 @@ class App(SharedRenderPreview, PreviewComparison, GuidanceExportUI):
             except queue.Empty:
                 continue
             if kind == 'progress':
-                message, fraction = value
-                self.set_progress(round(fraction * 1000), 1000, message)
+                message, fraction, counts = value
+                if counts and counts[1]:
+                    self.set_progress(int(counts[0]), int(counts[1]), message)
+                else:
+                    self.set_progress(round(float(fraction or 0) * 1000), 1000, message)
             elif kind == 'error':
                 thread.join(timeout=1)
                 if isinstance(value, Cancelled):
@@ -9330,10 +9418,15 @@ class App(SharedRenderPreview, PreviewComparison, GuidanceExportUI):
             self.logln(tr("log.export_error", error=error))
             if notify:
                 messagebox.showerror(tr("dialog.export_failed"), error)
-            return {
+            result = {
                 "success": False, "cancelled": False, "error": error,
                 "output_path": out_path or "", "frames": 0,
             }
+            self._remember_export(
+                source_path=source_path, output_path=result["output_path"], kind="video",
+                color_info=color_info, export_settings=export_settings, result=result,
+            )
+            return result
         super_resolution_scale = normalize_scale(
             export_settings.get('super_resolution_scale', 1)
         )
@@ -9359,10 +9452,17 @@ class App(SharedRenderPreview, PreviewComparison, GuidanceExportUI):
         if not self._confirm_super_resolution_export(
             w, h, super_resolution_scale, is_hdr=hdr_active, notify=notify,
         ):
-            return {
+            result = {
                 "success": False, "cancelled": True, "error": "用户取消超分导出",
                 "output_path": out_path or "", "frames": 0,
             }
+            self._remember_export(
+                source_path=source_path, output_path=result["output_path"], kind="video",
+                color_info=color_info, export_settings=export_settings, result=result,
+                source_width=w, source_height=h, source_frames=n, source_fps=fps,
+                planned=(output_width, output_height),
+            )
+            return result
         if super_resolution_scale > 1 or fg_multiplier > 1:
             self._wait_play_dlss(timeout=3.0)
             self._close_super_resolution()
@@ -9375,11 +9475,17 @@ class App(SharedRenderPreview, PreviewComparison, GuidanceExportUI):
             out_path = self._unique_target_path(out_path)
         if out_path != default_out_path and notify:
             self.logln(tr("log.target_renamed", name=os.path.basename(out_path)))
-        pipeline_name = (
-            "RTX超分 + GPU DLSS/NVENC" if super_resolution_scale > 1
-            else "CPU 解码 + GPU DLSS/NVENC"
-        )
-        self._begin_export_ui(f"正在流水线导出（{pipeline_name}）...")
+        if super_resolution_scale > 1 and fg_multiplier > 1:
+            pipeline_name = tr(
+                'status.export_sr_fg', sr=super_resolution_scale, fg=fg_multiplier,
+            )
+        elif fg_multiplier > 1:
+            pipeline_name = tr('status.frame_generation', scale=fg_multiplier)
+        elif super_resolution_scale > 1:
+            pipeline_name = tr('queue.upscale', scale=super_resolution_scale)
+        else:
+            pipeline_name = tr('status.export_cpu_gpu')
+        self._begin_export_ui(tr('status.exporting_pipeline', pipeline=pipeline_name))
         success = False
         cancelled = False
         started_at = self._export_t0
@@ -9602,13 +9708,26 @@ class App(SharedRenderPreview, PreviewComparison, GuidanceExportUI):
             error_message=error_message,
             notify=notify,
         )
-        return {
+        result = {
             "success": success,
             "cancelled": cancelled,
             "error": error_message,
             "output_path": out_path,
             "frames": exported_frames,
         }
+        elapsed = None
+        try:
+            elapsed = time.perf_counter() - started_at
+        except Exception:
+            pass
+        self._remember_export(
+            source_path=source_path, output_path=out_path, kind="video",
+            color_info=color_info, export_settings=export_settings, result=result,
+            source_width=w, source_height=h, source_frames=n, source_fps=fps,
+            planned=(output_width, output_height),
+            elapsed=elapsed if success else None,
+        )
+        return result
 
     def _iter_frames(
         self, buffer_size=4, tone_map_hdr=False, source_path=None, color_info=None,

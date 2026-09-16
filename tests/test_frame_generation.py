@@ -43,6 +43,31 @@ class TimingTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, '不覆盖'):
             fg.export_video(path, path)
 
+    def test_inspect_source_reports_counted_timestamp_progress(self):
+        lines = ''.join(f'{i / 24:.6f}\n' for i in range(24)).encode()
+        proc = mock.Mock()
+        proc.stdout = io.BytesIO(lines)
+        proc.poll.return_value = None
+        proc.wait.return_value = 0
+        reports = []
+        meta = {
+            'r_frame_rate': '24/1', 'width': 64, 'height': 48,
+            'frames': 24, 'nb_frames': '24',
+        }
+        with mock.patch.object(fg, 'find_ffmpeg', return_value='ffmpeg'), \
+                mock.patch.object(fg, 'find_ffprobe', return_value='ffprobe'), \
+                mock.patch.object(fg, 'probe_video_stream', return_value=meta), \
+                mock.patch.object(fg.subprocess, 'Popen', return_value=proc):
+            result = fg.inspect_source(
+                'clip.mp4', threading.Event(),
+                progress=lambda *args: reports.append(args),
+            )
+        self.assertEqual(result[4], 24)
+        self.assertGreaterEqual(len(reports), 2)
+        self.assertEqual(reports[0][2], (0, 24))
+        self.assertEqual(reports[-1][2], (24, 24))
+        self.assertTrue(all(item[2][0] <= 24 for item in reports))
+
 
 class NativeProtocolTests(unittest.TestCase):
     def session(self):

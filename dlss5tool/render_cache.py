@@ -28,6 +28,27 @@ PIXEL_KEYS = (
 )
 
 
+class RenderPair(tuple):
+    """Processed/source comparison pair, optionally retaining the NR mix input.
+
+    SR-only pixels are a blending input, never the image labelled original.
+    The optional third buffer is accounted for by the same cache budget.
+    """
+    def __new__(cls, processed, reference, mix_source=None):
+        pair = super().__new__(cls, (processed, reference))
+        pair.mix_source = reference if mix_source is None else mix_source
+        return pair
+
+    @property
+    def nbytes(self):
+        return sum(frame.nbytes for frame in
+                   {id(frame): frame for frame in (*self, self.mix_source)}.values())
+
+
+def _pair_bytes(pair):
+    return pair.nbytes if isinstance(pair, RenderPair) else sum(x.nbytes for x in pair)
+
+
 def file_identity(path):
     path = Path(path).resolve()
     try:
@@ -39,7 +60,7 @@ def file_identity(path):
 
 def render_identity(source, settings):
     if settings.get('_render_stage') == 'spatial':
-        payload = [1, file_identity(source), {k: settings.get(k) for k in
+        payload = [2, file_identity(source), {k: settings.get(k) for k in
             ('hdr_mode', 'super_resolution_scale', 'render_gpu')},
             [file_identity(paths.runtime_root()/name) for name in ('vsr_host.dll', 'nvngx_vsr.dll')]]
         return hashlib.sha256(json.dumps(payload, sort_keys=True, default=str).encode()).hexdigest()
@@ -61,7 +82,7 @@ def render_identity(source, settings):
                 and ('weights' in key or key.endswith('_path'))):
             dependencies.append(file_identity(value))
     pixel['dlss_runtime'] = settings.get('dlss_runtime', '')
-    payload = [4, file_identity(source), pixel, dependencies]
+    payload = [5, file_identity(source), pixel, dependencies]
     return hashlib.sha256(json.dumps(payload, sort_keys=True, default=str).encode()).hexdigest()
 
 
@@ -89,9 +110,15 @@ class RenderSession:
         self.restart = False
         self.suspended = False
         self.upstream = None
+        self.progress = None
         self.thread = None
         self.stop = threading.Event()
         self.hits = self.new_frames = self.replayed_frames = 0
+
+    def set_progress(self, progress):
+        self.progress = progress
+        if self.upstream:
+            self.upstream.set_progress(progress)
 
     def _allowance(self):
         if self.pool is None:
@@ -110,8 +137,7 @@ class RenderSession:
             # Retain the neighbourhood currently being consumed, not the most
             # recent frame produced during a seek-history replay.
             key = max(self.cache, key=lambda i: abs(i-self.target))
-            left, right = self.cache.pop(key)
-            self.bytes -= left.nbytes + right.nbytes
+            self.bytes -= _pair_bytes(self.cache.pop(key))
         self._publish()
         return allowance
 
@@ -232,11 +258,13 @@ class RenderSession:
                             break
                         self.condition.wait(.1)
                     check_cancel(stop)
-            def sink(index, processed, reference):
+            def sink(index, processed, reference, *, mix_source=None):
                 check_cancel(stop)
                 if reference is None:
                     reference = processed
                 size = processed.nbytes + reference.nbytes
+                if mix_source is not None and mix_source is not reference and mix_source is not processed:
+                    size += mix_source.nbytes
                 with self.condition:
                     if self.closed or stop.is_set():
                         raise Cancelled('缓存任务已撤销')
@@ -259,20 +287,23 @@ class RenderSession:
                         others = [i for i in self.cache if i < self.target]
                         if others:
                             victim = max(others, key=lambda i: abs(i-self.target))
-                            self.bytes -= sum(x.nbytes for x in self.cache.pop(victim))
+                            self.bytes -= _pair_bytes(self.cache.pop(victim))
                             self._publish()
                             continue
                         self.condition.wait(.05)
                         check_cancel(stop)
                     old = self.cache.pop(index, None)
                     if old:
-                        self.bytes -= sum(x.nbytes for x in old)
+                        self.bytes -= _pair_bytes(old)
                     allowance = self._trim(size)
                     if size > allowance:
                         raise RuntimeError('缓存预算不足一个全精度帧对，请增加缓存预算；未降低分辨率')
                     a, b = np.array(processed, copy=True), np.array(reference, copy=True)
                     a.flags.writeable = b.flags.writeable = False
-                    self.cache[index] = (a, b)
+                    blend = (b if mix_source is None or mix_source is reference else
+                             a if mix_source is processed else np.array(mix_source, copy=True))
+                    blend.flags.writeable = False
+                    self.cache[index] = RenderPair(a, b, blend)
                     self.produced = index
                     self.bytes += size
                     self._publish()
@@ -280,7 +311,8 @@ class RenderSession:
             try:
                 result = self.renderer(self.source, None, multiplier=self.multiplier,
                     scale=int(self.settings.get('super_resolution_scale', 1)), enhance=True,
-                    settings=self.settings, cancel=stop, frame_sink=sink, render_gate=gate, metadata_sink=metadata)
+                    settings=self.settings, cancel=stop, frame_sink=sink, render_gate=gate,
+                    metadata_sink=metadata, progress=self.progress)
                 with self.condition:
                     self.result = result
                     self.complete = True
@@ -338,10 +370,10 @@ class RenderCache:
         self.inspection = None
         self.lock = threading.RLock()
 
-    def inspect(self, source, cancel):
+    def inspect(self, source, cancel, progress=None):
         identity = file_identity(source)
         if self.inspection is None or self.inspection[0] != identity:
-            result = inspect_source(source, cancel)
+            result = inspect_source(source, cancel, progress=progress)
             check_cancel(cancel)
             self.inspection = (identity, result)
         return self.inspection[1]
@@ -449,6 +481,7 @@ def encode_cached(session, output, settings, cancel, progress):
     destination = Path(output).resolve()
     if destination.exists():
         raise ValueError('输出文件已存在，不覆盖')
+    session.set_progress(progress)
     metadata = session.wait_metadata(cancel)
     hdr = metadata['hdr_metadata']
     rate = Fraction(metadata['output_rate'])

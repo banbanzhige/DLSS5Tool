@@ -1,6 +1,7 @@
 """Regression contracts for first-paint latency and latest-parameter feedback."""
 import threading
 import time
+import unittest
 from types import SimpleNamespace
 from unittest import mock
 
@@ -36,7 +37,7 @@ def test_real_frame_published_before_next_frame_is_requested(tmp_path):
             mock.patch('dlss5tool.super_resolution.query_gpu_memory', return_value=None):
         result = fg.export_video(source, None, multiplier=1, enhance=False,
             frame_sink=lambda i, *_: emitted.append(i), render_gate=gate,
-            source_inspector=lambda *_: (meta, Fraction(24), 128, 128, 2), log_dir=tmp_path/'logs')
+            source_inspector=lambda *args, **kwargs: (meta, Fraction(24), 128, 128, 2), log_dir=tmp_path/'logs')
     assert emitted == [0, 1]
     assert result['real_frames'] == 2 and result['endpoint_holds'] == 0
 
@@ -133,6 +134,66 @@ def test_stale_source_decode_cannot_paint_new_video():
     app._draw_fit.assert_not_called()
 
 
+def test_compare_source_preview_keeps_split_instead_of_fit():
+    app = app_stub()
+    app.view_var = SimpleNamespace(get=lambda: 'compare')
+    app._blit_play_split = mock.Mock()
+    original = np.zeros((8, 8, 3), np.uint8)
+    processed = np.ones((8, 8, 3), np.uint8)
+    app._frame = 12
+    app._split_frame = 12
+    app._split_orig = original
+    app._split_dlss = processed
+    app._dlss_pending = True
+    assert app._shared_source_preview()
+    app._draw_fit.assert_not_called()
+    app._blit_play_split.assert_called_once()
+    args, kwargs = app._blit_play_split.call_args
+    assert args[0] is original
+    assert args[1] is processed
+    assert kwargs.get('pending') is True
+
+
+def test_compare_source_preview_pending_when_split_missing():
+    app = app_stub()
+    app.view_var = SimpleNamespace(get=lambda: 'compare')
+    app._blit_play_split = mock.Mock()
+    pixels = np.zeros((8, 8, 3), np.uint8)
+    app._shared_source_result = ((rc.file_identity('source'), 0), pixels)
+    assert app._shared_source_preview()
+    app._draw_fit.assert_not_called()
+    args, kwargs = app._blit_play_split.call_args
+    assert args[0] is pixels
+    assert args[1] is None
+    assert kwargs.get('pending') is True
+
+
+def test_compare_source_preview_does_not_overwrite_ready_paint():
+    app = app_stub()
+    app.view_var = SimpleNamespace(get=lambda: 'compare')
+    app._blit_play_split = mock.Mock()
+    app._shared_painted_position = (rc.file_identity('source'), 0)
+    app._split_frame = 0
+    app._split_orig = np.zeros((8, 8, 3), np.uint8)
+    app._split_dlss = np.ones((8, 8, 3), np.uint8)
+    assert not app._shared_source_preview()
+    app._draw_fit.assert_not_called()
+    app._blit_play_split.assert_not_called()
+
+
+def test_held_original_still_uses_source_fit():
+    app = app_stub()
+    app.view_var = SimpleNamespace(get=lambda: 'compare')
+    app._hold_original = True
+    app._blit_play_split = mock.Mock()
+    pixels = np.zeros((8, 8, 3), np.uint8)
+    app._shared_source_result = ((rc.file_identity('source'), 0), pixels)
+    assert app._shared_source_preview()
+    app._blit_play_split.assert_not_called()
+    app._draw_fit.assert_called_once()
+    assert app._draw_fit.call_args.kwargs['badge']
+
+
 def test_rapid_changes_acknowledge_immediately_and_debounce_setup():
     app = app_stub()
     app._shared_interim = mock.Mock(return_value=False)
@@ -170,3 +231,27 @@ def test_output_mix_repaints_real_frame_without_recomputing_or_retargeting():
         assert not app._shared_interim(), 'must not paint old strength with new-parameter label'
     finally:
         base.close()
+
+
+class CompareSharedSourceTests(unittest.TestCase):
+    def test_compare_source_preview_keeps_split_instead_of_fit(self):
+        test_compare_source_preview_keeps_split_instead_of_fit()
+
+    def test_compare_source_preview_pending_when_split_missing(self):
+        test_compare_source_preview_pending_when_split_missing()
+
+    def test_compare_source_preview_does_not_overwrite_ready_paint(self):
+        test_compare_source_preview_does_not_overwrite_ready_paint()
+
+    def test_held_original_still_uses_source_fit(self):
+        test_held_original_still_uses_source_fit()
+
+    def test_original_first_frame_does_not_need_render_session(self):
+        test_original_first_frame_does_not_need_render_session()
+
+    def test_stale_source_decode_cannot_paint_new_video(self):
+        test_stale_source_decode_cannot_paint_new_video()
+
+
+if __name__ == '__main__':
+    unittest.main()

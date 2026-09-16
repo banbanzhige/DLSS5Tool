@@ -38,6 +38,8 @@ class SharedRenderPreview:
         self._shared_output_index = self._frame*self._preview_effect_settings()['frame_generation_multiplier']
         self._shared_clock = None
         self._shared_painted_position = None
+        if self._uses_shared_render():
+            self._dlss_pending = True
         self._freeze_preview_cache(resume_ms=None)
         self._cache_clear()
         self._schedule_settings_save()
@@ -75,11 +77,12 @@ class SharedRenderPreview:
         if pair is None:
             return False
         processed, reference = pair
+        mix_source = getattr(pair, 'mix_source', reference)
         meta = base.metadata.get('hdr_metadata')
         if meta:
-            processed = compose_hdr_frame(reference, processed, mix=config['output_mix'], profile=meta['profile'])
+            processed = compose_hdr_frame(mix_source, processed, mix=config['output_mix'], profile=meta['profile'])
         else:
-            processed = cv2.cvtColor(compose_output_frame(cv2.cvtColor(reference, cv2.COLOR_RGBA2BGR),
+            processed = cv2.cvtColor(compose_output_frame(cv2.cvtColor(mix_source, cv2.COLOR_RGBA2BGR),
                 cv2.cvtColor(processed, cv2.COLOR_RGBA2BGR), mix=config['output_mix']), cv2.COLOR_BGR2RGBA)
         self._shared_display_config = config
         size = config.get('output_size')
@@ -99,10 +102,16 @@ class SharedRenderPreview:
         original = self._hold_original or self.view_var.get() == 'original'
         if not original and getattr(self, '_shared_painted_position', None) == position:
             return False
+        selected = 'original' if original else self.view_var.get()
+        if (selected == 'compare'
+                and getattr(self, '_split_orig', None) is not None
+                and getattr(self, '_split_frame', -1) == int(self._frame)):
+            self._present_shared_source(self._split_orig)
+            return True
         result = getattr(self, '_shared_source_result', None)
         if result and result[0] == position:
             if result[1] is not None:
-                self._draw_fit(result[1], *self._canvas_size(), badge=tr('status.shared_source'))
+                self._present_shared_source(result[1])
                 return True
             return False
         worker = getattr(self, '_shared_source_thread', None)
@@ -124,6 +133,21 @@ class SharedRenderPreview:
         self._shared_source_thread = threading.Thread(target=decode, name='preview-first-frame', daemon=True)
         self._shared_source_thread.start()
         return False
+
+    def _present_shared_source(self, image):
+        """Paint the waiting source frame without clearing compare-mode chrome."""
+        selected = 'original' if getattr(self, '_hold_original', False) else (
+            self.view_var.get() if getattr(self, 'view_var', None) else ''
+        )
+        if selected == 'compare' and hasattr(self, '_blit_play_split'):
+            same_frame = getattr(self, '_split_frame', -1) == int(self._frame)
+            processed = getattr(self, '_split_dlss', None) if same_frame else None
+            pending = processed is None or bool(getattr(self, '_dlss_pending', False))
+            self._blit_play_split(
+                image, processed, *self._canvas_size(), pending=pending,
+            )
+            return
+        self._draw_fit(image, *self._canvas_size(), badge=tr('status.shared_source'))
 
     def _uses_shared_render(self):
         if (not getattr(self, 'video', None) or getattr(self, '_is_image', False)

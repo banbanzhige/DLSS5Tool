@@ -435,6 +435,18 @@ def _hlg_oetf(linear):
     )
 
 
+def resize_original(frame, size):
+    """Align source pixels for comparison, without SR or other enhancement."""
+    width, height = map(int, size)
+    if frame.shape[:2] == (height, width):
+        return frame
+    shrinking = frame.shape[0] > height or frame.shape[1] > width
+    work = frame.astype(np.float32) if frame.dtype == np.float16 else frame
+    return cv2.resize(work, (width, height), interpolation=(
+        cv2.INTER_AREA if shrinking else cv2.INTER_LINEAR
+    )).astype(frame.dtype)
+
+
 def compose_hdr_frame(original, processed, view=0, mix=1.0, profile="hdr10_pq"):
     """Compose RGBA16F while blending PQ/HLG in linear-light space."""
     original_f = np.asarray(original, dtype=np.float32)

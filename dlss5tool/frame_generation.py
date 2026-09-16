@@ -17,11 +17,13 @@ import uuid
 import cv2
 import numpy as np
 
+from dlss5tool import i18n
 from dlss5tool import paths
 from dlss5tool.guidance_color import analysis_rgba8
 from dlss5tool.video_export import (
     FFmpegHDRVideoReader, FFmpegVideoWriter, find_ffmpeg, find_ffprobe,
     probe_video_stream, compose_hdr_frame, compose_output_frame, tone_map_hdr_preview,
+    resize_original,
 )
 
 PINNED_RUNTIME = '135eaf0733c1e37381a8c28abcf7a862404a54132b81787c04e35d09efc5e36f'
@@ -177,7 +179,16 @@ def validate_timestamps(timestamps, rate):
     return count
 
 
-def inspect_source(source, cancel):
+def _emit_progress(progress, text, fraction, counts=None):
+    if not progress:
+        return
+    try:
+        progress(text, fraction, counts)
+    except TypeError:
+        progress(text, fraction)
+
+
+def inspect_source(source, cancel, progress=None):
     ffmpeg = find_ffmpeg()
     probe = find_ffprobe(ffmpeg)
     if not probe:
@@ -190,6 +201,20 @@ def inspect_source(source, cancel):
             raise ValueError()
     except (KeyError, ValueError, ZeroDivisionError):
         raise ValueError('无法确定视频尺寸和准确帧率') from None
+    try:
+        expected = int(meta.get('frames') or meta.get('nb_frames') or 0)
+    except (TypeError, ValueError):
+        expected = 0
+    def emit(done, total=expected):
+        if total:
+            text = i18n.tr('status.inspect_timestamps')
+            fraction = min(done / total, 1.0) if total else 0
+            _emit_progress(progress, text, fraction, (done, total))
+        else:
+            _emit_progress(
+                progress, i18n.tr('status.inspect_timestamps_unknown', done=done), 0,
+            )
+    emit(0)
     proc = subprocess.Popen([probe, '-v', 'error', '-select_streams', 'v:0', '-show_entries',
                              'frame=best_effort_timestamp_time', '-of', 'csv=p=0', str(source)],
                             stdout=subprocess.PIPE, stderr=subprocess.DEVNULL,
@@ -218,6 +243,8 @@ def inspect_source(source, cancel):
     thread.start()
     def timestamps():
         deadline = time.monotonic() + 60
+        last_report = 0.0
+        count = 0
         while True:
             check_cancel(cancel)
             if time.monotonic() > deadline:
@@ -231,6 +258,11 @@ def inspect_source(source, cancel):
             deadline = time.monotonic() + 60
             field = line.decode().strip().split(',')[0]
             if field:
+                count += 1
+                now = time.monotonic()
+                if count == 1 or (expected and count >= expected) or now - last_report >= 0.2:
+                    last_report = now
+                    emit(count)
                 yield field
     try:
         count = validate_timestamps(timestamps(), rate)
@@ -243,6 +275,7 @@ def inspect_source(source, cancel):
         proc.wait(timeout=5)
         thread.join(timeout=2)
         proc.stdout.close()
+    emit(count, expected or count)
     return meta, rate, width, height, count
 
 
@@ -275,15 +308,18 @@ def export_video(source, output, *, multiplier=2, scale=1, enhance=False, settin
                 else paths.state_path('fg-experiments'))
     log_dir = Path(log_dir) if log_dir else log_root / uuid.uuid4().hex
     log_dir.mkdir(parents=True, exist_ok=False)
-    progress('检查视频时间戳…', 0)
     report = {'experimental': True, 'warning': WARNING, 'source': str(source), 'output': str(output),
               'multiplier': multiplier, 'spatial_scale': scale, 'enhance': enhance, 'status': 'running',
               'real_frames': 0, 'generated_frames': 0, 'cut_holds': 0, 'endpoint_holds': 0}
-    writer = native = reference_native = flow = capture = sr = nr = None
+    writer = native = flow = capture = sr = nr = None
     staging = output.with_name(f'.{output.stem}.fg-{uuid.uuid4().hex}{output.suffix}') if output else None
     try:
         if input_session is None:
-            meta, rate, w, h, total = (source_inspector or inspect_source)(source, cancel)
+            inspect = source_inspector or inspect_source
+            try:
+                meta, rate, w, h, total = inspect(source, cancel, progress=progress)
+            except TypeError:
+                meta, rate, w, h, total = inspect(source, cancel)
         else:
             upstream = input_session.wait_metadata(cancel)
             meta = upstream['source_metadata']
@@ -310,15 +346,10 @@ def export_video(source, output, *, multiplier=2, scale=1, enhance=False, settin
         config.update(frame_format='rgba16f' if hdr else 'rgba8', color_profile=meta['profile'] if hdr else 'srgb',
                       color_primaries=meta['color_primaries'], host_auto_fallback=False,
                       host_in_flight=1, guidance_flow_fallback=False)
-        progress('初始化 DLSSG 与 NVOFA…', 0)
+        if multiplier > 1:
+            _emit_progress(progress, i18n.tr('status.init_dlssg'), 0)
         native = NativeStream(ow, oh, multiplier, hdr, log_dir, cancel) if multiplier > 1 else None
         need_reference = bool(view or render_only)
-        if need_reference and native:
-            reference_logs = log_dir / 'reference'
-            reference_logs.mkdir()
-            reference_native = NativeStream(ow, oh, multiplier, hdr, reference_logs, cancel)
-            if reference_native.luid != native.luid:
-                raise RuntimeError('对比画面插帧设备不一致')
         from dlss5tool.nvofa import OpticalFlow, align_size
         fw, fh = align_size(ow, oh)
         if native:
@@ -354,14 +385,17 @@ def export_video(source, output, *, multiplier=2, scale=1, enhance=False, settin
                                'scene_cuts': tuple(scene_cuts), 'hdr_metadata': meta if hdr else None})
         publish_metadata()
         previous = previous_proxy = previous_scene_proxy = None
-        previous_reference = previous_reference_proxy = None
+        previous_reference = None
         index = 0
         output_index = 0
-        def write(rgba, reference=None):
+        def write(rgba, reference=None, mix_source=None):
             nonlocal output_index
             check_cancel(cancel)
             if render_only:
-                frame_sink(output_index, rgba, reference)
+                if mix_source is None:
+                    frame_sink(output_index, rgba, reference)
+                else:
+                    frame_sink(output_index, rgba, reference, mix_source=mix_source)
                 output_index += 1
                 return
             if view:
@@ -389,10 +423,13 @@ def export_video(source, output, *, multiplier=2, scale=1, enhance=False, settin
             check_cancel(cancel)
             if render_gate:
                 render_gate(index)
+            mix_source = None
             if input_session is not None:
                 if index >= total:
                     break
-                rgba, reference = input_session.wait(index, cancel)
+                pair = input_session.wait(index, cancel)
+                rgba, reference = pair
+                mix_source = getattr(pair, 'mix_source', reference)
             elif meta['is_hdr']:
                 rgba = capture.read()
                 if rgba is None:
@@ -407,6 +444,9 @@ def export_video(source, output, *, multiplier=2, scale=1, enhance=False, settin
                 rgba = cv2.cvtColor(bgr, cv2.COLOR_BGR2RGBA)
             if rgba.shape[:2] != (h, w):
                 raise ValueError('视频帧尺寸变化，已停止')
+            if input_session is None and need_reference:
+                # Capture before VSR: the original side must contain source pixels.
+                reference = resize_original(rgba, (ow, oh)).copy()
             if sr:
                 rgba = sr.process(rgba).copy()
             scene_proxy = analysis_rgba8(rgba, config)
@@ -416,11 +456,10 @@ def export_video(source, output, *, multiplier=2, scale=1, enhance=False, settin
             if cut:
                 scene_cuts.append(index)
                 publish_metadata()
-            if input_session is None:
-                reference = final_size(rgba).copy() if need_reference else None
-            elif config.get('_render_stage') == 'base':
-                reference = final_size(reference).copy()
+            if not need_reference:
+                reference = None
             if nr:
+                mix_source = rgba
                 processed = nr.process(rgba, reset=index == 0 or cut)
                 if processed is None:
                     raise RuntimeError('DLSS 5 增强失败')
@@ -432,11 +471,11 @@ def export_video(source, output, *, multiplier=2, scale=1, enhance=False, settin
                     rgba = cv2.cvtColor(mixed, cv2.COLOR_BGR2RGBA)
             elif input_session is not None and config.get('_render_stage') == 'output':
                 if hdr:
-                    rgba = compose_hdr_frame(reference, rgba, view=0,
+                    rgba = compose_hdr_frame(mix_source, rgba, view=0,
                         mix=config.get('output_mix', 1), profile=meta['profile'])
                 else:
                     rgba = cv2.cvtColor(compose_output_frame(
-                        cv2.cvtColor(reference, cv2.COLOR_RGBA2BGR),
+                        cv2.cvtColor(mix_source, cv2.COLOR_RGBA2BGR),
                         cv2.cvtColor(rgba, cv2.COLOR_RGBA2BGR), view=0,
                         mix=config.get('output_mix', 1)), cv2.COLOR_BGR2RGBA)
             rgba = final_size(rgba)
@@ -448,23 +487,18 @@ def export_video(source, output, *, multiplier=2, scale=1, enhance=False, settin
                 frames, valid = native.process(rgba, motion, reset=previous is None or cut)
             else:
                 frames, valid = [], True
-            reference_frames = [None] * (multiplier-1)
-            if reference_native:
-                reference_proxy = analysis_rgba8(reference, config)
-                reference_frames, reference_valid = reference_native.process(reference,
-                    motion_for(reference_proxy, previous_reference_proxy, previous is None or cut),
-                    reset=previous is None or cut)
-                valid = valid and reference_valid
-                previous_reference_proxy = reference_proxy.copy()
             if previous is not None:
                 if not cut and not valid:
                     raise RuntimeError(f'帧对 {index-1}→{index} 返回无效插帧，已停止，未补重复帧')
-                for interpolated, reference_frame in zip(frames, reference_frames):
-                    write(previous if cut else interpolated, previous_reference if cut else reference_frame)
+                for interpolated in frames:
+                    # No source frame exists at an interpolated timestamp. Hold
+                    # the preceding real source, never synthesize an "original".
+                    write(previous if cut else interpolated, previous_reference)
                 report['cut_holds' if cut else 'generated_frames'] += multiplier-1
             # Real frames do not depend on a future frame. Publish immediately;
             # the next iteration inserts the intervening generated frames.
-            write(rgba, reference)
+            write(rgba, reference, mix_source=(mix_source
+                  if config.get('_render_stage') == 'base' and scale > 1 else None))
             previous, previous_proxy = rgba.copy(), proxy.copy()
             previous_reference = reference
             previous_scene_proxy = cv2.resize(scene_proxy, (64, 64), interpolation=cv2.INTER_AREA)
@@ -495,7 +529,7 @@ def export_video(source, output, *, multiplier=2, scale=1, enhance=False, settin
         actions = []
         if writer and report['status'] != 'complete':
             actions.append(writer.abort)
-        for item in (native, reference_native, flow, capture, nr, sr):
+        for item in (native, flow, capture, nr, sr):
             if item is not None:
                 actions.append(item.close if hasattr(item, 'close') else item.release)
         for action in actions:

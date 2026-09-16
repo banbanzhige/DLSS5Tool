@@ -1,6 +1,7 @@
 """CPU contracts for shared SR/FG pixels, bounded history and encoding."""
 import threading
 import time
+import unittest
 from pathlib import Path
 from unittest import mock
 
@@ -196,3 +197,40 @@ def test_warm_encoding_zero_compute_and_safe_cancellation(tmp_path):
             assert not list(tmp_path.glob('.*.cache-*'))
     finally:
         session.close()
+
+
+class ProgressForwardingTests(unittest.TestCase):
+    def test_session_forwards_progress_into_renderer(self):
+        seen = []
+        def renderer(source, output, *, progress, metadata_sink, frame_sink,
+                     render_gate, cancel, multiplier, **kwargs):
+            progress('检查时间戳', 0.5, (12, 24))
+            metadata_sink({
+                'source_frames': 1, 'hdr_metadata': None, 'width': 8, 'height': 8,
+                'output_rate': '24', 'source_rate': '24', 'source_metadata': {},
+            })
+            pixels = np.zeros((8, 8, 4), np.uint8)
+            render_gate(0)
+            frame_sink(0, pixels, pixels)
+            return {}
+        session = rc.RenderSession('source', {}, 100000, renderer=renderer)
+        try:
+            session.set_progress(lambda *args: seen.append(args))
+            session.wait(0, threading.Event())
+        finally:
+            session.close()
+        self.assertEqual(seen[0][0], '检查时间戳')
+        self.assertEqual(seen[0][2], (12, 24))
+
+    def test_set_progress_reaches_upstream_session(self):
+        parent = rc.RenderSession('source', {}, 100000, renderer=renderer)
+        child = rc.RenderSession('source', {'frame_generation_multiplier': 2}, 100000, renderer=renderer)
+        try:
+            child.upstream = parent
+            marker = object()
+            child.set_progress(marker)
+            self.assertIs(child.progress, marker)
+            self.assertIs(parent.progress, marker)
+        finally:
+            child.close()
+            parent.close()
