@@ -118,7 +118,9 @@ def collect(work, destination):
     packages.update({
         'pyav': dict(name='pyav', source_url='https://github.com/PyAV-Org/PyAV/archive/refs/tags/v18.1.0.tar.gz'),
         'libiconv': dict(name='libiconv', source_url='https://ftp.gnu.org/gnu/libiconv/libiconv-1.19.tar.gz'),
-        'zlib': dict(name='zlib', source_url='https://zlib.net/zlib-1.3.2.tar.gz'),
+        'zlib': dict(name='zlib',
+            source_url='https://github.com/madler/zlib/releases/download/v1.3.2/zlib-1.3.2.tar.gz',
+            sha256='bb329a0a2cd0274d05519d61c667c062e06990d72e125ee2dfa8de64f0119d16'),
         'gcc': dict(name='gcc', source_url='https://ftp.gnu.org/gnu/gcc/gcc-16.1.0/gcc-16.1.0.tar.xz'),
         'mingw-w64': dict(name='mingw-w64', source_url='https://github.com/mingw-w64/mingw-w64/archive/refs/tags/v13.0.0.tar.gz'),
     })
