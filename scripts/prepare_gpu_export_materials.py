@@ -72,13 +72,24 @@ def extract_notices(archive, destination):
     with tarfile.open(archive, 'r:*') as source:
         for member in source:
             name = Path(member.name).name
-            if (not member.isfile() or member.size > 512 * 1024
-                    or not re.match(r'(?i)^(COPYING|LICENSE|LICENCE|NOTICE|COPYRIGHT|AUTHORS)([._-]|$)', name)):
+            if not member.isfile() or member.size > 512 * 1024:
                 continue
+            named_notice = re.match(r'(?i)^(COPYING|LICENSE|LICENCE|NOTICE|COPYRIGHT|AUTHORS)([._-]|$)', name)
+            header_notice = Path(archive).name.startswith(('nv-codec-headers.', 'amf-headers.')) and name.endswith('.h')
+            if not named_notice and not header_notice:
+                continue
+            payload = source.extractfile(member).read()
+            if not named_notice:
+                # These header-only SDK archives put their full terms in the
+                # leading comment of each header, not in a standalone LICENSE.
+                comment, end, _ = payload.partition(b'*/')
+                if not end or not any(term in comment for term in
+                    (b'Permission is hereby granted', b'Redistribution and use')):
+                    continue
+                payload = comment + end + b'\n'
             # Preserve every matching notice without trusting archive paths.
             key = hashlib.sha256(member.name.encode()).hexdigest()[:10] + '-' + name
             target = destination / key
-            payload = source.extractfile(member).read()
             if target.exists() and target.read_bytes() != payload:
                 raise RuntimeError('Existing notice mismatch: ' + str(target))
             target.write_bytes(payload)
