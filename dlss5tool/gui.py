@@ -2646,8 +2646,10 @@ class App(SharedRenderPreview, PreviewComparison, GuidanceExportUI):
         finally:
             cap.release()
         try:
-            color_info = probe_video_stream(find_ffmpeg(), path)
+            color_info = probe_video_stream(None if is_sequence(path) else find_ffmpeg(), path)
         except Exception as ex:
+            if is_sequence(path):
+                raise  # Explicit sequence color must never fall back to SDR.
             color_info = {"is_hdr": False, "profile": "srgb", "label": "SDR / sRGB"}
             self.logln(f"[队列色彩检测] {os.path.basename(path)} 按 SDR 处理: {ex}")
         metadata = {
@@ -8779,8 +8781,12 @@ class App(SharedRenderPreview, PreviewComparison, GuidanceExportUI):
             return False
 
         try:
-            color_info = probe_video_stream(find_ffmpeg(), path)
+            color_info = probe_video_stream(None if is_sequence(path) else find_ffmpeg(), path)
         except Exception as ex:
+            if is_sequence(path):
+                new_cap.release()
+                messagebox.showerror(tr('dialog.import_failed'), str(ex))
+                return False
             color_info = {"is_hdr": False, "profile": "srgb", "label": "SDR / sRGB"}
             self.logln(tr("log.color_fallback", error=ex))
 

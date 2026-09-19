@@ -298,7 +298,7 @@ class SharedRenderPreview:
         if meta:
             rendered = compose_hdr_frame(reference, processed, view=view, mix=1, profile=meta['profile']) if view else processed
             def display(pixels):
-                coded = np.ascontiguousarray((np.clip(pixels[..., 2::-1], 0, 1)*255+.5).astype(np.uint8))
+                coded = np.ascontiguousarray(pixels[..., 2::-1])
                 return tone_map_hdr_preview(coded, meta)
             original, result = display(reference), display(rendered)
         else:

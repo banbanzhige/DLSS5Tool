@@ -520,7 +520,7 @@ def export_video(source, output, *, multiplier=2, scale=1, enhance=False, settin
                 if rgba is None:
                     break
                 if not hdr:
-                    coded_bgr = np.ascontiguousarray((np.clip(rgba[..., 2::-1], 0, 1)*255+.5).astype(np.uint8))
+                    coded_bgr = np.ascontiguousarray(rgba[..., 2::-1])
                     rgba = cv2.cvtColor(tone_map_hdr_preview(coded_bgr, meta), cv2.COLOR_BGR2RGBA)
             else:
                 ok, bgr = capture.read()

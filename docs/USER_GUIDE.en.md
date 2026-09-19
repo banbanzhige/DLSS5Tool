@@ -35,6 +35,16 @@ Use **Detach** on the transport bar to move the preview and playback controls in
 
 Each queued job stores the settings active when it was added. Later adjustments do not automatically modify existing jobs; select jobs and choose **Apply settings** when needed. Retry, clear-completed, move, pause, cancel, and resume operations are supported. This is not frame-level resumable export within a video.
 
+### Image sequences
+
+Choose any frame through **Queue → Add image sequence**. Frames must have consecutive numbers, matching prefixes, suffixes, extensions and dimensions in the same folder. Set the source frame rate and **Input image color**. The sequence becomes one silent video job supporting enhancement, super-resolution and frame generation.
+
+- **SDR / sRGB**: 8-bit, three-channel RGB PNG/JPG (default).
+- **HDR / PQ or HLG / BT.2020**: 16-bit, three-channel RGB PNG, already encoded with the selected transfer function. RGB values use the full 0–65535 range. The explicit selection defines interpretation; embedded ICC profiles are not automatically detected or converted.
+- 16-bit does not imply HDR. Linear data, other gamuts, grayscale and alpha images cannot be imported directly under this HDR contract. EXR/TIFF HDR sequences are not supported yet.
+- Enable **HDR high-precision processing** to retain HDR on export; disabling it maps to SDR. Previews are always SDR and do not certify HDR display brightness.
+- Originals are not copied or modified. Re-import after moving, replacing or changing source pictures. Existing SDR sequence records remain compatible; HDR records require a build supporting this feature.
+
 ## Optional optical flow
 
 ### Base package and enhancement component
@@ -117,7 +127,7 @@ Export a complete MP4 or the current PNG at source dimensions/frame rate, withou
 
 ### HDR and experimental controls
 
-- High-precision HDR processing applies only to correctly tagged PQ/HLG video; static HDR images are not currently supported.
+- High-precision HDR processing supports correctly tagged PQ/HLG video and explicitly declared 16-bit RGB PNG sequences as described above. Individual static HDR images are not currently supported.
 - Large HDR jobs may use the requested 2/3 in-flight frames when estimated free VRAM permits, otherwise 1. Strict single-session temporal order is unchanged; estimates are not allocation guarantees.
 - HDR export uses HEVC Main10, 10-bit 4:2:0, and writes HDR10/HLG color tags (primaries, transfer, matrix, range). Dolby Vision, HDR10+ dynamic metadata, and source mastering-display/MaxCLL SEI are not copied.
 - The UI tone-maps HDR previews to SDR and should not be used to judge final HDR brightness. Disabling high-precision processing tone-maps HDR video to SDR before export.

@@ -493,7 +493,10 @@ def tone_map_hdr_preview(frame_bgr, color_info):
     """Create an SDR preview only; the export path retains the HDR signal."""
     if frame_bgr is None or not (color_info or {}).get("is_hdr"):
         return frame_bgr
-    rgb = frame_bgr[..., ::-1].astype(np.float32) / 255.0
+    # OpenCV video previews are BGR8; HDR PNG sequences are BGR16 and the
+    # render cache is normalized float. Tone-map before preview quantization.
+    divisor = 65535.0 if frame_bgr.dtype == np.uint16 else (255.0 if frame_bgr.dtype == np.uint8 else 1.0)
+    rgb = np.clip(frame_bgr[..., ::-1].astype(np.float32) / divisor, 0, 1)
     linear = _pq_eotf(rgb) * 100.0 if color_info.get("profile") == "hdr10_pq" else _hlg_eotf(rgb) * 12.0
     if str(color_info.get("color_primaries", "")).startswith("bt2020"):
         matrix = np.array([
@@ -525,7 +528,7 @@ def _zscale_decode_filter(color_info):
 
 
 class FFmpegHDRVideoReader:
-    """Decode PQ/HLG frames as normalized transfer-coded RGBA16F."""
+    """Decode PQ/HLG media as RGBA16F; descriptors bypass FFmpeg entirely."""
 
     def __init__(self, source, width, height, color_info, ffmpeg=None, *, start_frame=0):
         self.source = os.path.abspath(source)
@@ -534,6 +537,11 @@ class FFmpegHDRVideoReader:
         self.color_info = classify_color_info(color_info)
         if not self.color_info["is_hdr"]:
             raise ValueError("HDR reader requires a PQ or HLG source")
+        from dlss5tool.image_sequence import is_sequence, HDRSequenceReader
+        self._sequence_reader = None
+        if is_sequence(source):
+            self._sequence_reader = HDRSequenceReader(source, width, height, self.color_info, start_frame=start_frame)
+            return
         self.ffmpeg = ffmpeg or find_ffmpeg()
         start_frame = max(0, int(start_frame))
         decode_filter = _zscale_decode_filter(self.color_info)
@@ -564,6 +572,8 @@ class FFmpegHDRVideoReader:
             pass
 
     def read(self):
+        if self._sequence_reader is not None:
+            return self._sequence_reader.read()
         data = bytearray(self._frame_bytes)
         view = memoryview(data)
         received = 0
@@ -584,6 +594,9 @@ class FFmpegHDRVideoReader:
         return (rgba16.astype(np.float32) / 65535.0).astype(np.float16)
 
     def close(self):
+        if getattr(self, '_sequence_reader', None) is not None:
+            self._sequence_reader.close()
+            return
         if getattr(self, "_proc", None) is None:
             return
         if self._proc.poll() is None:

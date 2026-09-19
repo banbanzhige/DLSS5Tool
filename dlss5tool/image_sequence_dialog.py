@@ -6,7 +6,7 @@ from tkinter import ttk
 
 from dlss5tool import paths
 from dlss5tool.i18n import tr
-from dlss5tool.image_sequence import ImageSequence, parse_rate
+from dlss5tool.image_sequence import COLOR_PROFILES, ImageSequence, parse_rate
 
 
 def ask_sequence(parent, selected):
@@ -23,6 +23,12 @@ def ask_sequence(parent, selected):
     entry = ttk.Entry(body, textvariable=rate, width=24)
     entry.pack(anchor='w', pady=(4, 8))
     ttk.Label(body, text=tr('sequence.rate_help'), wraplength=440).pack(anchor='w')
+    ttk.Label(body, text=tr('sequence.color')).pack(anchor='w', pady=(12, 0))
+    color = ttk.Combobox(body, state='readonly', width=40,
+        values=[tr('sequence.color_' + profile) for profile in COLOR_PROFILES])
+    color.current(0)
+    color.pack(anchor='w', pady=(4, 8))
+    ttk.Label(body, text=tr('sequence.color_help'), wraplength=440, justify='left').pack(anchor='w')
     status = tk.StringVar(value='')
     ttk.Label(body, textvariable=status, wraplength=440, justify='left').pack(anchor='w', pady=(12, 4))
     bar = ttk.Progressbar(body, length=440, maximum=100)
@@ -71,7 +77,8 @@ def ask_sequence(parent, selected):
                     status.set(str(payload))
                     submit.config(state='normal')
                     entry.config(state='normal')
-                    entry.focus_set()
+                    color.config(state='readonly')
+                    color.focus_set()
                     return
                 elif kind == 'done':
                     try:
@@ -81,6 +88,7 @@ def ask_sequence(parent, selected):
                         status.set(str(error))
                         submit.config(state='normal')
                         entry.config(state='normal')
+                        color.config(state='readonly')
                         return
                     window.destroy()
                     return
@@ -97,6 +105,8 @@ def ask_sequence(parent, selected):
             entry.focus_set()
             return
         submit.config(state='disabled')
+        profile = COLOR_PROFILES[color.current()]
+        color.config(state='disabled')
         running = True
         entry.config(state='disabled')
         status.set(tr('sequence.scanning', done=0, total='…'))
@@ -104,7 +114,7 @@ def ask_sequence(parent, selected):
             try:
                 sequence = ImageSequence.scan(selected, fps, check_cancel,
                     lambda done, total: events.put(('progress', (done, total)))
-                    if done == total or done % 25 == 0 else None)
+                    if done == total or done % 25 == 0 else None, color_profile=profile)
                 events.put(('done', sequence))
             except Exception as error:
                 events.put(('error', error))
