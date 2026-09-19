@@ -12,10 +12,10 @@ import json
 from pathlib import Path
 import re
 import shutil
+import subprocess
 import sys
 import tarfile
-import time
-import urllib.request
+import uuid
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
@@ -33,21 +33,19 @@ def fetch(url, target, expected=None):
     target = Path(target)
     target.parent.mkdir(parents=True, exist_ok=True)
     if not target.exists():
-        request = urllib.request.Request(url, headers={'User-Agent': 'DLSS5Tool-release-materials/1.0'})
-        partial = target.with_suffix(target.suffix + '.partial')
-        if partial.exists():
-            raise RuntimeError('Previous incomplete download: ' + str(partial))
-        with urllib.request.urlopen(request, timeout=20) as response, partial.open('xb') as dest:
-            count = 0
-            deadline = time.monotonic() + 120
-            while data := response.read(1024 * 1024):
-                count += len(data)
-                if count > 180 * 1024**2 or time.monotonic() > deadline:
-                    raise RuntimeError('Source download exceeds time/size budget: ' + url)
-                dest.write(data)
-        if expected and sha(partial) != expected:
-            raise RuntimeError('Source SHA mismatch: ' + str(partial))
-        partial.rename(target)
+        partial = target.with_name(target.name + '.' + uuid.uuid4().hex + '.partial')
+        try:
+            subprocess.run(['curl.exe', '--fail', '--location', '--silent', '--show-error',
+                '--retry', '2', '--retry-all-errors', '--retry-delay', '2',
+                '--connect-timeout', '15', '--max-time', '120', '--max-filesize', str(180 * 1024**2),
+                '--output', str(partial), url], check=True, timeout=370,
+                creationflags=getattr(subprocess, 'CREATE_NO_WINDOW', 0))
+            if expected and sha(partial) != expected:
+                raise RuntimeError('Source SHA mismatch: ' + str(partial))
+            partial.rename(target)
+        finally:
+            if partial.exists():
+                partial.unlink()  # Only this invocation's unique download file.
     actual = sha(target)
     if expected and actual != expected:
         raise RuntimeError(f'Source SHA mismatch: {target.name}: {actual} != {expected}')
