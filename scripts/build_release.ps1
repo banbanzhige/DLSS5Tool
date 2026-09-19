@@ -2,6 +2,7 @@
 param(
     [switch]$SkipInstall,
     [switch]$SkipTests,
+    [switch]$LocalCandidate,
     [string]$OutputDirectory,
     [string]$WorkDirectory
 )
@@ -9,6 +10,7 @@ param(
 $ErrorActionPreference = "Stop"
 $projectRoot = Split-Path -Parent (Split-Path -Parent $MyInvocation.MyCommand.Path)
 $venvPython = Join-Path $projectRoot ".venv\Scripts\python.exe"
+$previousCandidateMode = $env:DLSS5_LOCAL_CANDIDATE
 
 function Assert-ExternalSuccess([string]$Step) {
     if ($LASTEXITCODE -ne 0) {
@@ -19,6 +21,7 @@ function Assert-ExternalSuccess([string]$Step) {
 Push-Location $projectRoot
 
 try {
+    $env:DLSS5_LOCAL_CANDIDATE = if ($LocalCandidate) { '1' } else { '0' }
     if (-not (Test-Path -LiteralPath $venvPython)) {
         Write-Host "Creating build environment..."
         py -3 -m venv (Join-Path $projectRoot ".venv")
@@ -85,6 +88,9 @@ try {
     Copy-Item -LiteralPath (Join-Path $projectRoot "CHANGELOG.md") -Destination $releaseDir -Force
     Copy-Item -LiteralPath (Join-Path $projectRoot "LICENSE") -Destination $releaseDir -Force
     Copy-Item -LiteralPath (Join-Path $projectRoot "THIRD_PARTY_NOTICES.md") -Destination $releaseDir -Force
+    if ($LocalCandidate) {
+        Copy-Item -LiteralPath (Join-Path $projectRoot 'packaging\LOCAL_CANDIDATE_REVIEW.txt') -Destination (Join-Path $releaseDir 'DISTRIBUTION-REVIEW.txt')
+    }
 
     # Only the instructions are shipped; never copy user models, Python or EXEs.
     $releaseMods = Join-Path $releaseDir "mods"
@@ -118,5 +124,6 @@ try {
     Write-Host "Before upload, run scripts/release_updates.py --check-upload <editions/github-assets>."
 }
 finally {
+    $env:DLSS5_LOCAL_CANDIDATE = $previousCandidateMode
     Pop-Location
 }

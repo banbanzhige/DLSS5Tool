@@ -65,6 +65,38 @@ class ReleaseUpdateWorkflowTests(unittest.TestCase):
         for entry in report['incremental_updates']['assets']:
             self.assertEqual(entry['payload_bytes'], 3 if entry['edition'] == 'lite' else 6)
 
+    def test_previous_release_window_ignores_retired_directories(self):
+        policy = delta.read_json(self.policy)
+        policy['support'] = 'previous-release'
+        policy['baselines'].append({'version': 'v2.2.1', 'packages': str(self.new)})
+        policy['baselines'][0]['packages'] = str(self.root / 'deleted-retired-version')
+        delta.write_json(self.policy, policy)
+        plan = workflow.plan_updates('v2.3.0', policy_path=self.policy)
+        self.assertEqual([b['version'] for b in plan['baselines']], ['v2.2.1'])
+        (self.new / 'DLSS5Tool-v2.2.1-win64-full/DLSS5Tool.exe').write_bytes(b'modified')
+        with self.assertRaisesRegex(delta.DeltaError, 'missing or modified'):
+            workflow.plan_updates('v2.3.0', policy_path=self.policy)
+
+    def test_streamed_overlay_verifies_bytes_and_rejects_target_drift(self):
+        from scripts.verify_update_overlay import verify
+        assets, _ = self.build()
+        before = self.old / 'DLSS5Tool-v2.2.0-win64-lite'
+        after = self.new / 'DLSS5Tool-v2.2.1-win64-lite'
+        asset = assets / delta.asset_name('v2.2.0', 'v2.2.1', 'lite')
+        self.assertTrue(verify(before, after, asset, 'lite')['overlay_verified'])
+        (after / 'DLSS5Tool.exe').write_bytes(b'drift')
+        with self.assertRaisesRegex(ValueError, 'endpoints'):
+            verify(before, after, asset, 'lite')
+
+    def test_previous_release_gate_still_passes_after_target_registration(self):
+        policy = delta.read_json(self.policy)
+        policy['support'] = 'previous-release'
+        delta.write_json(self.policy, policy)
+        assets, report = self.build()
+        policy['baselines'].append({'version': 'v2.2.1', 'packages': str(self.new)})
+        delta.write_json(self.policy, policy)
+        self.assertEqual(len(workflow.verify_upload_updates(assets, report, policy_path=self.policy)['assets']), 2)
+
     def test_later_releases_cannot_claim_initial_exemption(self):
         with self.assertRaisesRegex(delta.DeltaError, 'only allowed'):
             self.plan(initial=True)

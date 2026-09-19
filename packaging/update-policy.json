@@ -1,15 +1,8 @@
 {
   "schema": 1,
   "first_updater_version": "v2.2.0",
+  "support": "previous-release",
   "baselines": [
-    {
-      "version": "v2.2.0",
-      "packages": "dist/v2.2.0-release-20260912/editions"
-    },
-    {
-      "version": "v2.2.1",
-      "packages": "dist/v2.2.1-release-20260914/editions"
-    },
     {
       "version": "v2.2.2",
       "packages": "dist/v2.2.2-release-20260915/editions"

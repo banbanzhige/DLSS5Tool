@@ -154,6 +154,8 @@ def main():
               'Model editions include RAFT-Large only; no Depth Anything V2 weights.\n'
               'The publisher must review redistribution, notices and any source-offer obligations before public release.\n'
               'No files are uploaded or published by this build.\n')
+    if (base / 'DISTRIBUTION-REVIEW.txt').is_file():
+        notice += '\n' + (base / 'DISTRIBUTION-REVIEW.txt').read_text(encoding='utf-8')
     (folders['lite'] / 'DISTRIBUTION-REVIEW.txt').write_text(notice, encoding='utf-8')
     base_licenses = folders['lite'] / 'licenses'
     base_licenses.mkdir(exist_ok=True)
@@ -260,6 +262,11 @@ def main():
               'component_sha256': WORKER_SHA, 'models': model_records, 'editions': records,
               'full_equals_lite_plus_addon': True, 'license_review': 'Publisher review required; RAFT weights only; depth architecture retained',
               'github_portable_asset': canonical, 'incremental_updates': incremental, 'published': False}
+    gpu_manifest_path = base / '_internal/gpu-export/manifest.json'
+    if gpu_manifest_path.is_file():
+        gpu_manifest = json.loads(gpu_manifest_path.read_text(encoding='utf-8'))
+        report['gpu_export_distribution_review_complete'] = bool(gpu_manifest.get('packaging_license_review_complete'))
+        report['local_candidate'] = not report['gpu_export_distribution_review_complete']
     (output / 'package-report.json').write_text(json.dumps(report, indent=2), encoding='utf-8')
     shutil.copy2(output / 'package-report.json', assets / 'package-report.json')
     shutil.copy2(ROOT / 'scripts/Join-ReleaseArchive.ps1', assets / 'Join-ReleaseArchive.ps1')

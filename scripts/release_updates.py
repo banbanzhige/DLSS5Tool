@@ -14,6 +14,37 @@ from scripts import build_file_update
 DEFAULT_POLICY = ROOT / 'packaging/update-policy.json'
 
 
+def supported_baselines(policy, target):
+    """Select the explicitly configured support window, never fall back on I/O failure."""
+    configured = policy.get('baselines')
+    if not isinstance(configured, list) or not configured:
+        raise delta.DeltaError('Update policy must contain at least one required baseline')
+    support = policy.get('support', 'all-configured')
+    if support not in ('all-configured', 'previous-release'):
+        raise delta.DeltaError('Unknown update support policy')
+    if support == 'all-configured':
+        return configured
+    seen, candidates = set(), []
+    for item in configured:
+        if not isinstance(item, dict):
+            raise delta.DeltaError('Invalid baseline policy entry')
+        version = delta.version(item.get('version'))
+        if version in seen or updater.compare_versions(version, policy['first_updater_version']) < 0:
+            raise delta.DeltaError('Invalid or duplicate baseline version')
+        seen.add(version)
+        if updater.is_newer_version(version, target):
+            raise delta.DeltaError('Baseline cannot be newer than target')
+        if version != target:
+            candidates.append(item)
+    if not candidates:
+        raise delta.DeltaError('Previous release baseline is missing')
+    latest = candidates[0]
+    for item in candidates[1:]:
+        if updater.is_newer_version(item['version'], latest['version']):
+            latest = item
+    return [latest]
+
+
 def plan_updates(target, *, initial=False, overrides=(), policy_path=DEFAULT_POLICY):
     """Run before copying/compressing release inputs. Never guess a baseline."""
     delta.version(target)
@@ -27,9 +58,7 @@ def plan_updates(target, *, initial=False, overrides=(), policy_path=DEFAULT_POL
         return {'mode': 'initial_baseline', 'target': target, 'first': first, 'baselines': []}
     if not updater.is_newer_version(target, first):
         raise delta.DeltaError('First updater release requires explicit --initial-update-baseline; later releases require baselines')
-    configured = policy.get('baselines')
-    if not isinstance(configured, list) or not configured:
-        raise delta.DeltaError('Update policy must contain at least one required baseline')
+    configured = supported_baselines(policy, target)
     required = {}
     for item in configured:
         if not isinstance(item, dict):
@@ -135,9 +164,7 @@ def verify_upload_updates(assets, report=None, *, policy_path=DEFAULT_POLICY):
     elif updates.get('mode') != 'required' or not required:
         raise delta.DeltaError('Later releases cannot skip incremental payloads')
     else:
-        configured = policy.get('baselines')
-        if not isinstance(configured, list):
-            raise delta.DeltaError('Invalid baseline policy')
+        configured = supported_baselines(policy, target)
         # The target itself may be registered after validation for the next release.
         expected_sources = [item['version'] for item in configured if item['version'] != target]
         if sorted(expected_sources) != sorted(required):

@@ -1,0 +1,6 @@
+DLSS5Tool 本地候选包
+
+此包用于本地测试，构建不代表公开分发已获确认。未自动上传或发布。
+GPU 导出运行库保留已验证的版本；配套源码、许可证通知、摘要及待确认项见
+_internal/licenses/GPU-export/materials.json。
+上游二进制的分发条件及 winpthreads 精确来源尚未确认；没有将审查标记改为通过。

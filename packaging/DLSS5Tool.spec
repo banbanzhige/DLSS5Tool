@@ -37,7 +37,14 @@ if gpu_components:
     with open(manifest_path, encoding='utf-8') as gpu_manifest_file:
         gpu_manifest = json.load(gpu_manifest_file)
     if not gpu_manifest.get('packaging_license_review_complete'):
-        raise SystemExit('GPU export local integration is enabled, but redistribution license/source bundle review is unfinished')
+        if os.environ.get('DLSS5_LOCAL_CANDIDATE') != '1':
+            raise SystemExit('Distribution review pending. Use build_release.ps1 -LocalCandidate for a validated local-only build.')
+        import importlib.metadata
+        from scripts.gpu_export_packaging import validate_candidate_materials
+        candidate_status = validate_candidate_materials(
+            os.path.join(project_root, 'runtime', 'gpu-export', 'licenses'),
+            importlib.metadata.distribution('av').locate_file('av.libs'))
+        print('LOCAL CANDIDATE: materials verified; distribution review remains pending:', candidate_status['unresolved'])
     import av
     if av.__version__ != '18.1.0':
         raise SystemExit('GPU export requires verified PyAV 18.1.0')

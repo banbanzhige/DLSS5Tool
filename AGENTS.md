@@ -22,14 +22,17 @@
 - 用户要求“打包/发版”时，基础构建 `scripts/build_release.ps1` 不是完整交付；必须运行
   `scripts/package_editions.py`，遵守 `docs/release/FILE_UPDATES.md` 的固定工作流。
 - `packaging/update-policy.json` 是必须支持的旧版本清单与本地基线目录的唯一配置。
+  维护者于 2026-09-19 明确改为 `previous-release`：仅为上一个正式版本生成 lite/full 两个增量包，
+  更早版本使用整包升级，不恢复已停用旧版基线、不累计所有历史版本的增量包。
   先运行 `scripts/release_updates.py --preflight-version <目标版本>`；缺少或修改过的基线必须报告，
   不得为使打包通过而删掉策略条目、清空列表、跳过 full 或改成只打整包。
 - v2.2.0 是首次更新器基线，只有该版本可显式使用 `--initial-update-baseline`；
-  后续版本必须自动生成策略内每个旧版本到目标版本的 lite/full 两种 `.dlssupdate`。
+  后续版本必须自动生成策略选中的上一个正式版本到目标版本的 lite/full 两种 `.dlssupdate`。
 - 打包结束必须通过 `scripts/release_updates.py --check-upload <github-assets目录>`。
   交付报告列出增量包支持的源版本、两种形态、校验结果与路径；不能只交付整包却声称增量已发布。
 - 新版本完成验收后，将其正式 lite/full 解压目录和清单登记到策略，保留策略仍引用的基线。
-  删除基线或缩小支持范围须由维护者明确决定。不得使用历史同名实验包或用户安装目录代替正式基线。
+  新版登记后下次发布自动选取最新的旧版本；不再累计历史支持，旧目录清理仍须另获授权。
+  不得使用历史同名实验包或用户安装目录代替正式基线。
 - 不自动推送、创建 Release 或上传附件；这些动作另需用户授权。
 
 # GitHub Release Notes 文案约束
