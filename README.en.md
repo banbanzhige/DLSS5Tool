@@ -36,9 +36,11 @@ DLSS5Tool uses **DLSS 5 Neural Rendering** to enhance local videos and images. N
 - **Image enhancement:** Default, Natural, and Cinema styles with strength, tone, structure, and skin-mask controls.
 - **2× / 4× super resolution:** Upscale with RTX Video before enhancement, or process at the original size.
 - **Frame interpolation:** Export at 2× / 3× / 4×. 3× / 4× are experimental and may show motion errors. Super resolution and interpolation each have a preview switch, off by default.
-- **Interactive comparison:** Draggable wipe, side-by-side views, zoom, frame stepping, fullscreen, and a detachable preview.
-- **Batch export:** Mix images and videos in one queue, with independent settings per item. Export MP4 / MKV / MOV video and preserve compatible source audio.
-- **HDR video:** High-precision HDR10 / HLG processing and 10-bit export; see the HDR notes below.
+- **Interactive comparison:** Compare the true original with enhanced output using a draggable wipe, side-by-side views, zoom, frame stepping, fullscreen, or a detachable preview. Active upscale and interpolation multipliers are shown, and display interactions keep pre-caching continuous.
+- **Batch export:** Mix images, videos, and image sequences with independent settings per item. Drag to select multiple items, use batch context menus and shortcuts, undo removal, and hover over long filenames for full paths. Export MP4 / MKV / MOV video and preserve compatible source audio.
+- **Image sequences to video:** Import consecutively numbered, same-size images as one task, set the source frame rate, then enhance, upscale, or interpolate them into a video without audio. Supports SDR PNG/JPG; current source also supports PQ / HLG HDR PNG sequences that meet the input requirements.
+- **HDR / GPU export:** High-precision HDR10 / HLG processing and 10-bit export. Eligible configurations use GPU color conversion and pass enhancement and interpolated frames directly from GPU memory to the encoder, reducing CPU transfers.
+- **Export progress and diagnostics:** Track timestamp scanning before long-video exports. Failed or cancelled GPU exports preserve existing output files; Diagnostics show effective settings and recent export information.
 - **Optical flow guidance:** Estimate inter-frame motion for temporal guidance, for more stable pictures and more accurate lighting.
 - **DLSS render GPU:** Uses a high-performance NVIDIA GPU by default. If the display is on an iGPU, DLSS still runs on the NVIDIA GPU. Multi-GPU systems can pick a device in Settings.
 - **File-level updates:** After installing a release that includes the update helper, **More → Check for updates** can download only changed files.
@@ -134,7 +136,7 @@ Download and extract the matching [nvngx_dlssnr.dll](https://github.com/banbanzh
 mods\nvngx_dlssnr.dll
 ```
 
-Overwriting the DLL inside `_internal` also works. If you previously set a custom DLL path, check that setting too. The RTX 30-series runtime is a community adaptation, not an NVIDIA support commitment; compatibility depends on the GPU and driver combination.
+Use `mods` instead of overwriting the bundled DLL in `_internal`: changing managed files can prevent incremental updates. If you previously set a custom DLL path, check that setting too. The RTX 30-series runtime is a community adaptation, not an NVIDIA support commitment; compatibility depends on the GPU and driver combination.
 
 ### 3. Import, compare, and export
 
@@ -145,13 +147,26 @@ Overwriting the DLL inside `_internal` also works. If you previously set a custo
 
 Start with the default settings and a short clip or single image. See the [user guide](docs/USER_GUIDE.en.md) for detailed controls.
 
+### 4. Turn an image sequence into video (optional)
+
+Choose **Queue → Add image sequence…** and select any frame, such as `frame_0001.png`. The app checks images in the same folder for matching prefixes, suffixes, and extensions, consecutive numbering, and identical dimensions, then adds the sequence as one queue item.
+
+HDR image-sequence support is in current source but not in the existing local candidate package. Check Releases for the packages actually available to download.
+
+- **Set the source frame rate:** Use the actual source rate, then enable upscaling or interpolation as needed. The output video has no audio.
+- **Standard sequences:** Select **SDR / sRGB** for 8-bit, three-channel RGB PNG/JPG images.
+- **HDR sequences (current source):** Use full-range BT.2020, 16-bit, three-channel RGB PNG images already encoded as PQ or HLG, and select the matching **Input image color**. Enable HDR high-precision processing to retain HDR on export. A 16-bit image is not necessarily HDR; linear EXR, HDR TIFF, grayscale, and HDR sequences with alpha are unsupported.
+
+Re-import if you move or modify the source images. See the [image-sequence guide](docs/USER_GUIDE.en.md#image-sequences) for full requirements.
+
 ## Before you start
 
 - **Results and speed vary by source and hardware.** Interactive comparison does not mean real-time model processing. High resolutions, 4× scaling, frame interpolation, and optical flow increase processing time and VRAM use.
 - **Frame interpolation:** Export at 2× / 3× / 4×. 3× / 4× are experimental and may show motion errors. Super-resolution and interpolation previews are off by default and do not change the export selection.
+- **GPU export is conditional:** GPU color conversion and direct transfer depend on hardware, components, resolution, and encoding settings. Ineligible configurations keep the existing encoding path; no fixed speedup is guaranteed. Check export logs and Diagnostics for the actual route.
 - **Optical flow is optional.** With Full or the add-on installed, select a mode under **Models**. The app remembers your selection and restores it after a startup environment check; a failed check turns it off and reports the reason. First use checks RAFT-Large before enabling it; a saved off mode remains off. On Lite without the add-on, a failed first check that leaves flow off is expected. On the same NVIDIA GPU, RAFT flow can connect directly to DLSS. Supports SDR and separate HDR analysis copies, but not tiled temporal guidance. Still images skip flow without blocking tiling or changing video preferences.
 - **DLSS render GPU:** Uses NVIDIA GPUs in high-performance order by default. If the display is on an iGPU, DLSS still runs on the discrete NVIDIA GPU. Multi-GPU systems can pick a device in Settings.
-- **HDR export and preview.** Export writes HDR10 / HLG color tags (BT.2020, PQ/HLG, limited range) and 10-bit HEVC. Preview is tone-mapped to SDR. Dolby Vision / HDR10+ dynamic metadata is not copied. Static HDR images are not supported. See [output and quality](docs/USER_GUIDE.en.md#output-and-quality).
+- **HDR export and preview.** Export writes HDR10 / HLG color tags (BT.2020, PQ/HLG, limited range) and 10-bit HEVC. Preview is tone-mapped to SDR. Dolby Vision / HDR10+ dynamic metadata is not copied. Single HDR still images are not supported; HDR image-sequence requirements are listed above. See [output and quality](docs/USER_GUIDE.en.md#output-and-quality).
 
 ## FAQ
 
@@ -167,7 +182,9 @@ Lower playback quality, try smaller media or 2× scaling, and temporarily disabl
 
 **How do I update?**
 
-Use **More → Check for updates**, or download the latest Release. The new updater downloads changed files for the installed edition when a matching payload exists, then asks again before exiting for the standalone helper to install it. Without a matching payload, Lite offers its complete archive; Full directs you to the release page for Full or Lite plus the matching add-on. Existing users must first manually extract a new release with the helper into a new folder. This feature requires both a newly built release and published update payloads. See the [update guide](docs/USER_GUIDE.en.md).
+Use **More → Check for updates**, or download the latest Release. Incremental packages support only the previous official release: **v2.3.0 targets v2.2.2 → v2.3.0 for both Lite and Full**. Earlier versions require a complete package.
+
+When a matching payload exists, the updater downloads changed files for the installed edition, verifies them, then asks again before exiting for the standalone helper to install it. Without a matching payload, Lite offers its complete archive; Full directs you to the release page for Full or Lite plus the matching add-on. Versions without the update helper must be upgraded by fully extracting the new release into a new folder. Incremental updates require the matching assets on the release page. See the [update guide](docs/USER_GUIDE.en.md).
 
 **Still having trouble?**
 
