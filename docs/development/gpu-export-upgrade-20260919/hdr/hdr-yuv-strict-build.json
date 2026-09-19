@@ -1,0 +1,12 @@
+{
+  "source_sha256": "470e856b38b729f1b093eaf8f10b296d91c5d7f617b72aeeeb439dc4c5623b7c",
+  "ptx_sha256": "2646f8659a64486218d160e807358d552e3350c3d0b4a64e1955ab2d4db7638a",
+  "bytes": 27645,
+  "nvrtc": "F:\\project\\DLSS5Tool\\tmp\\guidance-cuda-env\\Lib\\site-packages\\torch\\lib\\nvrtc64_120_0.dll",
+  "nvrtc_sha256": "02d2d7ef4690bf1a55dda1d3ac94c86ce8d16920071c87bcd3e70e94ef346e93",
+  "options": [
+    "--gpu-architecture=compute_75",
+    "--std=c++11"
+  ],
+  "log": ""
+}

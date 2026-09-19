@@ -1,0 +1,2 @@
+# Optional native GPU export muxer; no Torch/CUDA Python runtime required.
+av==18.1.0

@@ -1,0 +1,884 @@
+{
+  "records": [
+    {
+      "source": "tmp\\export-integration-20260917\\automatic-long-hdr-1920-hlg-0-baseline.mp4",
+      "archive": "automatic-long-hdr-1920-hlg-0-baseline.mp4",
+      "bytes": 520679,
+      "sha256": "1da8233e1fadceac3d2f592014c75e49a654986d92c3b4645a40ffc0d08a23a6"
+    },
+    {
+      "source": "tmp\\export-integration-20260917\\automatic-long-hdr-1920-hlg-0-gpu.mp4",
+      "archive": "automatic-long-hdr-1920-hlg-0-gpu.mp4",
+      "bytes": 520687,
+      "sha256": "85f5d64e6ef73f35cb86b0d4c127b211e360a654dcf6dd8cc79c680f752d863b"
+    },
+    {
+      "source": "tmp\\export-integration-20260917\\automatic-long-hdr-1920-hlg-1-baseline.mp4",
+      "archive": "automatic-long-hdr-1920-hlg-1-baseline.mp4",
+      "bytes": 520679,
+      "sha256": "1da8233e1fadceac3d2f592014c75e49a654986d92c3b4645a40ffc0d08a23a6"
+    },
+    {
+      "source": "tmp\\export-integration-20260917\\automatic-long-hdr-1920-hlg-1-gpu.mp4",
+      "archive": "automatic-long-hdr-1920-hlg-1-gpu.mp4",
+      "bytes": 520687,
+      "sha256": "85f5d64e6ef73f35cb86b0d4c127b211e360a654dcf6dd8cc79c680f752d863b"
+    },
+    {
+      "source": "tmp\\export-integration-20260917\\automatic-long-hdr-1920-pq-0-baseline.mp4",
+      "archive": "automatic-long-hdr-1920-pq-0-baseline.mp4",
+      "bytes": 520679,
+      "sha256": "bda0313e3c39cf3d03624cfb92983680f8bbb334422e7775939b3d1d130b546f"
+    },
+    {
+      "source": "tmp\\export-integration-20260917\\automatic-long-hdr-1920-pq-0-gpu.mp4",
+      "archive": "automatic-long-hdr-1920-pq-0-gpu.mp4",
+      "bytes": 520687,
+      "sha256": "87bdc51298a00594eb9462c4edc902a1c54aa4c0aa1a9c8e837e0d82539ea064"
+    },
+    {
+      "source": "tmp\\export-integration-20260917\\automatic-long-hdr-1920-pq-1-baseline.mp4",
+      "archive": "automatic-long-hdr-1920-pq-1-baseline.mp4",
+      "bytes": 520679,
+      "sha256": "bda0313e3c39cf3d03624cfb92983680f8bbb334422e7775939b3d1d130b546f"
+    },
+    {
+      "source": "tmp\\export-integration-20260917\\automatic-long-hdr-1920-pq-1-gpu.mp4",
+      "archive": "automatic-long-hdr-1920-pq-1-gpu.mp4",
+      "bytes": 520687,
+      "sha256": "87bdc51298a00594eb9462c4edc902a1c54aa4c0aa1a9c8e837e0d82539ea064"
+    },
+    {
+      "source": "tmp\\export-integration-20260917\\automatic-long-hdr.json",
+      "archive": "automatic-long-hdr.json",
+      "bytes": 297408,
+      "sha256": "0b457a3e90ebb9a580ad16c633db3003e5b4e6c3e0667dd22ff9f10e1b731d0e"
+    },
+    {
+      "source": "tmp\\export-integration-20260917\\enhance-hdr-pq-baseline-logs\\result.json",
+      "archive": "enhance-hdr-pq-baseline-logs/result.json",
+      "bytes": 996,
+      "sha256": "aee2bfbc32d9907e139745cbf2b638a8d7677452d580ebece7381b39b5db2fec"
+    },
+    {
+      "source": "tmp\\export-integration-20260917\\enhance-hdr-pq-baseline.mp4",
+      "archive": "enhance-hdr-pq-baseline.mp4",
+      "bytes": 13529,
+      "sha256": "908d804e2e5e61d87303f4a7483e368964e5396456faec1391c0787f2eaaa929"
+    },
+    {
+      "source": "tmp\\export-integration-20260917\\enhance-hdr-pq-gpu-logs\\result.json",
+      "archive": "enhance-hdr-pq-gpu-logs/result.json",
+      "bytes": 986,
+      "sha256": "23728551e8881e64ccd961455fd1016988dfdbbbb25c0eeaf1c1180b07d91ee1"
+    },
+    {
+      "source": "tmp\\export-integration-20260917\\enhance-hdr-pq-gpu.mp4",
+      "archive": "enhance-hdr-pq-gpu.mp4",
+      "bytes": 13520,
+      "sha256": "7a0167a9646950a458229e2974d436e82cdf45c61bf14e65bd34207e90099495"
+    },
+    {
+      "source": "tmp\\export-integration-20260917\\enhance-hdr-pq-source.mp4",
+      "archive": "enhance-hdr-pq-source.mp4",
+      "bytes": 14120,
+      "sha256": "30e3c3e72e6dc5c84718cfd19c1b6152378e3248d480bea6083076e75eb3620e"
+    },
+    {
+      "source": "tmp\\export-integration-20260917\\enhance-hdr-pq.json",
+      "archive": "enhance-hdr-pq.json",
+      "bytes": 14956,
+      "sha256": "5268297d00e67c6fe599382ab55a586418089a2486907cf59e8bba3715488363"
+    },
+    {
+      "source": "tmp\\export-integration-20260917\\enhance-sdr-baseline-logs\\result.json",
+      "archive": "enhance-sdr-baseline-logs/result.json",
+      "bytes": 983,
+      "sha256": "fc943168e4cbdcf736610858eda4997b80b1a35d45aa1e3fa0949a1be4824efb"
+    },
+    {
+      "source": "tmp\\export-integration-20260917\\enhance-sdr-baseline.mp4",
+      "archive": "enhance-sdr-baseline.mp4",
+      "bytes": 42360,
+      "sha256": "53271bab5c3d21c7d50fac1adb7b7aabc38bb0a619f2388ad9282ec78e008a5d"
+    },
+    {
+      "source": "tmp\\export-integration-20260917\\enhance-sdr-gpu-logs\\result.json",
+      "archive": "enhance-sdr-gpu-logs/result.json",
+      "bytes": 973,
+      "sha256": "278fc5c65d1440be70ded6b878b7a750ad639038a788f7e104c74b4d350b5964"
+    },
+    {
+      "source": "tmp\\export-integration-20260917\\enhance-sdr-gpu.mp4",
+      "archive": "enhance-sdr-gpu.mp4",
+      "bytes": 42361,
+      "sha256": "da077c743aaee9aea4e3ad1b3c3c7bed6fe416f83bb83751ad7aa359911c3bb2"
+    },
+    {
+      "source": "tmp\\export-integration-20260917\\enhance-sdr-source.mp4",
+      "archive": "enhance-sdr-source.mp4",
+      "bytes": 45304,
+      "sha256": "eca0472bfc2e9d2864b7fb603cb56c95ce878934c06b9b75c58eba4e204bfe41"
+    },
+    {
+      "source": "tmp\\export-integration-20260917\\enhance-sdr.json",
+      "archive": "enhance-sdr.json",
+      "bytes": 14564,
+      "sha256": "a1c802d828bcc4db2f07d7ce16fcbe9ef6ee7cf162666fe94bff3d9ebeb22522"
+    },
+    {
+      "source": "tmp\\export-integration-20260917\\fg4-mov-source.mp4",
+      "archive": "fg4-mov-source.mp4",
+      "bytes": 45304,
+      "sha256": "eca0472bfc2e9d2864b7fb603cb56c95ce878934c06b9b75c58eba4e204bfe41"
+    },
+    {
+      "source": "tmp\\export-integration-20260917\\final-hdr-fg3-baseline-logs\\native.log",
+      "archive": "final-hdr-fg3-baseline-logs/native.log",
+      "bytes": 19104,
+      "sha256": "61b31cfe26944933a378a63f001e027db05bb6101de5d9334c437a84bff62bd0"
+    },
+    {
+      "source": "tmp\\export-integration-20260917\\final-hdr-fg3-baseline-logs\\result.json",
+      "archive": "final-hdr-fg3-baseline-logs/result.json",
+      "bytes": 1057,
+      "sha256": "c14a78fa32411f4da3217384b95af86cd8b2decf44d01f0679c9cbaa4e59e400"
+    },
+    {
+      "source": "tmp\\export-integration-20260917\\final-hdr-fg3-baseline.mov",
+      "archive": "final-hdr-fg3-baseline.mov",
+      "bytes": 23997,
+      "sha256": "a8c623c3aa4396d56323a8b090aa250f672293ec2bcd0be2ee7fb18ac36d5ed7"
+    },
+    {
+      "source": "tmp\\export-integration-20260917\\final-hdr-fg3-gpu-logs\\native.log",
+      "archive": "final-hdr-fg3-gpu-logs/native.log",
+      "bytes": 18148,
+      "sha256": "334a2f6f5f64848a1417bf628beefa886ccf9a021291f6d9a966c095c2104155"
+    },
+    {
+      "source": "tmp\\export-integration-20260917\\final-hdr-fg3-gpu-logs\\result.json",
+      "archive": "final-hdr-fg3-gpu-logs/result.json",
+      "bytes": 1047,
+      "sha256": "067adfb873ee3f91c1dbb5bef7015eb6e8f5ceccee999afb27e25c1b5dda2201"
+    },
+    {
+      "source": "tmp\\export-integration-20260917\\final-hdr-fg3-gpu.mov",
+      "archive": "final-hdr-fg3-gpu.mov",
+      "bytes": 23988,
+      "sha256": "7431bcd2d28b4db2e640c83393e35ec675f0279f14b51a7f844aade1fee39d56"
+    },
+    {
+      "source": "tmp\\export-integration-20260917\\final-hdr-fg3-source.mp4",
+      "archive": "final-hdr-fg3-source.mp4",
+      "bytes": 14120,
+      "sha256": "30e3c3e72e6dc5c84718cfd19c1b6152378e3248d480bea6083076e75eb3620e"
+    },
+    {
+      "source": "tmp\\export-integration-20260917\\final-hdr-fg3.json",
+      "archive": "final-hdr-fg3.json",
+      "bytes": 23896,
+      "sha256": "f73bf8b1580ae310099ea1942a86b8defe6729bd22f147a11f780b7f06e1786a"
+    },
+    {
+      "source": "tmp\\export-integration-20260917\\final-writers-1920-hlg-0-baseline.mp4",
+      "archive": "final-writers-1920-hlg-0-baseline.mp4",
+      "bytes": 161944,
+      "sha256": "ddde7007be5382bfd91bb2f1c5dff0a0bb24c8b3dbad80584f223d4eb62383c2"
+    },
+    {
+      "source": "tmp\\export-integration-20260917\\final-writers-1920-hlg-0-gpu.mp4",
+      "archive": "final-writers-1920-hlg-0-gpu.mp4",
+      "bytes": 161952,
+      "sha256": "534b9c63cd905297c1b986d15223b3d191b6bfb00487a6e12921d73538ac5b44"
+    },
+    {
+      "source": "tmp\\export-integration-20260917\\final-writers-1920-hlg-1-baseline.mp4",
+      "archive": "final-writers-1920-hlg-1-baseline.mp4",
+      "bytes": 161944,
+      "sha256": "ddde7007be5382bfd91bb2f1c5dff0a0bb24c8b3dbad80584f223d4eb62383c2"
+    },
+    {
+      "source": "tmp\\export-integration-20260917\\final-writers-1920-hlg-1-gpu.mp4",
+      "archive": "final-writers-1920-hlg-1-gpu.mp4",
+      "bytes": 161952,
+      "sha256": "534b9c63cd905297c1b986d15223b3d191b6bfb00487a6e12921d73538ac5b44"
+    },
+    {
+      "source": "tmp\\export-integration-20260917\\final-writers-1920-pq-0-baseline.mp4",
+      "archive": "final-writers-1920-pq-0-baseline.mp4",
+      "bytes": 161944,
+      "sha256": "b950e59ea3acabf72afc154cbffffe5a6ca52653d3440af99b47dc892546b669"
+    },
+    {
+      "source": "tmp\\export-integration-20260917\\final-writers-1920-pq-0-gpu.mp4",
+      "archive": "final-writers-1920-pq-0-gpu.mp4",
+      "bytes": 161952,
+      "sha256": "29c75580d4bcd4346bfcfa37cf1b80eebc26cbe3a4d464378ddbc01d9156d7dc"
+    },
+    {
+      "source": "tmp\\export-integration-20260917\\final-writers-1920-pq-1-baseline.mp4",
+      "archive": "final-writers-1920-pq-1-baseline.mp4",
+      "bytes": 161944,
+      "sha256": "b950e59ea3acabf72afc154cbffffe5a6ca52653d3440af99b47dc892546b669"
+    },
+    {
+      "source": "tmp\\export-integration-20260917\\final-writers-1920-pq-1-gpu.mp4",
+      "archive": "final-writers-1920-pq-1-gpu.mp4",
+      "bytes": 161952,
+      "sha256": "29c75580d4bcd4346bfcfa37cf1b80eebc26cbe3a4d464378ddbc01d9156d7dc"
+    },
+    {
+      "source": "tmp\\export-integration-20260917\\final-writers-1920-sdr-0-baseline.mp4",
+      "archive": "final-writers-1920-sdr-0-baseline.mp4",
+      "bytes": 141123,
+      "sha256": "03bf8229132418eeb4953b79ad1ef85a993d8b5ec5a0a3be945530897e636500"
+    },
+    {
+      "source": "tmp\\export-integration-20260917\\final-writers-1920-sdr-0-gpu.mp4",
+      "archive": "final-writers-1920-sdr-0-gpu.mp4",
+      "bytes": 141141,
+      "sha256": "045768c32dcec994ac19eb48f9b9e9439aaa8ce5542f31c55e45af0155294350"
+    },
+    {
+      "source": "tmp\\export-integration-20260917\\final-writers-1920-sdr-1-baseline.mp4",
+      "archive": "final-writers-1920-sdr-1-baseline.mp4",
+      "bytes": 141123,
+      "sha256": "03bf8229132418eeb4953b79ad1ef85a993d8b5ec5a0a3be945530897e636500"
+    },
+    {
+      "source": "tmp\\export-integration-20260917\\final-writers-1920-sdr-1-gpu.mp4",
+      "archive": "final-writers-1920-sdr-1-gpu.mp4",
+      "bytes": 141141,
+      "sha256": "045768c32dcec994ac19eb48f9b9e9439aaa8ce5542f31c55e45af0155294350"
+    },
+    {
+      "source": "tmp\\export-integration-20260917\\final-writers-320-hlg-0-baseline.mp4",
+      "archive": "final-writers-320-hlg-0-baseline.mp4",
+      "bytes": 6232,
+      "sha256": "2e5a9e467afc8afb8714c443a5f9c905949d6b5555fae54e6138eb7d46150da5"
+    },
+    {
+      "source": "tmp\\export-integration-20260917\\final-writers-320-hlg-0-gpu.mp4",
+      "archive": "final-writers-320-hlg-0-gpu.mp4",
+      "bytes": 6240,
+      "sha256": "9bbc1cd147c934ef806cdb2085634dcb65753e409a7e0b22c6eae1de6107ecbd"
+    },
+    {
+      "source": "tmp\\export-integration-20260917\\final-writers-320-hlg-1-baseline.mp4",
+      "archive": "final-writers-320-hlg-1-baseline.mp4",
+      "bytes": 6232,
+      "sha256": "2e5a9e467afc8afb8714c443a5f9c905949d6b5555fae54e6138eb7d46150da5"
+    },
+    {
+      "source": "tmp\\export-integration-20260917\\final-writers-320-hlg-1-gpu.mp4",
+      "archive": "final-writers-320-hlg-1-gpu.mp4",
+      "bytes": 6240,
+      "sha256": "9bbc1cd147c934ef806cdb2085634dcb65753e409a7e0b22c6eae1de6107ecbd"
+    },
+    {
+      "source": "tmp\\export-integration-20260917\\final-writers-320-pq-0-baseline.mp4",
+      "archive": "final-writers-320-pq-0-baseline.mp4",
+      "bytes": 6232,
+      "sha256": "39a789bc862d9248877a63eb9d2d2e4a4252291bc814e390adb351ab6f420aeb"
+    },
+    {
+      "source": "tmp\\export-integration-20260917\\final-writers-320-pq-0-gpu.mp4",
+      "archive": "final-writers-320-pq-0-gpu.mp4",
+      "bytes": 6240,
+      "sha256": "68f492a030b73bbb80c8f03209b961ce98126e7b9327d26278d4856ff046d2de"
+    },
+    {
+      "source": "tmp\\export-integration-20260917\\final-writers-320-pq-1-baseline.mp4",
+      "archive": "final-writers-320-pq-1-baseline.mp4",
+      "bytes": 6232,
+      "sha256": "39a789bc862d9248877a63eb9d2d2e4a4252291bc814e390adb351ab6f420aeb"
+    },
+    {
+      "source": "tmp\\export-integration-20260917\\final-writers-320-pq-1-gpu.mp4",
+      "archive": "final-writers-320-pq-1-gpu.mp4",
+      "bytes": 6240,
+      "sha256": "68f492a030b73bbb80c8f03209b961ce98126e7b9327d26278d4856ff046d2de"
+    },
+    {
+      "source": "tmp\\export-integration-20260917\\final-writers-320-sdr-0-baseline.mp4",
+      "archive": "final-writers-320-sdr-0-baseline.mp4",
+      "bytes": 7176,
+      "sha256": "e9bd6f0f5107583a2dad1474d6c218595cd057938e5566bda35300aa76de851a"
+    },
+    {
+      "source": "tmp\\export-integration-20260917\\final-writers-320-sdr-0-gpu.mp4",
+      "archive": "final-writers-320-sdr-0-gpu.mp4",
+      "bytes": 7194,
+      "sha256": "2d5b3385c17f3740b9196b1852d45a2cd5f65fa579ce111b0ca2e9f1d654c45f"
+    },
+    {
+      "source": "tmp\\export-integration-20260917\\final-writers-320-sdr-1-baseline.mp4",
+      "archive": "final-writers-320-sdr-1-baseline.mp4",
+      "bytes": 7176,
+      "sha256": "e9bd6f0f5107583a2dad1474d6c218595cd057938e5566bda35300aa76de851a"
+    },
+    {
+      "source": "tmp\\export-integration-20260917\\final-writers-320-sdr-1-gpu.mp4",
+      "archive": "final-writers-320-sdr-1-gpu.mp4",
+      "bytes": 7194,
+      "sha256": "2d5b3385c17f3740b9196b1852d45a2cd5f65fa579ce111b0ca2e9f1d654c45f"
+    },
+    {
+      "source": "tmp\\export-integration-20260917\\final-writers.json",
+      "archive": "final-writers.json",
+      "bytes": 98190,
+      "sha256": "d1966434ee960821460c8f9fb521ad074eedd1f2ac4ae469b41c935b45b1e17c"
+    },
+    {
+      "source": "tmp\\export-integration-20260917\\hdr\\bicubic.json",
+      "archive": "hdr/bicubic.json",
+      "bytes": 12406,
+      "sha256": "bde455bb91a528a711830df7a3fc403fda2b507d741c11bcf9337e217041c4b2"
+    },
+    {
+      "source": "tmp\\export-integration-20260917\\hdr\\edge-cases.json",
+      "archive": "hdr/edge-cases.json",
+      "bytes": 8355,
+      "sha256": "787d752a3b9697c96574a199e5feb3704310de15c7cd7c833cd1d327b60d8265"
+    },
+    {
+      "source": "tmp\\export-integration-20260917\\hdr\\fixed-matrix.json",
+      "archive": "hdr/fixed-matrix.json",
+      "bytes": 12220,
+      "sha256": "2aac5b3b48adc30237a222d24463865b042e26f29c9262a938cb660ddd2b306a"
+    },
+    {
+      "source": "tmp\\export-integration-20260917\\hdr\\gpu-bicubic.json",
+      "archive": "hdr/gpu-bicubic.json",
+      "bytes": 14966,
+      "sha256": "4ca69fb596615c096e88acf1ab73b820655dcb83a5858abe134c8bd339a6134b"
+    },
+    {
+      "source": "tmp\\export-integration-20260917\\hdr\\hdr-yuv-build.json",
+      "archive": "hdr/hdr-yuv-build.json",
+      "bytes": 488,
+      "sha256": "ad80b9bf767b856215dc77870d7ac7f1b5226749323f38fb6587b772bfdc6b41"
+    },
+    {
+      "source": "tmp\\export-integration-20260917\\hdr\\hdr-yuv-strict-build.json",
+      "archive": "hdr/hdr-yuv-strict-build.json",
+      "bytes": 488,
+      "sha256": "74d6d05c8d8d67b45f3dea08d67a4c65dd385af118627b85e49de8805a1c1433"
+    },
+    {
+      "source": "tmp\\export-integration-20260917\\hdr\\hdr-yuv-strict.ptx",
+      "archive": "hdr/hdr-yuv-strict.ptx",
+      "bytes": 27645,
+      "sha256": "2646f8659a64486218d160e807358d552e3350c3d0b4a64e1955ab2d4db7638a"
+    },
+    {
+      "source": "tmp\\export-integration-20260917\\hdr\\hdr-yuv.ptx",
+      "archive": "hdr/hdr-yuv.ptx",
+      "bytes": 21051,
+      "sha256": "021f5f24b5eb105bbbe92d4b72572c72e86efd93ad41bd28573ca28cdaf84019"
+    },
+    {
+      "source": "tmp\\export-integration-20260917\\hdr\\initial.json",
+      "archive": "hdr/initial.json",
+      "bytes": 10432,
+      "sha256": "5943fbc9edeacbe202a609164c85375e5150bb316d6dfa08c5ab1c1236f704fa"
+    },
+    {
+      "source": "tmp\\export-integration-20260917\\hdr-hlg-fg4-baseline-logs\\native.log",
+      "archive": "hdr-hlg-fg4-baseline-logs/native.log",
+      "bytes": 19309,
+      "sha256": "bcce99ab5d814d675805ef530b8844c2f5471beda2f1b6a9f147e40d87ecd8be"
+    },
+    {
+      "source": "tmp\\export-integration-20260917\\hdr-hlg-fg4-baseline-logs\\result.json",
+      "archive": "hdr-hlg-fg4-baseline-logs/result.json",
+      "bytes": 1052,
+      "sha256": "0b0f1c0a183720232f0526b2a12b158816a8d5450db21c91a04a1c2024ba6676"
+    },
+    {
+      "source": "tmp\\export-integration-20260917\\hdr-hlg-fg4-baseline.mkv",
+      "archive": "hdr-hlg-fg4-baseline.mkv",
+      "bytes": 92789,
+      "sha256": "878db2de8a035dbc6b0b7ca9ccbc4597a3bbb13e31ef988ad3588dd6b1dd23bc"
+    },
+    {
+      "source": "tmp\\export-integration-20260917\\hdr-hlg-fg4-gpu-logs\\native.log",
+      "archive": "hdr-hlg-fg4-gpu-logs/native.log",
+      "bytes": 18447,
+      "sha256": "af6a79bf18c1f3f9504f793a2ddab34bf780e8a3ecfec49067ddd025b5cf56ce"
+    },
+    {
+      "source": "tmp\\export-integration-20260917\\hdr-hlg-fg4-gpu-logs\\result.json",
+      "archive": "hdr-hlg-fg4-gpu-logs/result.json",
+      "bytes": 1042,
+      "sha256": "7cec467154e24973b7dfa29a9f025991e75715e6a622aecc6e45ab19c8ac0085"
+    },
+    {
+      "source": "tmp\\export-integration-20260917\\hdr-hlg-fg4-gpu.mkv",
+      "archive": "hdr-hlg-fg4-gpu.mkv",
+      "bytes": 92747,
+      "sha256": "6356a4988c07dfda96d455b18fefe74e785671538a88243d320e4e6e7e9bff9c"
+    },
+    {
+      "source": "tmp\\export-integration-20260917\\hdr-hlg-fg4-source.mp4",
+      "archive": "hdr-hlg-fg4-source.mp4",
+      "bytes": 45757,
+      "sha256": "b99168aab586aa985b0103893bcb2985769e1b56abadaff238abf23c929fb193"
+    },
+    {
+      "source": "tmp\\export-integration-20260917\\hdr-hlg-fg4.json",
+      "archive": "hdr-hlg-fg4.json",
+      "bytes": 29031,
+      "sha256": "1a5adb78c8b2a66f4e948f3acd05af8fdd69bf3af37a6a8a3633e2013d34a9e8"
+    },
+    {
+      "source": "tmp\\export-integration-20260917\\hdr-pq-fg2-baseline-logs\\result.json",
+      "archive": "hdr-pq-fg2-baseline-logs/result.json",
+      "bytes": 845,
+      "sha256": "922e378de73d35dabb33edcfebd68c11ae92f94a677d65b1980af1e7f9ae4999"
+    },
+    {
+      "source": "tmp\\export-integration-20260917\\hdr-pq-fg2-cfr-baseline-logs\\native.log",
+      "archive": "hdr-pq-fg2-cfr-baseline-logs/native.log",
+      "bytes": 18499,
+      "sha256": "edacca9a9560c8eb3489338fe9c19be72f705707655a27f1189550ecd6c5ecce"
+    },
+    {
+      "source": "tmp\\export-integration-20260917\\hdr-pq-fg2-cfr-baseline-logs\\result.json",
+      "archive": "hdr-pq-fg2-cfr-baseline-logs/result.json",
+      "bytes": 1060,
+      "sha256": "94b1eb5ac9f857b540d77f3c99d1bec0dd7b645478019c77529fcabbd1633942"
+    },
+    {
+      "source": "tmp\\export-integration-20260917\\hdr-pq-fg2-cfr-baseline.mp4",
+      "archive": "hdr-pq-fg2-cfr-baseline.mp4",
+      "bytes": 17844,
+      "sha256": "43519e9b8941b8de189254be6df0aef535f08093829fa3f1586e6f958d650848"
+    },
+    {
+      "source": "tmp\\export-integration-20260917\\hdr-pq-fg2-cfr-gpu-logs\\native.log",
+      "archive": "hdr-pq-fg2-cfr-gpu-logs/native.log",
+      "bytes": 17590,
+      "sha256": "d3ca39244c100b470ea2cda4ddca993d3eec0f132eb5b9a6e7153832b40ae8c5"
+    },
+    {
+      "source": "tmp\\export-integration-20260917\\hdr-pq-fg2-cfr-gpu-logs\\result.json",
+      "archive": "hdr-pq-fg2-cfr-gpu-logs/result.json",
+      "bytes": 1050,
+      "sha256": "16fe863b961b858b309fd10734d286f8da165173ca1a3f817a6dea57fe40f725"
+    },
+    {
+      "source": "tmp\\export-integration-20260917\\hdr-pq-fg2-cfr-gpu.mp4",
+      "archive": "hdr-pq-fg2-cfr-gpu.mp4",
+      "bytes": 17835,
+      "sha256": "61c8a690ec00af86047e15f96d34a33c62c6022880c6d5b9740643cc5e21c465"
+    },
+    {
+      "source": "tmp\\export-integration-20260917\\hdr-pq-fg2-cfr-source.mp4",
+      "archive": "hdr-pq-fg2-cfr-source.mp4",
+      "bytes": 14120,
+      "sha256": "30e3c3e72e6dc5c84718cfd19c1b6152378e3248d480bea6083076e75eb3620e"
+    },
+    {
+      "source": "tmp\\export-integration-20260917\\hdr-pq-fg2-cfr.json",
+      "archive": "hdr-pq-fg2-cfr.json",
+      "bytes": 19463,
+      "sha256": "74fc55069c682743ffd4a0d6b7db21b2f68dae5815bd2af1e8c269298aafda84"
+    },
+    {
+      "source": "tmp\\export-integration-20260917\\hdr-pq-fg2-source.mp4",
+      "archive": "hdr-pq-fg2-source.mp4",
+      "bytes": 8017,
+      "sha256": "0d8c5c03dd5e52bae6b7109ed32092880cff63f8692f9d81b8fd7292acdcd2ad"
+    },
+    {
+      "source": "tmp\\export-integration-20260917\\hdr-pq-fg2.json",
+      "archive": "hdr-pq-fg2.json",
+      "bytes": 3306,
+      "sha256": "6eac7a191a92258e41b5a16963f37cc2da3256dd3cbd9f536f6820ac5d1e0e75"
+    },
+    {
+      "source": "tmp\\export-integration-20260917\\isolated-cancel-0-2-logs\\result.json",
+      "archive": "isolated-cancel-0-2-logs/result.json",
+      "bytes": 764,
+      "sha256": "cfb34597e37cd205494af7df21aafb607873a86224ebc00a85e7401aa53e7fb6"
+    },
+    {
+      "source": "tmp\\export-integration-20260917\\isolated-cancel-0-2-reopened.mp4",
+      "archive": "isolated-cancel-0-2-reopened.mp4",
+      "bytes": 1050,
+      "sha256": "c1ff6779738b2b292b19fe084c957820a7d6990ab950273e23fe43aecd65e367"
+    },
+    {
+      "source": "tmp\\export-integration-20260917\\isolated-cancel-0-99-logs\\result.json",
+      "archive": "isolated-cancel-0-99-logs/result.json",
+      "bytes": 765,
+      "sha256": "dc434f2a2783cb2eb08f58bbad4e71e1866e3470aa60d83a72c3d8a12e5a0410"
+    },
+    {
+      "source": "tmp\\export-integration-20260917\\isolated-cancel-0-99-reopened.mp4",
+      "archive": "isolated-cancel-0-99-reopened.mp4",
+      "bytes": 1050,
+      "sha256": "c1ff6779738b2b292b19fe084c957820a7d6990ab950273e23fe43aecd65e367"
+    },
+    {
+      "source": "tmp\\export-integration-20260917\\isolated-cancel.json",
+      "archive": "isolated-cancel.json",
+      "bytes": 2501,
+      "sha256": "4dd636f54227f083a8bd66e473f5ba59e9deb99ff9a4a5571e7bafd6fac03cb3"
+    },
+    {
+      "source": "tmp\\export-integration-20260917\\isolated-enhance-hdr-baseline-logs\\result.json",
+      "archive": "isolated-enhance-hdr-baseline-logs/result.json",
+      "bytes": 1015,
+      "sha256": "e0f9a1259249258470d03de5709b363fdf456e3324daa31fff7c613c1e45a43e"
+    },
+    {
+      "source": "tmp\\export-integration-20260917\\isolated-enhance-hdr-baseline.mp4",
+      "archive": "isolated-enhance-hdr-baseline.mp4",
+      "bytes": 43142,
+      "sha256": "9f988874f949ec092955b9354835a5fa102d9a16a76cd5450379e3780d619b94"
+    },
+    {
+      "source": "tmp\\export-integration-20260917\\isolated-enhance-hdr-gpu-logs\\result.json",
+      "archive": "isolated-enhance-hdr-gpu-logs/result.json",
+      "bytes": 1005,
+      "sha256": "34ef5afd34cc1ba02a762afeda34c7e7f83da6ed29b5c3addce012ef93e14b93"
+    },
+    {
+      "source": "tmp\\export-integration-20260917\\isolated-enhance-hdr-gpu.mp4",
+      "archive": "isolated-enhance-hdr-gpu.mp4",
+      "bytes": 43133,
+      "sha256": "b72e90c6e7501099e7974f504d2a8ffebd37a9c3f9146514736cf3a3cb5b32cc"
+    },
+    {
+      "source": "tmp\\export-integration-20260917\\isolated-enhance-hdr-source.mp4",
+      "archive": "isolated-enhance-hdr-source.mp4",
+      "bytes": 45757,
+      "sha256": "b99168aab586aa985b0103893bcb2985769e1b56abadaff238abf23c929fb193"
+    },
+    {
+      "source": "tmp\\export-integration-20260917\\isolated-enhance-hdr.json",
+      "archive": "isolated-enhance-hdr.json",
+      "bytes": 15007,
+      "sha256": "c187eaad8280ad82b258b1fa6df7213c9ee56ff49db82d7ac1930ab02a55a9dc"
+    },
+    {
+      "source": "tmp\\export-integration-20260917\\isolated-hdr-fg2-baseline-logs\\native.log",
+      "archive": "isolated-hdr-fg2-baseline-logs/native.log",
+      "bytes": 18455,
+      "sha256": "84f7da58e4fbbd9e4499163071f51dc4af4642e00b0a58f8c20fa2b8a7678be9"
+    },
+    {
+      "source": "tmp\\export-integration-20260917\\isolated-hdr-fg2-baseline-logs\\result.json",
+      "archive": "isolated-hdr-fg2-baseline-logs/result.json",
+      "bytes": 1066,
+      "sha256": "82be0aa7bc4f95e02c96309491232429396e6cb911a4b3ef21fb809238ed4488"
+    },
+    {
+      "source": "tmp\\export-integration-20260917\\isolated-hdr-fg2-baseline.mp4",
+      "archive": "isolated-hdr-fg2-baseline.mp4",
+      "bytes": 17844,
+      "sha256": "43519e9b8941b8de189254be6df0aef535f08093829fa3f1586e6f958d650848"
+    },
+    {
+      "source": "tmp\\export-integration-20260917\\isolated-hdr-fg2-gpu-logs\\native.log",
+      "archive": "isolated-hdr-fg2-gpu-logs/native.log",
+      "bytes": 17590,
+      "sha256": "04c72706c037f48368b2ecb0b142530105ee0dfa6a56ec62754b95756ae53567"
+    },
+    {
+      "source": "tmp\\export-integration-20260917\\isolated-hdr-fg2-gpu-logs\\result.json",
+      "archive": "isolated-hdr-fg2-gpu-logs/result.json",
+      "bytes": 1056,
+      "sha256": "9e2f6e7a842ea52fdd02cb6dbcc9e56d1e09224649397d9ff0b2580970ee377d"
+    },
+    {
+      "source": "tmp\\export-integration-20260917\\isolated-hdr-fg2-gpu.mp4",
+      "archive": "isolated-hdr-fg2-gpu.mp4",
+      "bytes": 17835,
+      "sha256": "61c8a690ec00af86047e15f96d34a33c62c6022880c6d5b9740643cc5e21c465"
+    },
+    {
+      "source": "tmp\\export-integration-20260917\\isolated-hdr-fg2-source.mp4",
+      "archive": "isolated-hdr-fg2-source.mp4",
+      "bytes": 14120,
+      "sha256": "30e3c3e72e6dc5c84718cfd19c1b6152378e3248d480bea6083076e75eb3620e"
+    },
+    {
+      "source": "tmp\\export-integration-20260917\\isolated-hdr-fg2.json",
+      "archive": "isolated-hdr-fg2.json",
+      "bytes": 19477,
+      "sha256": "a2761690c72dee089cf8d0002786a8409712068836d19ead04c90a1616b30bd4"
+    },
+    {
+      "source": "tmp\\export-integration-20260917\\job-cancel-0-2-logs\\result.json",
+      "archive": "job-cancel-0-2-logs/result.json",
+      "bytes": 759,
+      "sha256": "e3f22551e128df850ed6e1cbc4b9cde2caef67986ebe2be951da4368230fb524"
+    },
+    {
+      "source": "tmp\\export-integration-20260917\\job-cancel-0-2-reopened.mp4",
+      "archive": "job-cancel-0-2-reopened.mp4",
+      "bytes": 1050,
+      "sha256": "c1ff6779738b2b292b19fe084c957820a7d6990ab950273e23fe43aecd65e367"
+    },
+    {
+      "source": "tmp\\export-integration-20260917\\job-cancel-0-99-logs\\result.json",
+      "archive": "job-cancel-0-99-logs/result.json",
+      "bytes": 760,
+      "sha256": "d390d87fb18be8d4f039195e46d5a31cb1457134c69e4da47e310b5b74a4857e"
+    },
+    {
+      "source": "tmp\\export-integration-20260917\\job-cancel-0-99-reopened.mp4",
+      "archive": "job-cancel-0-99-reopened.mp4",
+      "bytes": 1050,
+      "sha256": "c1ff6779738b2b292b19fe084c957820a7d6990ab950273e23fe43aecd65e367"
+    },
+    {
+      "source": "tmp\\export-integration-20260917\\job-cancel.json",
+      "archive": "job-cancel.json",
+      "bytes": 2491,
+      "sha256": "c93b41e8cabbe9777c7914d8a8036ecac7d9ebf095e5e67eb267f5d67435acc4"
+    },
+    {
+      "source": "tmp\\export-integration-20260917\\job-hdr-fg2-baseline-logs\\native.log",
+      "archive": "job-hdr-fg2-baseline-logs/native.log",
+      "bytes": 18499,
+      "sha256": "40017de26d26496d6c7b2a6a6f57c897c4db9ce8cb5d7959fc660dbb5746fd23"
+    },
+    {
+      "source": "tmp\\export-integration-20260917\\job-hdr-fg2-baseline-logs\\result.json",
+      "archive": "job-hdr-fg2-baseline-logs/result.json",
+      "bytes": 1051,
+      "sha256": "e5c21dca38dba91ac4e0a1dfd564920ff5e7d5fb0297d352ed2408a70a0afc67"
+    },
+    {
+      "source": "tmp\\export-integration-20260917\\job-hdr-fg2-baseline.mp4",
+      "archive": "job-hdr-fg2-baseline.mp4",
+      "bytes": 17844,
+      "sha256": "43519e9b8941b8de189254be6df0aef535f08093829fa3f1586e6f958d650848"
+    },
+    {
+      "source": "tmp\\export-integration-20260917\\job-hdr-fg2-gpu-logs\\native.log",
+      "archive": "job-hdr-fg2-gpu-logs/native.log",
+      "bytes": 17546,
+      "sha256": "fc796a5d4bc0047920376138924fad45a69519f3eb053f80d5dbeb4e3178be80"
+    },
+    {
+      "source": "tmp\\export-integration-20260917\\job-hdr-fg2-gpu-logs\\result.json",
+      "archive": "job-hdr-fg2-gpu-logs/result.json",
+      "bytes": 1041,
+      "sha256": "171f33fe8ee9bb4cd228d0ea6a667b8373f9300a5ee6ae35664bb5942c03312c"
+    },
+    {
+      "source": "tmp\\export-integration-20260917\\job-hdr-fg2-gpu.mp4",
+      "archive": "job-hdr-fg2-gpu.mp4",
+      "bytes": 17835,
+      "sha256": "61c8a690ec00af86047e15f96d34a33c62c6022880c6d5b9740643cc5e21c465"
+    },
+    {
+      "source": "tmp\\export-integration-20260917\\job-hdr-fg2-source.mp4",
+      "archive": "job-hdr-fg2-source.mp4",
+      "bytes": 14120,
+      "sha256": "30e3c3e72e6dc5c84718cfd19c1b6152378e3248d480bea6083076e75eb3620e"
+    },
+    {
+      "source": "tmp\\export-integration-20260917\\job-hdr-fg2.json",
+      "archive": "job-hdr-fg2.json",
+      "bytes": 19442,
+      "sha256": "52a754b0f5efc61b1930b767ccaf347275062dbc6b2cf63cc6036a74412508eb"
+    },
+    {
+      "source": "tmp\\export-integration-20260917\\regression.json",
+      "archive": "regression.json",
+      "bytes": 8526,
+      "sha256": "dd1c936b583c3c0b0c1fde3a0e9822bf3ad9537b4efc509c014e7f290a52f629"
+    },
+    {
+      "source": "tmp\\export-integration-20260917\\tkinter-recheck.json",
+      "archive": "tkinter-recheck.json",
+      "bytes": 417,
+      "sha256": "6f1a00de5fd0ea6404077e5a07685aa8e482831a393c2cb178e2c2aebdd6fa6b"
+    },
+    {
+      "source": "dlss5tool\\cuda_hdr_yuv.py",
+      "archive": "sources/dlss5tool__cuda_hdr_yuv.py.txt",
+      "bytes": 6736,
+      "sha256": "ddadeb728153d03e91fb01cc1517c30b56cc9e686cf0d24608b43b7b48685c8e"
+    },
+    {
+      "source": "dlss5tool\\cuda_sdr_yuv.py",
+      "archive": "sources/dlss5tool__cuda_sdr_yuv.py.txt",
+      "bytes": 6314,
+      "sha256": "2fb4e65777ce5a4f9b625e51b034dc683f3311da3e9874b7ae24ca2ceeec9755"
+    },
+    {
+      "source": "dlss5tool\\gpu_video_export.py",
+      "archive": "sources/dlss5tool__gpu_video_export.py.txt",
+      "bytes": 6545,
+      "sha256": "04e562cea6d35afb2003d614560d4fd23a86a9328812509416f9d2a9fc53177b"
+    },
+    {
+      "source": "dlss5tool\\gpu_export_process.py",
+      "archive": "sources/dlss5tool__gpu_export_process.py.txt",
+      "bytes": 12267,
+      "sha256": "371e91e6054fc5e3c4dce17fdc24a660750ba251b25b78f3bc59c71681830abd"
+    },
+    {
+      "source": "dlss5tool\\gpu_export_runtime.py",
+      "archive": "sources/dlss5tool__gpu_export_runtime.py.txt",
+      "bytes": 5013,
+      "sha256": "844baadfb94c03408c514dfc9e63c482b775f8c01f7f919e0efcb8b850220d94"
+    },
+    {
+      "source": "dlss5tool\\dlss_engine.py",
+      "archive": "sources/dlss5tool__dlss_engine.py.txt",
+      "bytes": 33485,
+      "sha256": "2dfe3d9071891678a14f746921e9eec678a6c1d701d3e5ea715f73b69e16e64a"
+    },
+    {
+      "source": "dlss5tool\\dlss_host_process.py",
+      "archive": "sources/dlss5tool__dlss_host_process.py.txt",
+      "bytes": 23619,
+      "sha256": "52d97e1f3ba15d5264d7f5a23184688bb0506e6df4044f01a387e7132e50deea"
+    },
+    {
+      "source": "dlss5tool\\frame_generation.py",
+      "archive": "sources/dlss5tool__frame_generation.py.txt",
+      "bytes": 36364,
+      "sha256": "8062ec4cb84fc949339cc90b97465f9d912a2fb09a876c4521c4eb529ae4f274"
+    },
+    {
+      "source": "dlss5tool\\gui.py",
+      "archive": "sources/dlss5tool__gui.py.txt",
+      "bytes": 443287,
+      "sha256": "d7cc7935db2268b76e3c2e67d278fbbec38e7f23390df4a7c6676c365d7664b7"
+    },
+    {
+      "source": "dlss5tool\\render_cache.py",
+      "archive": "sources/dlss5tool__render_cache.py.txt",
+      "bytes": 24669,
+      "sha256": "d3da2d3fd3f0e6ca2d4ef6a20e35547a3dfac947cd18d8e10ecef9fe8493c762"
+    },
+    {
+      "source": "dlss5tool\\parallel_export_worker.py",
+      "archive": "sources/dlss5tool__parallel_export_worker.py.txt",
+      "bytes": 8124,
+      "sha256": "65fc4c346fc5dfc06f0512be295b78035538ab5d8d1e1568fd5cd3fb074db6fd"
+    },
+    {
+      "source": "dlss5tool\\guidance_export.py",
+      "archive": "sources/dlss5tool__guidance_export.py.txt",
+      "bytes": 5997,
+      "sha256": "e88b33e2cb8282213151fcc7432234f7f511e718cbc6028c7d5c4a432b3c6ee4"
+    },
+    {
+      "source": "native\\host_v2\\dlssnr_host_v2.cpp",
+      "archive": "sources/native__host_v2__dlssnr_host_v2.cpp.txt",
+      "bytes": 67334,
+      "sha256": "55dc35b300cabf59dc3a2f1f6b7bad7624b75ae3d8a72fb35dca3f5edcef379a"
+    },
+    {
+      "source": "scripts\\gpu_hdr_yuv.cu",
+      "archive": "sources/scripts__gpu_hdr_yuv.cu.txt",
+      "bytes": 3371,
+      "sha256": "470e856b38b729f1b093eaf8f10b296d91c5d7f617b72aeeeb439dc4c5623b7c"
+    },
+    {
+      "source": "scripts\\build_sdr_yuv_ptx.py",
+      "archive": "sources/scripts__build_sdr_yuv_ptx.py.txt",
+      "bytes": 3703,
+      "sha256": "5ea2e014ef7952d8543dcf475d164cd0eae33af508435ad6019ea49e7a71a6db"
+    },
+    {
+      "source": "scripts\\hdr_cuda_conversion_gate.py",
+      "archive": "sources/scripts__hdr_cuda_conversion_gate.py.txt",
+      "bytes": 5064,
+      "sha256": "04f57769d51698749d0e0cb4856599cdf099f43aa2fabb0648c2288750711986"
+    },
+    {
+      "source": "scripts\\hdr_conversion_contract_probe.py",
+      "archive": "sources/scripts__hdr_conversion_contract_probe.py.txt",
+      "bytes": 6479,
+      "sha256": "a9e1f540098376b61fa2d399aaedc078eaed9ad69194577f575eb669d23b62c0"
+    },
+    {
+      "source": "scripts\\gpu_export_fg_gate.py",
+      "archive": "sources/scripts__gpu_export_fg_gate.py.txt",
+      "bytes": 6341,
+      "sha256": "a3b402300b382ee3a7837cea50d85e8763fff860f5749a680cd4cd094c6e54b5"
+    },
+    {
+      "source": "scripts\\gpu_export_end_to_end_gate.py",
+      "archive": "sources/scripts__gpu_export_end_to_end_gate.py.txt",
+      "bytes": 4102,
+      "sha256": "856df2c377697f27a029bf2d97a531a385189c0535f06287fb18348737e47e4b"
+    },
+    {
+      "source": "scripts\\gpu_export_cancel_gate.py",
+      "archive": "sources/scripts__gpu_export_cancel_gate.py.txt",
+      "bytes": 3330,
+      "sha256": "6c72ea1c1dc5c5b14b2c84e0a885e251edd4ae5fcaff4d860ef8cd023c0e08e5"
+    },
+    {
+      "source": "scripts\\gpu_export_regression_suite.py",
+      "archive": "sources/scripts__gpu_export_regression_suite.py.txt",
+      "bytes": 2446,
+      "sha256": "32db373a0bb2fec09f8dcdf5bb14d8d3d2850d82ddd17de12aa732bf1e5c9173"
+    },
+    {
+      "source": "scripts\\install_gpu_export_components.py",
+      "archive": "sources/scripts__install_gpu_export_components.py.txt",
+      "bytes": 2054,
+      "sha256": "e6629919514da2da00505c58b8292508269ec72b10bdd7e2bdd2a1a51c2a3fbe"
+    },
+    {
+      "source": "scripts\\archive_gpu_upgrade.py",
+      "archive": "sources/scripts__archive_gpu_upgrade.py.txt",
+      "bytes": 3187,
+      "sha256": "ab73be15720f719dda094d4820395ab86301be93edd7541f2b805591c90211fb"
+    },
+    {
+      "source": "tests\\test_gpu_export_routing.py",
+      "archive": "sources/tests__test_gpu_export_routing.py.txt",
+      "bytes": 4589,
+      "sha256": "841cbd639f8e2e3580ab4683a9513cc6e62835e818eacbaf2b27e565bfc4de15"
+    },
+    {
+      "source": "packaging\\DLSS5Tool.spec",
+      "archive": "sources/packaging__DLSS5Tool.spec.txt",
+      "bytes": 6994,
+      "sha256": "45cdf35ae42d6144799230c6116ecc7a875076a970a59874792ef462b23ec4c9"
+    },
+    {
+      "source": "runtime\\gpu-export\\manifest.json",
+      "archive": "registered-components.json",
+      "bytes": 1033,
+      "sha256": "b65f3785c9e55a6885d49deb50e239bb5fa8478cc1c28779c662129673a37832"
+    }
+  ],
+  "total_bytes": 8520479,
+  "references": [
+    {
+      "source": "tmp\\export-integration-20260917\\hdr\\ffmpeg-output.c",
+      "sha256": "c9ab438b4544f248c9a60d2c6e296992e91885872d6fc2908c485ce75eadd85f",
+      "url": "https://raw.githubusercontent.com/FFmpeg/FFmpeg/n7.1.1/libswscale/output.c"
+    },
+    {
+      "source": "tmp\\export-integration-20260917\\hdr\\ffmpeg-yuv2rgb.c",
+      "sha256": "f0a61e340defcbb193f51d9f8c7faed727cc89987d2786551f6a966458f8f29b",
+      "url": "https://raw.githubusercontent.com/FFmpeg/FFmpeg/n7.1.1/libswscale/yuv2rgb.c"
+    },
+    {
+      "source": "tmp\\export-integration-20260917\\hdr\\ffmpeg-swscale.c",
+      "sha256": "80c8821dd814b21fc36f1e707e31198c1de00fa291f5eb07712f0e9c5e86fc2a",
+      "url": "https://raw.githubusercontent.com/FFmpeg/FFmpeg/n7.1.1/libswscale/swscale.c"
+    }
+  ],
+  "original_runtime": {
+    "runtime/dlssnr_host_v2.dll": "c8ad631f8f78b2dedec6aec418c7a570d6fc5bf1b9ffa9f3514bcb0edd58fc13",
+    "runtime/dlssg_video_worker.exe": "7e6c281608be2e8a6d63a574a3eae8621c6c38635260e150571ef20f422c4659"
+  }
+}

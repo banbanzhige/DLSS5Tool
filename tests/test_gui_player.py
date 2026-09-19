@@ -1008,7 +1008,7 @@ class PreviewQueueTests(unittest.TestCase):
                 msg=f"detached={detached}",
             )
 
-    def test_canvas_configure_only_freezes_the_active_pane(self):
+    def test_canvas_configure_only_redraws_the_active_pane_without_freezing(self):
         app = App.__new__(App)
         frozen = []
         scheduled = []
@@ -1031,7 +1031,7 @@ class PreviewQueueTests(unittest.TestCase):
         self.assertEqual(frozen, [])
         self.assertEqual(scheduled, [])
         app._on_canvas_configure(type("Event", (), {"widget": docked})())
-        self.assertEqual(frozen, ["freeze"])
+        self.assertEqual(frozen, [])
         self.assertEqual(scheduled[0], ("cancel", "_resize_after"))
         self.assertEqual(scheduled[1][0], "after")
         self.assertEqual(scheduled[1][2], app._apply_canvas_resize)
@@ -1119,7 +1119,7 @@ class PreviewQueueTests(unittest.TestCase):
         self.assertNotIn("join", events)
         self.assertIsNone(app.video)
 
-    def test_canvas_pan_click_resumes_cache_in_compare_view(self):
+    def test_canvas_pan_click_preserves_cache_in_compare_view(self):
         app = App.__new__(App)
         events = []
         app._drag_split = False
@@ -1135,7 +1135,7 @@ class PreviewQueueTests(unittest.TestCase):
         app.on_canvas_hover = lambda _event: events.append("hover")
 
         app.on_canvas_release(type("Event", (), {"x": 0, "y": 0})())
-        self.assertEqual(events, ["split", "resume", "hover"])
+        self.assertEqual(events, ["split", "hover"])
         self.assertIsNone(app._canvas_press)
 
     def test_preview_timeline_status_skips_work_while_frozen(self):
@@ -1487,6 +1487,20 @@ class WidgetSmokeTests(unittest.TestCase):
                 self.assertEqual(imports, [])
                 self.assertEqual(str(app.export_btn.cget("text")), "导出 DLSS")
                 self.assertFalse(hasattr(app, "queue_more_btn"))
+                self.assertFalse(hasattr(app, "import_sequence_btn"))
+                self.assertEqual(str(app.queue_add_sequence_btn.cget("text")), "添加图片序列…")
+                imports = app.queue_add_sequence_btn.master
+                self.assertIs(imports.master, app.queue_tab)
+                self.assertIs(app.queue_add_files_btn.master, imports)
+                self.assertIs(app.queue_add_folder_btn.master, imports)
+                self.assertFalse(app.queue_add_files_btn._icon_only)
+                self.assertFalse(app.queue_add_folder_btn._icon_only)
+                app._exporting = True
+                app._update_queue_action_states()
+                self.assertTrue(app.queue_add_sequence_btn.instate(["disabled"]))
+                app._exporting = False
+                app._update_queue_action_states()
+                self.assertFalse(app.queue_add_sequence_btn.instate(["disabled"]))
                 self.assertEqual(str(app.queue_retry_btn.cget("text")), "重试")
                 self.assertEqual(str(app.queue_retry_btn.cget("icon")), "retry")
                 self.assertEqual(str(app.queue_clear_done_btn.cget("icon")), "clear-done")

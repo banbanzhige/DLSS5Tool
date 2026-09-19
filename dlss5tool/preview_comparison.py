@@ -6,6 +6,7 @@ import tkinter as tk
 from tkinter import messagebox
 
 import cv2
+from dlss5tool.image_sequence import open_capture
 
 from dlss5tool import ui_theme
 from dlss5tool.i18n import tr
@@ -27,7 +28,7 @@ def guidance_input_pair(source, frame, still, settings, color_info=None):
             if original is None:
                 raise RuntimeError(tr('status.frame_read_failed', frame=frame))
         else:
-            capture = cv2.VideoCapture(source)
+            capture = open_capture(source)
             capture.set(cv2.CAP_PROP_POS_FRAMES, max(frame - 1, 0))
             ok, original = capture.read()
             if not ok:
@@ -140,7 +141,38 @@ class PreviewComparison:
     def _compare_label(self):
         if getattr(self, '_guidance_context', False):
             return tr('view.' + self.compare_target.get())
-        return 'DLSS'
+        parts = [tr('view.dlss')]
+        if getattr(self, '_is_image', False):
+            # Still-image rendering already uses the selected SR scale directly;
+            # video-only preview checkboxes do not control that path.
+            config = self._collect_export_settings()
+        else:
+            config = self._preview_effect_settings()
+        scale = config.get('super_resolution_scale', 1)
+        multiplier = config.get('frame_generation_multiplier', 1)
+        if scale > 1:
+            parts.append(tr('preview.effect.super_resolution', scale=scale))
+        if multiplier > 1 and not getattr(self, '_is_image', False):
+            parts.append(tr('preview.effect.frame_generation', multiplier=multiplier))
+        return ' · '.join(parts)
+
+    def _draw_processed_preview_label(self, x, y, available_width):
+        """Match the original-side caption; keep effect names without panel chrome.
+
+        y is the first line's vertical center, as for the original caption.
+        Wrapped lines grow downwards instead of moving that first line upwards.
+        """
+        label = self._compare_label()
+        if getattr(self, '_guidance_context', False):
+            return self._canvas_shadow_text(x, y, label, anchor='e', font=ui_theme.UI_FONT_SMALL)
+        if getattr(self, '_dlss_pending', False):
+            label += '…'
+        line_height = int(self.canvas.tk.call('font', 'metrics', ui_theme.UI_FONT_SMALL, '-linespace'))
+        return self._canvas_shadow_text(
+            x, y - line_height // 2, label, anchor='ne', justify='right',
+            width=max(60, available_width), font=ui_theme.UI_FONT_SMALL,
+            tags=('preview_effect_label',),
+        )
 
     def _sync_comparison_controls(self):
         context = self._guidance_context
@@ -443,6 +475,9 @@ class PreviewComparison:
             photo = ImageTk.PhotoImage(Image.fromarray(cv2.cvtColor(image, cv2.COLOR_BGR2RGB)))
             self._compare_photos.append(photo)
             self.canvas.create_image(offset + ox, oy, anchor='nw', image=photo)
-            self._canvas_shadow_text(offset + ox + 10, oy + 14, label, anchor='w', font=ui_theme.UI_FONT_SMALL)
+            if offset and not getattr(self, '_guidance_context', False):
+                self._draw_processed_preview_label(offset + ox + nw - 10, oy + 14, nw - 20)
+            else:
+                self._canvas_shadow_text(offset + ox + 10, oy + 14, label, anchor='w', font=ui_theme.UI_FONT_SMALL)
         self._navigator_geom = None
         self._draw_pending_status(cw, ch)

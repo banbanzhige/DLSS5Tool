@@ -58,6 +58,19 @@ class HdrFrameTests(unittest.TestCase):
             compose_hdr_frame(original, processed, mix=1.0), processed,
         )
 
+    def test_identity_mix_does_not_require_the_unused_frame(self):
+        processed = np.full((3, 5, 4), 0.4, np.float16)
+        original = np.full((3, 5, 4), 0.1, np.float16)
+        identity = compose_hdr_frame(original, processed, mix=1.0)
+        zero = compose_hdr_frame(original, processed, mix=0.0)
+        self.assertTrue(identity.flags.c_contiguous)
+        self.assertEqual(identity.dtype, np.float16)
+        np.testing.assert_array_equal(identity, processed)
+        np.testing.assert_array_equal(zero, original)
+        # Difference view still needs both frames.
+        diff = compose_hdr_frame(original, processed, view=1, mix=1.0)
+        self.assertGreater(float(diff[..., :3].mean()), 0.5)
+
     def test_pq_mix_is_linear_light_not_code_value(self):
         original = np.full((1, 1, 4), 0.2, np.float16)
         processed = np.full((1, 1, 4), 0.8, np.float16)

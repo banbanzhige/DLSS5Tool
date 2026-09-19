@@ -1,0 +1,64 @@
+{
+  "scope": "Cancel an actual GPU FG export, then reopen the same native encoder DLL.",
+  "cases": [
+    {
+      "threshold": 0.2,
+      "cancel": {
+        "experimental": true,
+        "warning": "实验功能：普通视频采用 NVOFA 估计光流及平面深度；遮挡/字幕/HDR 画质未完整验收。3×/4×目前仅限本机 RTX 4070 SUPER 与固定运行库，已知部分生成帧时间位置偏差。不会自动降倍率或位深；正常帧对生成无效时停止。",
+        "source": "F:\\project\\DLSS5Tool\\tmp\\export-integration-20260917\\fg4-mov-source.mp4",
+        "output": "F:\\project\\DLSS5Tool\\tmp\\export-integration-20260917\\isolated-cancel-0-2.mp4",
+        "multiplier": 4,
+        "spatial_scale": 1,
+        "enhance": false,
+        "status": "cancelled",
+        "real_frames": 0,
+        "generated_frames": 0,
+        "cut_holds": 0,
+        "endpoint_holds": 0,
+        "error": "已取消插帧导出",
+        "cleanup_errors": []
+      },
+      "reopened": {
+        "returncode": 0,
+        "frames": 3,
+        "md5": [
+          "387682b931704b6e17abc0b6a1b0cb49",
+          "387682b931704b6e17abc0b6a1b0cb49",
+          "387682b931704b6e17abc0b6a1b0cb49"
+        ],
+        "stderr": ""
+      }
+    },
+    {
+      "threshold": 0.99,
+      "cancel": {
+        "experimental": true,
+        "warning": "实验功能：普通视频采用 NVOFA 估计光流及平面深度；遮挡/字幕/HDR 画质未完整验收。3×/4×目前仅限本机 RTX 4070 SUPER 与固定运行库，已知部分生成帧时间位置偏差。不会自动降倍率或位深；正常帧对生成无效时停止。",
+        "source": "F:\\project\\DLSS5Tool\\tmp\\export-integration-20260917\\fg4-mov-source.mp4",
+        "output": "F:\\project\\DLSS5Tool\\tmp\\export-integration-20260917\\isolated-cancel-0-99.mp4",
+        "multiplier": 4,
+        "spatial_scale": 1,
+        "enhance": false,
+        "status": "cancelled",
+        "real_frames": 0,
+        "generated_frames": 0,
+        "cut_holds": 0,
+        "endpoint_holds": 0,
+        "error": "已取消插帧导出",
+        "cleanup_errors": []
+      },
+      "reopened": {
+        "returncode": 0,
+        "frames": 3,
+        "md5": [
+          "387682b931704b6e17abc0b6a1b0cb49",
+          "387682b931704b6e17abc0b6a1b0cb49",
+          "387682b931704b6e17abc0b6a1b0cb49"
+        ],
+        "stderr": ""
+      }
+    }
+  ],
+  "status": "passed"
+}

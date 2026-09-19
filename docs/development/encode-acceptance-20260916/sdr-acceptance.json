@@ -1,0 +1,75 @@
+{
+  "status": "measurements_completed",
+  "scope": "CPU production SDR streaming only",
+  "source": "F:\\project\\test\\dlss5\\测试素材\\260429广寒宫98s.mp4",
+  "source_sha256": "1f8f3f7a3dc64e815cda5e9f64783d8828b0e7d2085c74a7ababb8079158f364",
+  "dimensions": [
+    360,
+    640
+  ],
+  "requested_frames": 180,
+  "python": "3.13.3",
+  "platform": "Windows-11-10.0.26200-SP0",
+  "ffmpeg": "C:\\Users\\PC\\ffmpeg-7.1.1-full_build\\bin\\ffmpeg.EXE",
+  "production_encoder_args": [
+    "-c:v",
+    "libx264",
+    "-preset",
+    "fast",
+    "-crf",
+    "18"
+  ],
+  "experimental_nvenc_policy": "H264 P5 low-latency CONSTQP19, ABGR CUDA pointer; unsupported as production-equivalent",
+  "constraints": {
+    "gpu_used": false,
+    "input_copied": false,
+    "temporary_cap_mib": 64
+  },
+  "cancel": {
+    "cancelled": true,
+    "frames_written": 8,
+    "source_pixels_sha256": "ee99a06c23c695fe9757490c713bef59589f3739cd5b4b254d1c65d5712e624d",
+    "elapsed_s": 0.10546569999860367,
+    "output_exists": false,
+    "orphan_temp_files": []
+  },
+  "run1": {
+    "cancelled": false,
+    "frames_written": 180,
+    "source_pixels_sha256": "ed33f6ebc4abcf03a1c98454d7939cfef433ecbfbba6f6dd30131477ba0db298",
+    "elapsed_s": 0.8493757999967784,
+    "output_exists": true,
+    "output_bytes": 379790,
+    "encoded_sha256": "6b087663bc211c568850f486f9e146c5ae7f8e67a5d378eff07270783e58d939",
+    "decode": {
+      "returncode": 0,
+      "frames": 180,
+      "first_frame_md5": "1ea977adbca668ea3eb4e32c65171e0c",
+      "last_frame_md5": "adb623a52911928e8133a451a7f506c7",
+      "stderr": ""
+    }
+  },
+  "run2": {
+    "cancelled": false,
+    "frames_written": 180,
+    "source_pixels_sha256": "ed33f6ebc4abcf03a1c98454d7939cfef433ecbfbba6f6dd30131477ba0db298",
+    "elapsed_s": 0.947043100000883,
+    "output_exists": true,
+    "output_bytes": 379790,
+    "encoded_sha256": "6b087663bc211c568850f486f9e146c5ae7f8e67a5d378eff07270783e58d939",
+    "decode": {
+      "returncode": 0,
+      "frames": 180,
+      "first_frame_md5": "1ea977adbca668ea3eb4e32c65171e0c",
+      "last_frame_md5": "adb623a52911928e8133a451a7f506c7",
+      "stderr": ""
+    }
+  },
+  "gates": {
+    "cancel_removed_output": true,
+    "frame_count_run1": true,
+    "frame_count_run2": true,
+    "source_pixel_repeatable": true,
+    "encoded_stream_repeatable": true
+  }
+}

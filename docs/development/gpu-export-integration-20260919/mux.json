@@ -1,0 +1,51 @@
+{
+  "scope": "Connected packet/container gate. Existing CPU FFmpeg remains the reference.",
+  "av_version": "18.1.0",
+  "library_versions": {
+    "libavutil": [
+      60,
+      26,
+      102
+    ],
+    "libavcodec": [
+      62,
+      28,
+      102
+    ],
+    "libavformat": [
+      62,
+      12,
+      102
+    ],
+    "libavdevice": [
+      62,
+      3,
+      102
+    ],
+    "libavfilter": [
+      11,
+      14,
+      102
+    ],
+    "libswscale": [
+      9,
+      5,
+      102
+    ],
+    "libswresample": [
+      6,
+      3,
+      102
+    ]
+  },
+  "cases": [],
+  "sources": {
+    "dlss5tool/packet_mux.py": "b83ec17274f8707fe8ffd80dac9b3751e1eb8a6376f9b1dc6d80b427452c95cf",
+    "dlss5tool/cuda_session.py": "07fbf8248b8141203be719d31aa02aee7e5420dee090a3df0d3378d51446fb55",
+    "scripts/gpu_export_mux_gate.py": "6f58c9de02182462186e9ed4933660cbbad423ce3be5618a088160cbe5994697"
+  },
+  "native_sha256": "80d9d538034b16f0d82a079b23682b58ecbad98c0b04b52fff178d9782dd76ea",
+  "status": "failed",
+  "error": "RuntimeError(\"Cannot access 'time_base' as a decoder\")",
+  "traceback": "Traceback (most recent call last):\n  File \"F:\\project\\DLSS5Tool\\scripts\\gpu_export_mux_gate.py\", line 69, in main\n    for packet in packets:mux.write(packet)\n                          ~~~~~~~~~^^^^^^^^\n  File \"F:\\project\\DLSS5Tool\\dlss5tool\\packet_mux.py\", line 69, in write\n    if self._container is None:self._open(packet)\n                               ~~~~~~~~~~^^^^^^^^\n  File \"F:\\project\\DLSS5Tool\\dlss5tool\\packet_mux.py\", line 52, in _open\n    self._stream.codec_context.time_base=self.config.time_base\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"av/codec/context.py\", line 857, in av.codec.context.CodecContext.time_base.__set__\n    raise RuntimeError(\"Cannot access 'time_base' as a decoder\")\n    \nRuntimeError: Cannot access 'time_base' as a decoder\n"
+}

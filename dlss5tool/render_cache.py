@@ -16,6 +16,7 @@ import threading
 import numpy as np
 
 from dlss5tool import paths
+from dlss5tool.image_sequence import ImageSequence, is_sequence, source_bytes, audio_source
 from dlss5tool.frame_generation import Cancelled, check_cancel, export_video, runtime_files, inspect_source
 
 PIXEL_KEYS = (
@@ -475,12 +476,16 @@ class RenderCache:
 
 
 def encode_cached(session, output, settings, cancel, progress):
-    from dlss5tool.video_export import FFmpegVideoWriter, compose_hdr_frame, compose_output_frame
+    from dlss5tool.video_export import compose_hdr_frame, compose_output_frame
+    from dlss5tool.gpu_export_runtime import create_video_writer as FFmpegVideoWriter
     import cv2
     import uuid
     destination = Path(output).resolve()
     if destination.exists():
         raise ValueError('输出文件已存在，不覆盖')
+    sequence = ImageSequence.load(session.source) if is_sequence(session.source) else None
+    if sequence:
+        sequence.validate(lambda: check_cancel(cancel))
     session.set_progress(progress)
     metadata = session.wait_metadata(cancel)
     hdr = metadata['hdr_metadata']
@@ -488,7 +493,7 @@ def encode_cached(session, output, settings, cancel, progress):
     total = metadata['source_frames'] * session.multiplier
     if not destination.parent.is_dir() or destination.suffix.lower() not in ('.mp4', '.mov', '.mkv'):
         raise ValueError('请选择现有目录中的 MP4 / MOV / MKV 输出文件')
-    disk_need = Path(session.source).stat().st_size * session.multiplier * int(session.settings.get('super_resolution_scale', 1))**2 * 3
+    disk_need = source_bytes(session.source) * session.multiplier * int(session.settings.get('super_resolution_scale', 1))**2 * 3
     if shutil.disk_usage(destination.parent).free < disk_need + 15*1024**3:
         raise ValueError('输出盘余量不足预计峰值＋15 GiB')
     hit = calculated = 0
@@ -498,10 +503,12 @@ def encode_cached(session, output, settings, cancel, progress):
     computed_before = session.snapshot()['computed']
     try:
         writer = FFmpegVideoWriter(temporary, metadata['width'], metadata['height'], float(rate),
-            audio_source=session.source, use_nvenc=True, hdr_metadata=hdr,
+            audio_source=audio_source(session.source), use_nvenc=True, hdr_metadata=hdr,
             nvenc_preset=settings.get('nvenc_preset', 'p5'), rate_control=settings.get('rate_control', 'quality'),
-            quality_profile=settings.get('quality_profile', 'high'), video_bitrate_mbps=settings.get('video_bitrate_mbps', 20))
+            quality_profile=settings.get('quality_profile', 'high'), video_bitrate_mbps=settings.get('video_bitrate_mbps', 20),cancel=cancel)
         for i in range(total):
+            if sequence:
+                sequence.check_frame(i // session.multiplier)
             with session.condition:
                 cached = i in session.cache
             processed, reference = session.wait(i, cancel)
@@ -522,6 +529,8 @@ def encode_cached(session, output, settings, cancel, progress):
             progress(tr('status.shared_export', hit=hit, done=i+1, total=total), (i+1)/total)
         writer.finish()
         check_cancel(cancel)
+        if sequence:
+            sequence.validate(lambda: check_cancel(cancel))
         os.rename(temporary, destination)
         success = True
         cuts = len((session.metadata or {}).get('scene_cuts', ()))

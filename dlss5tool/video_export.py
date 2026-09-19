@@ -291,6 +291,9 @@ def classify_color_info(values=None):
 
 def probe_video_stream(ffmpeg, source):
     """Read dimensions, timing, and color metadata without decoding a frame."""
+    from dlss5tool.image_sequence import ImageSequence, is_sequence
+    if is_sequence(source):
+        return ImageSequence.load(source).metadata
     source = os.path.abspath(source)
     ffprobe = find_ffprobe(ffmpeg)
     if ffprobe:
@@ -449,24 +452,26 @@ def resize_original(frame, size):
 
 def compose_hdr_frame(original, processed, view=0, mix=1.0, profile="hdr10_pq"):
     """Compose RGBA16F while blending PQ/HLG in linear-light space."""
+    view = int(view)
+    if view == 0:
+        mix = max(0.0, min(_MAX_OUTPUT_MIX, float(mix)))
+        if mix <= 0.0:
+            return np.ascontiguousarray(original, dtype=np.float16)
+        if mix == 1.0:
+            return np.ascontiguousarray(processed, dtype=np.float16)
     original_f = np.asarray(original, dtype=np.float32)
     processed_f = np.asarray(processed, dtype=np.float32)
     width = original_f.shape[1]
-    if int(view) == 1:
+    if view == 1:
         result = np.clip(0.5 + (processed_f - original_f) * 10.0, 0.0, 1.0)
         result[..., 3] = 1.0
         return result.astype(np.float16)
-    if int(view) == 2:
+    if view == 2:
         result = processed_f.copy()
         result[:, :width // 2] = original_f[:, :width // 2]
         if width > 1:
             result[:, max(width // 2 - 1, 0), :3] = 1.0
         return result.astype(np.float16)
-    mix = max(0.0, min(_MAX_OUTPUT_MIX, float(mix)))
-    if mix <= 0.0:
-        return np.ascontiguousarray(original, dtype=np.float16)
-    if mix == 1.0:
-        return np.ascontiguousarray(processed, dtype=np.float16)
     decode = _pq_eotf if profile == "hdr10_pq" else _hlg_eotf
     encode = _pq_oetf if profile == "hdr10_pq" else _hlg_oetf
     original_linear = decode(original_f[..., :3])
@@ -795,6 +800,11 @@ class FFmpegVideoWriter:
             self.quality_profile, self.video_bitrate_mbps, codec=codec,
         )
         self.encoder_name = video_encoder_name(self.codec, self.uses_nvenc, self.is_hdr)
+        from dlss5tool.encoding_contract import frame_encoding_contract
+        self.frame_contract = frame_encoding_contract(
+            self.width, self.height, self.fps, self.output_width, self.output_height,
+            self._resize_output, self.hdr_metadata if self.is_hdr else None,
+        )
         self._stderr = deque(maxlen=100)
         self._frames = 0
         self._finished = False
@@ -810,53 +820,12 @@ class FFmpegVideoWriter:
         temp.close()
 
         cmd = [self.ffmpeg, "-hide_banner", "-loglevel", "warning", "-y"]
-        if self.is_hdr:
-            transfer = self.hdr_metadata["color_transfer"]
-            primaries = self.hdr_metadata["color_primaries"]
-            matrix = self.hdr_metadata["color_space"]
-            geometry = (
-                f"zscale=w={self.output_width}:h={self.output_height}:filter=lanczos:"
-                if self._resize_output else
-                "pad=ceil(iw/2)*2:ceil(ih/2)*2,zscale="
-            )
-            cmd.extend([
-                "-f", "rawvideo", "-pixel_format", "rgba64le",
-                "-video_size", f"{self.width}x{self.height}",
-                "-framerate", f"{self.fps:.12g}",
-                "-color_range", "pc", "-color_primaries", primaries,
-                "-color_trc", transfer, "-i", "pipe:0", "-an",
-                "-vf",
-                f"{geometry}matrixin=gbr:matrix={matrix}:"
-                f"transferin={transfer}:transfer={transfer}:primariesin={primaries}:"
-                f"primaries={primaries}:rangein=full:range=limited,format=p010le",
-            ])
-            cmd.extend(build_video_encoder_args(
-                True, self.uses_nvenc, self.nvenc_preset, self.rate_control,
-                self.quality_profile, self.video_bitrate_mbps,
-                codec=self.codec,
-            ))
-            cmd.extend([
-                "-color_range", "tv", "-color_primaries", primaries,
-                "-color_trc", transfer, "-colorspace", matrix,
-            ])
-        else:
-            output_filter = (
-                f"scale={self.output_width}:{self.output_height}:flags=lanczos,format=yuv420p"
-                if self._resize_output else
-                "pad=ceil(iw/2)*2:ceil(ih/2)*2,format=yuv420p"
-            )
-            cmd.extend([
-                "-f", "rawvideo", "-pixel_format", "bgr24",
-                "-video_size", f"{self.width}x{self.height}",
-                "-framerate", f"{self.fps:.12g}", "-i", "pipe:0", "-an",
-                # H.264 4:2:0 needs even dimensions; padding affects only unusual odd-sized input.
-                "-vf", output_filter,
-            ])
-            cmd.extend(build_video_encoder_args(
-                False, self.uses_nvenc, self.nvenc_preset, self.rate_control,
-                self.quality_profile, self.video_bitrate_mbps,
-                codec=self.codec,
-            ))
+        cmd.extend(self.frame_contract.input_args())
+        cmd.extend(build_video_encoder_args(
+            self.is_hdr, self.uses_nvenc, self.nvenc_preset, self.rate_control,
+            self.quality_profile, self.video_bitrate_mbps, codec=self.codec,
+        ))
+        cmd.extend(self.frame_contract.output_color_args)
         if self.output_container in {"mp4", "mov"}:
             if self.codec == "hevc":
                 cmd.extend(["-tag:v", "hvc1"])

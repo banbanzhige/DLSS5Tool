@@ -18,6 +18,11 @@ class HdrAcceptanceHarnessTests(unittest.TestCase):
             self.assertTrue(report["fixture_used"])
             self.assertIn("DLSS", report["blocked"][0])
 
+    def test_candidates_load_without_scripts_package(self):
+        module = hdr.load_candidates()
+        self.assertTrue(hasattr(module, "analysis_hdr"))
+        self.assertTrue(hasattr(module, "compose_hdr"))
+
     def test_scalar_profile_mapping(self):
         self.assertEqual("hdr10_pq", "hdr10_pq")
         self.assertEqual("hdr10_hlg", "hdr10_hlg")

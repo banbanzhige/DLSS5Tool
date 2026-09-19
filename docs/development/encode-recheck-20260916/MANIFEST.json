@@ -1,0 +1,240 @@
+{
+  "scope": "2026-09-16 targeted retest; old reports unchanged; no production deployment",
+  "records": [
+    {
+      "source": "tmp\\encode-recheck-20260916\\contract.json",
+      "archive": "contract.json",
+      "bytes": 4708,
+      "sha256": "21deb786badde52992884c89e6e356ec92281f391e14308dfbca088da4695b68"
+    },
+    {
+      "source": "tmp\\encode-recheck-20260916\\correct-bgra-argb.h264",
+      "archive": "correct-bgra-argb.h264",
+      "bytes": 161007,
+      "sha256": "aa78ce215e4c203586c53de4d0430715c19e7ab6e82c48463689b363be2ca90a"
+    },
+    {
+      "source": "tmp\\encode-recheck-20260916\\correct-rgba-abgr.h264",
+      "archive": "correct-rgba-abgr.h264",
+      "bytes": 161007,
+      "sha256": "aa78ce215e4c203586c53de4d0430715c19e7ab6e82c48463689b363be2ca90a"
+    },
+    {
+      "source": "tmp\\encode-recheck-20260916\\endpoint.json",
+      "archive": "endpoint.json",
+      "bytes": 51394,
+      "sha256": "fdf125d98160c9e822c8ba50f117c6010f99e6702dd9c0f57a774d8446b85b97"
+    },
+    {
+      "source": "tmp\\encode-recheck-20260916\\ffmpeg-i420.mp4",
+      "archive": "ffmpeg-i420.mp4",
+      "bytes": 125974,
+      "sha256": "960c501d06caa8007477c3d3a41c184d4e7b689be0e2ebcc8a1fd8a6257412dc"
+    },
+    {
+      "source": "tmp\\encode-recheck-20260916\\fg-full-16-0.log",
+      "archive": "fg-full-16-0.log",
+      "bytes": 17555,
+      "sha256": "5bc13e2b104ac30c38b0d0446498ff8dba3c5fd3d2789abe420acf74dba77682"
+    },
+    {
+      "source": "tmp\\encode-recheck-20260916\\fg-full-16-1.log",
+      "archive": "fg-full-16-1.log",
+      "bytes": 17599,
+      "sha256": "287bd71bfe487e737678095fa1399920a756a48dd9e47ea31bc7657327a7d412"
+    },
+    {
+      "source": "tmp\\encode-recheck-20260916\\fg-full-16-2.log",
+      "archive": "fg-full-16-2.log",
+      "bytes": 17599,
+      "sha256": "3bcc491d058a283a47e3d705dfd8463a5581630b691e03f0f9d5738fe0e07a34"
+    },
+    {
+      "source": "tmp\\encode-recheck-20260916\\fg-full-16-3.log",
+      "archive": "fg-full-16-3.log",
+      "bytes": 17599,
+      "sha256": "3d933403583b0ee66b1c78ad71a738ffa235c049e49a5ade390fc557d036abdf"
+    },
+    {
+      "source": "tmp\\encode-recheck-20260916\\fg-full-16-4.log",
+      "archive": "fg-full-16-4.log",
+      "bytes": 17599,
+      "sha256": "bca39b55d0b282211120e6523cd71c424bf818e73a607547d3dac31d6b9cfe18"
+    },
+    {
+      "source": "tmp\\encode-recheck-20260916\\fg-full-16-baseline.mp4",
+      "archive": "fg-full-16-baseline.mp4",
+      "bytes": 1751764,
+      "sha256": "b4c599dd92bb6cc148329b8a552740d2e7db438537863d030ec2f0008d0e160d"
+    },
+    {
+      "source": "tmp\\encode-recheck-20260916\\fg-full-16-resident.mp4",
+      "archive": "fg-full-16-resident.mp4",
+      "bytes": 1751764,
+      "sha256": "b4c599dd92bb6cc148329b8a552740d2e7db438537863d030ec2f0008d0e160d"
+    },
+    {
+      "source": "tmp\\encode-recheck-20260916\\fg-full-16.json",
+      "archive": "fg-full-16.json",
+      "bytes": 52787,
+      "sha256": "461898183cee35e12ee468ad0fb7ac7ed66344d3aa28da0cb7a8e45e14407422"
+    },
+    {
+      "source": "tmp\\encode-recheck-20260916\\hdr-final-hdr10-production-0.mp4",
+      "archive": "hdr-final-hdr10-production-0.mp4",
+      "bytes": 20490,
+      "sha256": "1fbef06d9f031b509b5dc576ca79482f4708c27f1a5e87d7ed580455193310a4"
+    },
+    {
+      "source": "tmp\\encode-recheck-20260916\\hdr-final-hdr10-production-1.mp4",
+      "archive": "hdr-final-hdr10-production-1.mp4",
+      "bytes": 20490,
+      "sha256": "1fbef06d9f031b509b5dc576ca79482f4708c27f1a5e87d7ed580455193310a4"
+    },
+    {
+      "source": "tmp\\encode-recheck-20260916\\hdr-final-hlg-production-0.mp4",
+      "archive": "hdr-final-hlg-production-0.mp4",
+      "bytes": 73296,
+      "sha256": "f2060c857947b4f5559fe0cab06a2f08f462f01ab1a6aa188a8ff63bb4afe83b"
+    },
+    {
+      "source": "tmp\\encode-recheck-20260916\\hdr-final-hlg-production-1.mp4",
+      "archive": "hdr-final-hlg-production-1.mp4",
+      "bytes": 73296,
+      "sha256": "f2060c857947b4f5559fe0cab06a2f08f462f01ab1a6aa188a8ff63bb4afe83b"
+    },
+    {
+      "source": "tmp\\encode-recheck-20260916\\hdr-final.json",
+      "archive": "hdr-final.json",
+      "bytes": 50119,
+      "sha256": "c4da0b8635f41478438d1b02935fe73ba192775751f6dfffdeb2f0160ade785a"
+    },
+    {
+      "source": "tmp\\encode-recheck-20260916\\hdr.json",
+      "archive": "hdr.json",
+      "bytes": 43019,
+      "sha256": "7b7f66c86964d7ee0ab232725d0f1f515fd1a910e73d69a535c62b07fd90d6f3"
+    },
+    {
+      "source": "tmp\\encode-recheck-20260916\\hdr10-production-0.mp4",
+      "archive": "hdr10-production-0.mp4",
+      "bytes": 20490,
+      "sha256": "1fbef06d9f031b509b5dc576ca79482f4708c27f1a5e87d7ed580455193310a4"
+    },
+    {
+      "source": "tmp\\encode-recheck-20260916\\hdr10-production-1.mp4",
+      "archive": "hdr10-production-1.mp4",
+      "bytes": 20490,
+      "sha256": "1fbef06d9f031b509b5dc576ca79482f4708c27f1a5e87d7ed580455193310a4"
+    },
+    {
+      "source": "tmp\\encode-recheck-20260916\\hlg-production-0.mp4",
+      "archive": "hlg-production-0.mp4",
+      "bytes": 73296,
+      "sha256": "f2060c857947b4f5559fe0cab06a2f08f462f01ab1a6aa188a8ff63bb4afe83b"
+    },
+    {
+      "source": "tmp\\encode-recheck-20260916\\hlg-production-1.mp4",
+      "archive": "hlg-production-1.mp4",
+      "bytes": 73296,
+      "sha256": "f2060c857947b4f5559fe0cab06a2f08f462f01ab1a6aa188a8ff63bb4afe83b"
+    },
+    {
+      "source": "tmp\\encode-recheck-20260916\\nv12.h264",
+      "archive": "nv12.h264",
+      "bytes": 159639,
+      "sha256": "03729f5bd80968911af1daac5e535ba6c7e763dcccb909d28706965a20aad57b"
+    },
+    {
+      "source": "tmp\\encode-recheck-20260916\\production-repeat.mp4",
+      "archive": "production-repeat.mp4",
+      "bytes": 125974,
+      "sha256": "960c501d06caa8007477c3d3a41c184d4e7b689be0e2ebcc8a1fd8a6257412dc"
+    },
+    {
+      "source": "tmp\\encode-recheck-20260916\\production.mp4",
+      "archive": "production.mp4",
+      "bytes": 125974,
+      "sha256": "960c501d06caa8007477c3d3a41c184d4e7b689be0e2ebcc8a1fd8a6257412dc"
+    },
+    {
+      "source": "tmp\\encode-recheck-20260916\\ring.h264",
+      "archive": "ring.h264",
+      "bytes": 126165,
+      "sha256": "5c69b0104bf7cb0e4df41a81c8e5d11235994a5cce36774e0e4695e5c864de73"
+    },
+    {
+      "source": "tmp\\encode-recheck-20260916\\wrong-bgra-abgr-control.h264",
+      "archive": "wrong-bgra-abgr-control.h264",
+      "bytes": 160394,
+      "sha256": "61f463ee68a6c51ef08e24b1d52de94490f5a5ef9143c64d6df65da999e02d84"
+    },
+    {
+      "source": "scripts\\encode_recheck.py",
+      "archive": "encode_recheck.py.snapshot.txt",
+      "bytes": 14016,
+      "sha256": "b15a52a139cc8e4905b737f16b5537ebe4d6603239479daa380f44ab8b66db9b"
+    },
+    {
+      "source": "scripts\\encode_acceptance_fg.py",
+      "archive": "encode_acceptance_fg.py.snapshot.txt",
+      "bytes": 16022,
+      "sha256": "13694bd253e4c16f3b778d2fe726c9df0062ce833a24635ba1c5513d61cf9808"
+    },
+    {
+      "source": "scripts\\gpu_nvenc_probe.cpp",
+      "archive": "gpu_nvenc_probe.cpp.snapshot.txt",
+      "bytes": 7996,
+      "sha256": "277a6a533cff266528ba1c1d24ad5a8a6229dcbf983d72bffd1e7a34751e278e"
+    },
+    {
+      "source": "scripts\\gpu_nvenc_ring.cpp",
+      "archive": "gpu_nvenc_ring.cpp.snapshot.txt",
+      "bytes": 9679,
+      "sha256": "c84f1fa677e986f9076779136b530bea55d759481ada6c1b48ed58ed8cd04506"
+    },
+    {
+      "source": "scripts\\gpu_pipeline_candidates.py",
+      "archive": "gpu_pipeline_candidates.py.snapshot.txt",
+      "bytes": 5586,
+      "sha256": "3a1e6252cf023399554454a61b95254c0ddedb34913ca056ec1caab7f0ff0648"
+    },
+    {
+      "source": "scripts\\encode_acceptance_nvenc_contract.py",
+      "archive": "encode_acceptance_nvenc_contract.py.snapshot.txt",
+      "bytes": 13032,
+      "sha256": "cc86996e41a7ba47cf922e992728d0509fa05bd2308598faa183dac687003ded"
+    },
+    {
+      "source": "scripts\\encode_acceptance_nvenc_ring.py",
+      "archive": "encode_acceptance_nvenc_ring.py.snapshot.txt",
+      "bytes": 12636,
+      "sha256": "b4d1d3ae68c4897a72309afaa30a215eeb648bc25338fcd362e1c5d9910d47bc"
+    },
+    {
+      "source": "dlss5tool\\video_export.py",
+      "archive": "video_export.py.snapshot.txt",
+      "bytes": 39640,
+      "sha256": "f636105c8ad29d759d108fe50de7a17ff78721d50d9ee3f93f23bad09172c808"
+    },
+    {
+      "source": "tests\\test_encode_recheck.py",
+      "archive": "test_encode_recheck.py.snapshot.txt",
+      "bytes": 1107,
+      "sha256": "1591ad92894817d16a4547c203f75f1b8ab6aec52d6a564185ad1424d5169a1f"
+    },
+    {
+      "source": "initial retest script snapshot",
+      "archive": "encode_recheck.v1.py",
+      "bytes": 13564,
+      "sha256": "cd55169955359e80e457c22cd21e92a8e1c2c07dd535d4dd982c9174ed44f94c"
+    }
+  ],
+  "total_bytes": 5448062,
+  "environment": "name, driver_version, memory.total [MiB]\nNVIDIA GeForce RTX 4070 SUPER, 616.92, 12282 MiB",
+  "git_head": "0ecfad33c61c7a93497456ab9e597a62ab817ab7",
+  "runtime_hashes": {
+    "runtime/dlssnr_host_v2.dll": "c8ad631f8f78b2dedec6aec418c7a570d6fc5bf1b9ffa9f3514bcb0edd58fc13",
+    "runtime/dlssg_video_worker.exe": "7e6c281608be2e8a6d63a574a3eae8621c6c38635260e150571ef20f422c4659"
+  }
+}

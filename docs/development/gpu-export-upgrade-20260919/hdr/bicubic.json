@@ -1,0 +1,455 @@
+{
+  "scope": "Bounded HDR production conversion characterization; no default changes.",
+  "source_sha256": "a9e1f540098376b61fa2d399aaedc078eaed9ad69194577f575eb669d23b62c0",
+  "cases": [
+    {
+      "name": "black",
+      "sha256": "806f5add272ee1d624ec25bb9ad6188106bc440733b7b570b1ab3c5e9c454283",
+      "fixed_coefficients": [
+        [
+          7393,
+          19080,
+          1669
+        ],
+        [
+          -4019,
+          -10373,
+          14392
+        ],
+        [
+          14392,
+          -13235,
+          -1158
+        ]
+      ],
+      "fixed_y_mismatch": 0,
+      "fixed_uv_mismatch": 0,
+      "y_mismatch": 0,
+      "planes444_mismatch": [
+        0,
+        0,
+        0
+      ],
+      "box_mismatch": 0
+    },
+    {
+      "name": "white",
+      "sha256": "f26874db2f4371ba7c198452504de9db2ad883e3e08701999831ef1055c0f680",
+      "fixed_coefficients": [
+        [
+          7393,
+          19080,
+          1669
+        ],
+        [
+          -4019,
+          -10373,
+          14392
+        ],
+        [
+          14392,
+          -13235,
+          -1158
+        ]
+      ],
+      "fixed_y_mismatch": 0,
+      "fixed_uv_mismatch": 0,
+      "y_mismatch": 512,
+      "planes444_mismatch": [
+        0,
+        0,
+        0
+      ],
+      "box_mismatch": 0
+    },
+    {
+      "name": "random",
+      "sha256": "20d271d729168f9024bdcf44735464db86f956d193bce6926da4aa9d71bde886",
+      "fixed_coefficients": [
+        [
+          7393,
+          19080,
+          1669
+        ],
+        [
+          -4019,
+          -10373,
+          14392
+        ],
+        [
+          14392,
+          -13235,
+          -1158
+        ]
+      ],
+      "fixed_y_mismatch": 0,
+      "fixed_uv_mismatch": 0,
+      "y_mismatch": 488,
+      "planes444_mismatch": [
+        0,
+        0,
+        0
+      ],
+      "box_mismatch": 255,
+      "log": "Input #0, rawvideo, from 'pipe:0':\r\n  Duration: N/A, start: 0.000000, bitrate: 786 kb/s\r\n  Stream #0:0: Video: rawvideo, 1 reference frame (RBA[64] / 0x40414252), rgba64le(pc, unknown/bt2020/smpte2084), 32x16, 786 kb/s, 24 tbr, 24 tbn\r\n[out#0/rawvideo @ 000002a9d5c12480] No explicit maps, mapping streams automatically...\r\n[vost#0:0/rawvideo @ 000002a9d5bfaec0] Created video stream from input stream 0:0\r\nStream mapping:\r\n  Stream #0:0 -> #0:0 (rawvideo (native) -> rawvideo (native))\r\n[vost#0:0/rawvideo @ 000002a9d5bfaec0] Starting thread...\r\n[vf#0:0 @ 000002a9d5bfbf40] Starting thread...\r\n[vist#0:0/rawvideo @ 000002a9d5bfa940] [dec:rawvideo @ 000002a9d5c137c0] Starting thread...\r\n[in#0/rawvideo @ 000002a9d5c00440] Starting thread...\r\n[in#0/rawvideo @ 000002a9d5c00440] EOF while reading input\r\n[in#0/rawvideo @ 000002a9d5c00440] Terminating thread with return code 0 (success)\r\n[vist#0:0/rawvideo @ 000002a9d5bfa940] [dec:rawvideo @ 000002a9d5c137c0] Decoder thread received EOF packet\r\n[vist#0:0/rawvideo @ 000002a9d5bfa940] [dec:rawvideo @ 000002a9d5c137c0] Decoder returned EOF, finishing\r\n[vist#0:0/rawvideo @ 000002a9d5bfa940] [dec:rawvideo @ 000002a9d5c137c0] Terminating thread with return code 0 (success)\r\n[graph -1 input from stream 0:0 @ 000002a9d5c27b40] w:32 h:16 pixfmt:rgba64le tb:1/24 fr:24/1 sar:0/1 csp:unknown range:pc\r\n[auto_scale_0 @ 000002a9d5c31140] w:iw h:ih flags:'' interl:0\r\n[Parsed_pad_0 @ 000002a9d5c28700] auto-inserting filter 'auto_scale_0' between the filter 'graph -1 input from stream 0:0' and the filter 'Parsed_pad_0'\r\n[auto_scale_1 @ 000002a9d5c2fc40] w:iw h:ih flags:'' interl:0\r\n[Parsed_format_2 @ 000002a9d5bdffc0] auto-inserting filter 'auto_scale_1' between the filter 'Parsed_zscale_1' and the filter 'Parsed_format_2'\r\n[auto_scale_0 @ 000002a9d5c31140] w:32 h:16 fmt:rgba64le csp:gbr range:pc sar:0/1 -> w:32 h:16 fmt:gbrap16le csp:gbr range:pc sar:0/1 flags:0x00000004\r\n[auto_scale_0 @ 000002a9d5c31140] [framesync @ 000002a9d5c32be8] Selected 1/24 time base\r\n[auto_scale_0 @ 000002a9d5c31140] [framesync @ 000002a9d5c32be8] Sync level 1\r\n[Parsed_pad_0 @ 000002a9d5c28700] w:32 h:16 -> w:32 h:16 x:0 y:0 color:0x000000FF\r\n[auto_scale_1 @ 000002a9d5c2fc40] w:32 h:16 fmt:gbrap16le csp:gbr range:pc sar:0/1 -> w:32 h:16 fmt:p010le csp:bt2020nc range:tv sar:0/1 flags:0x00000004\r\n[auto_scale_1 @ 000002a9d5c2fc40] [framesync @ 000002a9d5c44ce8] Selected 1/24 time base\r\n[auto_scale_1 @ 000002a9d5c2fc40] [framesync @ 000002a9d5c44ce8] Sync level 1\r\n[graph -1 input from stream 0:0 @ 000002a9d5c27b40] video frame properties congruent with link at pts_time: 0\r\nOutput #0, rawvideo, to 'pipe:1':\r\n  Metadata:\r\n    encoder         : Lavf61.7.100\r\n  Stream #0:0: Video: rawvideo, 1 reference frame, p010le(tv, bt2020nc/bt2020/smpte2084, progressive), 32x16, q=2-31, 184 kb/s, 24 fps, 24 tbn\r\n      Metadata:\r\n        encoder         : Lavc61.19.101 rawvideo\r\n[out#0/rawvideo @ 000002a9d5c12480] Starting thread...\r\n[vf#0:0 @ 000002a9d5bfbf40] All consumers returned EOF\r\n[vost#0:0/rawvideo @ 000002a9d5bfaec0] Encoder thread received EOF\r\n[vost#0:0/rawvideo @ 000002a9d5bfaec0] Terminating thread with return code 0 (success)\r\n[out#0/rawvideo @ 000002a9d5c12480] All streams finished\r\n[out#0/rawvideo @ 000002a9d5c12480] Terminating thread with return code 0 (success)\r\n[vf#0:0 @ 000002a9d5bfbf40] Terminating thread with return code 0 (success)\r\n[AVIOContext @ 000002a9d5c20000] Statistics: 1536 bytes written, 0 seeks, 1 writeouts\r\n[out#0/rawvideo @ 000002a9d5c12480] Output file #0 (pipe:1):\r\n[out#0/rawvideo @ 000002a9d5c12480]   Output stream #0:0 (video): 1 frames encoded; 1 packets muxed (1536 bytes); \r\n[out#0/rawvideo @ 000002a9d5c12480]   Total: 1 packets (1536 bytes) muxed\r\n[out#0/rawvideo @ 000002a9d5c12480] video:2KiB audio:0KiB subtitle:0KiB other streams:0KiB global headers:0KiB muxing overhead: 0.000000%\r\nframe=    1 fps=0.0 q=-0.0 Lsize=       2KiB time=00:00:00.04 bitrate= 294.9kbits/s speed=6.34x    \r\n[in#0/rawvideo @ 000002a9d5c00440] Input file #0 (pipe:0):\r\n[in#0/rawvideo @ 000002a9d5c00440]   Input stream #0:0 (video): 1 packets read (4096 bytes); 1 frames decoded; 0 decode errors; \r\n[in#0/rawvideo @ 000002a9d5c00440]   Total: 1 packets (4096 bytes) demuxed\r\n[AVIOContext @ 000002a9d5c11c00] Statistics: 4096 bytes read, 0 seeks\r\n",
+      "y_examples": [
+        [
+          477,
+          475
+        ],
+        [
+          377,
+          376
+        ],
+        [
+          602,
+          600
+        ],
+        [
+          457,
+          455
+        ],
+        [
+          808,
+          805
+        ],
+        [
+          362,
+          360
+        ],
+        [
+          404,
+          403
+        ],
+        [
+          569,
+          567
+        ],
+        [
+          517,
+          515
+        ],
+        [
+          536,
+          534
+        ],
+        [
+          546,
+          544
+        ],
+        [
+          533,
+          531
+        ],
+        [
+          808,
+          806
+        ],
+        [
+          733,
+          731
+        ],
+        [
+          627,
+          625
+        ],
+        [
+          383,
+          382
+        ],
+        [
+          676,
+          673
+        ],
+        [
+          715,
+          712
+        ],
+        [
+          645,
+          643
+        ],
+        [
+          200,
+          199
+        ]
+      ]
+    },
+    {
+      "name": "impulse-0-0",
+      "sha256": "4a167cda1e15882aca70f8e9638c15dbc16ffbf628fef93c0509bf0a717ad6c5",
+      "fixed_coefficients": [
+        [
+          7393,
+          19080,
+          1669
+        ],
+        [
+          -4019,
+          -10373,
+          14392
+        ],
+        [
+          14392,
+          -13235,
+          -1158
+        ]
+      ],
+      "fixed_y_mismatch": 0,
+      "fixed_uv_mismatch": 0,
+      "y_mismatch": 1,
+      "planes444_mismatch": [
+        0,
+        0,
+        0
+      ],
+      "box_mismatch": 5,
+      "chroma_impulse": [
+        {
+          "x": 0,
+          "y": 0,
+          "u": 481,
+          "v": 624
+        },
+        {
+          "x": 1,
+          "y": 0,
+          "u": 516,
+          "v": 499
+        },
+        {
+          "x": 0,
+          "y": 1,
+          "u": 516,
+          "v": 499
+        },
+        {
+          "x": 1,
+          "y": 1,
+          "u": 512,
+          "v": 513
+        }
+      ]
+    },
+    {
+      "name": "impulse-6-6",
+      "sha256": "aeff8efe9ce755754dcafd24c90b60c6e978f6e3e8fcf3db5741cfa95a91b9f1",
+      "fixed_coefficients": [
+        [
+          7393,
+          19080,
+          1669
+        ],
+        [
+          -4019,
+          -10373,
+          14392
+        ],
+        [
+          14392,
+          -13235,
+          -1158
+        ]
+      ],
+      "fixed_y_mismatch": 0,
+      "fixed_uv_mismatch": 0,
+      "y_mismatch": 1,
+      "planes444_mismatch": [
+        0,
+        0,
+        0
+      ],
+      "box_mismatch": 23,
+      "chroma_impulse": [
+        {
+          "x": 2,
+          "y": 1,
+          "u": 512,
+          "v": 511
+        },
+        {
+          "x": 3,
+          "y": 1,
+          "u": 513,
+          "v": 509
+        },
+        {
+          "x": 1,
+          "y": 2,
+          "u": 512,
+          "v": 511
+        },
+        {
+          "x": 2,
+          "y": 2,
+          "u": 510,
+          "v": 519
+        },
+        {
+          "x": 3,
+          "y": 2,
+          "u": 505,
+          "v": 536
+        },
+        {
+          "x": 4,
+          "y": 2,
+          "u": 513,
+          "v": 510
+        },
+        {
+          "x": 1,
+          "y": 3,
+          "u": 513,
+          "v": 509
+        },
+        {
+          "x": 2,
+          "y": 3,
+          "u": 505,
+          "v": 536
+        },
+        {
+          "x": 3,
+          "y": 3,
+          "u": 488,
+          "v": 597
+        },
+        {
+          "x": 4,
+          "y": 3,
+          "u": 514,
+          "v": 504
+        },
+        {
+          "x": 2,
+          "y": 4,
+          "u": 513,
+          "v": 510
+        },
+        {
+          "x": 3,
+          "y": 4,
+          "u": 514,
+          "v": 504
+        },
+        {
+          "x": 4,
+          "y": 4,
+          "u": 512,
+          "v": 513
+        }
+      ]
+    },
+    {
+      "name": "impulse-7-7",
+      "sha256": "93ab06cb3cfbf1e25856b66563da986498e951eece5a517dcb7310c6c6abc6ce",
+      "fixed_coefficients": [
+        [
+          7393,
+          19080,
+          1669
+        ],
+        [
+          -4019,
+          -10373,
+          14392
+        ],
+        [
+          14392,
+          -13235,
+          -1158
+        ]
+      ],
+      "fixed_y_mismatch": 0,
+      "fixed_uv_mismatch": 0,
+      "y_mismatch": 1,
+      "planes444_mismatch": [
+        0,
+        0,
+        0
+      ],
+      "box_mismatch": 23,
+      "chroma_impulse": [
+        {
+          "x": 2,
+          "y": 2,
+          "u": 512,
+          "v": 513
+        },
+        {
+          "x": 3,
+          "y": 2,
+          "u": 514,
+          "v": 504
+        },
+        {
+          "x": 4,
+          "y": 2,
+          "u": 513,
+          "v": 510
+        },
+        {
+          "x": 2,
+          "y": 3,
+          "u": 514,
+          "v": 504
+        },
+        {
+          "x": 3,
+          "y": 3,
+          "u": 488,
+          "v": 597
+        },
+        {
+          "x": 4,
+          "y": 3,
+          "u": 505,
+          "v": 536
+        },
+        {
+          "x": 5,
+          "y": 3,
+          "u": 513,
+          "v": 509
+        },
+        {
+          "x": 2,
+          "y": 4,
+          "u": 513,
+          "v": 510
+        },
+        {
+          "x": 3,
+          "y": 4,
+          "u": 505,
+          "v": 536
+        },
+        {
+          "x": 4,
+          "y": 4,
+          "u": 510,
+          "v": 519
+        },
+        {
+          "x": 5,
+          "y": 4,
+          "u": 512,
+          "v": 511
+        },
+        {
+          "x": 3,
+          "y": 5,
+          "u": 513,
+          "v": 509
+        },
+        {
+          "x": 4,
+          "y": 5,
+          "u": 512,
+          "v": 511
+        }
+      ]
+    }
+  ]
+}

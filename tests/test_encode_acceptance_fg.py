@@ -1,7 +1,7 @@
 import unittest
 import numpy as np
 
-from scripts.encode_acceptance_fg import timeline_events, nvofa_motion
+from scripts.encode_acceptance_fg import timeline_events, nvofa_motion, resolve_native_root
 
 
 class FrameGenerationAcceptanceTests(unittest.TestCase):
@@ -34,6 +34,20 @@ class FrameGenerationAcceptanceTests(unittest.TestCase):
     def test_invalid_timeline_rejected(self):
         with self.assertRaises(ValueError): timeline_events(0, 2)
         with self.assertRaises(ValueError): timeline_events(2, 1)
+
+    def test_native_root_prefers_parent_build(self):
+        import tempfile
+        from pathlib import Path
+        with tempfile.TemporaryDirectory() as td:
+            parent = Path(td)
+            child = parent / 'fg'
+            child.mkdir()
+            (parent / 'native-encoder').mkdir()
+            (parent / 'native-dlssg').mkdir()
+            (parent / 'native-encoder' / 'candidate.dll').write_bytes(b'dll')
+            (parent / 'native-dlssg' / 'candidate.exe').write_bytes(b'exe')
+            self.assertEqual(resolve_native_root(child), parent.resolve())
+            self.assertEqual(resolve_native_root(parent), parent.resolve())
 
 
 if __name__ == '__main__':

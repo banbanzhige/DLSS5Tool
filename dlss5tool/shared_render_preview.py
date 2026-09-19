@@ -10,6 +10,7 @@ import numpy as np
 from dlss5tool.render_cache import RenderCache, render_identity, file_identity
 from dlss5tool.video_export import compose_hdr_frame, compose_output_frame, tone_map_hdr_preview
 from dlss5tool.i18n import tr
+from dlss5tool.image_sequence import open_capture
 
 
 class SharedRenderPreview:
@@ -30,6 +31,8 @@ class SharedRenderPreview:
         return config
 
     def _on_effect_preview_change(self):
+        if hasattr(self, '_export_preview_key'):
+            self._last_export_preview_key = self._export_preview_key()
         if getattr(self, '_exporting', False) or getattr(self, '_queue_running', False):
             self._schedule_settings_save()
             return
@@ -120,7 +123,7 @@ class SharedRenderPreview:
         source, frame = str(self.video), int(self._frame)
         color = dict(getattr(self, '_video_color_info', None) or {})
         def decode():
-            cap = cv2.VideoCapture(source)
+            cap = open_capture(source)
             try:
                 if frame:
                     cap.set(cv2.CAP_PROP_POS_FRAMES, frame)

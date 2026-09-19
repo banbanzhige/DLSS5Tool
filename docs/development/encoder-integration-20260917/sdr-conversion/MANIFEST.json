@@ -1,0 +1,184 @@
+{
+  "records": [
+    {
+      "source": "tmp\\encode-integration-20260917\\sdr-conversion\\1920x1080-high.mp4",
+      "archive": "1920x1080-high.mp4",
+      "bytes": 2072872,
+      "sha256": "3bd2096f3f6a604dbcb6119b68502f865b16ba44258f546d4ac2f9a712a3fe4d"
+    },
+    {
+      "source": "tmp\\encode-integration-20260917\\sdr-conversion\\320x180-balanced.mp4",
+      "archive": "320x180-balanced.mp4",
+      "bytes": 55117,
+      "sha256": "6583f41b28e9263c68d0a21b9e0debf21724b6230007867fd1bcb90c94576655"
+    },
+    {
+      "source": "tmp\\encode-integration-20260917\\sdr-conversion\\320x180-high.mp4",
+      "archive": "320x180-high.mp4",
+      "bytes": 86556,
+      "sha256": "96a17bc37b01d4c12410fa0217d0fdabce2e97cb347195c2cb6bccf88ded06b1"
+    },
+    {
+      "source": "tmp\\encode-integration-20260917\\sdr-conversion\\321x181-balanced.mp4",
+      "archive": "321x181-balanced.mp4",
+      "bytes": 56990,
+      "sha256": "e353e7efe65620bcc4bdb51a8d1124158a67fb6fb7353d2a2f0ae4cf5b904cf3"
+    },
+    {
+      "source": "tmp\\encode-integration-20260917\\sdr-conversion\\321x181-high.mp4",
+      "archive": "321x181-high.mp4",
+      "bytes": 87100,
+      "sha256": "7fd2600cde24eda07670714d5f90405d8754b09d0061f74225498e16b2642723"
+    },
+    {
+      "source": "tmp\\encode-integration-20260917\\sdr-conversion\\3840x2160-high.mp4",
+      "archive": "3840x2160-high.mp4",
+      "bytes": 2374025,
+      "sha256": "96616e92994875c9a50d656c9d96b50094010b0ea465d2dc5c5880df21d4c56a"
+    },
+    {
+      "source": "tmp\\encode-integration-20260917\\sdr-conversion\\box-fixed.json",
+      "archive": "box-fixed.json",
+      "bytes": 66929,
+      "sha256": "02dc5d93c98dd3bc97ebadf179faaba8b075fa9f01734798a5438b30cce154e5"
+    },
+    {
+      "source": "tmp\\encode-integration-20260917\\sdr-conversion\\box-floor.json",
+      "archive": "box-floor.json",
+      "bytes": 42161,
+      "sha256": "8388997375dad2ad95954fe5530c5f4d85f13e76d40cfb49db2623d7229ee5e4"
+    },
+    {
+      "source": "tmp\\encode-integration-20260917\\sdr-conversion\\contract-guard-1920x1080-high.mp4",
+      "archive": "contract-guard-1920x1080-high.mp4",
+      "bytes": 2072872,
+      "sha256": "3bd2096f3f6a604dbcb6119b68502f865b16ba44258f546d4ac2f9a712a3fe4d"
+    },
+    {
+      "source": "tmp\\encode-integration-20260917\\sdr-conversion\\contract-guard-320x180-balanced.mp4",
+      "archive": "contract-guard-320x180-balanced.mp4",
+      "bytes": 55117,
+      "sha256": "6583f41b28e9263c68d0a21b9e0debf21724b6230007867fd1bcb90c94576655"
+    },
+    {
+      "source": "tmp\\encode-integration-20260917\\sdr-conversion\\contract-guard-320x180-high.mp4",
+      "archive": "contract-guard-320x180-high.mp4",
+      "bytes": 86556,
+      "sha256": "96a17bc37b01d4c12410fa0217d0fdabce2e97cb347195c2cb6bccf88ded06b1"
+    },
+    {
+      "source": "tmp\\encode-integration-20260917\\sdr-conversion\\contract-guard-321x181-balanced.mp4",
+      "archive": "contract-guard-321x181-balanced.mp4",
+      "bytes": 56990,
+      "sha256": "e353e7efe65620bcc4bdb51a8d1124158a67fb6fb7353d2a2f0ae4cf5b904cf3"
+    },
+    {
+      "source": "tmp\\encode-integration-20260917\\sdr-conversion\\contract-guard-321x181-high.mp4",
+      "archive": "contract-guard-321x181-high.mp4",
+      "bytes": 87100,
+      "sha256": "7fd2600cde24eda07670714d5f90405d8754b09d0061f74225498e16b2642723"
+    },
+    {
+      "source": "tmp\\encode-integration-20260917\\sdr-conversion\\contract-guard-3840x2160-high.mp4",
+      "archive": "contract-guard-3840x2160-high.mp4",
+      "bytes": 2374025,
+      "sha256": "96616e92994875c9a50d656c9d96b50094010b0ea465d2dc5c5880df21d4c56a"
+    },
+    {
+      "source": "tmp\\encode-integration-20260917\\sdr-conversion\\contract-guard.json",
+      "archive": "contract-guard.json",
+      "bytes": 57811,
+      "sha256": "d7ec041816ccb5eac775c5d0da2fdbeed071c1e10ac57dd67fdc9f3989142690"
+    },
+    {
+      "source": "tmp\\encode-integration-20260917\\sdr-conversion\\fused-layouts.json",
+      "archive": "fused-layouts.json",
+      "bytes": 56841,
+      "sha256": "51bc5a7c2712e1239c9119ece5668e4348dfdec395b5da30cc5a7c11ae9b64e7"
+    },
+    {
+      "source": "tmp\\encode-integration-20260917\\sdr-conversion\\ptx-build.json",
+      "archive": "ptx-build.json",
+      "bytes": 487,
+      "sha256": "5bc785f7d1e6c63d66c392cf809c4d53bfff7bd5201acd16f00e8c186145be0d"
+    },
+    {
+      "source": "tmp\\encode-integration-20260917\\sdr-conversion\\rgb-floor.json",
+      "archive": "rgb-floor.json",
+      "bytes": 28653,
+      "sha256": "606d4b00b4aa5d3aa70a17c0dd91f961165d7b5a795893b0e2c30476f19581e9"
+    },
+    {
+      "source": "tmp\\encode-integration-20260917\\sdr-conversion\\sdr-cuda-encode.json",
+      "archive": "sdr-cuda-encode.json",
+      "bytes": 57682,
+      "sha256": "c9bc06498b54c4fef67125c93a3a146c2be398a11bf474bc1eb49e7702ec396d"
+    },
+    {
+      "source": "tmp\\encode-integration-20260917\\sdr-conversion\\sdr-yuv.ptx",
+      "archive": "sdr-yuv.ptx",
+      "bytes": 5990,
+      "sha256": "88bc614cc473e288256bba677ff49ab8a10f0860b25e2ce01552174d56ec62e0"
+    },
+    {
+      "source": "scripts\\gpu_sdr_yuv.cu",
+      "archive": "sources/gpu_sdr_yuv.cu.txt",
+      "bytes": 1462,
+      "sha256": "636fb35f0251e807deed9379e4060b9145ce00d525264ca072c8e7197528d756"
+    },
+    {
+      "source": "scripts\\build_sdr_yuv_ptx.py",
+      "archive": "sources/build_sdr_yuv_ptx.py.txt",
+      "bytes": 3395,
+      "sha256": "40958a0cea2e3c5b38ac1d328476d63cdb6ece1b8946140942a77f4aa29a86e5"
+    },
+    {
+      "source": "scripts\\sdr_yuv_conversion_probe.py",
+      "archive": "sources/sdr_yuv_conversion_probe.py.txt",
+      "bytes": 8848,
+      "sha256": "63ce11e6a7102653abedfbd5992ac5b5c0d55f8cfb53527d6a012cf9d18ff841"
+    },
+    {
+      "source": "scripts\\sdr_cuda_encode_gate.py",
+      "archive": "sources/sdr_cuda_encode_gate.py.txt",
+      "bytes": 6018,
+      "sha256": "1e18ad78f355ab99abab854fa58684813d9ac64aa85a5def39c9798c01d720ec"
+    },
+    {
+      "source": "scripts\\archive_sdr_conversion.py",
+      "archive": "sources/archive_sdr_conversion.py.txt",
+      "bytes": 2101,
+      "sha256": "7bd0443cadd17dcef04b63ed08645a7e4f1c743be7d6bead5f568746b1a7c46e"
+    },
+    {
+      "source": "dlss5tool\\cuda_sdr_yuv.py",
+      "archive": "sources/cuda_sdr_yuv.py.txt",
+      "bytes": 6171,
+      "sha256": "a6239400b127435f76d2b3f885442413851347921313f1aff9cb5a5946f7380f"
+    },
+    {
+      "source": "tests\\test_cuda_sdr_yuv.py",
+      "archive": "sources/test_cuda_sdr_yuv.py.txt",
+      "bytes": 3123,
+      "sha256": "7e7fd09dd3e276c2f7fb2e298455e2f55ddbb54ae01b6aa98027acb665be2cbe"
+    },
+    {
+      "source": "dlss5tool\\nvenc_yuv.py",
+      "archive": "sources/nvenc_yuv.py.txt",
+      "bytes": 10492,
+      "sha256": "f40dc5e9bffec35060cad71357a68ccbb56889786136b23e458926bdb0932b4b"
+    },
+    {
+      "source": "dlss5tool\\encoding_contract.py",
+      "archive": "sources/encoding_contract.py.txt",
+      "bytes": 2361,
+      "sha256": "01c9451c573b798f8c62eaf57194c089453ce9ecee86aba3695624cc70c50cff"
+    }
+  ],
+  "total_bytes": 9825845,
+  "native_sha256": "80d9d538034b16f0d82a079b23682b58ecbad98c0b04b52fff178d9782dd76ea",
+  "runtime_sha256": {
+    "runtime/dlssnr_host_v2.dll": "c8ad631f8f78b2dedec6aec418c7a570d6fc5bf1b9ffa9f3514bcb0edd58fc13",
+    "runtime/dlssg_video_worker.exe": "7e6c281608be2e8a6d63a574a3eae8621c6c38635260e150571ef20f422c4659"
+  }
+}

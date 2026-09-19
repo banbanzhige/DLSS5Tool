@@ -1,0 +1,783 @@
+{
+  "scope": "Actual production export loop + NVOFA + DLSSG + GPU conversion/mux gate.",
+  "argv": [
+    "scripts/gpu_export_fg_gate.py",
+    "--work",
+    "tmp/export-integration-20260917",
+    "--label",
+    "fg3-mkv",
+    "--multiplier",
+    "3",
+    "--container",
+    "mkv"
+  ],
+  "sources": {
+    "dlss5tool/frame_generation.py": "b354b75a41169ad011d6eb7c7e51933743b2a6e924e91cbc0d48fbc5c16fdf9f",
+    "dlss5tool/gpu_video_export.py": "b3f470d531f742a3b615dfb9a9e755980de53eb1229568f1e7fc99abc7d39a37",
+    "dlss5tool/packet_mux.py": "4bd7a983048d443fe12161098d72393506ff826540585f890b1a699ef81046e8",
+    "dlss5tool/cuda_interop.py": "889fdd69bda85a868f57ce972ae7457b697f5169a4dbd9540c1553783e88a6b7",
+    "scripts/dlssg_video_worker.cpp": "81c6768f25715bbff127b808d0ce8ad40c644ce4bc33576e73571a069f00233b",
+    "scripts/gpu_export_fg_gate.py": "965a5adaaaad02e98d650483ecd75dccb821fb0e1dacfe43733c2ac901f29500"
+  },
+  "binaries": {
+    "native_library": "80d9d538034b16f0d82a079b23682b58ecbad98c0b04b52fff178d9782dd76ea",
+    "sdr_ptx": "88bc614cc473e288256bba677ff49ab8a10f0860b25e2ce01552174d56ec62e0",
+    "worker": "4a179114a31e3cd55b61c02f517f32362671192fa58a909228aabff06e309951"
+  },
+  "results": {
+    "baseline": {
+      "experimental": true,
+      "warning": "实验功能：普通视频采用 NVOFA 估计光流及平面深度；遮挡/字幕/HDR 画质未完整验收。3×/4×目前仅限本机 RTX 4070 SUPER 与固定运行库，已知部分生成帧时间位置偏差。不会自动降倍率或位深；正常帧对生成无效时停止。",
+      "source": "F:\\project\\DLSS5Tool\\tmp\\export-integration-20260917\\fg3-mkv-source.mp4",
+      "output": "F:\\project\\DLSS5Tool\\tmp\\export-integration-20260917\\fg3-mkv-baseline.mkv",
+      "multiplier": 3,
+      "spatial_scale": 1,
+      "enhance": false,
+      "status": "complete",
+      "real_frames": 12,
+      "generated_frames": 22,
+      "cut_holds": 0,
+      "endpoint_holds": 2,
+      "width": 320,
+      "height": 180,
+      "source_rate": "24",
+      "output_rate": "72",
+      "color": "srgb",
+      "output_view": 0,
+      "runtime_sha256": "135eaf0733c1e37381a8c28abcf7a862404a54132b81787c04e35d09efc5e36f",
+      "log_dir": "F:\\project\\DLSS5Tool\\tmp\\export-integration-20260917\\fg3-mkv-baseline-logs",
+      "cleanup_errors": []
+    },
+    "gpu": {
+      "experimental": true,
+      "warning": "实验功能：普通视频采用 NVOFA 估计光流及平面深度；遮挡/字幕/HDR 画质未完整验收。3×/4×目前仅限本机 RTX 4070 SUPER 与固定运行库，已知部分生成帧时间位置偏差。不会自动降倍率或位深；正常帧对生成无效时停止。",
+      "source": "F:\\project\\DLSS5Tool\\tmp\\export-integration-20260917\\fg3-mkv-source.mp4",
+      "output": "F:\\project\\DLSS5Tool\\tmp\\export-integration-20260917\\fg3-mkv-gpu.mkv",
+      "multiplier": 3,
+      "spatial_scale": 1,
+      "enhance": false,
+      "status": "complete",
+      "real_frames": 12,
+      "generated_frames": 22,
+      "cut_holds": 0,
+      "endpoint_holds": 2,
+      "width": 320,
+      "height": 180,
+      "source_rate": "24",
+      "output_rate": "72",
+      "color": "srgb",
+      "output_view": 0,
+      "runtime_sha256": "135eaf0733c1e37381a8c28abcf7a862404a54132b81787c04e35d09efc5e36f",
+      "log_dir": "F:\\project\\DLSS5Tool\\tmp\\export-integration-20260917\\fg3-mkv-gpu-logs",
+      "cleanup_errors": []
+    }
+  },
+  "outputs": {
+    "baseline": {
+      "decode": {
+        "returncode": 0,
+        "frames": 36,
+        "md5": [
+          "756e8cc8c04fa488238cbce4ee2942dd",
+          "9dd9cd0e2158541ab7a9d0118aa2ef46",
+          "847b354208d617c57325b344e601f628",
+          "01bef85fd6821fee1b58dd66fd22ec74",
+          "9821b455bd97d6f52f912f6e9084b281",
+          "45cd3bab9976daa5f3555959a29e7dab",
+          "deee66e35a6dc0caf91b327bffb15874",
+          "a9b76ca7ee253d63469552175cd25151",
+          "2220251fecbf30aa0a752ae0793f2a1a",
+          "56fd23194b94e67f63440529fb56a679",
+          "a41a3a2468f4da8024d0a5de14bda755",
+          "553f98f7f7ec617640127b7b34cabcd5",
+          "2ba471061a6c38b5fed39e5a4c3f4f73",
+          "b5d76f8fe22321b416f2bf5dac3ced90",
+          "9002a09301ede4737071d111e73f9083",
+          "b3ffe2e1b9c3d307dddd2585fff41cf5",
+          "bc0c12749b5bf07a2ad060a58d026e62",
+          "605cf05eabb14c126bb76b11e315ac90",
+          "21e56e95f903bd0023dece7b115d841a",
+          "205482328f570ed63da7ec79b12d33a6",
+          "a0f2712f434deab8c0921e76bdab6d9b",
+          "84a03028264551971029bc6141474b10",
+          "906a7a84990b9fae2fc44d4e8e722541",
+          "a8c1d5e1e43d999c7485aa2b9c5a4b98",
+          "d7fcff4bf89f42e6657aabbc63fb5b26",
+          "0c345f98dec72f7049cb2063984fd170",
+          "afd84cfb2e1629afda6d86225eab6911",
+          "02697a6ebd61bca1a4404fec97566ffc",
+          "46bdb888fd16bcb3e32989b45b78b92d",
+          "da890bfa4495e8f49331860fb8b17f97",
+          "63a7dd963569d065cea62dcc179dd810",
+          "12c11e86922fb7ffcf686bcad83fee95",
+          "d63cd2c263366d6d6a77f3de5e0ae3d6",
+          "bff416df71fbfcc982c656e540b5765c",
+          "26c7137706f4f49a35854e1d4d64c43e",
+          "5c517f31baf70533f1da57331c5d9470"
+        ],
+        "stderr": ""
+      },
+      "timing": {
+        "stream": {
+          "codec_name": "h264",
+          "profile": "Main",
+          "pix_fmt": "yuv420p",
+          "time_base": "1/1000",
+          "disposition": {
+            "default": 0,
+            "dub": 0,
+            "original": 0,
+            "comment": 0,
+            "lyrics": 0,
+            "karaoke": 0,
+            "forced": 0,
+            "hearing_impaired": 0,
+            "visual_impaired": 0,
+            "clean_effects": 0,
+            "attached_pic": 0,
+            "timed_thumbnails": 0,
+            "non_diegetic": 0,
+            "captions": 0,
+            "descriptions": 0,
+            "metadata": 0,
+            "dependent": 0,
+            "still_image": 0,
+            "multilayer": 0
+          },
+          "tags": {
+            "ENCODER": "Lavc61.19.101 h264_nvenc",
+            "DURATION": "00:00:00.520000000"
+          }
+        },
+        "packets": [
+          {
+            "pts": "189/125",
+            "dts": null,
+            "duration": "117/125",
+            "keyframe": true
+          },
+          {
+            "pts": "693/125",
+            "dts": null,
+            "duration": "117/125",
+            "keyframe": false
+          },
+          {
+            "pts": "441/125",
+            "dts": "189/125",
+            "duration": "117/125",
+            "keyframe": false
+          },
+          {
+            "pts": "63/25",
+            "dts": "63/25",
+            "duration": "117/125",
+            "keyframe": false
+          },
+          {
+            "pts": "567/125",
+            "dts": "441/125",
+            "duration": "117/125",
+            "keyframe": false
+          },
+          {
+            "pts": "1188/125",
+            "dts": "567/125",
+            "duration": "117/125",
+            "keyframe": false
+          },
+          {
+            "pts": "936/125",
+            "dts": "693/125",
+            "duration": "117/125",
+            "keyframe": false
+          },
+          {
+            "pts": "162/25",
+            "dts": "162/25",
+            "duration": "117/125",
+            "keyframe": false
+          },
+          {
+            "pts": "1062/125",
+            "dts": "936/125",
+            "duration": "117/125",
+            "keyframe": false
+          },
+          {
+            "pts": "1692/125",
+            "dts": "1062/125",
+            "duration": "117/125",
+            "keyframe": false
+          },
+          {
+            "pts": "288/25",
+            "dts": "1188/125",
+            "duration": "117/125",
+            "keyframe": false
+          },
+          {
+            "pts": "1314/125",
+            "dts": "1314/125",
+            "duration": "117/125",
+            "keyframe": false
+          },
+          {
+            "pts": "1566/125",
+            "dts": "288/25",
+            "duration": "117/125",
+            "keyframe": false
+          },
+          {
+            "pts": "2187/125",
+            "dts": "1566/125",
+            "duration": "117/125",
+            "keyframe": false
+          },
+          {
+            "pts": "387/25",
+            "dts": "1692/125",
+            "duration": "117/125",
+            "keyframe": false
+          },
+          {
+            "pts": "1818/125",
+            "dts": "1818/125",
+            "duration": "117/125",
+            "keyframe": false
+          },
+          {
+            "pts": "2061/125",
+            "dts": "387/25",
+            "duration": "117/125",
+            "keyframe": false
+          },
+          {
+            "pts": "2691/125",
+            "dts": "2061/125",
+            "duration": "117/125",
+            "keyframe": false
+          },
+          {
+            "pts": "2439/125",
+            "dts": "2187/125",
+            "duration": "117/125",
+            "keyframe": false
+          },
+          {
+            "pts": "2313/125",
+            "dts": "2313/125",
+            "duration": "117/125",
+            "keyframe": false
+          },
+          {
+            "pts": "513/25",
+            "dts": "2439/125",
+            "duration": "117/125",
+            "keyframe": false
+          },
+          {
+            "pts": "3186/125",
+            "dts": "513/25",
+            "duration": "117/125",
+            "keyframe": false
+          },
+          {
+            "pts": "2943/125",
+            "dts": "2691/125",
+            "duration": "117/125",
+            "keyframe": false
+          },
+          {
+            "pts": "2817/125",
+            "dts": "2817/125",
+            "duration": "117/125",
+            "keyframe": false
+          },
+          {
+            "pts": "612/25",
+            "dts": "2943/125",
+            "duration": "117/125",
+            "keyframe": false
+          },
+          {
+            "pts": "738/25",
+            "dts": "612/25",
+            "duration": "117/125",
+            "keyframe": false
+          },
+          {
+            "pts": "3438/125",
+            "dts": "3186/125",
+            "duration": "117/125",
+            "keyframe": false
+          },
+          {
+            "pts": "3312/125",
+            "dts": "3312/125",
+            "duration": "117/125",
+            "keyframe": false
+          },
+          {
+            "pts": "3564/125",
+            "dts": "3438/125",
+            "duration": "117/125",
+            "keyframe": false
+          },
+          {
+            "pts": "837/25",
+            "dts": "3564/125",
+            "duration": "117/125",
+            "keyframe": false
+          },
+          {
+            "pts": "3942/125",
+            "dts": "738/25",
+            "duration": "117/125",
+            "keyframe": false
+          },
+          {
+            "pts": "3816/125",
+            "dts": "3816/125",
+            "duration": "117/125",
+            "keyframe": false
+          },
+          {
+            "pts": "4068/125",
+            "dts": "3942/125",
+            "duration": "117/125",
+            "keyframe": false
+          },
+          {
+            "pts": "4563/125",
+            "dts": "4068/125",
+            "duration": "117/125",
+            "keyframe": false
+          },
+          {
+            "pts": "4437/125",
+            "dts": "837/25",
+            "duration": "117/125",
+            "keyframe": false
+          },
+          {
+            "pts": "4311/125",
+            "dts": "4311/125",
+            "duration": "117/125",
+            "keyframe": false
+          }
+        ]
+      },
+      "audio": {
+        "packets": [
+          {
+            "pts": 0,
+            "dts": 0,
+            "duration": 21,
+            "data_hash": "SHA256:0404d19bf7c8b85ac1c1296ab74cb5e85752cb0d44b1962a3779bc76db4447c5"
+          },
+          {
+            "pts": 21,
+            "dts": 21,
+            "duration": 21,
+            "data_hash": "SHA256:48877049ef81330802318e95b800a08ca02c1aa2b68bc9f345fb46e51d95796d"
+          },
+          {
+            "pts": 42,
+            "dts": 42,
+            "duration": 21,
+            "data_hash": "SHA256:858355c469c76fba8afda3bbd46968e2db6cc7871372748f470e2af793e1869b"
+          },
+          {
+            "pts": 64,
+            "dts": 64,
+            "duration": 21,
+            "data_hash": "SHA256:48361cd7348f62868ce7887456afdf9088c7228100729533582b3bd8e77bf4a9"
+          },
+          {
+            "pts": 85,
+            "dts": 85,
+            "duration": 21,
+            "data_hash": "SHA256:62afa1cb7654688aa482ace6cff95c13e998c7da54028c37dc5a70850c58e4df"
+          },
+          {
+            "pts": 106,
+            "dts": 106,
+            "duration": 21,
+            "data_hash": "SHA256:8f55d0af478dc3f275da0936b05b5a615db0f17013cdd85b66b3d07703e33bc8"
+          },
+          {
+            "pts": 128,
+            "dts": 128,
+            "duration": 21,
+            "data_hash": "SHA256:5248b27cfecdc85baac9422170e26ae61a308d5c855a273978cc00791f4187f7"
+          }
+        ],
+        "programs": [],
+        "stream_groups": [],
+        "streams": [
+          {
+            "codec_name": "aac",
+            "time_base": "1/1000"
+          }
+        ]
+      },
+      "sha256": "8357ac905666ffc65c66faa094461ab9adfd7b976508638fb338fa35c0524e4a"
+    },
+    "gpu": {
+      "decode": {
+        "returncode": 0,
+        "frames": 36,
+        "md5": [
+          "756e8cc8c04fa488238cbce4ee2942dd",
+          "9dd9cd0e2158541ab7a9d0118aa2ef46",
+          "847b354208d617c57325b344e601f628",
+          "01bef85fd6821fee1b58dd66fd22ec74",
+          "9821b455bd97d6f52f912f6e9084b281",
+          "45cd3bab9976daa5f3555959a29e7dab",
+          "deee66e35a6dc0caf91b327bffb15874",
+          "a9b76ca7ee253d63469552175cd25151",
+          "2220251fecbf30aa0a752ae0793f2a1a",
+          "56fd23194b94e67f63440529fb56a679",
+          "a41a3a2468f4da8024d0a5de14bda755",
+          "553f98f7f7ec617640127b7b34cabcd5",
+          "2ba471061a6c38b5fed39e5a4c3f4f73",
+          "b5d76f8fe22321b416f2bf5dac3ced90",
+          "9002a09301ede4737071d111e73f9083",
+          "b3ffe2e1b9c3d307dddd2585fff41cf5",
+          "bc0c12749b5bf07a2ad060a58d026e62",
+          "605cf05eabb14c126bb76b11e315ac90",
+          "21e56e95f903bd0023dece7b115d841a",
+          "205482328f570ed63da7ec79b12d33a6",
+          "a0f2712f434deab8c0921e76bdab6d9b",
+          "84a03028264551971029bc6141474b10",
+          "906a7a84990b9fae2fc44d4e8e722541",
+          "a8c1d5e1e43d999c7485aa2b9c5a4b98",
+          "d7fcff4bf89f42e6657aabbc63fb5b26",
+          "0c345f98dec72f7049cb2063984fd170",
+          "afd84cfb2e1629afda6d86225eab6911",
+          "02697a6ebd61bca1a4404fec97566ffc",
+          "46bdb888fd16bcb3e32989b45b78b92d",
+          "da890bfa4495e8f49331860fb8b17f97",
+          "63a7dd963569d065cea62dcc179dd810",
+          "12c11e86922fb7ffcf686bcad83fee95",
+          "d63cd2c263366d6d6a77f3de5e0ae3d6",
+          "bff416df71fbfcc982c656e540b5765c",
+          "26c7137706f4f49a35854e1d4d64c43e",
+          "5c517f31baf70533f1da57331c5d9470"
+        ],
+        "stderr": ""
+      },
+      "timing": {
+        "stream": {
+          "codec_name": "h264",
+          "profile": "Main",
+          "pix_fmt": "yuv420p",
+          "time_base": "1/1000",
+          "disposition": {
+            "default": 0,
+            "dub": 0,
+            "original": 0,
+            "comment": 0,
+            "lyrics": 0,
+            "karaoke": 0,
+            "forced": 0,
+            "hearing_impaired": 0,
+            "visual_impaired": 0,
+            "clean_effects": 0,
+            "attached_pic": 0,
+            "timed_thumbnails": 0,
+            "non_diegetic": 0,
+            "captions": 0,
+            "descriptions": 0,
+            "metadata": 0,
+            "dependent": 0,
+            "still_image": 0,
+            "multilayer": 0
+          },
+          "tags": {
+            "DURATION": "00:00:00.520000000"
+          }
+        },
+        "packets": [
+          {
+            "pts": "189/125",
+            "dts": null,
+            "duration": "117/125",
+            "keyframe": true
+          },
+          {
+            "pts": "693/125",
+            "dts": null,
+            "duration": "117/125",
+            "keyframe": false
+          },
+          {
+            "pts": "441/125",
+            "dts": "189/125",
+            "duration": "117/125",
+            "keyframe": false
+          },
+          {
+            "pts": "63/25",
+            "dts": "63/25",
+            "duration": "117/125",
+            "keyframe": false
+          },
+          {
+            "pts": "567/125",
+            "dts": "441/125",
+            "duration": "117/125",
+            "keyframe": false
+          },
+          {
+            "pts": "1188/125",
+            "dts": "567/125",
+            "duration": "117/125",
+            "keyframe": false
+          },
+          {
+            "pts": "936/125",
+            "dts": "693/125",
+            "duration": "117/125",
+            "keyframe": false
+          },
+          {
+            "pts": "162/25",
+            "dts": "162/25",
+            "duration": "117/125",
+            "keyframe": false
+          },
+          {
+            "pts": "1062/125",
+            "dts": "936/125",
+            "duration": "117/125",
+            "keyframe": false
+          },
+          {
+            "pts": "1692/125",
+            "dts": "1062/125",
+            "duration": "117/125",
+            "keyframe": false
+          },
+          {
+            "pts": "288/25",
+            "dts": "1188/125",
+            "duration": "117/125",
+            "keyframe": false
+          },
+          {
+            "pts": "1314/125",
+            "dts": "1314/125",
+            "duration": "117/125",
+            "keyframe": false
+          },
+          {
+            "pts": "1566/125",
+            "dts": "288/25",
+            "duration": "117/125",
+            "keyframe": false
+          },
+          {
+            "pts": "2187/125",
+            "dts": "1566/125",
+            "duration": "117/125",
+            "keyframe": false
+          },
+          {
+            "pts": "387/25",
+            "dts": "1692/125",
+            "duration": "117/125",
+            "keyframe": false
+          },
+          {
+            "pts": "1818/125",
+            "dts": "1818/125",
+            "duration": "117/125",
+            "keyframe": false
+          },
+          {
+            "pts": "2061/125",
+            "dts": "387/25",
+            "duration": "117/125",
+            "keyframe": false
+          },
+          {
+            "pts": "2691/125",
+            "dts": "2061/125",
+            "duration": "117/125",
+            "keyframe": false
+          },
+          {
+            "pts": "2439/125",
+            "dts": "2187/125",
+            "duration": "117/125",
+            "keyframe": false
+          },
+          {
+            "pts": "2313/125",
+            "dts": "2313/125",
+            "duration": "117/125",
+            "keyframe": false
+          },
+          {
+            "pts": "513/25",
+            "dts": "2439/125",
+            "duration": "117/125",
+            "keyframe": false
+          },
+          {
+            "pts": "3186/125",
+            "dts": "513/25",
+            "duration": "117/125",
+            "keyframe": false
+          },
+          {
+            "pts": "2943/125",
+            "dts": "2691/125",
+            "duration": "117/125",
+            "keyframe": false
+          },
+          {
+            "pts": "2817/125",
+            "dts": "2817/125",
+            "duration": "117/125",
+            "keyframe": false
+          },
+          {
+            "pts": "612/25",
+            "dts": "2943/125",
+            "duration": "117/125",
+            "keyframe": false
+          },
+          {
+            "pts": "738/25",
+            "dts": "612/25",
+            "duration": "117/125",
+            "keyframe": false
+          },
+          {
+            "pts": "3438/125",
+            "dts": "3186/125",
+            "duration": "117/125",
+            "keyframe": false
+          },
+          {
+            "pts": "3312/125",
+            "dts": "3312/125",
+            "duration": "117/125",
+            "keyframe": false
+          },
+          {
+            "pts": "3564/125",
+            "dts": "3438/125",
+            "duration": "117/125",
+            "keyframe": false
+          },
+          {
+            "pts": "837/25",
+            "dts": "3564/125",
+            "duration": "117/125",
+            "keyframe": false
+          },
+          {
+            "pts": "3942/125",
+            "dts": "738/25",
+            "duration": "117/125",
+            "keyframe": false
+          },
+          {
+            "pts": "3816/125",
+            "dts": "3816/125",
+            "duration": "117/125",
+            "keyframe": false
+          },
+          {
+            "pts": "4068/125",
+            "dts": "3942/125",
+            "duration": "117/125",
+            "keyframe": false
+          },
+          {
+            "pts": "4563/125",
+            "dts": "4068/125",
+            "duration": "117/125",
+            "keyframe": false
+          },
+          {
+            "pts": "4437/125",
+            "dts": "837/25",
+            "duration": "117/125",
+            "keyframe": false
+          },
+          {
+            "pts": "4311/125",
+            "dts": "4311/125",
+            "duration": "117/125",
+            "keyframe": false
+          }
+        ]
+      },
+      "audio": {
+        "packets": [
+          {
+            "pts": 0,
+            "dts": 0,
+            "duration": 21,
+            "data_hash": "SHA256:0404d19bf7c8b85ac1c1296ab74cb5e85752cb0d44b1962a3779bc76db4447c5"
+          },
+          {
+            "pts": 21,
+            "dts": 21,
+            "duration": 21,
+            "data_hash": "SHA256:48877049ef81330802318e95b800a08ca02c1aa2b68bc9f345fb46e51d95796d"
+          },
+          {
+            "pts": 42,
+            "dts": 42,
+            "duration": 21,
+            "data_hash": "SHA256:858355c469c76fba8afda3bbd46968e2db6cc7871372748f470e2af793e1869b"
+          },
+          {
+            "pts": 64,
+            "dts": 64,
+            "duration": 21,
+            "data_hash": "SHA256:48361cd7348f62868ce7887456afdf9088c7228100729533582b3bd8e77bf4a9"
+          },
+          {
+            "pts": 85,
+            "dts": 85,
+            "duration": 21,
+            "data_hash": "SHA256:62afa1cb7654688aa482ace6cff95c13e998c7da54028c37dc5a70850c58e4df"
+          },
+          {
+            "pts": 106,
+            "dts": 106,
+            "duration": 21,
+            "data_hash": "SHA256:8f55d0af478dc3f275da0936b05b5a615db0f17013cdd85b66b3d07703e33bc8"
+          },
+          {
+            "pts": 128,
+            "dts": 128,
+            "duration": 21,
+            "data_hash": "SHA256:5248b27cfecdc85baac9422170e26ae61a308d5c855a273978cc00791f4187f7"
+          }
+        ],
+        "programs": [],
+        "stream_groups": [],
+        "streams": [
+          {
+            "codec_name": "aac",
+            "time_base": "1/1000"
+          }
+        ]
+      },
+      "sha256": "557382238f7c2eeb5f8905ef5dbdc47b3153f865aca3242287e5ada070f0da0a"
+    }
+  },
+  "decode_equal": true,
+  "timing_equal": true,
+  "audio_equal": true,
+  "counts_equal": true,
+  "status": "passed"
+}

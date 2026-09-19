@@ -1,0 +1,63 @@
+"""Cancel an actual GPU FG export, then reopen the same native encoder DLL."""
+import argparse
+import json
+import os
+from pathlib import Path
+import sys
+import threading
+import traceback
+
+ROOT=Path(__file__).resolve().parents[1];sys.path.insert(0,str(ROOT))
+
+
+def main():
+    parser=argparse.ArgumentParser(description=__doc__);parser.add_argument('--work',type=Path,required=True)
+    parser.add_argument('--label',default='cancel-reopen')
+    args=parser.parse_args();work=args.work.resolve();dest=work/(args.label+'.json')
+    if not (work/'TASK.md').is_file() or dest.exists():parser.error('Fresh registered report required')
+    os.environ['TEMP']=os.environ['TMP']=str(work);os.environ['CUDA_CACHE_DISABLE']='1'
+    from dlss5tool.frame_generation import export_video,Cancelled
+    from dlss5tool.gpu_video_export import NativeGpuVideoWriter
+    from dlss5tool.video_export import find_ffmpeg
+    from scripts.encode_acceptance_nvenc_contract import framemd5_file
+    import numpy as np
+    options=dict(worker=str(work/'gpu-export-worker.exe'),
+        native_library=str(ROOT/'tmp/encode-integration-20260917/native-encoder/ring.dll'),
+        sdr_ptx=str(ROOT/'tmp/encode-integration-20260917/sdr-conversion/sdr-yuv.ptx'))
+    report=dict(scope=__doc__,cases=[])
+    try:
+        source=work/'fg4-mov-source.mp4'
+        if not source.is_file():raise FileNotFoundError('Run FG gate fixture first')
+        for threshold in (0.2,0.99):
+            label=args.label+'-'+str(threshold).replace('.','-');target=work/(label+'.mp4')
+            cancel=threading.Event()
+            def progress(message,value):
+                if value>=threshold:cancel.set()
+            try:
+                export_video(source,target,multiplier=4,gpu_export=options,cancel=cancel,
+                    progress=progress,log_dir=work/(label+'-logs'))
+            except Cancelled:pass
+            else:raise RuntimeError('Export did not cancel')
+            if target.exists() or list(work.glob('.'+target.stem+'.*')):
+                raise RuntimeError('Cancelled output/staging retained')
+            diagnostics=json.loads((work/(label+'-logs/result.json')).read_text(encoding='utf-8'))
+            if diagnostics['cleanup_errors']:raise RuntimeError(diagnostics['cleanup_errors'])
+            target=work/(label+'-reopened.mp4')
+            writer=NativeGpuVideoWriter(target,320,180,24,native_library=options['native_library'],sdr_ptx=options['sdr_ptx'])
+            try:
+                for _ in range(3):writer.write(np.zeros((180,320,3),np.uint8))
+                writer.finish()
+            except BaseException:writer.abort();raise
+            decoded=framemd5_file(find_ffmpeg(),target)
+            if decoded['returncode'] or decoded['frames']!=3:raise RuntimeError('Reopen output invalid')
+            report['cases'].append(dict(threshold=threshold,cancel=diagnostics,reopened=decoded))
+        report['status']='passed'
+    except BaseException as exc:
+        report.update(status='failed',error=repr(exc),traceback=traceback.format_exc());traceback.print_exc()
+    finally:
+        with dest.open('x',encoding='utf-8') as out:json.dump(report,out,ensure_ascii=False,indent=2)
+        print(f'{report["status"]}: {dest}',flush=True)
+    return int(report['status']!='passed')
+
+
+if __name__=='__main__':raise SystemExit(main())

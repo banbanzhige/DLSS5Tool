@@ -3,6 +3,7 @@ from collections import OrderedDict
 import threading
 
 import cv2
+from dlss5tool.image_sequence import open_capture
 from dlss5tool.video_export import tone_map_hdr_preview
 
 
@@ -80,7 +81,7 @@ class PreviewDecoder:
                     if opened != source:
                         if capture is not None:
                             capture.release()
-                        capture = cv2.VideoCapture(source)
+                        capture = open_capture(source)
                         if not capture.isOpened():
                             raise RuntimeError('Cannot open preview video')
                         opened, next_frame = source, 0

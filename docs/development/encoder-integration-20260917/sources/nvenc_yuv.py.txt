@@ -1,0 +1,165 @@
+"""Opt-in integer-YUV GPU encoder interface; not selected by normal export.
+
+Only a ready contiguous CUDA I420/P010 source is accepted. No RGB conversion,
+Torch import, automatic quality change or silent mid-stream fallback. One
+disposable host process should own a session; driver calls need process timeout
+containment, just like the existing DLSS native hosts.
+"""
+import ctypes
+from dataclasses import dataclass
+from fractions import Fraction
+import os
+from pathlib import Path
+import threading
+
+
+class NativeEncoderError(RuntimeError):
+    pass
+
+
+@dataclass(frozen=True)
+class YuvEncoderConfig:
+    width: int
+    height: int
+    fps_num: int
+    fps_den: int
+    codec: int = 0  # H264 SDR=0; HEVC BT2020 PQ=1; HEVC BT2020 HLG=2
+    cq: int = 19
+    preset: int = 5
+
+    def __post_init__(self):
+        values=(self.width,self.height,self.fps_num,self.fps_den,self.codec,self.cq,self.preset)
+        if any(type(v) is not int for v in values):raise ValueError('Integer encoder fields required')
+        if (self.width<=0 or self.height<=0 or self.width%2 or self.height%2
+                or self.width*self.height>3840*2160):raise ValueError('Even positive dimensions up to 4K pixel budget required')
+        if not 0<self.fps_num<2**32 or not 0<self.fps_den<2**32:raise ValueError('Invalid rational frame rate')
+        if self.codec not in (0,1,2) or not 0<=self.cq<=51 or not 1<=self.preset<=7:
+            raise ValueError('Unsupported encoder profile')
+
+    @property
+    def frame_bytes(self):
+        return self.width*self.height*3 if self.codec else self.width*self.height*3//2
+
+    @property
+    def layout(self):
+        return 'p010le' if self.codec else 'yuv420p'
+
+
+def config_from_contract(contract, width, height, *, codec, rate_control='quality', cq=19, preset=5):
+    if rate_control!='quality':raise ValueError('Native bitrate-mode parity has not been accepted')
+    colors=dict(zip(contract.output_color_args[::2],contract.output_color_args[1::2]))
+    if contract.encoder_format=='yuv420p' and codec=='h264' and not colors:
+        kind=0
+    elif (contract.encoder_format=='p010le' and codec=='hevc' and
+          colors.get('-color_primaries')=='bt2020' and colors.get('-colorspace')=='bt2020nc'
+          and colors.get('-color_range')=='tv' and colors.get('-color_trc') in ('smpte2084','arib-std-b67')):
+        kind=1 if colors['-color_trc']=='smpte2084' else 2
+    else:raise ValueError('Native color/codec contract is unsupported; keep the FFmpeg route')
+    rate=Fraction(str(contract.fps)).limit_denominator(1000000)
+    return YuvEncoderConfig(width,height,rate.numerator,rate.denominator,kind,cq,preset)
+
+
+@dataclass(frozen=True)
+class ReadyYuvFrame:
+    """Owner must finish producer work before constructing/passing this lease.
+
+    The owner must keep source memory alive until write() returns. Synchronous
+    device-to-device copy then owns independent ring storage until NVENC ends.
+    A source D3D12 fence/CUDA stream completion is the caller's responsibility.
+    """
+    pointer: int
+    nbytes: int
+    layout: str
+    sequence: int
+
+
+_locks={}
+_locks_guard=threading.Lock()
+
+
+class NativeYuvEncoder:
+    def __init__(self, library_path, config):
+        if os.name!='nt':raise NativeEncoderError('Windows native encoder required')
+        if not isinstance(config,YuvEncoderConfig):raise TypeError('YuvEncoderConfig required')
+        path=str(Path(library_path).resolve(strict=True))
+        with _locks_guard:self._lock=_locks.setdefault(os.path.normcase(path),threading.Lock())
+        if not self._lock.acquire(blocking=False):raise NativeEncoderError('Encoder DLL already owned by another session')
+        self.config=config;self._thread=threading.get_ident();self._closed=False;self._failed=False
+        self._draining=False;self._sequence=0;self._opened=False
+        try:
+            self._lib=ctypes.WinDLL(path);self._cuda=ctypes.WinDLL('nvcuda.dll')
+            def bind(lib,name,args,result=ctypes.c_int):
+                fn=getattr(lib,name);fn.argtypes=args;fn.restype=result;return fn
+            u,p=ctypes.c_uint,ctypes.c_void_p
+            if bind(self._lib,'ring_abi_version',[],u)()!=1:raise NativeEncoderError('Unsupported native ABI')
+            self._context=ctypes.c_void_p()
+            self._get_context=bind(self._cuda,'cuCtxGetCurrent',[ctypes.POINTER(p)])
+            if self._get_context(ctypes.byref(self._context)) or not self._context.value:
+                raise NativeEncoderError('Calling worker has no CUDA context')
+            self._close=bind(self._lib,'ring_close',[],None)
+            self._error=bind(self._lib,'ring_error',[])
+            self._feed=bind(self._lib,'ring_feed_device',[ctypes.c_uint64,u,u])
+            self._pop=bind(self._lib,'ring_pop',[p,u,ctypes.POINTER(u)])
+            self._flush=bind(self._lib,'ring_flush',[])
+            configure=bind(self._lib,'ring_open_config',[p]+[u]*7+[ctypes.POINTER(u),ctypes.POINTER(u)])
+            enable=bind(self._lib,'ring_enable_cuda_input',[ctypes.c_int])
+            pitch,slots=u(),u()
+            if not enable(1):raise NativeEncoderError('CUDA input setup failed')
+            self._opened=True  # close also covers a partially failed initialization
+            if not configure(self._context,config.width,config.height,config.fps_num,config.fps_den,
+                             config.cq,config.preset,config.codec,ctypes.byref(pitch),ctypes.byref(slots)):
+                raise NativeEncoderError(f'NVENC initialization failed ({self._error()})')
+            self._buffer=ctypes.create_string_buffer(8*1024*1024)
+            size=u();get_header=bind(self._lib,'ring_headers',[p,u,ctypes.POINTER(u)])
+            if not get_header(self._buffer,len(self._buffer),ctypes.byref(size)):raise NativeEncoderError('Sequence header failed')
+            self.headers=self._buffer.raw[:size.value];self.slots=slots.value
+        except BaseException:
+            if self._opened:self._close()
+            self._closed=True;self._lock.release();raise
+
+    def _check(self):
+        if self._closed or self._failed:raise NativeEncoderError('Encoder is closed or failed')
+        if threading.get_ident()!=self._thread:raise NativeEncoderError('Encoder calls must stay on the owning CUDA thread')
+        current=ctypes.c_void_p()
+        if self._get_context(ctypes.byref(current)) or current.value!=self._context.value:
+            raise NativeEncoderError('CUDA context changed; refusing cross-device/session input')
+
+    def _drain(self):
+        packets=[]
+        while True:
+            size=ctypes.c_uint()
+            if not self._pop(self._buffer,len(self._buffer),ctypes.byref(size)):
+                self._failed=True;raise NativeEncoderError(f'NVENC output failed ({self._error()})')
+            if not size.value:return packets
+            packets.append(self._buffer.raw[:size.value])
+
+    def write(self, frame):
+        self._check()
+        if self._draining:raise NativeEncoderError('Cannot submit after EOS')
+        if (not isinstance(frame,ReadyYuvFrame) or type(frame.pointer) is not int or not 0<frame.pointer<2**64
+            or frame.sequence!=self._sequence or frame.nbytes!=self.config.frame_bytes or frame.layout!=self.config.layout):
+            raise ValueError('Wrong YUV frame sequence/bytes/layout/pointer')
+        if not self._feed(frame.pointer,frame.nbytes,frame.sequence):
+            self._failed=True;raise NativeEncoderError(f'NVENC input failed ({self._error()})')
+        self._sequence+=1
+        return self._drain()
+
+    def finish(self):
+        self._check()
+        if self._draining:return []
+        self._draining=True
+        if not self._flush():
+            self._failed=True;raise NativeEncoderError(f'NVENC flush failed ({self._error()})')
+        return self._drain()
+
+    def close(self):
+        if self._closed:return
+        if threading.get_ident()!=self._thread:raise NativeEncoderError('Close on the owning thread')
+        current=ctypes.c_void_p()
+        if self._get_context(ctypes.byref(current)) or current.value!=self._context.value:
+            raise NativeEncoderError('Restore the owning CUDA context before close')
+        try:self._close()
+        finally:self._closed=True;self._lock.release()
+
+    def __enter__(self):return self
+    def __exit__(self,*_):self.close()

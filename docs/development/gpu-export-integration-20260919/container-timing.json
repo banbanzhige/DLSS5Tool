@@ -1,0 +1,3947 @@
+{
+  "scope": "Connected packet/container gate. Existing CPU FFmpeg remains the reference.",
+  "av_version": "18.1.0",
+  "library_versions": {
+    "libavutil": [
+      60,
+      26,
+      102
+    ],
+    "libavcodec": [
+      62,
+      28,
+      102
+    ],
+    "libavformat": [
+      62,
+      12,
+      102
+    ],
+    "libavdevice": [
+      62,
+      3,
+      102
+    ],
+    "libavfilter": [
+      11,
+      14,
+      102
+    ],
+    "libswscale": [
+      9,
+      5,
+      102
+    ],
+    "libswresample": [
+      6,
+      3,
+      102
+    ]
+  },
+  "cases": [
+    {
+      "profile": "sdr",
+      "container": "mp4",
+      "expected": {
+        "returncode": 0,
+        "frames": 24,
+        "md5": [
+          "c1f8229de7ddff45c073d028a96a457e",
+          "81ce3b878587365b83e5c2c12fbec264",
+          "0f1e5244bde8b6851c163f02bca6f358",
+          "ba8c6cd776436c4e76dec6c7ffcf6bed",
+          "e94ac32fa80cf0e917056332e5c63994",
+          "479ab7daa3a9708b55f9d9e02d80dc6a",
+          "b2b488b3aa242ec993da48602e332bb8",
+          "3f4070db7a420c2e6f5ee09d1edf0451",
+          "5a14d9ccc2bbc41dc83df5862db0e990",
+          "9f293efba93121b460c9fc94d1ebdb99",
+          "97fbd9c4e3370282d09ac29301293395",
+          "0617037d874999f790e575376deda9da",
+          "07c297dd43b14d329054dd580c74973b",
+          "027909eee9a52f6be8cd4f54131b0bb0",
+          "3880b679861879d7a256bee952d4b65e",
+          "e240b0aa6331c5c81c02b9a821d316b6",
+          "1cc05f1c71d2263a5b25e0a4a644d469",
+          "f8e5d4a2328d2791a992de762bee40d0",
+          "83ce061b8b41610b75c4b458b52d8a68",
+          "eac0e4826f6cbda7b9f8d95350ea74e5",
+          "864efc53d1207f31f7488850479c4a2a",
+          "79428037697e83147d8048d8573dcf45",
+          "c5e2181a7970abf35ca131bd46ae20f5",
+          "27d088cf741e1fdf82ab2c1469406d64"
+        ],
+        "stderr": ""
+      },
+      "actual": {
+        "returncode": 0,
+        "frames": 24,
+        "md5": [
+          "c1f8229de7ddff45c073d028a96a457e",
+          "81ce3b878587365b83e5c2c12fbec264",
+          "0f1e5244bde8b6851c163f02bca6f358",
+          "ba8c6cd776436c4e76dec6c7ffcf6bed",
+          "e94ac32fa80cf0e917056332e5c63994",
+          "479ab7daa3a9708b55f9d9e02d80dc6a",
+          "b2b488b3aa242ec993da48602e332bb8",
+          "3f4070db7a420c2e6f5ee09d1edf0451",
+          "5a14d9ccc2bbc41dc83df5862db0e990",
+          "9f293efba93121b460c9fc94d1ebdb99",
+          "97fbd9c4e3370282d09ac29301293395",
+          "0617037d874999f790e575376deda9da",
+          "07c297dd43b14d329054dd580c74973b",
+          "027909eee9a52f6be8cd4f54131b0bb0",
+          "3880b679861879d7a256bee952d4b65e",
+          "e240b0aa6331c5c81c02b9a821d316b6",
+          "1cc05f1c71d2263a5b25e0a4a644d469",
+          "f8e5d4a2328d2791a992de762bee40d0",
+          "83ce061b8b41610b75c4b458b52d8a68",
+          "eac0e4826f6cbda7b9f8d95350ea74e5",
+          "864efc53d1207f31f7488850479c4a2a",
+          "79428037697e83147d8048d8573dcf45",
+          "c5e2181a7970abf35ca131bd46ae20f5",
+          "27d088cf741e1fdf82ab2c1469406d64"
+        ],
+        "stderr": ""
+      },
+      "reference_timing": {
+        "stream": {
+          "codec_name": "h264",
+          "profile": "Main",
+          "pix_fmt": "yuv420p",
+          "time_base": "1/30000",
+          "disposition": {
+            "default": 1,
+            "dub": 0,
+            "original": 0,
+            "comment": 0,
+            "lyrics": 0,
+            "karaoke": 0,
+            "forced": 0,
+            "hearing_impaired": 0,
+            "visual_impaired": 0,
+            "clean_effects": 0,
+            "attached_pic": 0,
+            "timed_thumbnails": 0,
+            "non_diegetic": 0,
+            "captions": 0,
+            "descriptions": 0,
+            "metadata": 0,
+            "dependent": 0,
+            "still_image": 0,
+            "multilayer": 0
+          },
+          "tags": {
+            "language": "und",
+            "handler_name": "VideoHandler",
+            "vendor_id": "[0][0][0][0]",
+            "encoder": "Lavc61.19.101 h264_nvenc"
+          }
+        },
+        "packets": [
+          {
+            "pts": "0",
+            "dts": "-3",
+            "duration": "1",
+            "keyframe": true
+          },
+          {
+            "pts": "4",
+            "dts": "-2",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "2",
+            "dts": "-1",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "1",
+            "dts": "0",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "3",
+            "dts": "1",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "8",
+            "dts": "2",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "6",
+            "dts": "3",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "5",
+            "dts": "4",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "7",
+            "dts": "5",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "12",
+            "dts": "6",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "10",
+            "dts": "7",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "9",
+            "dts": "8",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "11",
+            "dts": "9",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "16",
+            "dts": "10",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "14",
+            "dts": "11",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "13",
+            "dts": "12",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "15",
+            "dts": "13",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "20",
+            "dts": "14",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "18",
+            "dts": "15",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "17",
+            "dts": "16",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "19",
+            "dts": "17",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "23",
+            "dts": "18",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "22",
+            "dts": "19",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "21",
+            "dts": "20",
+            "duration": "1",
+            "keyframe": false
+          }
+        ]
+      },
+      "actual_timing": {
+        "stream": {
+          "codec_name": "h264",
+          "profile": "Main",
+          "pix_fmt": "yuv420p",
+          "time_base": "1/30000",
+          "disposition": {
+            "default": 1,
+            "dub": 0,
+            "original": 0,
+            "comment": 0,
+            "lyrics": 0,
+            "karaoke": 0,
+            "forced": 0,
+            "hearing_impaired": 0,
+            "visual_impaired": 0,
+            "clean_effects": 0,
+            "attached_pic": 0,
+            "timed_thumbnails": 0,
+            "non_diegetic": 0,
+            "captions": 0,
+            "descriptions": 0,
+            "metadata": 0,
+            "dependent": 0,
+            "still_image": 0,
+            "multilayer": 0
+          },
+          "tags": {
+            "language": "und",
+            "handler_name": "VideoHandler",
+            "vendor_id": "[0][0][0][0]"
+          }
+        },
+        "packets": [
+          {
+            "pts": "0",
+            "dts": "-3",
+            "duration": "1",
+            "keyframe": true
+          },
+          {
+            "pts": "4",
+            "dts": "-2",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "2",
+            "dts": "-1",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "1",
+            "dts": "0",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "3",
+            "dts": "1",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "8",
+            "dts": "2",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "6",
+            "dts": "3",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "5",
+            "dts": "4",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "7",
+            "dts": "5",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "12",
+            "dts": "6",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "10",
+            "dts": "7",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "9",
+            "dts": "8",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "11",
+            "dts": "9",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "16",
+            "dts": "10",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "14",
+            "dts": "11",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "13",
+            "dts": "12",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "15",
+            "dts": "13",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "20",
+            "dts": "14",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "18",
+            "dts": "15",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "17",
+            "dts": "16",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "19",
+            "dts": "17",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "23",
+            "dts": "18",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "22",
+            "dts": "19",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "21",
+            "dts": "20",
+            "duration": "1",
+            "keyframe": false
+          }
+        ]
+      },
+      "reference_sha256": "fe27c66ea1fd0b25d57f362f850bd9d0e9a2f7630c3bce0ccce39f5cc8f92153",
+      "actual_sha256": "fcc70bda5136f2eef793813427ffe839375cf0914a6f234eda602d8bbef172c6",
+      "equal": true,
+      "timing_equal": true
+    },
+    {
+      "profile": "sdr",
+      "container": "mkv",
+      "expected": {
+        "returncode": 0,
+        "frames": 24,
+        "md5": [
+          "c1f8229de7ddff45c073d028a96a457e",
+          "81ce3b878587365b83e5c2c12fbec264",
+          "0f1e5244bde8b6851c163f02bca6f358",
+          "ba8c6cd776436c4e76dec6c7ffcf6bed",
+          "e94ac32fa80cf0e917056332e5c63994",
+          "479ab7daa3a9708b55f9d9e02d80dc6a",
+          "b2b488b3aa242ec993da48602e332bb8",
+          "3f4070db7a420c2e6f5ee09d1edf0451",
+          "5a14d9ccc2bbc41dc83df5862db0e990",
+          "9f293efba93121b460c9fc94d1ebdb99",
+          "97fbd9c4e3370282d09ac29301293395",
+          "0617037d874999f790e575376deda9da",
+          "07c297dd43b14d329054dd580c74973b",
+          "027909eee9a52f6be8cd4f54131b0bb0",
+          "3880b679861879d7a256bee952d4b65e",
+          "e240b0aa6331c5c81c02b9a821d316b6",
+          "1cc05f1c71d2263a5b25e0a4a644d469",
+          "f8e5d4a2328d2791a992de762bee40d0",
+          "83ce061b8b41610b75c4b458b52d8a68",
+          "eac0e4826f6cbda7b9f8d95350ea74e5",
+          "864efc53d1207f31f7488850479c4a2a",
+          "79428037697e83147d8048d8573dcf45",
+          "c5e2181a7970abf35ca131bd46ae20f5",
+          "27d088cf741e1fdf82ab2c1469406d64"
+        ],
+        "stderr": ""
+      },
+      "actual": {
+        "returncode": 0,
+        "frames": 24,
+        "md5": [
+          "c1f8229de7ddff45c073d028a96a457e",
+          "81ce3b878587365b83e5c2c12fbec264",
+          "0f1e5244bde8b6851c163f02bca6f358",
+          "ba8c6cd776436c4e76dec6c7ffcf6bed",
+          "e94ac32fa80cf0e917056332e5c63994",
+          "479ab7daa3a9708b55f9d9e02d80dc6a",
+          "b2b488b3aa242ec993da48602e332bb8",
+          "3f4070db7a420c2e6f5ee09d1edf0451",
+          "5a14d9ccc2bbc41dc83df5862db0e990",
+          "9f293efba93121b460c9fc94d1ebdb99",
+          "97fbd9c4e3370282d09ac29301293395",
+          "0617037d874999f790e575376deda9da",
+          "07c297dd43b14d329054dd580c74973b",
+          "027909eee9a52f6be8cd4f54131b0bb0",
+          "3880b679861879d7a256bee952d4b65e",
+          "e240b0aa6331c5c81c02b9a821d316b6",
+          "1cc05f1c71d2263a5b25e0a4a644d469",
+          "f8e5d4a2328d2791a992de762bee40d0",
+          "83ce061b8b41610b75c4b458b52d8a68",
+          "eac0e4826f6cbda7b9f8d95350ea74e5",
+          "864efc53d1207f31f7488850479c4a2a",
+          "79428037697e83147d8048d8573dcf45",
+          "c5e2181a7970abf35ca131bd46ae20f5",
+          "27d088cf741e1fdf82ab2c1469406d64"
+        ],
+        "stderr": ""
+      },
+      "reference_timing": {
+        "stream": {
+          "codec_name": "h264",
+          "profile": "Main",
+          "pix_fmt": "yuv420p",
+          "time_base": "1/1000",
+          "disposition": {
+            "default": 0,
+            "dub": 0,
+            "original": 0,
+            "comment": 0,
+            "lyrics": 0,
+            "karaoke": 0,
+            "forced": 0,
+            "hearing_impaired": 0,
+            "visual_impaired": 0,
+            "clean_effects": 0,
+            "attached_pic": 0,
+            "timed_thumbnails": 0,
+            "non_diegetic": 0,
+            "captions": 0,
+            "descriptions": 0,
+            "metadata": 0,
+            "dependent": 0,
+            "still_image": 0,
+            "multilayer": 0
+          },
+          "tags": {
+            "ENCODER": "Lavc61.19.101 h264_nvenc",
+            "DURATION": "00:00:00.800000000"
+          }
+        },
+        "packets": [
+          {
+            "pts": "0",
+            "dts": null,
+            "duration": "90/91",
+            "keyframe": true
+          },
+          {
+            "pts": "570/143",
+            "dts": null,
+            "duration": "90/91",
+            "keyframe": false
+          },
+          {
+            "pts": "2010/1001",
+            "dts": "0",
+            "duration": "90/91",
+            "keyframe": false
+          },
+          {
+            "pts": "90/91",
+            "dts": "90/91",
+            "duration": "90/91",
+            "keyframe": false
+          },
+          {
+            "pts": "3000/1001",
+            "dts": "2010/1001",
+            "duration": "90/91",
+            "keyframe": false
+          },
+          {
+            "pts": "8010/1001",
+            "dts": "3000/1001",
+            "duration": "90/91",
+            "keyframe": false
+          },
+          {
+            "pts": "6000/1001",
+            "dts": "570/143",
+            "duration": "90/91",
+            "keyframe": false
+          },
+          {
+            "pts": "5010/1001",
+            "dts": "5010/1001",
+            "duration": "90/91",
+            "keyframe": false
+          },
+          {
+            "pts": "540/77",
+            "dts": "6000/1001",
+            "duration": "90/91",
+            "keyframe": false
+          },
+          {
+            "pts": "12000/1001",
+            "dts": "540/77",
+            "duration": "90/91",
+            "keyframe": false
+          },
+          {
+            "pts": "10020/1001",
+            "dts": "8010/1001",
+            "duration": "90/91",
+            "keyframe": false
+          },
+          {
+            "pts": "9000/1001",
+            "dts": "9000/1001",
+            "duration": "90/91",
+            "keyframe": false
+          },
+          {
+            "pts": "11010/1001",
+            "dts": "10020/1001",
+            "duration": "90/91",
+            "keyframe": false
+          },
+          {
+            "pts": "16020/1001",
+            "dts": "11010/1001",
+            "duration": "90/91",
+            "keyframe": false
+          },
+          {
+            "pts": "14010/1001",
+            "dts": "12000/1001",
+            "duration": "90/91",
+            "keyframe": false
+          },
+          {
+            "pts": "1860/143",
+            "dts": "1860/143",
+            "duration": "90/91",
+            "keyframe": false
+          },
+          {
+            "pts": "15030/1001",
+            "dts": "14010/1001",
+            "duration": "90/91",
+            "keyframe": false
+          },
+          {
+            "pts": "20010/1001",
+            "dts": "15030/1001",
+            "duration": "90/91",
+            "keyframe": false
+          },
+          {
+            "pts": "18030/1001",
+            "dts": "16020/1001",
+            "duration": "90/91",
+            "keyframe": false
+          },
+          {
+            "pts": "2430/143",
+            "dts": "2430/143",
+            "duration": "90/91",
+            "keyframe": false
+          },
+          {
+            "pts": "19020/1001",
+            "dts": "18030/1001",
+            "duration": "90/91",
+            "keyframe": false
+          },
+          {
+            "pts": "1770/77",
+            "dts": "19020/1001",
+            "duration": "90/91",
+            "keyframe": false
+          },
+          {
+            "pts": "22020/1001",
+            "dts": "20010/1001",
+            "duration": "90/91",
+            "keyframe": false
+          },
+          {
+            "pts": "21030/1001",
+            "dts": "21030/1001",
+            "duration": "90/91",
+            "keyframe": false
+          }
+        ]
+      },
+      "actual_timing": {
+        "stream": {
+          "codec_name": "h264",
+          "profile": "Main",
+          "pix_fmt": "yuv420p",
+          "time_base": "1/1000",
+          "disposition": {
+            "default": 0,
+            "dub": 0,
+            "original": 0,
+            "comment": 0,
+            "lyrics": 0,
+            "karaoke": 0,
+            "forced": 0,
+            "hearing_impaired": 0,
+            "visual_impaired": 0,
+            "clean_effects": 0,
+            "attached_pic": 0,
+            "timed_thumbnails": 0,
+            "non_diegetic": 0,
+            "captions": 0,
+            "descriptions": 0,
+            "metadata": 0,
+            "dependent": 0,
+            "still_image": 0,
+            "multilayer": 0
+          },
+          "tags": {
+            "DURATION": "00:00:00.800000000"
+          }
+        },
+        "packets": [
+          {
+            "pts": "0",
+            "dts": null,
+            "duration": "90/91",
+            "keyframe": true
+          },
+          {
+            "pts": "570/143",
+            "dts": null,
+            "duration": "90/91",
+            "keyframe": false
+          },
+          {
+            "pts": "2010/1001",
+            "dts": "0",
+            "duration": "90/91",
+            "keyframe": false
+          },
+          {
+            "pts": "90/91",
+            "dts": "90/91",
+            "duration": "90/91",
+            "keyframe": false
+          },
+          {
+            "pts": "3000/1001",
+            "dts": "2010/1001",
+            "duration": "90/91",
+            "keyframe": false
+          },
+          {
+            "pts": "8010/1001",
+            "dts": "3000/1001",
+            "duration": "90/91",
+            "keyframe": false
+          },
+          {
+            "pts": "6000/1001",
+            "dts": "570/143",
+            "duration": "90/91",
+            "keyframe": false
+          },
+          {
+            "pts": "5010/1001",
+            "dts": "5010/1001",
+            "duration": "90/91",
+            "keyframe": false
+          },
+          {
+            "pts": "540/77",
+            "dts": "6000/1001",
+            "duration": "90/91",
+            "keyframe": false
+          },
+          {
+            "pts": "12000/1001",
+            "dts": "540/77",
+            "duration": "90/91",
+            "keyframe": false
+          },
+          {
+            "pts": "10020/1001",
+            "dts": "8010/1001",
+            "duration": "90/91",
+            "keyframe": false
+          },
+          {
+            "pts": "9000/1001",
+            "dts": "9000/1001",
+            "duration": "90/91",
+            "keyframe": false
+          },
+          {
+            "pts": "11010/1001",
+            "dts": "10020/1001",
+            "duration": "90/91",
+            "keyframe": false
+          },
+          {
+            "pts": "16020/1001",
+            "dts": "11010/1001",
+            "duration": "90/91",
+            "keyframe": false
+          },
+          {
+            "pts": "14010/1001",
+            "dts": "12000/1001",
+            "duration": "90/91",
+            "keyframe": false
+          },
+          {
+            "pts": "1860/143",
+            "dts": "1860/143",
+            "duration": "90/91",
+            "keyframe": false
+          },
+          {
+            "pts": "15030/1001",
+            "dts": "14010/1001",
+            "duration": "90/91",
+            "keyframe": false
+          },
+          {
+            "pts": "20010/1001",
+            "dts": "15030/1001",
+            "duration": "90/91",
+            "keyframe": false
+          },
+          {
+            "pts": "18030/1001",
+            "dts": "16020/1001",
+            "duration": "90/91",
+            "keyframe": false
+          },
+          {
+            "pts": "2430/143",
+            "dts": "2430/143",
+            "duration": "90/91",
+            "keyframe": false
+          },
+          {
+            "pts": "19020/1001",
+            "dts": "18030/1001",
+            "duration": "90/91",
+            "keyframe": false
+          },
+          {
+            "pts": "1770/77",
+            "dts": "19020/1001",
+            "duration": "90/91",
+            "keyframe": false
+          },
+          {
+            "pts": "22020/1001",
+            "dts": "20010/1001",
+            "duration": "90/91",
+            "keyframe": false
+          },
+          {
+            "pts": "21030/1001",
+            "dts": "21030/1001",
+            "duration": "90/91",
+            "keyframe": false
+          }
+        ]
+      },
+      "reference_sha256": "71b1c4717a55be33fb20dd053607cdbbdef737b5229f391b09a618df3e951018",
+      "actual_sha256": "32ed95a268abbbbb345163930f394650f705e3a48dd3d9db6750d046cdac1cf5",
+      "equal": true,
+      "timing_equal": true
+    },
+    {
+      "profile": "sdr",
+      "container": "mov",
+      "expected": {
+        "returncode": 0,
+        "frames": 24,
+        "md5": [
+          "c1f8229de7ddff45c073d028a96a457e",
+          "81ce3b878587365b83e5c2c12fbec264",
+          "0f1e5244bde8b6851c163f02bca6f358",
+          "ba8c6cd776436c4e76dec6c7ffcf6bed",
+          "e94ac32fa80cf0e917056332e5c63994",
+          "479ab7daa3a9708b55f9d9e02d80dc6a",
+          "b2b488b3aa242ec993da48602e332bb8",
+          "3f4070db7a420c2e6f5ee09d1edf0451",
+          "5a14d9ccc2bbc41dc83df5862db0e990",
+          "9f293efba93121b460c9fc94d1ebdb99",
+          "97fbd9c4e3370282d09ac29301293395",
+          "0617037d874999f790e575376deda9da",
+          "07c297dd43b14d329054dd580c74973b",
+          "027909eee9a52f6be8cd4f54131b0bb0",
+          "3880b679861879d7a256bee952d4b65e",
+          "e240b0aa6331c5c81c02b9a821d316b6",
+          "1cc05f1c71d2263a5b25e0a4a644d469",
+          "f8e5d4a2328d2791a992de762bee40d0",
+          "83ce061b8b41610b75c4b458b52d8a68",
+          "eac0e4826f6cbda7b9f8d95350ea74e5",
+          "864efc53d1207f31f7488850479c4a2a",
+          "79428037697e83147d8048d8573dcf45",
+          "c5e2181a7970abf35ca131bd46ae20f5",
+          "27d088cf741e1fdf82ab2c1469406d64"
+        ],
+        "stderr": ""
+      },
+      "actual": {
+        "returncode": 0,
+        "frames": 24,
+        "md5": [
+          "c1f8229de7ddff45c073d028a96a457e",
+          "81ce3b878587365b83e5c2c12fbec264",
+          "0f1e5244bde8b6851c163f02bca6f358",
+          "ba8c6cd776436c4e76dec6c7ffcf6bed",
+          "e94ac32fa80cf0e917056332e5c63994",
+          "479ab7daa3a9708b55f9d9e02d80dc6a",
+          "b2b488b3aa242ec993da48602e332bb8",
+          "3f4070db7a420c2e6f5ee09d1edf0451",
+          "5a14d9ccc2bbc41dc83df5862db0e990",
+          "9f293efba93121b460c9fc94d1ebdb99",
+          "97fbd9c4e3370282d09ac29301293395",
+          "0617037d874999f790e575376deda9da",
+          "07c297dd43b14d329054dd580c74973b",
+          "027909eee9a52f6be8cd4f54131b0bb0",
+          "3880b679861879d7a256bee952d4b65e",
+          "e240b0aa6331c5c81c02b9a821d316b6",
+          "1cc05f1c71d2263a5b25e0a4a644d469",
+          "f8e5d4a2328d2791a992de762bee40d0",
+          "83ce061b8b41610b75c4b458b52d8a68",
+          "eac0e4826f6cbda7b9f8d95350ea74e5",
+          "864efc53d1207f31f7488850479c4a2a",
+          "79428037697e83147d8048d8573dcf45",
+          "c5e2181a7970abf35ca131bd46ae20f5",
+          "27d088cf741e1fdf82ab2c1469406d64"
+        ],
+        "stderr": ""
+      },
+      "reference_timing": {
+        "stream": {
+          "codec_name": "h264",
+          "profile": "Main",
+          "pix_fmt": "yuv420p",
+          "time_base": "1/30000",
+          "disposition": {
+            "default": 1,
+            "dub": 0,
+            "original": 0,
+            "comment": 0,
+            "lyrics": 0,
+            "karaoke": 0,
+            "forced": 0,
+            "hearing_impaired": 0,
+            "visual_impaired": 0,
+            "clean_effects": 0,
+            "attached_pic": 0,
+            "timed_thumbnails": 0,
+            "non_diegetic": 0,
+            "captions": 0,
+            "descriptions": 0,
+            "metadata": 0,
+            "dependent": 0,
+            "still_image": 0,
+            "multilayer": 0
+          },
+          "tags": {
+            "handler_name": "VideoHandler",
+            "vendor_id": "FFMP",
+            "encoder": "Lavc61.19.101 h264_nvenc"
+          }
+        },
+        "packets": [
+          {
+            "pts": "0",
+            "dts": "-3",
+            "duration": "1",
+            "keyframe": true
+          },
+          {
+            "pts": "4",
+            "dts": "-2",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "2",
+            "dts": "-1",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "1",
+            "dts": "0",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "3",
+            "dts": "1",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "8",
+            "dts": "2",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "6",
+            "dts": "3",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "5",
+            "dts": "4",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "7",
+            "dts": "5",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "12",
+            "dts": "6",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "10",
+            "dts": "7",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "9",
+            "dts": "8",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "11",
+            "dts": "9",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "16",
+            "dts": "10",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "14",
+            "dts": "11",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "13",
+            "dts": "12",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "15",
+            "dts": "13",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "20",
+            "dts": "14",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "18",
+            "dts": "15",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "17",
+            "dts": "16",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "19",
+            "dts": "17",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "23",
+            "dts": "18",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "22",
+            "dts": "19",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "21",
+            "dts": "20",
+            "duration": "1",
+            "keyframe": false
+          }
+        ]
+      },
+      "actual_timing": {
+        "stream": {
+          "codec_name": "h264",
+          "profile": "Main",
+          "pix_fmt": "yuv420p",
+          "time_base": "1/30000",
+          "disposition": {
+            "default": 1,
+            "dub": 0,
+            "original": 0,
+            "comment": 0,
+            "lyrics": 0,
+            "karaoke": 0,
+            "forced": 0,
+            "hearing_impaired": 0,
+            "visual_impaired": 0,
+            "clean_effects": 0,
+            "attached_pic": 0,
+            "timed_thumbnails": 0,
+            "non_diegetic": 0,
+            "captions": 0,
+            "descriptions": 0,
+            "metadata": 0,
+            "dependent": 0,
+            "still_image": 0,
+            "multilayer": 0
+          },
+          "tags": {
+            "handler_name": "VideoHandler",
+            "vendor_id": "FFMP"
+          }
+        },
+        "packets": [
+          {
+            "pts": "0",
+            "dts": "-3",
+            "duration": "1",
+            "keyframe": true
+          },
+          {
+            "pts": "4",
+            "dts": "-2",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "2",
+            "dts": "-1",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "1",
+            "dts": "0",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "3",
+            "dts": "1",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "8",
+            "dts": "2",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "6",
+            "dts": "3",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "5",
+            "dts": "4",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "7",
+            "dts": "5",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "12",
+            "dts": "6",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "10",
+            "dts": "7",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "9",
+            "dts": "8",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "11",
+            "dts": "9",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "16",
+            "dts": "10",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "14",
+            "dts": "11",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "13",
+            "dts": "12",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "15",
+            "dts": "13",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "20",
+            "dts": "14",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "18",
+            "dts": "15",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "17",
+            "dts": "16",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "19",
+            "dts": "17",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "23",
+            "dts": "18",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "22",
+            "dts": "19",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "21",
+            "dts": "20",
+            "duration": "1",
+            "keyframe": false
+          }
+        ]
+      },
+      "reference_sha256": "e5a0892dfead29cf0d6ea11d8a7a40accd13245c01be6fa9c611f48efcac6fd2",
+      "actual_sha256": "e8bce9f750c5b866ca7f33d4da4862ab6a8c94e8ee20f782abd56814ed2759f9",
+      "equal": true,
+      "timing_equal": true
+    },
+    {
+      "profile": "pq",
+      "container": "mp4",
+      "expected": {
+        "returncode": 0,
+        "frames": 24,
+        "md5": [
+          "52f10f0f42fc44ea462b798856e63c17",
+          "2e9c8cd6199331073a44175c1a4b116c",
+          "3af4969d3372e8494d7819183f202c5d",
+          "ab4fb60878439cefaafca59bba851c59",
+          "c2caa89ac96ce361abca8d0ee65858e4",
+          "26e9841d87e5cbc0a03f1a865024bc94",
+          "75bce4dec0a068a2c9521df3de7af9da",
+          "9aa71509e5a453980edaa2deda90c2c9",
+          "f45438535843e916164eaa8253376e9b",
+          "08417f4d94a7ea4304ceee4f39e0cb5d",
+          "041bcabdd05db955589ceec176d5e19f",
+          "4e2b4120e1a9f65a3502d8f7ea8dc775",
+          "d4ed495605666a5d61ef5acb53af5797",
+          "229653ce942de5f55362ddfc802c57fc",
+          "d7ba80ff047805adaf578e24be66f64a",
+          "d626d20dffec88122ebf0256b4fccffc",
+          "9f18e0e89c38d473cc937c5ddd0182e8",
+          "a3c27b65f4a1fe4ca86da80a241965fe",
+          "019980e9c646110d46eb16b05b35e8f4",
+          "e83aa713a074cf6835c8c0765aa0d5b3",
+          "6d0fad4d57bf0c1cca5fdbf271cbcb06",
+          "56a8e531110707eca9be0cdfb947692e",
+          "a86d217e94a8790298c66f80acef1b2a",
+          "c8bb988968c8e9503d6b86b2c121faf1"
+        ],
+        "stderr": ""
+      },
+      "actual": {
+        "returncode": 0,
+        "frames": 24,
+        "md5": [
+          "52f10f0f42fc44ea462b798856e63c17",
+          "2e9c8cd6199331073a44175c1a4b116c",
+          "3af4969d3372e8494d7819183f202c5d",
+          "ab4fb60878439cefaafca59bba851c59",
+          "c2caa89ac96ce361abca8d0ee65858e4",
+          "26e9841d87e5cbc0a03f1a865024bc94",
+          "75bce4dec0a068a2c9521df3de7af9da",
+          "9aa71509e5a453980edaa2deda90c2c9",
+          "f45438535843e916164eaa8253376e9b",
+          "08417f4d94a7ea4304ceee4f39e0cb5d",
+          "041bcabdd05db955589ceec176d5e19f",
+          "4e2b4120e1a9f65a3502d8f7ea8dc775",
+          "d4ed495605666a5d61ef5acb53af5797",
+          "229653ce942de5f55362ddfc802c57fc",
+          "d7ba80ff047805adaf578e24be66f64a",
+          "d626d20dffec88122ebf0256b4fccffc",
+          "9f18e0e89c38d473cc937c5ddd0182e8",
+          "a3c27b65f4a1fe4ca86da80a241965fe",
+          "019980e9c646110d46eb16b05b35e8f4",
+          "e83aa713a074cf6835c8c0765aa0d5b3",
+          "6d0fad4d57bf0c1cca5fdbf271cbcb06",
+          "56a8e531110707eca9be0cdfb947692e",
+          "a86d217e94a8790298c66f80acef1b2a",
+          "c8bb988968c8e9503d6b86b2c121faf1"
+        ],
+        "stderr": ""
+      },
+      "reference_timing": {
+        "stream": {
+          "codec_name": "hevc",
+          "profile": "Main 10",
+          "pix_fmt": "yuv420p10le",
+          "color_space": "bt2020nc",
+          "color_transfer": "smpte2084",
+          "color_primaries": "bt2020",
+          "time_base": "1/30000",
+          "disposition": {
+            "default": 1,
+            "dub": 0,
+            "original": 0,
+            "comment": 0,
+            "lyrics": 0,
+            "karaoke": 0,
+            "forced": 0,
+            "hearing_impaired": 0,
+            "visual_impaired": 0,
+            "clean_effects": 0,
+            "attached_pic": 0,
+            "timed_thumbnails": 0,
+            "non_diegetic": 0,
+            "captions": 0,
+            "descriptions": 0,
+            "metadata": 0,
+            "dependent": 0,
+            "still_image": 0,
+            "multilayer": 0
+          },
+          "tags": {
+            "language": "und",
+            "handler_name": "VideoHandler",
+            "vendor_id": "[0][0][0][0]",
+            "encoder": "Lavc61.19.101 hevc_nvenc"
+          }
+        },
+        "packets": [
+          {
+            "pts": "0",
+            "dts": "-3",
+            "duration": "1",
+            "keyframe": true
+          },
+          {
+            "pts": "4",
+            "dts": "-2",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "2",
+            "dts": "-1",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "1",
+            "dts": "0",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "3",
+            "dts": "1",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "8",
+            "dts": "2",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "6",
+            "dts": "3",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "5",
+            "dts": "4",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "7",
+            "dts": "5",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "12",
+            "dts": "6",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "10",
+            "dts": "7",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "9",
+            "dts": "8",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "11",
+            "dts": "9",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "16",
+            "dts": "10",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "14",
+            "dts": "11",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "13",
+            "dts": "12",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "15",
+            "dts": "13",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "20",
+            "dts": "14",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "18",
+            "dts": "15",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "17",
+            "dts": "16",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "19",
+            "dts": "17",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "23",
+            "dts": "18",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "22",
+            "dts": "19",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "21",
+            "dts": "20",
+            "duration": "1",
+            "keyframe": false
+          }
+        ]
+      },
+      "actual_timing": {
+        "stream": {
+          "codec_name": "hevc",
+          "profile": "Main 10",
+          "pix_fmt": "yuv420p10le",
+          "color_space": "bt2020nc",
+          "color_transfer": "smpte2084",
+          "color_primaries": "bt2020",
+          "time_base": "1/30000",
+          "disposition": {
+            "default": 1,
+            "dub": 0,
+            "original": 0,
+            "comment": 0,
+            "lyrics": 0,
+            "karaoke": 0,
+            "forced": 0,
+            "hearing_impaired": 0,
+            "visual_impaired": 0,
+            "clean_effects": 0,
+            "attached_pic": 0,
+            "timed_thumbnails": 0,
+            "non_diegetic": 0,
+            "captions": 0,
+            "descriptions": 0,
+            "metadata": 0,
+            "dependent": 0,
+            "still_image": 0,
+            "multilayer": 0
+          },
+          "tags": {
+            "language": "und",
+            "handler_name": "VideoHandler",
+            "vendor_id": "[0][0][0][0]"
+          }
+        },
+        "packets": [
+          {
+            "pts": "0",
+            "dts": "-3",
+            "duration": "1",
+            "keyframe": true
+          },
+          {
+            "pts": "4",
+            "dts": "-2",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "2",
+            "dts": "-1",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "1",
+            "dts": "0",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "3",
+            "dts": "1",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "8",
+            "dts": "2",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "6",
+            "dts": "3",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "5",
+            "dts": "4",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "7",
+            "dts": "5",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "12",
+            "dts": "6",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "10",
+            "dts": "7",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "9",
+            "dts": "8",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "11",
+            "dts": "9",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "16",
+            "dts": "10",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "14",
+            "dts": "11",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "13",
+            "dts": "12",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "15",
+            "dts": "13",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "20",
+            "dts": "14",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "18",
+            "dts": "15",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "17",
+            "dts": "16",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "19",
+            "dts": "17",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "23",
+            "dts": "18",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "22",
+            "dts": "19",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "21",
+            "dts": "20",
+            "duration": "1",
+            "keyframe": false
+          }
+        ]
+      },
+      "reference_sha256": "932a6ca42bf8036615a30e91173d8cab869c448419ad8b7c0f371a531c940f7a",
+      "actual_sha256": "c29411486015a6138e07bc4568cfe513fbd7b086d7ecd9169fa47235f2b5dddb",
+      "equal": true,
+      "timing_equal": true
+    },
+    {
+      "profile": "pq",
+      "container": "mkv",
+      "expected": {
+        "returncode": 0,
+        "frames": 24,
+        "md5": [
+          "52f10f0f42fc44ea462b798856e63c17",
+          "2e9c8cd6199331073a44175c1a4b116c",
+          "3af4969d3372e8494d7819183f202c5d",
+          "ab4fb60878439cefaafca59bba851c59",
+          "c2caa89ac96ce361abca8d0ee65858e4",
+          "26e9841d87e5cbc0a03f1a865024bc94",
+          "75bce4dec0a068a2c9521df3de7af9da",
+          "9aa71509e5a453980edaa2deda90c2c9",
+          "f45438535843e916164eaa8253376e9b",
+          "08417f4d94a7ea4304ceee4f39e0cb5d",
+          "041bcabdd05db955589ceec176d5e19f",
+          "4e2b4120e1a9f65a3502d8f7ea8dc775",
+          "d4ed495605666a5d61ef5acb53af5797",
+          "229653ce942de5f55362ddfc802c57fc",
+          "d7ba80ff047805adaf578e24be66f64a",
+          "d626d20dffec88122ebf0256b4fccffc",
+          "9f18e0e89c38d473cc937c5ddd0182e8",
+          "a3c27b65f4a1fe4ca86da80a241965fe",
+          "019980e9c646110d46eb16b05b35e8f4",
+          "e83aa713a074cf6835c8c0765aa0d5b3",
+          "6d0fad4d57bf0c1cca5fdbf271cbcb06",
+          "56a8e531110707eca9be0cdfb947692e",
+          "a86d217e94a8790298c66f80acef1b2a",
+          "c8bb988968c8e9503d6b86b2c121faf1"
+        ],
+        "stderr": ""
+      },
+      "actual": {
+        "returncode": 0,
+        "frames": 24,
+        "md5": [
+          "52f10f0f42fc44ea462b798856e63c17",
+          "2e9c8cd6199331073a44175c1a4b116c",
+          "3af4969d3372e8494d7819183f202c5d",
+          "ab4fb60878439cefaafca59bba851c59",
+          "c2caa89ac96ce361abca8d0ee65858e4",
+          "26e9841d87e5cbc0a03f1a865024bc94",
+          "75bce4dec0a068a2c9521df3de7af9da",
+          "9aa71509e5a453980edaa2deda90c2c9",
+          "f45438535843e916164eaa8253376e9b",
+          "08417f4d94a7ea4304ceee4f39e0cb5d",
+          "041bcabdd05db955589ceec176d5e19f",
+          "4e2b4120e1a9f65a3502d8f7ea8dc775",
+          "d4ed495605666a5d61ef5acb53af5797",
+          "229653ce942de5f55362ddfc802c57fc",
+          "d7ba80ff047805adaf578e24be66f64a",
+          "d626d20dffec88122ebf0256b4fccffc",
+          "9f18e0e89c38d473cc937c5ddd0182e8",
+          "a3c27b65f4a1fe4ca86da80a241965fe",
+          "019980e9c646110d46eb16b05b35e8f4",
+          "e83aa713a074cf6835c8c0765aa0d5b3",
+          "6d0fad4d57bf0c1cca5fdbf271cbcb06",
+          "56a8e531110707eca9be0cdfb947692e",
+          "a86d217e94a8790298c66f80acef1b2a",
+          "c8bb988968c8e9503d6b86b2c121faf1"
+        ],
+        "stderr": ""
+      },
+      "reference_timing": {
+        "stream": {
+          "codec_name": "hevc",
+          "profile": "Main 10",
+          "pix_fmt": "yuv420p10le",
+          "color_space": "bt2020nc",
+          "color_transfer": "smpte2084",
+          "color_primaries": "bt2020",
+          "time_base": "1/1000",
+          "disposition": {
+            "default": 0,
+            "dub": 0,
+            "original": 0,
+            "comment": 0,
+            "lyrics": 0,
+            "karaoke": 0,
+            "forced": 0,
+            "hearing_impaired": 0,
+            "visual_impaired": 0,
+            "clean_effects": 0,
+            "attached_pic": 0,
+            "timed_thumbnails": 0,
+            "non_diegetic": 0,
+            "captions": 0,
+            "descriptions": 0,
+            "metadata": 0,
+            "dependent": 0,
+            "still_image": 0,
+            "multilayer": 0
+          },
+          "tags": {
+            "ENCODER": "Lavc61.19.101 hevc_nvenc",
+            "DURATION": "00:00:00.800000000"
+          }
+        },
+        "packets": [
+          {
+            "pts": "0",
+            "dts": null,
+            "duration": "90/91",
+            "keyframe": true
+          },
+          {
+            "pts": "570/143",
+            "dts": null,
+            "duration": "90/91",
+            "keyframe": false
+          },
+          {
+            "pts": "2010/1001",
+            "dts": "0",
+            "duration": "90/91",
+            "keyframe": false
+          },
+          {
+            "pts": "90/91",
+            "dts": "90/91",
+            "duration": "90/91",
+            "keyframe": false
+          },
+          {
+            "pts": "3000/1001",
+            "dts": "2010/1001",
+            "duration": "90/91",
+            "keyframe": false
+          },
+          {
+            "pts": "8010/1001",
+            "dts": "3000/1001",
+            "duration": "90/91",
+            "keyframe": false
+          },
+          {
+            "pts": "6000/1001",
+            "dts": "570/143",
+            "duration": "90/91",
+            "keyframe": false
+          },
+          {
+            "pts": "5010/1001",
+            "dts": "5010/1001",
+            "duration": "90/91",
+            "keyframe": false
+          },
+          {
+            "pts": "540/77",
+            "dts": "6000/1001",
+            "duration": "90/91",
+            "keyframe": false
+          },
+          {
+            "pts": "12000/1001",
+            "dts": "540/77",
+            "duration": "90/91",
+            "keyframe": false
+          },
+          {
+            "pts": "10020/1001",
+            "dts": "8010/1001",
+            "duration": "90/91",
+            "keyframe": false
+          },
+          {
+            "pts": "9000/1001",
+            "dts": "9000/1001",
+            "duration": "90/91",
+            "keyframe": false
+          },
+          {
+            "pts": "11010/1001",
+            "dts": "10020/1001",
+            "duration": "90/91",
+            "keyframe": false
+          },
+          {
+            "pts": "16020/1001",
+            "dts": "11010/1001",
+            "duration": "90/91",
+            "keyframe": false
+          },
+          {
+            "pts": "14010/1001",
+            "dts": "12000/1001",
+            "duration": "90/91",
+            "keyframe": false
+          },
+          {
+            "pts": "1860/143",
+            "dts": "1860/143",
+            "duration": "90/91",
+            "keyframe": false
+          },
+          {
+            "pts": "15030/1001",
+            "dts": "14010/1001",
+            "duration": "90/91",
+            "keyframe": false
+          },
+          {
+            "pts": "20010/1001",
+            "dts": "15030/1001",
+            "duration": "90/91",
+            "keyframe": false
+          },
+          {
+            "pts": "18030/1001",
+            "dts": "16020/1001",
+            "duration": "90/91",
+            "keyframe": false
+          },
+          {
+            "pts": "2430/143",
+            "dts": "2430/143",
+            "duration": "90/91",
+            "keyframe": false
+          },
+          {
+            "pts": "19020/1001",
+            "dts": "18030/1001",
+            "duration": "90/91",
+            "keyframe": false
+          },
+          {
+            "pts": "1770/77",
+            "dts": "19020/1001",
+            "duration": "90/91",
+            "keyframe": false
+          },
+          {
+            "pts": "22020/1001",
+            "dts": "20010/1001",
+            "duration": "90/91",
+            "keyframe": false
+          },
+          {
+            "pts": "21030/1001",
+            "dts": "21030/1001",
+            "duration": "90/91",
+            "keyframe": false
+          }
+        ]
+      },
+      "actual_timing": {
+        "stream": {
+          "codec_name": "hevc",
+          "profile": "Main 10",
+          "pix_fmt": "yuv420p10le",
+          "color_space": "bt2020nc",
+          "color_transfer": "smpte2084",
+          "color_primaries": "bt2020",
+          "time_base": "1/1000",
+          "disposition": {
+            "default": 0,
+            "dub": 0,
+            "original": 0,
+            "comment": 0,
+            "lyrics": 0,
+            "karaoke": 0,
+            "forced": 0,
+            "hearing_impaired": 0,
+            "visual_impaired": 0,
+            "clean_effects": 0,
+            "attached_pic": 0,
+            "timed_thumbnails": 0,
+            "non_diegetic": 0,
+            "captions": 0,
+            "descriptions": 0,
+            "metadata": 0,
+            "dependent": 0,
+            "still_image": 0,
+            "multilayer": 0
+          },
+          "tags": {
+            "DURATION": "00:00:00.800000000"
+          }
+        },
+        "packets": [
+          {
+            "pts": "0",
+            "dts": null,
+            "duration": "90/91",
+            "keyframe": true
+          },
+          {
+            "pts": "570/143",
+            "dts": null,
+            "duration": "90/91",
+            "keyframe": false
+          },
+          {
+            "pts": "2010/1001",
+            "dts": "0",
+            "duration": "90/91",
+            "keyframe": false
+          },
+          {
+            "pts": "90/91",
+            "dts": "90/91",
+            "duration": "90/91",
+            "keyframe": false
+          },
+          {
+            "pts": "3000/1001",
+            "dts": "2010/1001",
+            "duration": "90/91",
+            "keyframe": false
+          },
+          {
+            "pts": "8010/1001",
+            "dts": "3000/1001",
+            "duration": "90/91",
+            "keyframe": false
+          },
+          {
+            "pts": "6000/1001",
+            "dts": "570/143",
+            "duration": "90/91",
+            "keyframe": false
+          },
+          {
+            "pts": "5010/1001",
+            "dts": "5010/1001",
+            "duration": "90/91",
+            "keyframe": false
+          },
+          {
+            "pts": "540/77",
+            "dts": "6000/1001",
+            "duration": "90/91",
+            "keyframe": false
+          },
+          {
+            "pts": "12000/1001",
+            "dts": "540/77",
+            "duration": "90/91",
+            "keyframe": false
+          },
+          {
+            "pts": "10020/1001",
+            "dts": "8010/1001",
+            "duration": "90/91",
+            "keyframe": false
+          },
+          {
+            "pts": "9000/1001",
+            "dts": "9000/1001",
+            "duration": "90/91",
+            "keyframe": false
+          },
+          {
+            "pts": "11010/1001",
+            "dts": "10020/1001",
+            "duration": "90/91",
+            "keyframe": false
+          },
+          {
+            "pts": "16020/1001",
+            "dts": "11010/1001",
+            "duration": "90/91",
+            "keyframe": false
+          },
+          {
+            "pts": "14010/1001",
+            "dts": "12000/1001",
+            "duration": "90/91",
+            "keyframe": false
+          },
+          {
+            "pts": "1860/143",
+            "dts": "1860/143",
+            "duration": "90/91",
+            "keyframe": false
+          },
+          {
+            "pts": "15030/1001",
+            "dts": "14010/1001",
+            "duration": "90/91",
+            "keyframe": false
+          },
+          {
+            "pts": "20010/1001",
+            "dts": "15030/1001",
+            "duration": "90/91",
+            "keyframe": false
+          },
+          {
+            "pts": "18030/1001",
+            "dts": "16020/1001",
+            "duration": "90/91",
+            "keyframe": false
+          },
+          {
+            "pts": "2430/143",
+            "dts": "2430/143",
+            "duration": "90/91",
+            "keyframe": false
+          },
+          {
+            "pts": "19020/1001",
+            "dts": "18030/1001",
+            "duration": "90/91",
+            "keyframe": false
+          },
+          {
+            "pts": "1770/77",
+            "dts": "19020/1001",
+            "duration": "90/91",
+            "keyframe": false
+          },
+          {
+            "pts": "22020/1001",
+            "dts": "20010/1001",
+            "duration": "90/91",
+            "keyframe": false
+          },
+          {
+            "pts": "21030/1001",
+            "dts": "21030/1001",
+            "duration": "90/91",
+            "keyframe": false
+          }
+        ]
+      },
+      "reference_sha256": "7314839eb81f361e7727551e6b18634f45166efd02f3509bc39f1f047a6c70a8",
+      "actual_sha256": "8470e94a8edb2a6dc2176e909871c9a9f2b4840c0031e22378cc37508c635dd2",
+      "equal": true,
+      "timing_equal": true
+    },
+    {
+      "profile": "pq",
+      "container": "mov",
+      "expected": {
+        "returncode": 0,
+        "frames": 24,
+        "md5": [
+          "52f10f0f42fc44ea462b798856e63c17",
+          "2e9c8cd6199331073a44175c1a4b116c",
+          "3af4969d3372e8494d7819183f202c5d",
+          "ab4fb60878439cefaafca59bba851c59",
+          "c2caa89ac96ce361abca8d0ee65858e4",
+          "26e9841d87e5cbc0a03f1a865024bc94",
+          "75bce4dec0a068a2c9521df3de7af9da",
+          "9aa71509e5a453980edaa2deda90c2c9",
+          "f45438535843e916164eaa8253376e9b",
+          "08417f4d94a7ea4304ceee4f39e0cb5d",
+          "041bcabdd05db955589ceec176d5e19f",
+          "4e2b4120e1a9f65a3502d8f7ea8dc775",
+          "d4ed495605666a5d61ef5acb53af5797",
+          "229653ce942de5f55362ddfc802c57fc",
+          "d7ba80ff047805adaf578e24be66f64a",
+          "d626d20dffec88122ebf0256b4fccffc",
+          "9f18e0e89c38d473cc937c5ddd0182e8",
+          "a3c27b65f4a1fe4ca86da80a241965fe",
+          "019980e9c646110d46eb16b05b35e8f4",
+          "e83aa713a074cf6835c8c0765aa0d5b3",
+          "6d0fad4d57bf0c1cca5fdbf271cbcb06",
+          "56a8e531110707eca9be0cdfb947692e",
+          "a86d217e94a8790298c66f80acef1b2a",
+          "c8bb988968c8e9503d6b86b2c121faf1"
+        ],
+        "stderr": ""
+      },
+      "actual": {
+        "returncode": 0,
+        "frames": 24,
+        "md5": [
+          "52f10f0f42fc44ea462b798856e63c17",
+          "2e9c8cd6199331073a44175c1a4b116c",
+          "3af4969d3372e8494d7819183f202c5d",
+          "ab4fb60878439cefaafca59bba851c59",
+          "c2caa89ac96ce361abca8d0ee65858e4",
+          "26e9841d87e5cbc0a03f1a865024bc94",
+          "75bce4dec0a068a2c9521df3de7af9da",
+          "9aa71509e5a453980edaa2deda90c2c9",
+          "f45438535843e916164eaa8253376e9b",
+          "08417f4d94a7ea4304ceee4f39e0cb5d",
+          "041bcabdd05db955589ceec176d5e19f",
+          "4e2b4120e1a9f65a3502d8f7ea8dc775",
+          "d4ed495605666a5d61ef5acb53af5797",
+          "229653ce942de5f55362ddfc802c57fc",
+          "d7ba80ff047805adaf578e24be66f64a",
+          "d626d20dffec88122ebf0256b4fccffc",
+          "9f18e0e89c38d473cc937c5ddd0182e8",
+          "a3c27b65f4a1fe4ca86da80a241965fe",
+          "019980e9c646110d46eb16b05b35e8f4",
+          "e83aa713a074cf6835c8c0765aa0d5b3",
+          "6d0fad4d57bf0c1cca5fdbf271cbcb06",
+          "56a8e531110707eca9be0cdfb947692e",
+          "a86d217e94a8790298c66f80acef1b2a",
+          "c8bb988968c8e9503d6b86b2c121faf1"
+        ],
+        "stderr": ""
+      },
+      "reference_timing": {
+        "stream": {
+          "codec_name": "hevc",
+          "profile": "Main 10",
+          "pix_fmt": "yuv420p10le",
+          "color_space": "bt2020nc",
+          "color_transfer": "smpte2084",
+          "color_primaries": "bt2020",
+          "time_base": "1/30000",
+          "disposition": {
+            "default": 1,
+            "dub": 0,
+            "original": 0,
+            "comment": 0,
+            "lyrics": 0,
+            "karaoke": 0,
+            "forced": 0,
+            "hearing_impaired": 0,
+            "visual_impaired": 0,
+            "clean_effects": 0,
+            "attached_pic": 0,
+            "timed_thumbnails": 0,
+            "non_diegetic": 0,
+            "captions": 0,
+            "descriptions": 0,
+            "metadata": 0,
+            "dependent": 0,
+            "still_image": 0,
+            "multilayer": 0
+          },
+          "tags": {
+            "handler_name": "VideoHandler",
+            "vendor_id": "FFMP",
+            "encoder": "Lavc61.19.101 hevc_nvenc"
+          }
+        },
+        "packets": [
+          {
+            "pts": "0",
+            "dts": "-3",
+            "duration": "1",
+            "keyframe": true
+          },
+          {
+            "pts": "4",
+            "dts": "-2",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "2",
+            "dts": "-1",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "1",
+            "dts": "0",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "3",
+            "dts": "1",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "8",
+            "dts": "2",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "6",
+            "dts": "3",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "5",
+            "dts": "4",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "7",
+            "dts": "5",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "12",
+            "dts": "6",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "10",
+            "dts": "7",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "9",
+            "dts": "8",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "11",
+            "dts": "9",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "16",
+            "dts": "10",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "14",
+            "dts": "11",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "13",
+            "dts": "12",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "15",
+            "dts": "13",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "20",
+            "dts": "14",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "18",
+            "dts": "15",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "17",
+            "dts": "16",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "19",
+            "dts": "17",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "23",
+            "dts": "18",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "22",
+            "dts": "19",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "21",
+            "dts": "20",
+            "duration": "1",
+            "keyframe": false
+          }
+        ]
+      },
+      "actual_timing": {
+        "stream": {
+          "codec_name": "hevc",
+          "profile": "Main 10",
+          "pix_fmt": "yuv420p10le",
+          "color_space": "bt2020nc",
+          "color_transfer": "smpte2084",
+          "color_primaries": "bt2020",
+          "time_base": "1/30000",
+          "disposition": {
+            "default": 1,
+            "dub": 0,
+            "original": 0,
+            "comment": 0,
+            "lyrics": 0,
+            "karaoke": 0,
+            "forced": 0,
+            "hearing_impaired": 0,
+            "visual_impaired": 0,
+            "clean_effects": 0,
+            "attached_pic": 0,
+            "timed_thumbnails": 0,
+            "non_diegetic": 0,
+            "captions": 0,
+            "descriptions": 0,
+            "metadata": 0,
+            "dependent": 0,
+            "still_image": 0,
+            "multilayer": 0
+          },
+          "tags": {
+            "handler_name": "VideoHandler",
+            "vendor_id": "FFMP"
+          }
+        },
+        "packets": [
+          {
+            "pts": "0",
+            "dts": "-3",
+            "duration": "1",
+            "keyframe": true
+          },
+          {
+            "pts": "4",
+            "dts": "-2",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "2",
+            "dts": "-1",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "1",
+            "dts": "0",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "3",
+            "dts": "1",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "8",
+            "dts": "2",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "6",
+            "dts": "3",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "5",
+            "dts": "4",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "7",
+            "dts": "5",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "12",
+            "dts": "6",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "10",
+            "dts": "7",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "9",
+            "dts": "8",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "11",
+            "dts": "9",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "16",
+            "dts": "10",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "14",
+            "dts": "11",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "13",
+            "dts": "12",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "15",
+            "dts": "13",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "20",
+            "dts": "14",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "18",
+            "dts": "15",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "17",
+            "dts": "16",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "19",
+            "dts": "17",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "23",
+            "dts": "18",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "22",
+            "dts": "19",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "21",
+            "dts": "20",
+            "duration": "1",
+            "keyframe": false
+          }
+        ]
+      },
+      "reference_sha256": "3da8e9f48f4e3637e748301bfe00a34917ac50fce9f9e602eda0c501ecc4d290",
+      "actual_sha256": "49cc869670bd5aa2f7aa8bfc80d8bcbcee8d7032fb2b640a4e19c109c589d180",
+      "equal": true,
+      "timing_equal": true
+    },
+    {
+      "profile": "hlg",
+      "container": "mp4",
+      "expected": {
+        "returncode": 0,
+        "frames": 24,
+        "md5": [
+          "52f10f0f42fc44ea462b798856e63c17",
+          "2e9c8cd6199331073a44175c1a4b116c",
+          "3af4969d3372e8494d7819183f202c5d",
+          "ab4fb60878439cefaafca59bba851c59",
+          "c2caa89ac96ce361abca8d0ee65858e4",
+          "26e9841d87e5cbc0a03f1a865024bc94",
+          "75bce4dec0a068a2c9521df3de7af9da",
+          "9aa71509e5a453980edaa2deda90c2c9",
+          "f45438535843e916164eaa8253376e9b",
+          "08417f4d94a7ea4304ceee4f39e0cb5d",
+          "041bcabdd05db955589ceec176d5e19f",
+          "4e2b4120e1a9f65a3502d8f7ea8dc775",
+          "d4ed495605666a5d61ef5acb53af5797",
+          "229653ce942de5f55362ddfc802c57fc",
+          "d7ba80ff047805adaf578e24be66f64a",
+          "d626d20dffec88122ebf0256b4fccffc",
+          "9f18e0e89c38d473cc937c5ddd0182e8",
+          "a3c27b65f4a1fe4ca86da80a241965fe",
+          "019980e9c646110d46eb16b05b35e8f4",
+          "e83aa713a074cf6835c8c0765aa0d5b3",
+          "6d0fad4d57bf0c1cca5fdbf271cbcb06",
+          "56a8e531110707eca9be0cdfb947692e",
+          "a86d217e94a8790298c66f80acef1b2a",
+          "c8bb988968c8e9503d6b86b2c121faf1"
+        ],
+        "stderr": ""
+      },
+      "actual": {
+        "returncode": 0,
+        "frames": 24,
+        "md5": [
+          "52f10f0f42fc44ea462b798856e63c17",
+          "2e9c8cd6199331073a44175c1a4b116c",
+          "3af4969d3372e8494d7819183f202c5d",
+          "ab4fb60878439cefaafca59bba851c59",
+          "c2caa89ac96ce361abca8d0ee65858e4",
+          "26e9841d87e5cbc0a03f1a865024bc94",
+          "75bce4dec0a068a2c9521df3de7af9da",
+          "9aa71509e5a453980edaa2deda90c2c9",
+          "f45438535843e916164eaa8253376e9b",
+          "08417f4d94a7ea4304ceee4f39e0cb5d",
+          "041bcabdd05db955589ceec176d5e19f",
+          "4e2b4120e1a9f65a3502d8f7ea8dc775",
+          "d4ed495605666a5d61ef5acb53af5797",
+          "229653ce942de5f55362ddfc802c57fc",
+          "d7ba80ff047805adaf578e24be66f64a",
+          "d626d20dffec88122ebf0256b4fccffc",
+          "9f18e0e89c38d473cc937c5ddd0182e8",
+          "a3c27b65f4a1fe4ca86da80a241965fe",
+          "019980e9c646110d46eb16b05b35e8f4",
+          "e83aa713a074cf6835c8c0765aa0d5b3",
+          "6d0fad4d57bf0c1cca5fdbf271cbcb06",
+          "56a8e531110707eca9be0cdfb947692e",
+          "a86d217e94a8790298c66f80acef1b2a",
+          "c8bb988968c8e9503d6b86b2c121faf1"
+        ],
+        "stderr": ""
+      },
+      "reference_timing": {
+        "stream": {
+          "codec_name": "hevc",
+          "profile": "Main 10",
+          "pix_fmt": "yuv420p10le",
+          "color_space": "bt2020nc",
+          "color_transfer": "arib-std-b67",
+          "color_primaries": "bt2020",
+          "time_base": "1/30000",
+          "disposition": {
+            "default": 1,
+            "dub": 0,
+            "original": 0,
+            "comment": 0,
+            "lyrics": 0,
+            "karaoke": 0,
+            "forced": 0,
+            "hearing_impaired": 0,
+            "visual_impaired": 0,
+            "clean_effects": 0,
+            "attached_pic": 0,
+            "timed_thumbnails": 0,
+            "non_diegetic": 0,
+            "captions": 0,
+            "descriptions": 0,
+            "metadata": 0,
+            "dependent": 0,
+            "still_image": 0,
+            "multilayer": 0
+          },
+          "tags": {
+            "language": "und",
+            "handler_name": "VideoHandler",
+            "vendor_id": "[0][0][0][0]",
+            "encoder": "Lavc61.19.101 hevc_nvenc"
+          }
+        },
+        "packets": [
+          {
+            "pts": "0",
+            "dts": "-3",
+            "duration": "1",
+            "keyframe": true
+          },
+          {
+            "pts": "4",
+            "dts": "-2",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "2",
+            "dts": "-1",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "1",
+            "dts": "0",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "3",
+            "dts": "1",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "8",
+            "dts": "2",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "6",
+            "dts": "3",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "5",
+            "dts": "4",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "7",
+            "dts": "5",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "12",
+            "dts": "6",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "10",
+            "dts": "7",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "9",
+            "dts": "8",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "11",
+            "dts": "9",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "16",
+            "dts": "10",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "14",
+            "dts": "11",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "13",
+            "dts": "12",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "15",
+            "dts": "13",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "20",
+            "dts": "14",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "18",
+            "dts": "15",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "17",
+            "dts": "16",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "19",
+            "dts": "17",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "23",
+            "dts": "18",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "22",
+            "dts": "19",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "21",
+            "dts": "20",
+            "duration": "1",
+            "keyframe": false
+          }
+        ]
+      },
+      "actual_timing": {
+        "stream": {
+          "codec_name": "hevc",
+          "profile": "Main 10",
+          "pix_fmt": "yuv420p10le",
+          "color_space": "bt2020nc",
+          "color_transfer": "arib-std-b67",
+          "color_primaries": "bt2020",
+          "time_base": "1/30000",
+          "disposition": {
+            "default": 1,
+            "dub": 0,
+            "original": 0,
+            "comment": 0,
+            "lyrics": 0,
+            "karaoke": 0,
+            "forced": 0,
+            "hearing_impaired": 0,
+            "visual_impaired": 0,
+            "clean_effects": 0,
+            "attached_pic": 0,
+            "timed_thumbnails": 0,
+            "non_diegetic": 0,
+            "captions": 0,
+            "descriptions": 0,
+            "metadata": 0,
+            "dependent": 0,
+            "still_image": 0,
+            "multilayer": 0
+          },
+          "tags": {
+            "language": "und",
+            "handler_name": "VideoHandler",
+            "vendor_id": "[0][0][0][0]"
+          }
+        },
+        "packets": [
+          {
+            "pts": "0",
+            "dts": "-3",
+            "duration": "1",
+            "keyframe": true
+          },
+          {
+            "pts": "4",
+            "dts": "-2",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "2",
+            "dts": "-1",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "1",
+            "dts": "0",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "3",
+            "dts": "1",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "8",
+            "dts": "2",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "6",
+            "dts": "3",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "5",
+            "dts": "4",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "7",
+            "dts": "5",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "12",
+            "dts": "6",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "10",
+            "dts": "7",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "9",
+            "dts": "8",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "11",
+            "dts": "9",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "16",
+            "dts": "10",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "14",
+            "dts": "11",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "13",
+            "dts": "12",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "15",
+            "dts": "13",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "20",
+            "dts": "14",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "18",
+            "dts": "15",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "17",
+            "dts": "16",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "19",
+            "dts": "17",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "23",
+            "dts": "18",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "22",
+            "dts": "19",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "21",
+            "dts": "20",
+            "duration": "1",
+            "keyframe": false
+          }
+        ]
+      },
+      "reference_sha256": "871f11d13d85145d0533d73c9bf2ec3ae03801d6ed9d6d66d61ebc8d4ced02b4",
+      "actual_sha256": "1e3b8f5472860665e1faaa763c3e8e293883cf2675d8cf792f417d923eeb390d",
+      "equal": true,
+      "timing_equal": true
+    },
+    {
+      "profile": "hlg",
+      "container": "mkv",
+      "expected": {
+        "returncode": 0,
+        "frames": 24,
+        "md5": [
+          "52f10f0f42fc44ea462b798856e63c17",
+          "2e9c8cd6199331073a44175c1a4b116c",
+          "3af4969d3372e8494d7819183f202c5d",
+          "ab4fb60878439cefaafca59bba851c59",
+          "c2caa89ac96ce361abca8d0ee65858e4",
+          "26e9841d87e5cbc0a03f1a865024bc94",
+          "75bce4dec0a068a2c9521df3de7af9da",
+          "9aa71509e5a453980edaa2deda90c2c9",
+          "f45438535843e916164eaa8253376e9b",
+          "08417f4d94a7ea4304ceee4f39e0cb5d",
+          "041bcabdd05db955589ceec176d5e19f",
+          "4e2b4120e1a9f65a3502d8f7ea8dc775",
+          "d4ed495605666a5d61ef5acb53af5797",
+          "229653ce942de5f55362ddfc802c57fc",
+          "d7ba80ff047805adaf578e24be66f64a",
+          "d626d20dffec88122ebf0256b4fccffc",
+          "9f18e0e89c38d473cc937c5ddd0182e8",
+          "a3c27b65f4a1fe4ca86da80a241965fe",
+          "019980e9c646110d46eb16b05b35e8f4",
+          "e83aa713a074cf6835c8c0765aa0d5b3",
+          "6d0fad4d57bf0c1cca5fdbf271cbcb06",
+          "56a8e531110707eca9be0cdfb947692e",
+          "a86d217e94a8790298c66f80acef1b2a",
+          "c8bb988968c8e9503d6b86b2c121faf1"
+        ],
+        "stderr": ""
+      },
+      "actual": {
+        "returncode": 0,
+        "frames": 24,
+        "md5": [
+          "52f10f0f42fc44ea462b798856e63c17",
+          "2e9c8cd6199331073a44175c1a4b116c",
+          "3af4969d3372e8494d7819183f202c5d",
+          "ab4fb60878439cefaafca59bba851c59",
+          "c2caa89ac96ce361abca8d0ee65858e4",
+          "26e9841d87e5cbc0a03f1a865024bc94",
+          "75bce4dec0a068a2c9521df3de7af9da",
+          "9aa71509e5a453980edaa2deda90c2c9",
+          "f45438535843e916164eaa8253376e9b",
+          "08417f4d94a7ea4304ceee4f39e0cb5d",
+          "041bcabdd05db955589ceec176d5e19f",
+          "4e2b4120e1a9f65a3502d8f7ea8dc775",
+          "d4ed495605666a5d61ef5acb53af5797",
+          "229653ce942de5f55362ddfc802c57fc",
+          "d7ba80ff047805adaf578e24be66f64a",
+          "d626d20dffec88122ebf0256b4fccffc",
+          "9f18e0e89c38d473cc937c5ddd0182e8",
+          "a3c27b65f4a1fe4ca86da80a241965fe",
+          "019980e9c646110d46eb16b05b35e8f4",
+          "e83aa713a074cf6835c8c0765aa0d5b3",
+          "6d0fad4d57bf0c1cca5fdbf271cbcb06",
+          "56a8e531110707eca9be0cdfb947692e",
+          "a86d217e94a8790298c66f80acef1b2a",
+          "c8bb988968c8e9503d6b86b2c121faf1"
+        ],
+        "stderr": ""
+      },
+      "reference_timing": {
+        "stream": {
+          "codec_name": "hevc",
+          "profile": "Main 10",
+          "pix_fmt": "yuv420p10le",
+          "color_space": "bt2020nc",
+          "color_transfer": "arib-std-b67",
+          "color_primaries": "bt2020",
+          "time_base": "1/1000",
+          "disposition": {
+            "default": 0,
+            "dub": 0,
+            "original": 0,
+            "comment": 0,
+            "lyrics": 0,
+            "karaoke": 0,
+            "forced": 0,
+            "hearing_impaired": 0,
+            "visual_impaired": 0,
+            "clean_effects": 0,
+            "attached_pic": 0,
+            "timed_thumbnails": 0,
+            "non_diegetic": 0,
+            "captions": 0,
+            "descriptions": 0,
+            "metadata": 0,
+            "dependent": 0,
+            "still_image": 0,
+            "multilayer": 0
+          },
+          "tags": {
+            "ENCODER": "Lavc61.19.101 hevc_nvenc",
+            "DURATION": "00:00:00.800000000"
+          }
+        },
+        "packets": [
+          {
+            "pts": "0",
+            "dts": null,
+            "duration": "90/91",
+            "keyframe": true
+          },
+          {
+            "pts": "570/143",
+            "dts": null,
+            "duration": "90/91",
+            "keyframe": false
+          },
+          {
+            "pts": "2010/1001",
+            "dts": "0",
+            "duration": "90/91",
+            "keyframe": false
+          },
+          {
+            "pts": "90/91",
+            "dts": "90/91",
+            "duration": "90/91",
+            "keyframe": false
+          },
+          {
+            "pts": "3000/1001",
+            "dts": "2010/1001",
+            "duration": "90/91",
+            "keyframe": false
+          },
+          {
+            "pts": "8010/1001",
+            "dts": "3000/1001",
+            "duration": "90/91",
+            "keyframe": false
+          },
+          {
+            "pts": "6000/1001",
+            "dts": "570/143",
+            "duration": "90/91",
+            "keyframe": false
+          },
+          {
+            "pts": "5010/1001",
+            "dts": "5010/1001",
+            "duration": "90/91",
+            "keyframe": false
+          },
+          {
+            "pts": "540/77",
+            "dts": "6000/1001",
+            "duration": "90/91",
+            "keyframe": false
+          },
+          {
+            "pts": "12000/1001",
+            "dts": "540/77",
+            "duration": "90/91",
+            "keyframe": false
+          },
+          {
+            "pts": "10020/1001",
+            "dts": "8010/1001",
+            "duration": "90/91",
+            "keyframe": false
+          },
+          {
+            "pts": "9000/1001",
+            "dts": "9000/1001",
+            "duration": "90/91",
+            "keyframe": false
+          },
+          {
+            "pts": "11010/1001",
+            "dts": "10020/1001",
+            "duration": "90/91",
+            "keyframe": false
+          },
+          {
+            "pts": "16020/1001",
+            "dts": "11010/1001",
+            "duration": "90/91",
+            "keyframe": false
+          },
+          {
+            "pts": "14010/1001",
+            "dts": "12000/1001",
+            "duration": "90/91",
+            "keyframe": false
+          },
+          {
+            "pts": "1860/143",
+            "dts": "1860/143",
+            "duration": "90/91",
+            "keyframe": false
+          },
+          {
+            "pts": "15030/1001",
+            "dts": "14010/1001",
+            "duration": "90/91",
+            "keyframe": false
+          },
+          {
+            "pts": "20010/1001",
+            "dts": "15030/1001",
+            "duration": "90/91",
+            "keyframe": false
+          },
+          {
+            "pts": "18030/1001",
+            "dts": "16020/1001",
+            "duration": "90/91",
+            "keyframe": false
+          },
+          {
+            "pts": "2430/143",
+            "dts": "2430/143",
+            "duration": "90/91",
+            "keyframe": false
+          },
+          {
+            "pts": "19020/1001",
+            "dts": "18030/1001",
+            "duration": "90/91",
+            "keyframe": false
+          },
+          {
+            "pts": "1770/77",
+            "dts": "19020/1001",
+            "duration": "90/91",
+            "keyframe": false
+          },
+          {
+            "pts": "22020/1001",
+            "dts": "20010/1001",
+            "duration": "90/91",
+            "keyframe": false
+          },
+          {
+            "pts": "21030/1001",
+            "dts": "21030/1001",
+            "duration": "90/91",
+            "keyframe": false
+          }
+        ]
+      },
+      "actual_timing": {
+        "stream": {
+          "codec_name": "hevc",
+          "profile": "Main 10",
+          "pix_fmt": "yuv420p10le",
+          "color_space": "bt2020nc",
+          "color_transfer": "arib-std-b67",
+          "color_primaries": "bt2020",
+          "time_base": "1/1000",
+          "disposition": {
+            "default": 0,
+            "dub": 0,
+            "original": 0,
+            "comment": 0,
+            "lyrics": 0,
+            "karaoke": 0,
+            "forced": 0,
+            "hearing_impaired": 0,
+            "visual_impaired": 0,
+            "clean_effects": 0,
+            "attached_pic": 0,
+            "timed_thumbnails": 0,
+            "non_diegetic": 0,
+            "captions": 0,
+            "descriptions": 0,
+            "metadata": 0,
+            "dependent": 0,
+            "still_image": 0,
+            "multilayer": 0
+          },
+          "tags": {
+            "DURATION": "00:00:00.800000000"
+          }
+        },
+        "packets": [
+          {
+            "pts": "0",
+            "dts": null,
+            "duration": "90/91",
+            "keyframe": true
+          },
+          {
+            "pts": "570/143",
+            "dts": null,
+            "duration": "90/91",
+            "keyframe": false
+          },
+          {
+            "pts": "2010/1001",
+            "dts": "0",
+            "duration": "90/91",
+            "keyframe": false
+          },
+          {
+            "pts": "90/91",
+            "dts": "90/91",
+            "duration": "90/91",
+            "keyframe": false
+          },
+          {
+            "pts": "3000/1001",
+            "dts": "2010/1001",
+            "duration": "90/91",
+            "keyframe": false
+          },
+          {
+            "pts": "8010/1001",
+            "dts": "3000/1001",
+            "duration": "90/91",
+            "keyframe": false
+          },
+          {
+            "pts": "6000/1001",
+            "dts": "570/143",
+            "duration": "90/91",
+            "keyframe": false
+          },
+          {
+            "pts": "5010/1001",
+            "dts": "5010/1001",
+            "duration": "90/91",
+            "keyframe": false
+          },
+          {
+            "pts": "540/77",
+            "dts": "6000/1001",
+            "duration": "90/91",
+            "keyframe": false
+          },
+          {
+            "pts": "12000/1001",
+            "dts": "540/77",
+            "duration": "90/91",
+            "keyframe": false
+          },
+          {
+            "pts": "10020/1001",
+            "dts": "8010/1001",
+            "duration": "90/91",
+            "keyframe": false
+          },
+          {
+            "pts": "9000/1001",
+            "dts": "9000/1001",
+            "duration": "90/91",
+            "keyframe": false
+          },
+          {
+            "pts": "11010/1001",
+            "dts": "10020/1001",
+            "duration": "90/91",
+            "keyframe": false
+          },
+          {
+            "pts": "16020/1001",
+            "dts": "11010/1001",
+            "duration": "90/91",
+            "keyframe": false
+          },
+          {
+            "pts": "14010/1001",
+            "dts": "12000/1001",
+            "duration": "90/91",
+            "keyframe": false
+          },
+          {
+            "pts": "1860/143",
+            "dts": "1860/143",
+            "duration": "90/91",
+            "keyframe": false
+          },
+          {
+            "pts": "15030/1001",
+            "dts": "14010/1001",
+            "duration": "90/91",
+            "keyframe": false
+          },
+          {
+            "pts": "20010/1001",
+            "dts": "15030/1001",
+            "duration": "90/91",
+            "keyframe": false
+          },
+          {
+            "pts": "18030/1001",
+            "dts": "16020/1001",
+            "duration": "90/91",
+            "keyframe": false
+          },
+          {
+            "pts": "2430/143",
+            "dts": "2430/143",
+            "duration": "90/91",
+            "keyframe": false
+          },
+          {
+            "pts": "19020/1001",
+            "dts": "18030/1001",
+            "duration": "90/91",
+            "keyframe": false
+          },
+          {
+            "pts": "1770/77",
+            "dts": "19020/1001",
+            "duration": "90/91",
+            "keyframe": false
+          },
+          {
+            "pts": "22020/1001",
+            "dts": "20010/1001",
+            "duration": "90/91",
+            "keyframe": false
+          },
+          {
+            "pts": "21030/1001",
+            "dts": "21030/1001",
+            "duration": "90/91",
+            "keyframe": false
+          }
+        ]
+      },
+      "reference_sha256": "235465e70726114c7ea3d5f2709d0b805c15046954e451f67e9813b92ac310f6",
+      "actual_sha256": "e83ad3c280f303f50ea884a3a4cf39f1f69ef0dbe49d94ed43663b7214d0cea4",
+      "equal": true,
+      "timing_equal": true
+    },
+    {
+      "profile": "hlg",
+      "container": "mov",
+      "expected": {
+        "returncode": 0,
+        "frames": 24,
+        "md5": [
+          "52f10f0f42fc44ea462b798856e63c17",
+          "2e9c8cd6199331073a44175c1a4b116c",
+          "3af4969d3372e8494d7819183f202c5d",
+          "ab4fb60878439cefaafca59bba851c59",
+          "c2caa89ac96ce361abca8d0ee65858e4",
+          "26e9841d87e5cbc0a03f1a865024bc94",
+          "75bce4dec0a068a2c9521df3de7af9da",
+          "9aa71509e5a453980edaa2deda90c2c9",
+          "f45438535843e916164eaa8253376e9b",
+          "08417f4d94a7ea4304ceee4f39e0cb5d",
+          "041bcabdd05db955589ceec176d5e19f",
+          "4e2b4120e1a9f65a3502d8f7ea8dc775",
+          "d4ed495605666a5d61ef5acb53af5797",
+          "229653ce942de5f55362ddfc802c57fc",
+          "d7ba80ff047805adaf578e24be66f64a",
+          "d626d20dffec88122ebf0256b4fccffc",
+          "9f18e0e89c38d473cc937c5ddd0182e8",
+          "a3c27b65f4a1fe4ca86da80a241965fe",
+          "019980e9c646110d46eb16b05b35e8f4",
+          "e83aa713a074cf6835c8c0765aa0d5b3",
+          "6d0fad4d57bf0c1cca5fdbf271cbcb06",
+          "56a8e531110707eca9be0cdfb947692e",
+          "a86d217e94a8790298c66f80acef1b2a",
+          "c8bb988968c8e9503d6b86b2c121faf1"
+        ],
+        "stderr": ""
+      },
+      "actual": {
+        "returncode": 0,
+        "frames": 24,
+        "md5": [
+          "52f10f0f42fc44ea462b798856e63c17",
+          "2e9c8cd6199331073a44175c1a4b116c",
+          "3af4969d3372e8494d7819183f202c5d",
+          "ab4fb60878439cefaafca59bba851c59",
+          "c2caa89ac96ce361abca8d0ee65858e4",
+          "26e9841d87e5cbc0a03f1a865024bc94",
+          "75bce4dec0a068a2c9521df3de7af9da",
+          "9aa71509e5a453980edaa2deda90c2c9",
+          "f45438535843e916164eaa8253376e9b",
+          "08417f4d94a7ea4304ceee4f39e0cb5d",
+          "041bcabdd05db955589ceec176d5e19f",
+          "4e2b4120e1a9f65a3502d8f7ea8dc775",
+          "d4ed495605666a5d61ef5acb53af5797",
+          "229653ce942de5f55362ddfc802c57fc",
+          "d7ba80ff047805adaf578e24be66f64a",
+          "d626d20dffec88122ebf0256b4fccffc",
+          "9f18e0e89c38d473cc937c5ddd0182e8",
+          "a3c27b65f4a1fe4ca86da80a241965fe",
+          "019980e9c646110d46eb16b05b35e8f4",
+          "e83aa713a074cf6835c8c0765aa0d5b3",
+          "6d0fad4d57bf0c1cca5fdbf271cbcb06",
+          "56a8e531110707eca9be0cdfb947692e",
+          "a86d217e94a8790298c66f80acef1b2a",
+          "c8bb988968c8e9503d6b86b2c121faf1"
+        ],
+        "stderr": ""
+      },
+      "reference_timing": {
+        "stream": {
+          "codec_name": "hevc",
+          "profile": "Main 10",
+          "pix_fmt": "yuv420p10le",
+          "color_space": "bt2020nc",
+          "color_transfer": "arib-std-b67",
+          "color_primaries": "bt2020",
+          "time_base": "1/30000",
+          "disposition": {
+            "default": 1,
+            "dub": 0,
+            "original": 0,
+            "comment": 0,
+            "lyrics": 0,
+            "karaoke": 0,
+            "forced": 0,
+            "hearing_impaired": 0,
+            "visual_impaired": 0,
+            "clean_effects": 0,
+            "attached_pic": 0,
+            "timed_thumbnails": 0,
+            "non_diegetic": 0,
+            "captions": 0,
+            "descriptions": 0,
+            "metadata": 0,
+            "dependent": 0,
+            "still_image": 0,
+            "multilayer": 0
+          },
+          "tags": {
+            "handler_name": "VideoHandler",
+            "vendor_id": "FFMP",
+            "encoder": "Lavc61.19.101 hevc_nvenc"
+          }
+        },
+        "packets": [
+          {
+            "pts": "0",
+            "dts": "-3",
+            "duration": "1",
+            "keyframe": true
+          },
+          {
+            "pts": "4",
+            "dts": "-2",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "2",
+            "dts": "-1",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "1",
+            "dts": "0",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "3",
+            "dts": "1",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "8",
+            "dts": "2",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "6",
+            "dts": "3",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "5",
+            "dts": "4",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "7",
+            "dts": "5",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "12",
+            "dts": "6",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "10",
+            "dts": "7",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "9",
+            "dts": "8",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "11",
+            "dts": "9",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "16",
+            "dts": "10",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "14",
+            "dts": "11",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "13",
+            "dts": "12",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "15",
+            "dts": "13",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "20",
+            "dts": "14",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "18",
+            "dts": "15",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "17",
+            "dts": "16",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "19",
+            "dts": "17",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "23",
+            "dts": "18",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "22",
+            "dts": "19",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "21",
+            "dts": "20",
+            "duration": "1",
+            "keyframe": false
+          }
+        ]
+      },
+      "actual_timing": {
+        "stream": {
+          "codec_name": "hevc",
+          "profile": "Main 10",
+          "pix_fmt": "yuv420p10le",
+          "color_space": "bt2020nc",
+          "color_transfer": "arib-std-b67",
+          "color_primaries": "bt2020",
+          "time_base": "1/30000",
+          "disposition": {
+            "default": 1,
+            "dub": 0,
+            "original": 0,
+            "comment": 0,
+            "lyrics": 0,
+            "karaoke": 0,
+            "forced": 0,
+            "hearing_impaired": 0,
+            "visual_impaired": 0,
+            "clean_effects": 0,
+            "attached_pic": 0,
+            "timed_thumbnails": 0,
+            "non_diegetic": 0,
+            "captions": 0,
+            "descriptions": 0,
+            "metadata": 0,
+            "dependent": 0,
+            "still_image": 0,
+            "multilayer": 0
+          },
+          "tags": {
+            "handler_name": "VideoHandler",
+            "vendor_id": "FFMP"
+          }
+        },
+        "packets": [
+          {
+            "pts": "0",
+            "dts": "-3",
+            "duration": "1",
+            "keyframe": true
+          },
+          {
+            "pts": "4",
+            "dts": "-2",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "2",
+            "dts": "-1",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "1",
+            "dts": "0",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "3",
+            "dts": "1",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "8",
+            "dts": "2",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "6",
+            "dts": "3",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "5",
+            "dts": "4",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "7",
+            "dts": "5",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "12",
+            "dts": "6",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "10",
+            "dts": "7",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "9",
+            "dts": "8",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "11",
+            "dts": "9",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "16",
+            "dts": "10",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "14",
+            "dts": "11",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "13",
+            "dts": "12",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "15",
+            "dts": "13",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "20",
+            "dts": "14",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "18",
+            "dts": "15",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "17",
+            "dts": "16",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "19",
+            "dts": "17",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "23",
+            "dts": "18",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "22",
+            "dts": "19",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "21",
+            "dts": "20",
+            "duration": "1",
+            "keyframe": false
+          }
+        ]
+      },
+      "reference_sha256": "98a606ec0f7758b5c9eda31ab8a119e1f9cd9fad99e0cc00f5dd6507957b30e8",
+      "actual_sha256": "52dd385db6e9cab5a556ce7c7e7b088cde069124b48cb4823f30428d47b67881",
+      "equal": true,
+      "timing_equal": true
+    }
+  ],
+  "sources": {
+    "dlss5tool/packet_mux.py": "4bd7a983048d443fe12161098d72393506ff826540585f890b1a699ef81046e8",
+    "dlss5tool/cuda_session.py": "07fbf8248b8141203be719d31aa02aee7e5420dee090a3df0d3378d51446fb55",
+    "scripts/gpu_export_mux_gate.py": "1f7349ba778d4873af35fbb1e3ff406a97e0e0d029838ce0e5be3c60c534fb79"
+  },
+  "native_sha256": "80d9d538034b16f0d82a079b23682b58ecbad98c0b04b52fff178d9782dd76ea",
+  "status": "passed"
+}

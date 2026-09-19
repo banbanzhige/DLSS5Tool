@@ -1,0 +1,19 @@
+{
+  "schema": 1,
+  "enabled": true,
+  "automatic_route": "unscaled-bt2020-hdr-at-least-1080p-p5-high-balanced",
+  "files": {
+    "encoder.dll": "80d9d538034b16f0d82a079b23682b58ecbad98c0b04b52fff178d9782dd76ea",
+    "sdr-yuv.ptx": "88bc614cc473e288256bba677ff49ab8a10f0860b25e2ce01552174d56ec62e0",
+    "hdr-yuv.ptx": "2646f8659a64486218d160e807358d552e3350c3d0b4a64e1955ab2d4db7638a",
+    "frame-worker.exe": "4a179114a31e3cd55b61c02f517f32362671192fa58a909228aabff06e309951",
+    "enhancement.dll": "04b7987bf55f7d945c2b014ef0c10e665dd881a212fce8a07e38a8e6c05a7dda"
+  },
+  "ffmpeg_sha256": "b1383f5d07470d503edecdaee4bddc5891e986e916a698299b357f79cfe445fd",
+  "gates": {
+    "final-writers.json": "d1966434ee960821460c8f9fb521ad074eedd1f2ac4ae469b41c935b45b1e17c",
+    "isolated-hdr-fg2.json": "a2761690c72dee089cf8d0002786a8409712068836d19ead04c90a1616b30bd4",
+    "isolated-enhance-hdr.json": "c187eaad8280ad82b258b1fa6df7213c9ee56ff49db82d7ac1930ab02a55a9dc"
+  },
+  "packaging_license_review_complete": false
+}

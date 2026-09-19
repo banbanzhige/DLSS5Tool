@@ -1,0 +1,483 @@
+{
+  "scope": "Connected packet/container gate. Existing CPU FFmpeg remains the reference.",
+  "av_version": "18.1.0",
+  "library_versions": {
+    "libavutil": [
+      60,
+      26,
+      102
+    ],
+    "libavcodec": [
+      62,
+      28,
+      102
+    ],
+    "libavformat": [
+      62,
+      12,
+      102
+    ],
+    "libavdevice": [
+      62,
+      3,
+      102
+    ],
+    "libavfilter": [
+      11,
+      14,
+      102
+    ],
+    "libswscale": [
+      9,
+      5,
+      102
+    ],
+    "libswresample": [
+      6,
+      3,
+      102
+    ]
+  },
+  "cases": [
+    {
+      "profile": "sdr",
+      "container": "mp4",
+      "expected": {
+        "returncode": 0,
+        "frames": 24,
+        "md5": [
+          "c1f8229de7ddff45c073d028a96a457e",
+          "81ce3b878587365b83e5c2c12fbec264",
+          "0f1e5244bde8b6851c163f02bca6f358",
+          "ba8c6cd776436c4e76dec6c7ffcf6bed",
+          "e94ac32fa80cf0e917056332e5c63994",
+          "479ab7daa3a9708b55f9d9e02d80dc6a",
+          "b2b488b3aa242ec993da48602e332bb8",
+          "3f4070db7a420c2e6f5ee09d1edf0451",
+          "5a14d9ccc2bbc41dc83df5862db0e990",
+          "9f293efba93121b460c9fc94d1ebdb99",
+          "97fbd9c4e3370282d09ac29301293395",
+          "0617037d874999f790e575376deda9da",
+          "07c297dd43b14d329054dd580c74973b",
+          "027909eee9a52f6be8cd4f54131b0bb0",
+          "3880b679861879d7a256bee952d4b65e",
+          "e240b0aa6331c5c81c02b9a821d316b6",
+          "1cc05f1c71d2263a5b25e0a4a644d469",
+          "f8e5d4a2328d2791a992de762bee40d0",
+          "83ce061b8b41610b75c4b458b52d8a68",
+          "eac0e4826f6cbda7b9f8d95350ea74e5",
+          "864efc53d1207f31f7488850479c4a2a",
+          "79428037697e83147d8048d8573dcf45",
+          "c5e2181a7970abf35ca131bd46ae20f5",
+          "27d088cf741e1fdf82ab2c1469406d64"
+        ],
+        "stderr": ""
+      },
+      "actual": {
+        "returncode": 0,
+        "frames": 24,
+        "md5": [
+          "c1f8229de7ddff45c073d028a96a457e",
+          "81ce3b878587365b83e5c2c12fbec264",
+          "0f1e5244bde8b6851c163f02bca6f358",
+          "ba8c6cd776436c4e76dec6c7ffcf6bed",
+          "e94ac32fa80cf0e917056332e5c63994",
+          "479ab7daa3a9708b55f9d9e02d80dc6a",
+          "b2b488b3aa242ec993da48602e332bb8",
+          "3f4070db7a420c2e6f5ee09d1edf0451",
+          "5a14d9ccc2bbc41dc83df5862db0e990",
+          "9f293efba93121b460c9fc94d1ebdb99",
+          "97fbd9c4e3370282d09ac29301293395",
+          "0617037d874999f790e575376deda9da",
+          "07c297dd43b14d329054dd580c74973b",
+          "027909eee9a52f6be8cd4f54131b0bb0",
+          "3880b679861879d7a256bee952d4b65e",
+          "e240b0aa6331c5c81c02b9a821d316b6",
+          "1cc05f1c71d2263a5b25e0a4a644d469",
+          "f8e5d4a2328d2791a992de762bee40d0",
+          "83ce061b8b41610b75c4b458b52d8a68",
+          "eac0e4826f6cbda7b9f8d95350ea74e5",
+          "864efc53d1207f31f7488850479c4a2a",
+          "79428037697e83147d8048d8573dcf45",
+          "c5e2181a7970abf35ca131bd46ae20f5",
+          "27d088cf741e1fdf82ab2c1469406d64"
+        ],
+        "stderr": ""
+      },
+      "reference_timing": {
+        "stream": {
+          "codec_name": "h264",
+          "profile": "Main",
+          "pix_fmt": "yuv420p",
+          "time_base": "1/30000",
+          "disposition": {
+            "default": 1,
+            "dub": 0,
+            "original": 0,
+            "comment": 0,
+            "lyrics": 0,
+            "karaoke": 0,
+            "forced": 0,
+            "hearing_impaired": 0,
+            "visual_impaired": 0,
+            "clean_effects": 0,
+            "attached_pic": 0,
+            "timed_thumbnails": 0,
+            "non_diegetic": 0,
+            "captions": 0,
+            "descriptions": 0,
+            "metadata": 0,
+            "dependent": 0,
+            "still_image": 0,
+            "multilayer": 0
+          },
+          "tags": {
+            "language": "und",
+            "handler_name": "VideoHandler",
+            "vendor_id": "[0][0][0][0]",
+            "encoder": "Lavc61.19.101 h264_nvenc"
+          }
+        },
+        "packets": [
+          {
+            "pts": "0",
+            "dts": "-3",
+            "duration": "1",
+            "keyframe": true
+          },
+          {
+            "pts": "4",
+            "dts": "-2",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "2",
+            "dts": "-1",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "1",
+            "dts": "0",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "3",
+            "dts": "1",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "8",
+            "dts": "2",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "6",
+            "dts": "3",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "5",
+            "dts": "4",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "7",
+            "dts": "5",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "12",
+            "dts": "6",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "10",
+            "dts": "7",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "9",
+            "dts": "8",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "11",
+            "dts": "9",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "16",
+            "dts": "10",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "14",
+            "dts": "11",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "13",
+            "dts": "12",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "15",
+            "dts": "13",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "20",
+            "dts": "14",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "18",
+            "dts": "15",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "17",
+            "dts": "16",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "19",
+            "dts": "17",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "23",
+            "dts": "18",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "22",
+            "dts": "19",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "21",
+            "dts": "20",
+            "duration": "1",
+            "keyframe": false
+          }
+        ]
+      },
+      "actual_timing": {
+        "stream": {
+          "codec_name": "h264",
+          "profile": "Main",
+          "pix_fmt": "yuv420p",
+          "time_base": "1/30000",
+          "disposition": {
+            "default": 1,
+            "dub": 0,
+            "original": 0,
+            "comment": 0,
+            "lyrics": 0,
+            "karaoke": 0,
+            "forced": 0,
+            "hearing_impaired": 0,
+            "visual_impaired": 0,
+            "clean_effects": 0,
+            "attached_pic": 0,
+            "timed_thumbnails": 0,
+            "non_diegetic": 0,
+            "captions": 0,
+            "descriptions": 0,
+            "metadata": 0,
+            "dependent": 0,
+            "still_image": 0,
+            "multilayer": 0
+          },
+          "tags": {
+            "language": "und",
+            "handler_name": "VideoHandler",
+            "vendor_id": "[0][0][0][0]"
+          }
+        },
+        "packets": [
+          {
+            "pts": "0",
+            "dts": "-3",
+            "duration": "1",
+            "keyframe": true
+          },
+          {
+            "pts": "4",
+            "dts": "-2",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "2",
+            "dts": "-1",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "1",
+            "dts": "0",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "3",
+            "dts": "1",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "8",
+            "dts": "2",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "6",
+            "dts": "3",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "5",
+            "dts": "4",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "7",
+            "dts": "5",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "12",
+            "dts": "6",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "10",
+            "dts": "7",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "9",
+            "dts": "8",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "11",
+            "dts": "9",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "16",
+            "dts": "10",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "14",
+            "dts": "11",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "13",
+            "dts": "12",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "15",
+            "dts": "13",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "20",
+            "dts": "14",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "18",
+            "dts": "15",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "17",
+            "dts": "16",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "19",
+            "dts": "17",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "23",
+            "dts": "18",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "22",
+            "dts": "19",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "21",
+            "dts": "20",
+            "duration": "1",
+            "keyframe": false
+          }
+        ]
+      },
+      "reference_sha256": "fe27c66ea1fd0b25d57f362f850bd9d0e9a2f7630c3bce0ccce39f5cc8f92153",
+      "actual_sha256": "fcc70bda5136f2eef793813427ffe839375cf0914a6f234eda602d8bbef172c6",
+      "equal": true,
+      "timing_equal": true
+    }
+  ],
+  "sources": {
+    "dlss5tool/packet_mux.py": "4bd7a983048d443fe12161098d72393506ff826540585f890b1a699ef81046e8",
+    "dlss5tool/cuda_session.py": "07fbf8248b8141203be719d31aa02aee7e5420dee090a3df0d3378d51446fb55",
+    "scripts/gpu_export_mux_gate.py": "6f58c9de02182462186e9ed4933660cbbad423ce3be5618a088160cbe5994697"
+  },
+  "native_sha256": "80d9d538034b16f0d82a079b23682b58ecbad98c0b04b52fff178d9782dd76ea",
+  "status": "failed",
+  "error": "KeyError('dts')",
+  "traceback": "Traceback (most recent call last):\n  File \"F:\\project\\DLSS5Tool\\scripts\\gpu_export_mux_gate.py\", line 73, in main\n    et=probe_packets(ffprobe,ref,config.time_base);at=probe_packets(ffprobe,actual,config.time_base)\n  File \"F:\\project\\DLSS5Tool\\scripts\\encoder_packet_gate.py\", line 42, in probe_packets\n    row = {name: str(Fraction(packet[name]) * scale) for name in ('pts', 'dts', 'duration')}\n                              ~~~~~~^^^^^^\nKeyError: 'dts'\n"
+}

@@ -1,0 +1,124 @@
+"""SDR/PQ/HLG integer-YUV encoder gate; not a GPU color conversion benchmark."""
+import argparse
+import ctypes as C
+import hashlib
+import json
+import os
+from pathlib import Path
+import subprocess
+import sys
+
+ROOT=Path(__file__).resolve().parents[1]
+sys.path.insert(0,str(ROOT))
+from scripts.gpu_color_probe import bind
+from scripts.encode_acceptance_nvenc_ring import native_ring_encode
+from scripts.encode_acceptance_nvenc_contract import framemd5_bytes,framemd5_file,sha256_file
+
+
+def command(cmd, payload=None):
+    r=subprocess.run(cmd,input=payload,capture_output=True,timeout=45,
+        creationflags=getattr(subprocess,'CREATE_NO_WINDOW',0))
+    if r.returncode:raise RuntimeError(r.stderr.decode(errors='replace')[-2000:])
+    return r.stdout
+
+
+def main():
+    p=argparse.ArgumentParser(description=__doc__);p.add_argument('--work',type=Path,required=True)
+    p.add_argument('--native-root',type=Path,required=True);p.add_argument('--label',default='profiles')
+    p.add_argument('--device-input',action='store_true')
+    p.add_argument('--interface',action='store_true',help='Exercise the guarded Python GPU-YUV session interface')
+    a=p.parse_args();a.work=a.work.resolve();a.native_root=a.native_root.resolve()
+    if a.interface and not a.device_input:p.error('--interface requires --device-input')
+    report_path=a.work/(a.label+'.json')
+    if not (a.work/'TASK.md').is_file() or report_path.exists() or not a.label.replace('-','').isalnum():p.error('Fresh registered work/label required')
+    os.environ['TEMP']=os.environ['TMP']=str(a.work);os.environ['PYTHONDONTWRITEBYTECODE']='1'
+    import cv2
+    import numpy as np
+    import torch
+    from dlss5tool.video_export import FFmpegVideoWriter,FFmpegHDRVideoReader,find_ffmpeg,probe_video_stream
+    torch.empty(0,device='cuda');ctx=C.c_void_p()
+    if bind(C.WinDLL('nvcuda.dll'),'cuCtxGetCurrent',[C.POINTER(C.c_void_p)])(C.byref(ctx)):raise RuntimeError('No CUDA context')
+    dllpath=a.native_root/'native-encoder/ring.dll';dll=C.WinDLL(str(dllpath));ffmpeg=find_ffmpeg()
+    r=dict(scope=__doc__,argv=sys.argv,script_sha256=sha256_file(Path(__file__)),
+        native_source_sha256=sha256_file(ROOT/'scripts/gpu_nvenc_ring.cpp'),native_binary_sha256=sha256_file(dllpath),
+        contract_sha256=sha256_file(ROOT/'dlss5tool/encoding_contract.py'),cases=[])
+    code=0
+    try:
+        for profile,source in [('sdr',Path('F:/project/test/dlss5/测试素材/9月1日.mp4')),
+            ('pq',ROOT/'tmp/hdr-e2e/source-hdr10.mp4'),('hlg',ROOT/'tmp/hdr-e2e/source-hlg.mp4')]:
+            meta=probe_video_stream(ffmpeg,str(source));frames=[];fps=meta['fps'];w,h=320,180
+            if profile=='sdr':
+                cap=cv2.VideoCapture(str(source))
+                try:
+                    for _ in range(24):
+                        ok,bgr=cap.read()
+                        if not ok:raise RuntimeError('SDR source too short')
+                        frames.append(cv2.resize(bgr,(w,h),interpolation=cv2.INTER_AREA))
+                finally:cap.release()
+            else:
+                w,h=int(meta['width']),int(meta['height'])
+                reader=FFmpegHDRVideoReader(source,w,h,meta)
+                try:
+                    for _ in range(24):
+                        frame=reader.read()
+                        if frame is None:raise RuntimeError('HDR source too short')
+                        frames.append(frame)
+                finally:reader.close()
+            for preset,cq,quality in [(5,19,'high'),(5,23,'balanced')]:
+                label=f'{a.label}-{profile}-p{preset}-cq{cq}';output=a.work/(label+'.mp4')
+                if output.exists():raise FileExistsError(output)
+                writer=FFmpegVideoWriter(str(output),w,h,fps,use_nvenc=True,hdr_metadata=meta if profile!='sdr' else None,
+                    nvenc_preset=f'p{preset}',quality_profile=quality)
+                contract=writer.frame_contract
+                try:
+                    for frame in frames:writer.write(frame)
+                    writer.finish()
+                except BaseException:writer.abort();raise
+                expected=framemd5_file(ffmpeg,output)
+                wire=(b''.join(f.tobytes() for f in frames) if profile=='sdr' else
+                    b''.join(np.rint(np.clip(f.astype(np.float32),0,1)*65535).astype('<u2').tobytes() for f in frames))
+                raw=command([ffmpeg,'-hide_banner','-loglevel','error',*contract.input_args(),
+                    '-f','rawvideo','-pix_fmt',contract.encoder_format,'pipe:1'],wire)
+                size=w*h*3 if profile!='sdr' else w*h*3//2
+                if len(raw)!=size*len(frames):raise RuntimeError('YUV byte count mismatch')
+                packed=[np.frombuffer(raw[i*size:(i+1)*size],np.uint8).copy() for i in range(len(frames))]
+                if a.device_input:packed=[torch.from_numpy(frame).cuda() for frame in packed]
+                case=dict(profile=profile,fixture=profile!='sdr',source=str(source),frames=24,fps=fps,
+                    preset=preset,cq=cq,production_sha256=sha256_file(output),input_yuv_sha256=hashlib.sha256(raw).hexdigest(),
+                    contract=vars(contract),production_decode=expected,rounds=[])
+                r['cases'].append(case)
+                for repeat in range(2):
+                    kind={'sdr':0,'pq':1,'hlg':2}[profile]
+                    if a.interface:
+                        from dlss5tool.nvenc_yuv import NativeYuvEncoder,YuvEncoderConfig,ReadyYuvFrame
+                        config=YuvEncoderConfig(w,h,int(round(fps*1000)),1000,kind,cq,preset)
+                        packets=[];torch.cuda.synchronize()
+                        with NativeYuvEncoder(dllpath,config) as session:
+                            header=session.headers
+                            for index,frame in enumerate(packed):
+                                packets.extend(session.write(ReadyYuvFrame(frame.data_ptr(),frame.numel(),config.layout,index)))
+                            packets.extend(session.finish())
+                            if session.finish()!=[]:raise RuntimeError('EOS not idempotent')
+                        result=header+b''.join(packet.data for packet in packets)
+                        actual=dict(encoded=result,packets=len(packets),bytes=len(result),sha256=hashlib.sha256(result).hexdigest())
+                    else:
+                        actual=native_ring_encode(dll,ctx,packed,w,h,fps,codec=kind,cq=cq,preset=preset,device_input=a.device_input)
+                    encoded=actual.pop('encoded');ext='h264' if profile=='sdr' else 'hevc'
+                    if repeat==0:(a.work/(label+'.'+ext)).write_bytes(encoded)
+                    actual['decode']=framemd5_bytes(ffmpeg,encoded,ext)
+                    actual['equal']=actual['decode']['md5']==expected['md5'] and actual['decode']['returncode']==0 and actual['decode']['frames']==24
+                    case['rounds'].append(actual)
+                case['gate']=all(x['equal'] for x in case['rounds'])
+                print(json.dumps(dict(profile=profile,preset=preset,cq=cq,gate=case['gate'])),flush=True)
+        r['status']='completed';r['all_equal']=all(c['gate'] for c in r['cases'])
+    except BaseException as exc:
+        r.update(status='failed',error=repr(exc));code=1
+        import traceback
+        r['traceback']=traceback.format_exc();traceback.print_exc()
+    finally:
+        with report_path.open('x',encoding='utf-8') as out:json.dump(r,out,ensure_ascii=False,indent=2)
+        print('Report: '+str(report_path),flush=True)
+    raise SystemExit(code)
+
+
+if __name__=='__main__':main()

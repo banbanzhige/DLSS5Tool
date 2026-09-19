@@ -25,6 +25,7 @@ from fractions import Fraction
 import tkinter as tk
 from concurrent.futures import ThreadPoolExecutor
 from tkinter import ttk, filedialog, messagebox, scrolledtext
+from dlss5tool.image_sequence import ImageSequence, is_sequence, open_capture, output_source
 
 import cv2
 import numpy as np
@@ -60,10 +61,11 @@ from dlss5tool.super_resolution import (
     validate_dimensions as validate_super_resolution_dimensions, SuperResolutionError,
 )
 from dlss5tool.video_export import (
-    FFmpegHDRVideoReader, FFmpegVideoWriter, compose_hdr_frame, resize_original,
+    FFmpegHDRVideoReader, compose_hdr_frame, resize_original,
     compose_output_frame, find_ffmpeg, output_container_extension,
     probe_video_stream, resolve_output_container, tone_map_hdr_preview,
 )
+from dlss5tool.gpu_export_runtime import create_video_writer as FFmpegVideoWriter
 from dlss5tool import ui_theme
 from dlss5tool.ui_widgets import (
     AccentSlider, CheckToggle, ChipGroup, ChromeButton, ChromeCombobox,
@@ -437,7 +439,7 @@ def _alt_is_down():
 
 
 def _is_video_path(path):
-    return os.path.splitext(path)[1].lower() in VIDEO_EXTENSIONS
+    return os.path.splitext(path)[1].lower() in VIDEO_EXTENSIONS or is_sequence(path)
 
 
 def _is_image_path(path):
@@ -2062,20 +2064,26 @@ class App(SharedRenderPreview, PreviewComparison, GuidanceExportUI):
         return widget
 
     def _build_queue_tab(self, parent):
-        toolbar = ttk.Frame(parent, style="Panel.TFrame")
-        toolbar.pack(fill="x", padx=12, pady=(10, 6))
+        imports = ttk.Frame(parent, style="Panel.TFrame")
+        imports.pack(fill="x", padx=12, pady=(10, 6))
+        imports.columnconfigure((0, 1), weight=1, uniform='queue_imports')
         self.queue_add_files_btn = self._chrome_button(
-            toolbar, tr("action.add_files"), self.add_queue_files, width=36,
-            icon="file-plus", icon_only=True,
+            imports, tr("action.add_files"), self.add_queue_files, icon="file-plus",
         )
-        self.queue_add_files_btn.pack(side="left")
+        self.queue_add_files_btn.grid(row=0, column=0, sticky='ew', padx=(0, 4))
         Tooltip(self.queue_add_files_btn, tr("action.add_files"))
         self.queue_add_folder_btn = self._chrome_button(
-            toolbar, tr("action.add_folder"), self.add_queue_folder, width=36,
-            icon="folder-plus", icon_only=True,
+            imports, tr("action.add_folder"), self.add_queue_folder, icon="folder-plus",
         )
-        self.queue_add_folder_btn.pack(side="left", padx=(4, 0))
-        Tooltip(self.queue_add_folder_btn, tr("action.add_folder"))
+        self.queue_add_folder_btn.grid(row=0, column=1, sticky='ew', padx=(4, 0))
+        Tooltip(self.queue_add_folder_btn, tr('sequence.folder_help'))
+        self.queue_add_sequence_btn = self._chrome_button(
+            imports, tr('sequence.import'), self.add_queue_image_sequence,
+        )
+        self.queue_add_sequence_btn.grid(row=1, column=0, columnspan=2, sticky='ew', pady=(6, 0))
+        Tooltip(self.queue_add_sequence_btn, tr('sequence.queue_help'))
+        toolbar = ttk.Frame(parent, style="Panel.TFrame")
+        toolbar.pack(fill="x", padx=12, pady=(0, 6))
         self.queue_remove_btn = self._chrome_button(
             toolbar, tr("action.remove"), self.remove_selected_queue_jobs, variant="ghost", width=36,
             icon="trash", icon_only=True,
@@ -2167,27 +2175,25 @@ class App(SharedRenderPreview, PreviewComparison, GuidanceExportUI):
         queue_y = ttk.Scrollbar(tree_frame, orient="vertical", command=self.queue_tree.yview)
         self.queue_tree.configure(yscrollcommand=queue_y.set)
         queue_y.grid(row=0, column=1, sticky="ns")
-        def fit_queue_columns(event):
-            width = max(event.width, 1)
-            state_width = 64 if self._ui_language == "en_US" else 48
-            progress_width = 82 if self._ui_language == "en_US" else 64
-            self.queue_tree.column("state", width=state_width, minwidth=40, stretch=False)
-            self.queue_tree.column("progress", width=progress_width, minwidth=48, stretch=False)
-            self.queue_tree.column(
-                "source", width=max(60, width - state_width - progress_width - 2),
-                minwidth=60, stretch=True,
-            )
-        self.queue_tree.bind("<Configure>", fit_queue_columns, add="+")
         tree_frame.rowconfigure(0, weight=1)
         tree_frame.columnconfigure(0, weight=1)
         self.queue_tree.tag_configure("failed", foreground=self._ui_color("failed", "#a12622"))
         self.queue_tree.tag_configure("interrupted", foreground=self._ui_color("interrupted", "#8a5a00"))
         self.queue_tree.tag_configure("completed", foreground=self._ui_color("completed", "#226b32"))
         self.queue_tree.bind("<<TreeviewSelect>>", self._on_queue_tree_select)
-        self.queue_tree.bind("<Double-Button-1>", lambda event: self.load_selected_queue_job())
+        from dlss5tool.queue_list import QueueList
+        self._queue_list = QueueList(self)
 
         details_row = ttk.Frame(parent, style="Panel.TFrame")
         details_row.pack(fill="x", padx=12, pady=(0, 6))
+        self.queue_selection_label = ttk.Label(details_row, style='Hint.TLabel', anchor='w')
+        self.queue_selection_label.pack(fill='x', pady=(2, 0))
+        self._queue_undo_row = ttk.Frame(details_row, style='Panel.TFrame')
+        self._queue_undo_label = ttk.Label(self._queue_undo_row, style='Hint.TLabel', wraplength=220)
+        self._queue_undo_label.pack(side='left', fill='x', expand=True)
+        self.queue_undo_btn = self._chrome_button(self._queue_undo_row, tr('queue.undo_remove'),
+            self.undo_queue_remove, variant='ghost')
+        self.queue_undo_btn.pack(side='right', padx=(6, 0))
         self.queue_details = ttk.Label(
             details_row, text=tr("status.select_job"),
             anchor="w", justify="left", wraplength=280, style="Hint.TLabel",
@@ -2246,6 +2252,49 @@ class App(SharedRenderPreview, PreviewComparison, GuidanceExportUI):
         except Exception as ex:
             if hasattr(self, "log"):
                 self.logln("[队列] 保存失败: " + str(ex))
+
+    def _queue_editable(self):
+        return not any(getattr(self, flag, False) for flag in
+                       ('_queue_running', '_exporting', '_diagnosing', '_switching_backend'))
+
+    def _remove_queue_jobs(self, selected):
+        """Remove queue records only. One-level undo preserves jobs and their order."""
+        if not self._queue_editable() or not selected:
+            return
+        removed = [(index, job) for index, job in enumerate(self._queue_jobs) if job.job_id in selected]
+        if not removed:
+            return
+        if getattr(self, '_queue_list', None):
+            self._queue_list.blur()
+        self._queue_removed = removed
+        self._queue_jobs = [job for job in self._queue_jobs if job.job_id not in selected]
+        self._save_queue_state()
+        self._refresh_queue_tree(keep_selection=False)
+        if self._queue_jobs:
+            index = min(removed[0][0], len(self._queue_jobs) - 1)
+            row = self._queue_jobs[index].job_id
+            self.queue_tree.selection_set(row)
+            self.queue_tree.focus(row)
+            self.queue_tree.see(row)
+
+    def undo_queue_remove(self):
+        if not self._queue_editable():
+            return
+        existing = {os.path.normcase(job.source_path) for job in self._queue_jobs}
+        restored = []
+        for index, job in getattr(self, '_queue_removed', ()):
+            if os.path.normcase(job.source_path) in existing:
+                continue
+            self._queue_jobs.insert(min(index, len(self._queue_jobs)), job)
+            existing.add(os.path.normcase(job.source_path))
+            restored.append(job.job_id)
+        self._queue_removed = []
+        self._save_queue_state()
+        self._refresh_queue_tree(keep_selection=False)
+        if restored:
+            self.queue_tree.selection_set(restored)
+            self.queue_tree.focus(restored[0])
+            self.queue_tree.see(restored[0])
 
     def _queue_job(self, job_id):
         return next((job for job in self._queue_jobs if job.job_id == job_id), None)
@@ -2368,6 +2417,8 @@ class App(SharedRenderPreview, PreviewComparison, GuidanceExportUI):
         if not hasattr(self, "queue_tree"):
             return
         values = self._queue_row_values(job)
+        if getattr(self, '_queue_list', None):
+            values = self._queue_list.format_values(values)
         tags = (job.state,) if job.state in {"failed", "interrupted", "completed"} else ()
         if self.queue_tree.exists(job.job_id):
             self.queue_tree.item(job.job_id, values=values, tags=tags)
@@ -2404,14 +2455,22 @@ class App(SharedRenderPreview, PreviewComparison, GuidanceExportUI):
         if not hasattr(self, "queue_start_btn"):
             return
         selected = self._selected_queue_jobs()
-        editable = not (self._queue_running or self._exporting or self._diagnosing
-                        or getattr(self, '_switching_backend', False))
+        editable = self._queue_editable()
+        if hasattr(self, 'queue_undo_btn'):
+            removed = getattr(self, '_queue_removed', ())
+            self._set_ttk_enabled(self.queue_undo_btn, editable and bool(removed))
+            if removed:
+                self._queue_undo_label.config(text=tr('queue.removed_notice', count=len(removed)))
+                self._queue_undo_row.pack(fill='x', before=self.queue_details, pady=(4, 2))
+            else:
+                self._queue_undo_row.pack_forget()
         retryable = any(
             job.state in {"failed", "cancelled", "interrupted"} for job in selected
         )
         completed = any(job.state == "completed" for job in self._queue_jobs)
         for widget in (
             self.queue_add_files_btn, self.queue_add_folder_btn,
+            self.queue_add_sequence_btn,
             self.queue_output_entry, self.queue_output_browse_btn,
         ):
             self._set_ttk_enabled(widget, editable)
@@ -2468,6 +2527,8 @@ class App(SharedRenderPreview, PreviewComparison, GuidanceExportUI):
 
     def _on_queue_tree_select(self, event=None):
         selected = self._selected_queue_jobs()
+        if hasattr(self, 'queue_selection_label'):
+            self.queue_selection_label.config(text=tr('queue.selection_count', selected=len(selected), total=len(self._queue_jobs)))
         if not selected:
             text = (
                 tr("status.add_media_prompt")
@@ -2529,10 +2590,10 @@ class App(SharedRenderPreview, PreviewComparison, GuidanceExportUI):
     ):
         output_dir = self.queue_output_dir_var.get().strip()
         if not output_dir:
-            output_dir = os.path.dirname(source_path)
+            output_dir = os.path.dirname(output_source(source_path))
         output_dir = os.path.abspath(os.path.normpath(output_dir))
         media_kind = media_kind or ("image" if _is_image_path(source_path) else "video")
-        stem = os.path.splitext(os.path.basename(source_path))[0] + "_dlss"
+        stem = os.path.splitext(os.path.basename(output_source(source_path)))[0] + "_dlss"
         if media_kind == "image":
             extension = os.path.splitext(source_path)[1].lower()
             if extension not in IMAGE_ENCODE_EXTS:
@@ -2572,7 +2633,7 @@ class App(SharedRenderPreview, PreviewComparison, GuidanceExportUI):
         )
 
     def _probe_queue_video(self, path):
-        cap = cv2.VideoCapture(path)
+        cap = open_capture(path)
         try:
             if not cap.isOpened():
                 raise RuntimeError(tr("message.video_unreadable"))
@@ -2678,6 +2739,8 @@ class App(SharedRenderPreview, PreviewComparison, GuidanceExportUI):
                 else:
                     metadata, color_info = self._probe_queue_media(path)
                 effective_export = dict(export_settings)
+                if is_sequence(path):
+                    effective_export['mode'] = 'single'
                 if (
                     media_kind == "video"
                     and effective_export.get("hdr_mode")
@@ -2720,24 +2783,14 @@ class App(SharedRenderPreview, PreviewComparison, GuidanceExportUI):
         return added
 
     def remove_selected_queue_jobs(self):
-        if self._queue_running or self._exporting:
-            return
         selected = {job.job_id for job in self._selected_queue_jobs()}
-        if not selected:
-            return
-        self._queue_jobs = [job for job in self._queue_jobs if job.job_id not in selected]
-        self._save_queue_state()
-        self._refresh_queue_tree(keep_selection=False)
+        self._remove_queue_jobs(selected)
 
     def clear_completed_queue_jobs(self):
-        if self._queue_running or self._exporting:
-            return
-        self._queue_jobs = [job for job in self._queue_jobs if job.state != "completed"]
-        self._save_queue_state()
-        self._refresh_queue_tree(keep_selection=False)
+        self._remove_queue_jobs({job.job_id for job in self._queue_jobs if job.state == 'completed'})
 
     def clear_queue_jobs(self):
-        if self._queue_running or self._exporting:
+        if not self._queue_editable():
             return
         if not self._queue_jobs:
             return
@@ -2746,12 +2799,10 @@ class App(SharedRenderPreview, PreviewComparison, GuidanceExportUI):
             tr("dialog.clear_queue"), tr("message.remove_all_jobs", count=count)
         ):
             return
-        self._queue_jobs = []
-        self._save_queue_state()
-        self._refresh_queue_tree(keep_selection=False)
+        self._remove_queue_jobs({job.job_id for job in self._queue_jobs})
 
     def retry_selected_queue_jobs(self):
-        if self._queue_running or self._exporting:
+        if not self._queue_editable():
             return
         changed = False
         for job in self._selected_queue_jobs():
@@ -2764,7 +2815,7 @@ class App(SharedRenderPreview, PreviewComparison, GuidanceExportUI):
             self._refresh_queue_tree()
 
     def move_selected_queue_job(self, direction):
-        if self._queue_running or self._exporting:
+        if not self._queue_editable():
             return
         selected = self._selected_queue_jobs()
         if len(selected) != 1:
@@ -2781,7 +2832,7 @@ class App(SharedRenderPreview, PreviewComparison, GuidanceExportUI):
         self.queue_tree.see(job.job_id)
 
     def apply_current_settings_to_queue(self):
-        if self._queue_running or self._exporting:
+        if not self._queue_editable():
             return
         settings = self._collect_settings()
         export_settings = self._collect_export_settings()
@@ -2791,6 +2842,8 @@ class App(SharedRenderPreview, PreviewComparison, GuidanceExportUI):
                 continue
             job.settings = dict(settings)
             job.export_settings = dict(export_settings)
+            if is_sequence(job.source_path):
+                job.export_settings['mode'] = 'single'
             if (
                 job.media_kind == "video"
                 and job.export_settings.get("hdr_mode")
@@ -2812,7 +2865,7 @@ class App(SharedRenderPreview, PreviewComparison, GuidanceExportUI):
 
     def load_selected_queue_job(self):
         selected = self._selected_queue_jobs()
-        if len(selected) != 1 or self._queue_running or self._exporting:
+        if len(selected) != 1 or not self._queue_editable():
             return
         job = selected[0]
         if self._load_media(job.source_path):
@@ -4973,8 +5026,9 @@ class App(SharedRenderPreview, PreviewComparison, GuidanceExportUI):
         fg_enabled = export.get('frame_generation_multiplier', 1) > 1 and not self._is_image
         color = getattr(self, "_video_color_info", None) or {}
         effective_hdr = bool(export['hdr_mode'] and color.get('is_hdr'))
+        sequence_active = bool(getattr(self, 'video', None) and is_sequence(self.video))
         video_controls_enabled = not self._is_image
-        if (effective_hdr or super_resolution_enabled or fg_enabled) and export['mode'] == 'parallel':
+        if (effective_hdr or super_resolution_enabled or fg_enabled or sequence_active) and export['mode'] == 'parallel':
             self._export_settings['v_mode'].set(EXPORT_MODE_NAMES['single'])
             export['mode'] = 'single'
         state = (
@@ -4989,7 +5043,7 @@ class App(SharedRenderPreview, PreviewComparison, GuidanceExportUI):
             state="normal" if video_controls_enabled else "disabled"
         )
         self._export_settings['w_mode'].config(
-            state="disabled" if self._is_image or effective_hdr or super_resolution_enabled or fg_enabled else "readonly"
+            state="disabled" if self._is_image or effective_hdr or super_resolution_enabled or fg_enabled or sequence_active else "readonly"
         )
         self._export_settings['w_super_resolution'].config(state="readonly")
         if 'w_frame_generation' in self._export_settings:
@@ -5108,6 +5162,18 @@ class App(SharedRenderPreview, PreviewComparison, GuidanceExportUI):
         for effect, toggle in getattr(self, '_effect_preview_controls', {}).items():
             self._set_ttk_enabled(toggle, bool(self.video) and not self._is_image and not self._exporting
                 and export['super_resolution_scale' if effect == 'super_resolution' else 'frame_generation_multiplier'] > 1)
+        self._last_export_preview_key = self._export_preview_key()
+
+    def _export_preview_key(self):
+        """Only export controls which change the active preview's pixels."""
+        if not self._uses_shared_render():
+            return None
+        config = self._preview_effect_settings()
+        width, height = self._source_size()
+        size = _resolve_output_size(width, height, config['output_resolution'],
+                                    config['custom_output_width'], config['custom_output_height'])
+        return (config['super_resolution_scale'], config['frame_generation_multiplier'],
+                config['hdr_mode'], size if config['super_resolution_scale'] == 1 else None)
 
     def _on_super_resolution_change(self):
         scale = self._collect_export_settings()['super_resolution_scale']
@@ -5141,14 +5207,19 @@ class App(SharedRenderPreview, PreviewComparison, GuidanceExportUI):
             self._schedule_preview_cache_resume()
 
     def _on_export_settings_change(self):
+        previous = getattr(self, '_last_export_preview_key', None)
         self._update_export_control_states()
         self._schedule_settings_save()
-        if getattr(self, 'video', None) and not getattr(self, '_exporting', False):
+        current = self._last_export_preview_key
+        if (not getattr(self, 'video', None) or getattr(self, '_exporting', False)
+                or getattr(self, '_queue_running', False) or previous == current):
+            return
+        if previous is None or current is None:
+            # Entering/leaving SR/FG also changes frame-index and cache ownership.
+            self._on_effect_preview_change()
+        else:
             self.pause()
-            if self._uses_shared_render():
-                self._shared_feedback()
-                return
-            self.display_view(quality='fast')
+            self._shared_feedback()
 
     def _collect_persisted_settings(self):
         d = self._settings
@@ -6065,6 +6136,9 @@ class App(SharedRenderPreview, PreviewComparison, GuidanceExportUI):
                 ox + 10, oy + 14, badge, fill=self._ui_color("hud", HUD_FILL), anchor="w",
                 font=ui_theme.UI_FONT_SMALL,
             )
+        elif (not getattr(self, '_guidance_context', False) and not self._hold_original
+              and self.view_var.get() == 'dlss' and self._compare_label() != tr('view.dlss')):
+            self._draw_processed_preview_label(ox + nw - 10, oy + 14, nw - 20)
         self._draw_navigator(img, cw, ch)
         self._draw_pending_status(cw, ch)
 
@@ -6168,12 +6242,7 @@ class App(SharedRenderPreview, PreviewComparison, GuidanceExportUI):
                 ox + 10, oy + 14, tr("view.original"), anchor="w",
                 font=ui_theme.UI_FONT_SMALL,
             )
-            self._canvas_shadow_text(
-                ox + nw - 10, oy + 14,
-                tr("status.generating_dlss") if self._dlss_pending else self._compare_label(),
-                anchor="e",
-                font=ui_theme.UI_FONT_SMALL,
-            )
+            self._draw_processed_preview_label(ox + nw - 10, oy + 14, nw - 100)
         elif self._hold_original:
             self._canvas_shadow_text(
                 ox + 10, oy + 14, tr("status.original_held"), anchor="w",
@@ -6208,9 +6277,8 @@ class App(SharedRenderPreview, PreviewComparison, GuidanceExportUI):
         if getattr(self, "_split_orig", None) is not None:
             self._blit_split(cw, ch)
         else:
-            self.display_view(
-                quality="fast" if self._preview_cache_frozen else "full"
-            )
+            # Repainting must never start synchronous inference on a cache miss.
+            self.display_view(quality="fast")
 
     def _point_in_navigator(self, x, y):
         geom = getattr(self, "_navigator_geom", None)
@@ -6248,9 +6316,7 @@ class App(SharedRenderPreview, PreviewComparison, GuidanceExportUI):
         if image is not None:
             self._draw_fit(image, cw, ch)
         else:
-            self.display_view(
-                quality="fast" if self._preview_cache_frozen else "full"
-            )
+            self.display_view(quality="fast")
 
     def _update_pan_from_navigator(self, event):
         geom = getattr(self, "_navigator_geom", None)
@@ -6345,9 +6411,8 @@ class App(SharedRenderPreview, PreviewComparison, GuidanceExportUI):
         self._focus_preview_host()
         if self._hold_original and not _alt_is_down():
             self._set_hold_original(False)
+        # Viewport gestures change composition only, never playback or producers.
         if self._point_in_navigator(event.x, event.y):
-            self.pause()
-            self._freeze_preview_cache(resume_ms=None)
             self._drag_split = False
             self._canvas_press = ("navigator", event.x, event.y)
             self.canvas.config(cursor="hand2")
@@ -6355,8 +6420,6 @@ class App(SharedRenderPreview, PreviewComparison, GuidanceExportUI):
             return
         shift = bool(event.state & 0x0001)
         if self._wipe_compare() and (self._near_split(event.x) or shift):
-            self.pause()
-            self._freeze_preview_cache(resume_ms=None)
             self._drag_split = True
             self._split_moved = False
             self._canvas_press = ("split", event.x, event.y)
@@ -6365,8 +6428,6 @@ class App(SharedRenderPreview, PreviewComparison, GuidanceExportUI):
             return
         self._drag_split = False
         if self._preview_zoom > 1.0 and self._point_in_video(event.x, event.y):
-            self.pause()
-            self._freeze_preview_cache(resume_ms=None)
             self._pan_moved = False
             self._canvas_press = (
                 "pan", event.x, event.y,
@@ -6400,8 +6461,6 @@ class App(SharedRenderPreview, PreviewComparison, GuidanceExportUI):
             dx, dy = event.x - press[1], event.y - press[2]
             if abs(dx) <= 6 or abs(dx) < abs(dy):
                 return
-            self.pause()
-            self._freeze_preview_cache(resume_ms=None)
             self._drag_split = True
             self.canvas.config(cursor="sb_h_double_arrow")
         self._split_moved = True
@@ -6412,7 +6471,6 @@ class App(SharedRenderPreview, PreviewComparison, GuidanceExportUI):
             self._drag_split = False
             self._canvas_press = None
             self.on_canvas_hover(event)
-            self._schedule_preview_cache_resume()
             return
         press = self._canvas_press
         self._canvas_press = None
@@ -6420,7 +6478,6 @@ class App(SharedRenderPreview, PreviewComparison, GuidanceExportUI):
             return
         if press[0] == "navigator":
             self.on_canvas_hover(event)
-            self._schedule_preview_cache_resume()
             return
         if press[0] == "pan":
             moved = self._pan_moved
@@ -6429,8 +6486,6 @@ class App(SharedRenderPreview, PreviewComparison, GuidanceExportUI):
                 self._update_split_from_event(event)
             elif not moved:
                 self.toggle_play()
-            if not self.playing:
-                self._schedule_preview_cache_resume()
             self.on_canvas_hover(event)
             return
         if press[0] not in ("click", "compare"):
@@ -6583,9 +6638,7 @@ class App(SharedRenderPreview, PreviewComparison, GuidanceExportUI):
         self._refresh_preview_surface()
 
     def _refresh_preview_surface(self):
-        """Redraw the active pane with the same freeze/fast/resume policy as resize."""
-        if self.video and not self.playing:
-            self._freeze_preview_cache()
+        """Coalesce display-only changes without interrupting the producer."""
         self._cancel_after("_resize_after")
         self._resize_after = self.root.after(CANVAS_RESIZE_MS, self._apply_canvas_resize)
 
@@ -6600,12 +6653,7 @@ class App(SharedRenderPreview, PreviewComparison, GuidanceExportUI):
         if self.playing:
             self._present_play_frame(self._frame)
         elif self.video:
-            quality = (
-                "fast"
-                if self._scrub_after or self._preview_cache_frozen
-                else "full"
-            )
-            self.display_view(quality=quality)
+            self.display_view(quality="fast")
         else:
             self._draw_empty()
 
@@ -6768,8 +6816,6 @@ class App(SharedRenderPreview, PreviewComparison, GuidanceExportUI):
         if not math.isfinite(zoom):
             return False
         zoom = max(PREVIEW_ZOOM_MIN, min(zoom, PREVIEW_ZOOM_MAX))
-        self.pause()
-        self._freeze_preview_cache()
         old_zoom = self._preview_zoom
         side = self._active_compare() and self.compare_layout.get() == 'side'
         if anchor is not None and side:
@@ -6918,13 +6964,12 @@ class App(SharedRenderPreview, PreviewComparison, GuidanceExportUI):
         elif self.playing:
             if self._preview_frame_queue is None or self._prefetch_stop.is_set():
                 self._start_strict_preview_buffering()
-        else:
-            self._freeze_preview_cache(resume_ms=None)
-            self._schedule_preview_cache_resume()
+        elif (not self._pre_rendering and not self._preview_cache_frozen
+              and not getattr(self, '_scrub_after', None)):
+            # Original -> processed needs a producer; DLSS <-> compare does not.
+            self._schedule_full_preview()
         self._split_size = None
-        self.display_view(
-            quality="fast" if self._preview_cache_frozen else "full"
-        )
+        self.display_view(quality="fast")
 
     def on_settings_change(self, event=None):
         if self.playing:
@@ -7958,6 +8003,22 @@ class App(SharedRenderPreview, PreviewComparison, GuidanceExportUI):
         else:
             self._schedule_preview_cache_resume()
 
+    def add_queue_image_sequence(self):
+        if (self._exporting or self._queue_running or self._diagnosing
+                or getattr(self, '_switching_backend', False)):
+            return
+        self._freeze_preview_cache(resume_ms=None)
+        try:
+            selected = filedialog.askopenfilename(parent=self.root,
+                title=tr('sequence.choose'), filetypes=[('PNG / JPG', '*.png *.jpg *.jpeg')])
+            if selected:
+                from dlss5tool.image_sequence_dialog import ask_sequence
+                manifest = ask_sequence(self.root, selected)
+                if manifest:
+                    self._add_paths_to_queue([manifest])
+        finally:
+            self._schedule_preview_cache_resume()
+
     # ---------- application updates ----------
     @staticmethod
     def _open_release_page(url=updater.RELEASES_URL):
@@ -8455,7 +8516,6 @@ class App(SharedRenderPreview, PreviewComparison, GuidanceExportUI):
 
     def _on_drop_enter(self, event):
         if not self._exporting and not self._queue_running and not self._diagnosing:
-            self._freeze_preview_cache(resume_ms=None)
             self._drop_hover = True
             self.canvas.config(bg=self._ui_color("canvas_drop", CANVAS_DROP_BG))
             if not self.video:
@@ -8470,7 +8530,6 @@ class App(SharedRenderPreview, PreviewComparison, GuidanceExportUI):
             self._draw_empty()
         if not self._exporting and not self._queue_running and not self._diagnosing:
             self.set_status(tr("status.ready"))
-            self._schedule_preview_cache_resume()
         return getattr(event, "action", None)
 
     def _on_drop(self, event):
@@ -8693,7 +8752,13 @@ class App(SharedRenderPreview, PreviewComparison, GuidanceExportUI):
             self.set_status(tr("status.import_unsupported"))
             return False
 
-        new_cap = cv2.VideoCapture(path)
+        try:
+            if is_sequence(path):
+                ImageSequence.load(path).validate()
+            new_cap = open_capture(path)
+        except (OSError, ValueError) as error:
+            messagebox.showerror(tr('dialog.import_failed'), str(error))
+            return False
         if not new_cap.isOpened():
             new_cap.release()
             messagebox.showerror(
@@ -8725,7 +8790,7 @@ class App(SharedRenderPreview, PreviewComparison, GuidanceExportUI):
         self.video = path
         self._cap = new_cap
         self._cap_next = 0
-        self._source_kind = "video"
+        self._source_kind = "sequence" if is_sequence(path) else "video"
         self._video_color_info = color_info
         self._media_w, self._media_h = w, h
         self.nframes, self.fps = n, fps
@@ -8750,7 +8815,8 @@ class App(SharedRenderPreview, PreviewComparison, GuidanceExportUI):
             transfer=color_info.get('color_transfer', 'unknown'),
         ))
         duration = n / max(float(fps) or 30.0, 1.0)
-        self._audio.prepare(path, duration, callback=self._audio_ready_cb)
+        if not is_sequence(path):
+            self._audio.prepare(path, duration, callback=self._audio_ready_cb)
         self._schedule_preview_cache_resume()
         if not self._hinted_keys:
             self.set_status(tr("status.preview_shortcuts"))
@@ -8787,7 +8853,7 @@ class App(SharedRenderPreview, PreviewComparison, GuidanceExportUI):
 
     @staticmethod
     def _video_info(path):
-        cap = cv2.VideoCapture(path)
+        cap = open_capture(path)
         n = int(cap.get(cv2.CAP_PROP_FRAME_COUNT)) or 0
         fps = cap.get(cv2.CAP_PROP_FPS) or 30.0
         w = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH)); h = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
@@ -8801,7 +8867,7 @@ class App(SharedRenderPreview, PreviewComparison, GuidanceExportUI):
             ext = ".mp4"
         if not ext.startswith("."):
             ext = "." + ext
-        stem = os.path.splitext(source_path)[0] + "_dlss"
+        stem = os.path.splitext(output_source(source_path))[0] + "_dlss"
         candidate = stem + ext
         index = 2
         while os.path.exists(candidate):
@@ -9406,6 +9472,8 @@ class App(SharedRenderPreview, PreviewComparison, GuidanceExportUI):
         }
         if saved_fg_multiplier is not None:
             export_settings['frame_generation_multiplier'] = saved_fg_multiplier
+        if is_sequence(source_path):
+            export_settings['mode'] = 'single'
         color_info = dict(color_info or {})
         resolved_container = resolve_output_container(
             source_path, export_settings.get("output_container", "mp4")
@@ -9463,13 +9531,13 @@ class App(SharedRenderPreview, PreviewComparison, GuidanceExportUI):
                 planned=(output_width, output_height),
             )
             return result
-        if super_resolution_scale > 1 or fg_multiplier > 1:
+        if super_resolution_scale > 1 or fg_multiplier > 1 or is_sequence(source_path):
             self._wait_play_dlss(timeout=3.0)
             self._close_super_resolution()
             self._close_live()
         view = settings['output_view']; mix = float(settings['output_mix'])
         live = None; writer = None
-        default_out_path = os.path.splitext(source_path)[0] + "_dlss" + output_extension
+        default_out_path = os.path.splitext(output_source(source_path))[0] + "_dlss" + output_extension
         out_path = out_path or self._unique_output_path(source_path, output_extension)
         if not notify and os.path.exists(out_path):
             out_path = self._unique_target_path(out_path)
@@ -9509,7 +9577,7 @@ class App(SharedRenderPreview, PreviewComparison, GuidanceExportUI):
                 f"输出 {output_width}×{output_height}；{encoding_note}；"
                 f"编码速度 {export_settings['nvenc_preset']}"
             )
-            if fg_multiplier > 1 or super_resolution_scale > 1:
+            if fg_multiplier > 1 or super_resolution_scale > 1 or is_sequence(source_path):
                 if fg_multiplier > 1:
                     self.logln('[DLSSG] ' + tr('tooltip.frame_generation'))
                 result = self._export_frame_generated_video(source_path, out_path, settings, export_settings)
@@ -9702,7 +9770,7 @@ class App(SharedRenderPreview, PreviewComparison, GuidanceExportUI):
                 self._close_live()
         self._end_export_ui(
             success, out_path, tr("common.completed"),
-            tr("status.exported_audio", path=out_path) if success else None,
+            tr("sequence.exported" if is_sequence(source_path) else "status.exported_audio", path=out_path) if success else None,
             cancelled=cancelled,
             completed_items=exported_frames,
             error_message=error_message,
@@ -9749,7 +9817,7 @@ class App(SharedRenderPreview, PreviewComparison, GuidanceExportUI):
             return False
 
         def decode_worker():
-            cap = cv2.VideoCapture(video_path)
+            cap = open_capture(video_path)
             try:
                 if not cap.isOpened():
                     raise RuntimeError(tr("message.export_decode_failed"))

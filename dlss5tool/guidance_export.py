@@ -5,12 +5,13 @@ from pathlib import Path
 import tempfile
 
 import cv2
+from dlss5tool.image_sequence import open_capture
 
 from dlss5tool.guidance_client import GuidanceSession
 from dlss5tool.guidance_visualization import guidance_images
 from dlss5tool.guidance_parameters import analysis_edge
 from dlss5tool.guidance_public import normalize_public_settings
-from dlss5tool.video_export import FFmpegVideoWriter
+from dlss5tool.gpu_export_runtime import create_video_writer as FFmpegVideoWriter
 from dlss5tool.guidance_color import HDRAnalysisReader
 
 
@@ -49,7 +50,7 @@ def export_guidance(source, destination, settings, target, *, frame=None,
     try:
         check_cancel()
         if still is None:
-            capture = cv2.VideoCapture(str(source_path))
+            capture = open_capture(source_path)
             if not capture.isOpened():
                 raise RuntimeError('Cannot decode source video')
             total = int(capture.get(cv2.CAP_PROP_FRAME_COUNT))

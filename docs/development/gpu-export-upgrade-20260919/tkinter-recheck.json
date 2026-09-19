@@ -1,0 +1,13 @@
+{
+  "scope": "Run relevant test modules in isolated processes (Tk lifecycle is thread-bound).",
+  "modules": [
+    {
+      "module": "test_frame_generation",
+      "returncode": 0,
+      "seconds": 3.721655900000769,
+      "stdout": "................                                                 [100%]\r\n16 passed, 8 subtests passed in 3.26s\r\n",
+      "stderr": ""
+    }
+  ],
+  "status": "passed"
+}

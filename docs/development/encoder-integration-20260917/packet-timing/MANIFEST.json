@@ -1,0 +1,322 @@
+{
+  "records": [
+    {
+      "source": "tmp\\encode-integration-20260917\\packet-timing\\hlg-1-24-1.mp4",
+      "archive": "hlg-1-24-1.mp4",
+      "bytes": 3797,
+      "sha256": "2f2b1d90a14104cd4949c658de14de43a6be8b5a929a197a4b14d38bc23aa802"
+    },
+    {
+      "source": "tmp\\encode-integration-20260917\\packet-timing\\hlg-17-30000-1001.mp4",
+      "archive": "hlg-17-30000-1001.mp4",
+      "bytes": 17228,
+      "sha256": "17d94df6b089761b90504edd2fd92a0a9ef2ca2d1b203c0722e09512f7fa1e02"
+    },
+    {
+      "source": "tmp\\encode-integration-20260917\\packet-timing\\hlg-2-24-1.mp4",
+      "archive": "hlg-2-24-1.mp4",
+      "bytes": 5124,
+      "sha256": "2f9ded63bcde596b9f2a967660947b1b7da9f0b30878943101ac3e4e9ff4e4e9"
+    },
+    {
+      "source": "tmp\\encode-integration-20260917\\packet-timing\\hlg-3-24-1.mp4",
+      "archive": "hlg-3-24-1.mp4",
+      "bytes": 6024,
+      "sha256": "168c08ed7691511795effeedeef0a5ddde57a41b20dd9d65f2b047ccbf9b2ccd"
+    },
+    {
+      "source": "tmp\\encode-integration-20260917\\packet-timing\\hlg-32-60-1.mp4",
+      "archive": "hlg-32-60-1.mp4",
+      "bytes": 39535,
+      "sha256": "3ccc635f98ad3efb9f5fb7a4ff247563d8f1692b483a4d55ce9003728617e56b"
+    },
+    {
+      "source": "tmp\\encode-integration-20260917\\packet-timing\\hlg-48-72-1.mp4",
+      "archive": "hlg-48-72-1.mp4",
+      "bytes": 58251,
+      "sha256": "7d2a26dd5879375dae34b52961365dded762436dada1748f874618d191d7934d"
+    },
+    {
+      "source": "tmp\\encode-integration-20260917\\packet-timing\\hlg-48-96-1.mp4",
+      "archive": "hlg-48-96-1.mp4",
+      "bytes": 58921,
+      "sha256": "bb3128424a3797119209415f846debbcab555e193ac31df1954f2218564a6f26"
+    },
+    {
+      "source": "tmp\\encode-integration-20260917\\packet-timing\\input-color-tags-hlg-1-24-1.mp4",
+      "archive": "input-color-tags-hlg-1-24-1.mp4",
+      "bytes": 3718,
+      "sha256": "2f9879d82a333c51787635a32ee179a66dabb1c2aabfb6e9d6d16fef911449c2"
+    },
+    {
+      "source": "tmp\\encode-integration-20260917\\packet-timing\\input-color-tags-hlg-17-30000-1001.mp4",
+      "archive": "input-color-tags-hlg-17-30000-1001.mp4",
+      "bytes": 21923,
+      "sha256": "727a4caee78af14719cddefb3ef6903264f28521fd22b5dc620daf918964c5cb"
+    },
+    {
+      "source": "tmp\\encode-integration-20260917\\packet-timing\\input-color-tags-hlg-2-24-1.mp4",
+      "archive": "input-color-tags-hlg-2-24-1.mp4",
+      "bytes": 4889,
+      "sha256": "bc352fab3c7661d8abca9b34b946995d915a2939d53d3f846d7519bc300151f9"
+    },
+    {
+      "source": "tmp\\encode-integration-20260917\\packet-timing\\input-color-tags-hlg-3-24-1.mp4",
+      "archive": "input-color-tags-hlg-3-24-1.mp4",
+      "bytes": 5634,
+      "sha256": "0013ca5b92b27837c6c297eeae69c9a4ec3d6330d56b56f4398a89f1845de4df"
+    },
+    {
+      "source": "tmp\\encode-integration-20260917\\packet-timing\\input-color-tags-hlg-32-60-1.mp4",
+      "archive": "input-color-tags-hlg-32-60-1.mp4",
+      "bytes": 42531,
+      "sha256": "a89643d2a41f4d416567ed32a382a5088a93d266f8a0b36fc2ca31fdda6b4124"
+    },
+    {
+      "source": "tmp\\encode-integration-20260917\\packet-timing\\input-color-tags-hlg-48-72-1.mp4",
+      "archive": "input-color-tags-hlg-48-72-1.mp4",
+      "bytes": 64264,
+      "sha256": "d49bf24ad70fe676fbde3ab564c5e018a739a06777bae786b4b628a8c721cc31"
+    },
+    {
+      "source": "tmp\\encode-integration-20260917\\packet-timing\\input-color-tags-hlg-48-96-1.mp4",
+      "archive": "input-color-tags-hlg-48-96-1.mp4",
+      "bytes": 64521,
+      "sha256": "a6c0196ce7531704031744e0fc961a007cbef1fb0c73528683ae27fde9e9e098"
+    },
+    {
+      "source": "tmp\\encode-integration-20260917\\packet-timing\\input-color-tags-pq-1-24-1.mp4",
+      "archive": "input-color-tags-pq-1-24-1.mp4",
+      "bytes": 3718,
+      "sha256": "fdd351e3a339285dc1935a7af48bdec46b9dc2ce766f855ec83dc1733993cc9a"
+    },
+    {
+      "source": "tmp\\encode-integration-20260917\\packet-timing\\input-color-tags-pq-17-30000-1001.mp4",
+      "archive": "input-color-tags-pq-17-30000-1001.mp4",
+      "bytes": 21923,
+      "sha256": "d712615b3993086ede577d7436594843cf45cc21866a05fec75749fa59202171"
+    },
+    {
+      "source": "tmp\\encode-integration-20260917\\packet-timing\\input-color-tags-pq-2-24-1.mp4",
+      "archive": "input-color-tags-pq-2-24-1.mp4",
+      "bytes": 4889,
+      "sha256": "eb9a9a909e351cee888c1ef1dc027231ae1e1daebe9fed66705f301f123fbe26"
+    },
+    {
+      "source": "tmp\\encode-integration-20260917\\packet-timing\\input-color-tags-pq-3-24-1.mp4",
+      "archive": "input-color-tags-pq-3-24-1.mp4",
+      "bytes": 5634,
+      "sha256": "05955d8b665539307a30b587d3d3abe842fe4d41d5d0cdedf4a5c210e8e7f169"
+    },
+    {
+      "source": "tmp\\encode-integration-20260917\\packet-timing\\input-color-tags-pq-32-60-1.mp4",
+      "archive": "input-color-tags-pq-32-60-1.mp4",
+      "bytes": 42531,
+      "sha256": "f18e2abbf960e3389fb13f24ee4e2689b467dff9eb855ea1ba5530dc9a93e594"
+    },
+    {
+      "source": "tmp\\encode-integration-20260917\\packet-timing\\input-color-tags-pq-48-72-1.mp4",
+      "archive": "input-color-tags-pq-48-72-1.mp4",
+      "bytes": 64264,
+      "sha256": "dc062dae69c8a791f84bb41ce34c292fdb12734f06613ef28297cd92362c2bc1"
+    },
+    {
+      "source": "tmp\\encode-integration-20260917\\packet-timing\\input-color-tags-pq-48-96-1.mp4",
+      "archive": "input-color-tags-pq-48-96-1.mp4",
+      "bytes": 64521,
+      "sha256": "f9ced2c35ff8991685989a0f48b054c9e4bc6e5cdbe898b01e39fa1b1c7779c7"
+    },
+    {
+      "source": "tmp\\encode-integration-20260917\\packet-timing\\input-color-tags-sdr-1-24-1.mp4",
+      "archive": "input-color-tags-sdr-1-24-1.mp4",
+      "bytes": 2099,
+      "sha256": "bb3c0aa1c8b0040cf22e8911a8dd572371ad6d1076f2f2716108821eab21be89"
+    },
+    {
+      "source": "tmp\\encode-integration-20260917\\packet-timing\\input-color-tags-sdr-17-30000-1001.mp4",
+      "archive": "input-color-tags-sdr-17-30000-1001.mp4",
+      "bytes": 18842,
+      "sha256": "59a74f8149c4bf506dd5cb96f0dd6e647e7f641bc2415897a60d7761000b65d0"
+    },
+    {
+      "source": "tmp\\encode-integration-20260917\\packet-timing\\input-color-tags-sdr-2-24-1.mp4",
+      "archive": "input-color-tags-sdr-2-24-1.mp4",
+      "bytes": 2698,
+      "sha256": "d6c3d56bc397f15d21568cc26d709bff8441d3169143be06a55fd579493f346e"
+    },
+    {
+      "source": "tmp\\encode-integration-20260917\\packet-timing\\input-color-tags-sdr-3-24-1.mp4",
+      "archive": "input-color-tags-sdr-3-24-1.mp4",
+      "bytes": 3185,
+      "sha256": "be374f7f85660f33e7948eaf63e62c63e4048c55733ecd1ff8cdd1cccbbcba5b"
+    },
+    {
+      "source": "tmp\\encode-integration-20260917\\packet-timing\\input-color-tags-sdr-32-60-1.mp4",
+      "archive": "input-color-tags-sdr-32-60-1.mp4",
+      "bytes": 29091,
+      "sha256": "dc985c373280dfb87e5d88f494b68f84ebf29c03267c549b3540f5b95ad2a12d"
+    },
+    {
+      "source": "tmp\\encode-integration-20260917\\packet-timing\\input-color-tags-sdr-48-72-1.mp4",
+      "archive": "input-color-tags-sdr-48-72-1.mp4",
+      "bytes": 38872,
+      "sha256": "432e0323ac4e4c5a6d47a6ac3029181a20d9817735ad22fe4bdc6813805dd744"
+    },
+    {
+      "source": "tmp\\encode-integration-20260917\\packet-timing\\input-color-tags-sdr-48-96-1.mp4",
+      "archive": "input-color-tags-sdr-48-96-1.mp4",
+      "bytes": 32591,
+      "sha256": "b1c7050accc5f74d28b9e32a3ac6dbc5d1e31596ffe1752b9014870c86bf04e6"
+    },
+    {
+      "source": "tmp\\encode-integration-20260917\\packet-timing\\input-color-tags.json",
+      "archive": "input-color-tags.json",
+      "bytes": 290488,
+      "sha256": "bf948a64179f7bfb6c90cafbd9f9e3a1cdfc80fec4936431c08ef745d5fdeb7f"
+    },
+    {
+      "source": "tmp\\encode-integration-20260917\\packet-timing\\packet-timing.json",
+      "archive": "packet-timing.json",
+      "bytes": 286079,
+      "sha256": "b9e4bd6fd77f1bc23f2c0e959f95ac82c86521434b916639232c4329b8093c00"
+    },
+    {
+      "source": "tmp\\encode-integration-20260917\\packet-timing\\pq-1-24-1.mp4",
+      "archive": "pq-1-24-1.mp4",
+      "bytes": 3797,
+      "sha256": "2f2b1d90a14104cd4949c658de14de43a6be8b5a929a197a4b14d38bc23aa802"
+    },
+    {
+      "source": "tmp\\encode-integration-20260917\\packet-timing\\pq-17-30000-1001.mp4",
+      "archive": "pq-17-30000-1001.mp4",
+      "bytes": 17228,
+      "sha256": "17d94df6b089761b90504edd2fd92a0a9ef2ca2d1b203c0722e09512f7fa1e02"
+    },
+    {
+      "source": "tmp\\encode-integration-20260917\\packet-timing\\pq-2-24-1.mp4",
+      "archive": "pq-2-24-1.mp4",
+      "bytes": 5124,
+      "sha256": "2f9ded63bcde596b9f2a967660947b1b7da9f0b30878943101ac3e4e9ff4e4e9"
+    },
+    {
+      "source": "tmp\\encode-integration-20260917\\packet-timing\\pq-3-24-1.mp4",
+      "archive": "pq-3-24-1.mp4",
+      "bytes": 6024,
+      "sha256": "168c08ed7691511795effeedeef0a5ddde57a41b20dd9d65f2b047ccbf9b2ccd"
+    },
+    {
+      "source": "tmp\\encode-integration-20260917\\packet-timing\\pq-32-60-1.mp4",
+      "archive": "pq-32-60-1.mp4",
+      "bytes": 39535,
+      "sha256": "3ccc635f98ad3efb9f5fb7a4ff247563d8f1692b483a4d55ce9003728617e56b"
+    },
+    {
+      "source": "tmp\\encode-integration-20260917\\packet-timing\\pq-48-72-1.mp4",
+      "archive": "pq-48-72-1.mp4",
+      "bytes": 58251,
+      "sha256": "7d2a26dd5879375dae34b52961365dded762436dada1748f874618d191d7934d"
+    },
+    {
+      "source": "tmp\\encode-integration-20260917\\packet-timing\\pq-48-96-1.mp4",
+      "archive": "pq-48-96-1.mp4",
+      "bytes": 58921,
+      "sha256": "bb3128424a3797119209415f846debbcab555e193ac31df1954f2218564a6f26"
+    },
+    {
+      "source": "tmp\\encode-integration-20260917\\packet-timing\\sdr-1-24-1.mp4",
+      "archive": "sdr-1-24-1.mp4",
+      "bytes": 2099,
+      "sha256": "bb3c0aa1c8b0040cf22e8911a8dd572371ad6d1076f2f2716108821eab21be89"
+    },
+    {
+      "source": "tmp\\encode-integration-20260917\\packet-timing\\sdr-17-30000-1001.mp4",
+      "archive": "sdr-17-30000-1001.mp4",
+      "bytes": 18842,
+      "sha256": "59a74f8149c4bf506dd5cb96f0dd6e647e7f641bc2415897a60d7761000b65d0"
+    },
+    {
+      "source": "tmp\\encode-integration-20260917\\packet-timing\\sdr-2-24-1.mp4",
+      "archive": "sdr-2-24-1.mp4",
+      "bytes": 2698,
+      "sha256": "d6c3d56bc397f15d21568cc26d709bff8441d3169143be06a55fd579493f346e"
+    },
+    {
+      "source": "tmp\\encode-integration-20260917\\packet-timing\\sdr-3-24-1.mp4",
+      "archive": "sdr-3-24-1.mp4",
+      "bytes": 3185,
+      "sha256": "be374f7f85660f33e7948eaf63e62c63e4048c55733ecd1ff8cdd1cccbbcba5b"
+    },
+    {
+      "source": "tmp\\encode-integration-20260917\\packet-timing\\sdr-32-60-1.mp4",
+      "archive": "sdr-32-60-1.mp4",
+      "bytes": 29091,
+      "sha256": "dc985c373280dfb87e5d88f494b68f84ebf29c03267c549b3540f5b95ad2a12d"
+    },
+    {
+      "source": "tmp\\encode-integration-20260917\\packet-timing\\sdr-48-72-1.mp4",
+      "archive": "sdr-48-72-1.mp4",
+      "bytes": 38872,
+      "sha256": "432e0323ac4e4c5a6d47a6ac3029181a20d9817735ad22fe4bdc6813805dd744"
+    },
+    {
+      "source": "tmp\\encode-integration-20260917\\packet-timing\\sdr-48-96-1.mp4",
+      "archive": "sdr-48-96-1.mp4",
+      "bytes": 32591,
+      "sha256": "b1c7050accc5f74d28b9e32a3ac6dbc5d1e31596ffe1752b9014870c86bf04e6"
+    },
+    {
+      "source": "tmp\\encode-integration-20260917\\lifecycle.json",
+      "archive": "lifecycle-abi2.json",
+      "bytes": 2062,
+      "sha256": "0f283f59285ebd3c4475f565dca34aff5530ee9fdc1c10e59911456a526a36e3"
+    },
+    {
+      "source": "scripts\\gpu_nvenc_ring.cpp",
+      "archive": "sources/gpu_nvenc_ring.cpp.txt",
+      "bytes": 21812,
+      "sha256": "04f2beb4c4bd717e56f34c905ee715450ca505fb489c2c9745e8787d12964da2"
+    },
+    {
+      "source": "dlss5tool\\nvenc_yuv.py",
+      "archive": "sources/nvenc_yuv.py.txt",
+      "bytes": 10492,
+      "sha256": "f40dc5e9bffec35060cad71357a68ccbb56889786136b23e458926bdb0932b4b"
+    },
+    {
+      "source": "scripts\\encoder_packet_gate.py",
+      "archive": "sources/encoder_packet_gate.py.txt",
+      "bytes": 8675,
+      "sha256": "b09bd21b1297b31d05564e64c8a6bd9de8d9a14b97ec95d1dd2503ad78959bd5"
+    },
+    {
+      "source": "scripts\\encoder_contract_gate.py",
+      "archive": "sources/encoder_contract_gate.py.txt",
+      "bytes": 7585,
+      "sha256": "77b4b1d0570495cd26f5346e00418ef0bebc67ab1d36ec70372ebfb9f948244c"
+    },
+    {
+      "source": "scripts\\encoder_lifecycle_gate.py",
+      "archive": "sources/encoder_lifecycle_gate.py.txt",
+      "bytes": 3639,
+      "sha256": "c1c5588e831b48f5beb95a074ee9b37bf842823ae39c5e7e24d1dc6006d7f2ea"
+    },
+    {
+      "source": "tests\\test_nvenc_yuv.py",
+      "archive": "sources/test_nvenc_yuv.py.txt",
+      "bytes": 5290,
+      "sha256": "4989b37c82256d500dd2fa1dd67c70c2f6d8068ca146ce4d906ddfecf4e4919d"
+    },
+    {
+      "source": "scripts\\archive_encoder_packets.py",
+      "archive": "sources/archive_encoder_packets.py.txt",
+      "bytes": 2278,
+      "sha256": "6548d45f6b0956434f0ebc9aefef75491abb11fb6b6c1348209ef9b42a1f522f"
+    }
+  ],
+  "total_bytes": 1685876,
+  "candidate_sha256": "80d9d538034b16f0d82a079b23682b58ecbad98c0b04b52fff178d9782dd76ea",
+  "runtime_sha256": {
+    "runtime/dlssnr_host_v2.dll": "c8ad631f8f78b2dedec6aec418c7a570d6fc5bf1b9ffa9f3514bcb0edd58fc13",
+    "runtime/dlssg_video_worker.exe": "7e6c281608be2e8a6d63a574a3eae8621c6c38635260e150571ef20f422c4659"
+  }
+}

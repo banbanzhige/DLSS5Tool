@@ -1,0 +1,478 @@
+{
+  "scope": "Actual production export loop + NVOFA + DLSSG + GPU conversion/mux gate.",
+  "argv": [
+    "scripts/gpu_export_fg_gate.py",
+    "--work",
+    "tmp/export-integration-20260917",
+    "--label",
+    "isolated-enhance-hdr",
+    "--hdr",
+    "hlg",
+    "--multiplier",
+    "1",
+    "--enhance"
+  ],
+  "sources": {
+    "dlss5tool/frame_generation.py": "9a52849bd447de8839eee1e44cf8527d83db4bc01404fca5f941fded13a4e5c9",
+    "dlss5tool/gpu_video_export.py": "04e562cea6d35afb2003d614560d4fd23a86a9328812509416f9d2a9fc53177b",
+    "dlss5tool/packet_mux.py": "9ed61974bd3a77ba9a72c08e04439672a8900b01fd0dcc6fb184c4689c8ed9ef",
+    "dlss5tool/cuda_interop.py": "889fdd69bda85a868f57ce972ae7457b697f5169a4dbd9540c1553783e88a6b7",
+    "scripts/dlssg_video_worker.cpp": "81c6768f25715bbff127b808d0ce8ad40c644ce4bc33576e73571a069f00233b",
+    "scripts/gpu_export_fg_gate.py": "a3b402300b382ee3a7837cea50d85e8763fff860f5749a680cd4cd094c6e54b5"
+  },
+  "binaries": {
+    "native_library": "80d9d538034b16f0d82a079b23682b58ecbad98c0b04b52fff178d9782dd76ea",
+    "sdr_ptx": "88bc614cc473e288256bba677ff49ab8a10f0860b25e2ce01552174d56ec62e0",
+    "worker": "4a179114a31e3cd55b61c02f517f32362671192fa58a909228aabff06e309951",
+    "hdr_ptx": "2646f8659a64486218d160e807358d552e3350c3d0b4a64e1955ab2d4db7638a",
+    "host_library": "04b7987bf55f7d945c2b014ef0c10e665dd881a212fce8a07e38a8e6c05a7dda"
+  },
+  "results": {
+    "baseline": {
+      "experimental": true,
+      "warning": "实验功能：普通视频采用 NVOFA 估计光流及平面深度；遮挡/字幕/HDR 画质未完整验收。3×/4×目前仅限本机 RTX 4070 SUPER 与固定运行库，已知部分生成帧时间位置偏差。不会自动降倍率或位深；正常帧对生成无效时停止。",
+      "source": "F:\\project\\DLSS5Tool\\tmp\\export-integration-20260917\\isolated-enhance-hdr-source.mp4",
+      "output": "F:\\project\\DLSS5Tool\\tmp\\export-integration-20260917\\isolated-enhance-hdr-baseline.mp4",
+      "multiplier": 1,
+      "spatial_scale": 1,
+      "enhance": true,
+      "status": "complete",
+      "real_frames": 12,
+      "generated_frames": 0,
+      "cut_holds": 0,
+      "endpoint_holds": 0,
+      "width": 320,
+      "height": 180,
+      "source_rate": "24",
+      "output_rate": "24",
+      "color": "hdr10_hlg",
+      "output_view": 0,
+      "runtime_sha256": null,
+      "log_dir": "F:\\project\\DLSS5Tool\\tmp\\export-integration-20260917\\isolated-enhance-hdr-baseline-logs",
+      "cleanup_errors": []
+    },
+    "gpu": {
+      "experimental": true,
+      "warning": "实验功能：普通视频采用 NVOFA 估计光流及平面深度；遮挡/字幕/HDR 画质未完整验收。3×/4×目前仅限本机 RTX 4070 SUPER 与固定运行库，已知部分生成帧时间位置偏差。不会自动降倍率或位深；正常帧对生成无效时停止。",
+      "source": "F:\\project\\DLSS5Tool\\tmp\\export-integration-20260917\\isolated-enhance-hdr-source.mp4",
+      "output": "F:\\project\\DLSS5Tool\\tmp\\export-integration-20260917\\isolated-enhance-hdr-gpu.mp4",
+      "multiplier": 1,
+      "spatial_scale": 1,
+      "enhance": true,
+      "status": "complete",
+      "real_frames": 12,
+      "generated_frames": 0,
+      "cut_holds": 0,
+      "endpoint_holds": 0,
+      "width": 320,
+      "height": 180,
+      "source_rate": "24",
+      "output_rate": "24",
+      "color": "hdr10_hlg",
+      "output_view": 0,
+      "runtime_sha256": null,
+      "log_dir": "F:\\project\\DLSS5Tool\\tmp\\export-integration-20260917\\isolated-enhance-hdr-gpu-logs",
+      "cleanup_errors": []
+    }
+  },
+  "outputs": {
+    "baseline": {
+      "decode": {
+        "returncode": 0,
+        "frames": 12,
+        "md5": [
+          "dca9f93c95e79237b14cb869e7bfe8bc",
+          "e3d64497fc3efc3e57e93f43d0acc812",
+          "9976bcf233f6132dfb82a86cd34f566c",
+          "2a8c7061cf4dfa94b0fc6dd8ab86201c",
+          "2a980bed5f31b8a9bc0b69efd193f52b",
+          "64721fa334745d4a0b1710f0baf12297",
+          "d926b3759005433cdc0bfd06a950540b",
+          "c1e50106d68171ad171474804a923339",
+          "22ae41615315beae1644f4d6907ece4f",
+          "604c7e09a9a871cf7e7d0c5fdccea4b3",
+          "1f9e1f73b6c94415f84a35bf7c3d1d7e",
+          "b0d5a301d53eb4b3d017716ead48ed78"
+        ],
+        "stderr": ""
+      },
+      "timing": {
+        "stream": {
+          "codec_name": "hevc",
+          "profile": "Main 10",
+          "pix_fmt": "yuv420p10le",
+          "color_space": "bt2020nc",
+          "color_transfer": "arib-std-b67",
+          "color_primaries": "bt2020",
+          "time_base": "1/12288",
+          "disposition": {
+            "default": 1,
+            "dub": 0,
+            "original": 0,
+            "comment": 0,
+            "lyrics": 0,
+            "karaoke": 0,
+            "forced": 0,
+            "hearing_impaired": 0,
+            "visual_impaired": 0,
+            "clean_effects": 0,
+            "attached_pic": 0,
+            "timed_thumbnails": 0,
+            "non_diegetic": 0,
+            "captions": 0,
+            "descriptions": 0,
+            "metadata": 0,
+            "dependent": 0,
+            "still_image": 0,
+            "multilayer": 0
+          },
+          "tags": {
+            "language": "und",
+            "handler_name": "VideoHandler",
+            "vendor_id": "[0][0][0][0]",
+            "encoder": "Lavc61.19.101 hevc_nvenc"
+          }
+        },
+        "packets": [
+          {
+            "pts": "0",
+            "dts": "-3",
+            "duration": "1",
+            "keyframe": true
+          },
+          {
+            "pts": "4",
+            "dts": "-2",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "2",
+            "dts": "-1",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "1",
+            "dts": "0",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "3",
+            "dts": "1",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "8",
+            "dts": "2",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "6",
+            "dts": "3",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "5",
+            "dts": "4",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "7",
+            "dts": "5",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "11",
+            "dts": "6",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "10",
+            "dts": "7",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "9",
+            "dts": "8",
+            "duration": "1",
+            "keyframe": false
+          }
+        ]
+      },
+      "audio": {
+        "packets": [
+          {
+            "pts": -1024,
+            "dts": -1024,
+            "duration": 1024,
+            "data_hash": "SHA256:0404d19bf7c8b85ac1c1296ab74cb5e85752cb0d44b1962a3779bc76db4447c5",
+            "side_data_list": [
+              {
+                "side_data_type": "Skip Samples",
+                "skip_samples": 1024,
+                "discard_padding": 0,
+                "skip_reason": 0,
+                "discard_reason": 0
+              }
+            ]
+          },
+          {
+            "pts": 0,
+            "dts": 0,
+            "duration": 1024,
+            "data_hash": "SHA256:48877049ef81330802318e95b800a08ca02c1aa2b68bc9f345fb46e51d95796d"
+          },
+          {
+            "pts": 1024,
+            "dts": 1024,
+            "duration": 1024,
+            "data_hash": "SHA256:858355c469c76fba8afda3bbd46968e2db6cc7871372748f470e2af793e1869b"
+          },
+          {
+            "pts": 2048,
+            "dts": 2048,
+            "duration": 1024,
+            "data_hash": "SHA256:48361cd7348f62868ce7887456afdf9088c7228100729533582b3bd8e77bf4a9"
+          },
+          {
+            "pts": 3072,
+            "dts": 3072,
+            "duration": 1024,
+            "data_hash": "SHA256:62afa1cb7654688aa482ace6cff95c13e998c7da54028c37dc5a70850c58e4df"
+          },
+          {
+            "pts": 4096,
+            "dts": 4096,
+            "duration": 1024,
+            "data_hash": "SHA256:8f55d0af478dc3f275da0936b05b5a615db0f17013cdd85b66b3d07703e33bc8"
+          },
+          {
+            "pts": 5120,
+            "dts": 5120,
+            "duration": 640,
+            "data_hash": "SHA256:5248b27cfecdc85baac9422170e26ae61a308d5c855a273978cc00791f4187f7"
+          }
+        ],
+        "programs": [],
+        "stream_groups": [],
+        "streams": [
+          {
+            "codec_name": "aac",
+            "time_base": "1/48000"
+          }
+        ]
+      },
+      "sha256": "9f988874f949ec092955b9354835a5fa102d9a16a76cd5450379e3780d619b94"
+    },
+    "gpu": {
+      "decode": {
+        "returncode": 0,
+        "frames": 12,
+        "md5": [
+          "dca9f93c95e79237b14cb869e7bfe8bc",
+          "e3d64497fc3efc3e57e93f43d0acc812",
+          "9976bcf233f6132dfb82a86cd34f566c",
+          "2a8c7061cf4dfa94b0fc6dd8ab86201c",
+          "2a980bed5f31b8a9bc0b69efd193f52b",
+          "64721fa334745d4a0b1710f0baf12297",
+          "d926b3759005433cdc0bfd06a950540b",
+          "c1e50106d68171ad171474804a923339",
+          "22ae41615315beae1644f4d6907ece4f",
+          "604c7e09a9a871cf7e7d0c5fdccea4b3",
+          "1f9e1f73b6c94415f84a35bf7c3d1d7e",
+          "b0d5a301d53eb4b3d017716ead48ed78"
+        ],
+        "stderr": ""
+      },
+      "timing": {
+        "stream": {
+          "codec_name": "hevc",
+          "profile": "Main 10",
+          "pix_fmt": "yuv420p10le",
+          "color_space": "bt2020nc",
+          "color_transfer": "arib-std-b67",
+          "color_primaries": "bt2020",
+          "time_base": "1/12288",
+          "disposition": {
+            "default": 1,
+            "dub": 0,
+            "original": 0,
+            "comment": 0,
+            "lyrics": 0,
+            "karaoke": 0,
+            "forced": 0,
+            "hearing_impaired": 0,
+            "visual_impaired": 0,
+            "clean_effects": 0,
+            "attached_pic": 0,
+            "timed_thumbnails": 0,
+            "non_diegetic": 0,
+            "captions": 0,
+            "descriptions": 0,
+            "metadata": 0,
+            "dependent": 0,
+            "still_image": 0,
+            "multilayer": 0
+          },
+          "tags": {
+            "language": "und",
+            "handler_name": "VideoHandler",
+            "vendor_id": "[0][0][0][0]"
+          }
+        },
+        "packets": [
+          {
+            "pts": "0",
+            "dts": "-3",
+            "duration": "1",
+            "keyframe": true
+          },
+          {
+            "pts": "4",
+            "dts": "-2",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "2",
+            "dts": "-1",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "1",
+            "dts": "0",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "3",
+            "dts": "1",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "8",
+            "dts": "2",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "6",
+            "dts": "3",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "5",
+            "dts": "4",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "7",
+            "dts": "5",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "11",
+            "dts": "6",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "10",
+            "dts": "7",
+            "duration": "1",
+            "keyframe": false
+          },
+          {
+            "pts": "9",
+            "dts": "8",
+            "duration": "1",
+            "keyframe": false
+          }
+        ]
+      },
+      "audio": {
+        "packets": [
+          {
+            "pts": -1024,
+            "dts": -1024,
+            "duration": 1024,
+            "data_hash": "SHA256:0404d19bf7c8b85ac1c1296ab74cb5e85752cb0d44b1962a3779bc76db4447c5",
+            "side_data_list": [
+              {
+                "side_data_type": "Skip Samples",
+                "skip_samples": 1024,
+                "discard_padding": 0,
+                "skip_reason": 0,
+                "discard_reason": 0
+              }
+            ]
+          },
+          {
+            "pts": 0,
+            "dts": 0,
+            "duration": 1024,
+            "data_hash": "SHA256:48877049ef81330802318e95b800a08ca02c1aa2b68bc9f345fb46e51d95796d"
+          },
+          {
+            "pts": 1024,
+            "dts": 1024,
+            "duration": 1024,
+            "data_hash": "SHA256:858355c469c76fba8afda3bbd46968e2db6cc7871372748f470e2af793e1869b"
+          },
+          {
+            "pts": 2048,
+            "dts": 2048,
+            "duration": 1024,
+            "data_hash": "SHA256:48361cd7348f62868ce7887456afdf9088c7228100729533582b3bd8e77bf4a9"
+          },
+          {
+            "pts": 3072,
+            "dts": 3072,
+            "duration": 1024,
+            "data_hash": "SHA256:62afa1cb7654688aa482ace6cff95c13e998c7da54028c37dc5a70850c58e4df"
+          },
+          {
+            "pts": 4096,
+            "dts": 4096,
+            "duration": 1024,
+            "data_hash": "SHA256:8f55d0af478dc3f275da0936b05b5a615db0f17013cdd85b66b3d07703e33bc8"
+          },
+          {
+            "pts": 5120,
+            "dts": 5120,
+            "duration": 640,
+            "data_hash": "SHA256:5248b27cfecdc85baac9422170e26ae61a308d5c855a273978cc00791f4187f7"
+          }
+        ],
+        "programs": [],
+        "stream_groups": [],
+        "streams": [
+          {
+            "codec_name": "aac",
+            "time_base": "1/48000"
+          }
+        ]
+      },
+      "sha256": "b72e90c6e7501099e7974f504d2a8ffebd37a9c3f9146514736cf3a3cb5b32cc"
+    }
+  },
+  "decode_equal": true,
+  "timing_equal": true,
+  "audio_equal": true,
+  "counts_equal": true,
+  "status": "passed"
+}

@@ -1,0 +1,61 @@
+"""Compile the SDR candidate using existing NVRTC; no SDK/environment copies."""
+import argparse
+import ctypes as C
+import hashlib
+import json
+import os
+from pathlib import Path
+
+ROOT=Path(__file__).resolve().parents[1]
+
+
+def build(work, library):
+    target=work/'sdr-yuv.ptx'
+    if not (work/'TASK.md').is_file() or target.exists():
+        raise ValueError('Fresh registered work required')
+    source=ROOT/'scripts/gpu_sdr_yuv.cu'
+    def bind(lib,name,args):
+        fn=getattr(lib,name);fn.argtypes=args;fn.restype=C.c_int;return fn
+    with os.add_dll_directory(str(library.parent)):
+        # NVRTC's internal LoadLibrary search does not necessarily use Python's
+        # secure DLL directory handles. Preload the existing matching companion.
+        companions=list(library.parent.glob('nvrtc-builtins64_*.dll'))
+        if len(companions)!=1:raise RuntimeError('Exactly one NVRTC builtins companion required')
+        builtins=C.WinDLL(str(companions[0]))
+        lib=C.WinDLL(str(library))
+        create=bind(lib,'nvrtcCreateProgram',[C.POINTER(C.c_void_p),C.c_char_p,C.c_char_p,C.c_int,C.c_void_p,C.c_void_p])
+        compile_fn=bind(lib,'nvrtcCompileProgram',[C.c_void_p,C.c_int,C.POINTER(C.c_char_p)])
+        destroy=bind(lib,'nvrtcDestroyProgram',[C.POINTER(C.c_void_p)])
+        size_fn=bind(lib,'nvrtcGetPTXSize',[C.c_void_p,C.POINTER(C.c_size_t)])
+        ptx_fn=bind(lib,'nvrtcGetPTX',[C.c_void_p,C.c_void_p])
+        log_size=bind(lib,'nvrtcGetProgramLogSize',[C.c_void_p,C.POINTER(C.c_size_t)])
+        log_fn=bind(lib,'nvrtcGetProgramLog',[C.c_void_p,C.c_void_p])
+        program=C.c_void_p()
+        if create(C.byref(program),source.read_bytes(),b'gpu_sdr_yuv.cu',0,None,None):
+            raise RuntimeError('NVRTC create failed')
+        try:
+            options=(C.c_char_p*2)(b'--gpu-architecture=compute_75',b'--std=c++11')
+            status=compile_fn(program,2,options)
+            n=C.c_size_t()
+            if log_size(program,C.byref(n)):raise RuntimeError('NVRTC log size failed')
+            log=C.create_string_buffer(n.value or 1)
+            if log_fn(program,log):raise RuntimeError('NVRTC log failed')
+            if status:raise RuntimeError(log.value.decode(errors='replace'))
+            if size_fn(program,C.byref(n)):raise RuntimeError('NVRTC PTX size failed')
+            ptx=C.create_string_buffer(n.value)
+            if ptx_fn(program,ptx):raise RuntimeError('NVRTC PTX failed')
+            with target.open('xb') as out:out.write(ptx.raw)
+            report=dict(source_sha256=hashlib.sha256(source.read_bytes()).hexdigest(),
+                ptx_sha256=hashlib.sha256(ptx.raw).hexdigest(),bytes=n.value,
+                nvrtc=str(library),nvrtc_sha256=hashlib.sha256(library.read_bytes()).hexdigest(),
+                options=[x.decode() for x in options],log=log.value.decode(errors='replace'))
+            with (work/'ptx-build.json').open('x',encoding='utf-8') as out:json.dump(report,out,indent=2)
+            print(json.dumps(report))
+        finally:destroy(C.byref(program))
+
+
+if __name__=='__main__':
+    parser=argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--work',type=Path,required=True)
+    parser.add_argument('--nvrtc',type=Path,default=ROOT/'tmp/guidance-cuda-env/Lib/site-packages/torch/lib/nvrtc64_120_0.dll')
+    args=parser.parse_args();build(args.work.resolve(),args.nvrtc.resolve(strict=True))

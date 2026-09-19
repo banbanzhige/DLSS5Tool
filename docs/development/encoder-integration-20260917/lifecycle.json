@@ -1,0 +1,110 @@
+{
+  "scope": "Native failure injection / cancellation / reuse gate. Small same-GPU test.",
+  "native_sha256": "500aaf6fb2627c3b43d9ed938a30bf6f43d01ff21c52ada9047cb7c37d78f3bc",
+  "failures": [
+    {
+      "gpu": false,
+      "failed_slot": 0,
+      "opened": false,
+      "owned_after_failure": 0
+    },
+    {
+      "gpu": false,
+      "failed_slot": 3,
+      "opened": false,
+      "owned_after_failure": 0
+    },
+    {
+      "gpu": false,
+      "failed_slot": 15,
+      "opened": false,
+      "owned_after_failure": 0
+    },
+    {
+      "gpu": true,
+      "failed_slot": 0,
+      "opened": false,
+      "owned_after_failure": 0
+    },
+    {
+      "gpu": true,
+      "failed_slot": 3,
+      "opened": false,
+      "owned_after_failure": 0
+    },
+    {
+      "gpu": true,
+      "failed_slot": 15,
+      "opened": false,
+      "owned_after_failure": 0
+    }
+  ],
+  "cancel": [
+    {
+      "codec": 0,
+      "submitted": 0,
+      "owned_after_cancel": 0
+    },
+    {
+      "codec": 0,
+      "submitted": 3,
+      "owned_after_cancel": 0
+    },
+    {
+      "codec": 0,
+      "submitted": 17,
+      "owned_after_cancel": 0
+    },
+    {
+      "codec": 1,
+      "submitted": 0,
+      "owned_after_cancel": 0
+    },
+    {
+      "codec": 1,
+      "submitted": 3,
+      "owned_after_cancel": 0
+    },
+    {
+      "codec": 1,
+      "submitted": 17,
+      "owned_after_cancel": 0
+    },
+    {
+      "codec": 2,
+      "submitted": 0,
+      "owned_after_cancel": 0
+    },
+    {
+      "codec": 2,
+      "submitted": 3,
+      "owned_after_cancel": 0
+    },
+    {
+      "codec": 2,
+      "submitted": 17,
+      "owned_after_cancel": 0
+    }
+  ],
+  "status": "passed",
+  "reopen": [
+    {
+      "codec": 0,
+      "submitted": 120,
+      "packets": 120,
+      "owned": 0
+    },
+    {
+      "codec": 1,
+      "submitted": 120,
+      "packets": 120,
+      "owned": 0
+    },
+    {
+      "codec": 2,
+      "submitted": 120,
+      "packets": 120,
+      "owned": 0
+    }
+  ]
+}

@@ -1,0 +1,466 @@
+{
+  "scope": "Bounded frame-generation acceptance harness.\n\nCompares the existing CPU-bounce and shared-GPU transport while using the\nproduction NVOFA motion-vector path.  This is an experiment harness only:\nthe candidate worker is never installed or selected by the application.\n",
+  "source": "F:\\project\\test\\dlss5\\测试素材\\9月1日.mp4",
+  "native_root": "F:\\project\\DLSS5Tool\\tmp\\encode-acceptance-20260916",
+  "dimensions": [
+    1440,
+    1440
+  ],
+  "frames": 8,
+  "multiplier": 2,
+  "hdr": false,
+  "motion": "NVOFA grid=1 production algorithm",
+  "timeline": [
+    {
+      "kind": "original",
+      "source": 0
+    },
+    {
+      "kind": "generated",
+      "source": 0,
+      "slot": 0
+    },
+    {
+      "kind": "original",
+      "source": 1
+    },
+    {
+      "kind": "generated",
+      "source": 1,
+      "slot": 0
+    },
+    {
+      "kind": "original",
+      "source": 2
+    },
+    {
+      "kind": "generated",
+      "source": 2,
+      "slot": 0
+    },
+    {
+      "kind": "original",
+      "source": 3
+    },
+    {
+      "kind": "hold",
+      "source": 3,
+      "slot": 0
+    },
+    {
+      "kind": "original",
+      "source": 4
+    },
+    {
+      "kind": "generated",
+      "source": 4,
+      "slot": 0
+    },
+    {
+      "kind": "original",
+      "source": 5
+    },
+    {
+      "kind": "generated",
+      "source": 5,
+      "slot": 0
+    },
+    {
+      "kind": "original",
+      "source": 6
+    },
+    {
+      "kind": "generated",
+      "source": 6,
+      "slot": 0
+    },
+    {
+      "kind": "original",
+      "source": 7
+    },
+    {
+      "kind": "hold",
+      "source": 7,
+      "slot": 0
+    }
+  ],
+  "cases": [
+    {
+      "path": "cpu-bounce",
+      "mean_ms": 34.94282499923429,
+      "samples_ms": [
+        34.184099997219164,
+        36.692699999548495,
+        34.360199999355245,
+        34.43229999902542,
+        33.96380000049248,
+        36.17769999982556,
+        35.20779999962542,
+        34.52399999878253
+      ],
+      "raw_generated": [
+        "20a65fe33f8cb862440b6368cac26572c67a4bc25007e7fcc4197dfb05ec0b46",
+        "8d7f03f2090850104da66d09158e3f7678ba4e815bf8cc9330b566688ee06707",
+        "99cbeddadb746b607708ad026eea75ac46b04c0b3bf2f8d333c85335785bde1f",
+        "8d92ace60c1ff90efa15df2ffebb199d32e1077ddd2edad0a0e189f9fd09a3ec",
+        "60edc40e04dea59605b48232133064eff7758167cc9e45d8a17a29c3a8950bf3",
+        "e3da2e6a4761b7aecdfc05f8cb4481f3ffe62515b8b5dd55855bd43720f55695",
+        "b5ef3c1a6e9ed2cba1ff431da89b235de648fc14925c57e1624555d6af4ff7e8"
+      ],
+      "originals": [
+        "6a0e6102590884bf753fb071ac4439ae37d6df11a10c0f32688dc087abaeba3e",
+        "3565bb5e6605a2126c5e144bd4f871ac853d4c8a8bae13459030c838b72faadc",
+        "ffd81e56cba4cd0c18c8b3de071d608aa6687046c0dcdc2c7217b16c031b2157",
+        "8d92ace60c1ff90efa15df2ffebb199d32e1077ddd2edad0a0e189f9fd09a3ec",
+        "bfdf81f5dd5336e29bde1bab1589116e2d7d8e64a1ac910ed8a1c8ce3d13b09c",
+        "8f83e04fbdc152da96a5d8584f815a1c1a4a59a82c9d2cb489f1fdf58e354bfb",
+        "4be897d47333b386e82435e8cdfc693454b847daa2d1e4b0969c86d35dc74c64",
+        "40b8a11b657c0d3920bd722e8fc246e3da8030c8acb7f8bf533d821be7dfb5a9"
+      ],
+      "validity": [
+        false,
+        true,
+        true,
+        true,
+        false,
+        true,
+        true,
+        true
+      ],
+      "timeline": [
+        {
+          "kind": "original",
+          "source": 0
+        },
+        {
+          "kind": "generated",
+          "source": 0,
+          "slot": 0
+        },
+        {
+          "kind": "original",
+          "source": 1
+        },
+        {
+          "kind": "generated",
+          "source": 1,
+          "slot": 0
+        },
+        {
+          "kind": "original",
+          "source": 2
+        },
+        {
+          "kind": "generated",
+          "source": 2,
+          "slot": 0
+        },
+        {
+          "kind": "original",
+          "source": 3
+        },
+        {
+          "kind": "hold",
+          "source": 3,
+          "slot": 0
+        },
+        {
+          "kind": "original",
+          "source": 4
+        },
+        {
+          "kind": "generated",
+          "source": 4,
+          "slot": 0
+        },
+        {
+          "kind": "original",
+          "source": 5
+        },
+        {
+          "kind": "generated",
+          "source": 5,
+          "slot": 0
+        },
+        {
+          "kind": "original",
+          "source": 6
+        },
+        {
+          "kind": "generated",
+          "source": 6,
+          "slot": 0
+        },
+        {
+          "kind": "original",
+          "source": 7
+        },
+        {
+          "kind": "hold",
+          "source": 7,
+          "slot": 0
+        }
+      ],
+      "encoded_sha256": "fd790131765d416c4affb7a558c29716f83c32c3f25cb54dbadf1e97a50defe0",
+      "packet_count": 7,
+      "repeat": 0,
+      "raw_equal": true,
+      "original_equal": true,
+      "timeline_equal": true,
+      "validity_equal": true,
+      "bitstream_equal": true
+    },
+    {
+      "path": "resident",
+      "mean_ms": 31.343250000190892,
+      "samples_ms": [
+        30.53890000228421,
+        32.661600002029445,
+        30.548999999155058,
+        30.51439999762806,
+        32.8838999994332,
+        33.522800000355346,
+        29.899100001784973,
+        30.176299998856848
+      ],
+      "raw_generated": [
+        "20a65fe33f8cb862440b6368cac26572c67a4bc25007e7fcc4197dfb05ec0b46",
+        "8d7f03f2090850104da66d09158e3f7678ba4e815bf8cc9330b566688ee06707",
+        "99cbeddadb746b607708ad026eea75ac46b04c0b3bf2f8d333c85335785bde1f",
+        "8d92ace60c1ff90efa15df2ffebb199d32e1077ddd2edad0a0e189f9fd09a3ec",
+        "60edc40e04dea59605b48232133064eff7758167cc9e45d8a17a29c3a8950bf3",
+        "e3da2e6a4761b7aecdfc05f8cb4481f3ffe62515b8b5dd55855bd43720f55695",
+        "b5ef3c1a6e9ed2cba1ff431da89b235de648fc14925c57e1624555d6af4ff7e8"
+      ],
+      "originals": [
+        "6a0e6102590884bf753fb071ac4439ae37d6df11a10c0f32688dc087abaeba3e",
+        "3565bb5e6605a2126c5e144bd4f871ac853d4c8a8bae13459030c838b72faadc",
+        "ffd81e56cba4cd0c18c8b3de071d608aa6687046c0dcdc2c7217b16c031b2157",
+        "8d92ace60c1ff90efa15df2ffebb199d32e1077ddd2edad0a0e189f9fd09a3ec",
+        "bfdf81f5dd5336e29bde1bab1589116e2d7d8e64a1ac910ed8a1c8ce3d13b09c",
+        "8f83e04fbdc152da96a5d8584f815a1c1a4a59a82c9d2cb489f1fdf58e354bfb",
+        "4be897d47333b386e82435e8cdfc693454b847daa2d1e4b0969c86d35dc74c64",
+        "40b8a11b657c0d3920bd722e8fc246e3da8030c8acb7f8bf533d821be7dfb5a9"
+      ],
+      "validity": [
+        false,
+        true,
+        true,
+        true,
+        false,
+        true,
+        true,
+        true
+      ],
+      "timeline": [
+        {
+          "kind": "original",
+          "source": 0
+        },
+        {
+          "kind": "generated",
+          "source": 0,
+          "slot": 0
+        },
+        {
+          "kind": "original",
+          "source": 1
+        },
+        {
+          "kind": "generated",
+          "source": 1,
+          "slot": 0
+        },
+        {
+          "kind": "original",
+          "source": 2
+        },
+        {
+          "kind": "generated",
+          "source": 2,
+          "slot": 0
+        },
+        {
+          "kind": "original",
+          "source": 3
+        },
+        {
+          "kind": "hold",
+          "source": 3,
+          "slot": 0
+        },
+        {
+          "kind": "original",
+          "source": 4
+        },
+        {
+          "kind": "generated",
+          "source": 4,
+          "slot": 0
+        },
+        {
+          "kind": "original",
+          "source": 5
+        },
+        {
+          "kind": "generated",
+          "source": 5,
+          "slot": 0
+        },
+        {
+          "kind": "original",
+          "source": 6
+        },
+        {
+          "kind": "generated",
+          "source": 6,
+          "slot": 0
+        },
+        {
+          "kind": "original",
+          "source": 7
+        },
+        {
+          "kind": "hold",
+          "source": 7,
+          "slot": 0
+        }
+      ],
+      "encoded_sha256": "fd790131765d416c4affb7a558c29716f83c32c3f25cb54dbadf1e97a50defe0",
+      "packet_count": 7,
+      "repeat": 0,
+      "raw_equal": true,
+      "original_equal": true,
+      "timeline_equal": true,
+      "validity_equal": true,
+      "bitstream_equal": true
+    }
+  ],
+  "script_sha256": "2598bfc79f258054284b645468d019cfb179170cafa8621978c420e3077f1700",
+  "worker_sha256": "fcbf00c2d0c3ff25072f0535b36222ef26e4a085f764e09ad09164af1aa6d0c1",
+  "runtime_sha256": "135eaf0733c1e37381a8c28abcf7a862404a54132b81787c04e35d09efc5e36f",
+  "reference": {
+    "path": "cpu-bounce",
+    "mean_ms": 34.18536249910176,
+    "samples_ms": [
+      31.795099999726517,
+      37.21189999851049,
+      33.88439999980619,
+      34.43369999877177,
+      32.879599999432685,
+      35.46519999872544,
+      33.86369999861927,
+      33.949299999221694
+    ],
+    "raw_generated": [
+      "20a65fe33f8cb862440b6368cac26572c67a4bc25007e7fcc4197dfb05ec0b46",
+      "8d7f03f2090850104da66d09158e3f7678ba4e815bf8cc9330b566688ee06707",
+      "99cbeddadb746b607708ad026eea75ac46b04c0b3bf2f8d333c85335785bde1f",
+      "8d92ace60c1ff90efa15df2ffebb199d32e1077ddd2edad0a0e189f9fd09a3ec",
+      "60edc40e04dea59605b48232133064eff7758167cc9e45d8a17a29c3a8950bf3",
+      "e3da2e6a4761b7aecdfc05f8cb4481f3ffe62515b8b5dd55855bd43720f55695",
+      "b5ef3c1a6e9ed2cba1ff431da89b235de648fc14925c57e1624555d6af4ff7e8"
+    ],
+    "originals": [
+      "6a0e6102590884bf753fb071ac4439ae37d6df11a10c0f32688dc087abaeba3e",
+      "3565bb5e6605a2126c5e144bd4f871ac853d4c8a8bae13459030c838b72faadc",
+      "ffd81e56cba4cd0c18c8b3de071d608aa6687046c0dcdc2c7217b16c031b2157",
+      "8d92ace60c1ff90efa15df2ffebb199d32e1077ddd2edad0a0e189f9fd09a3ec",
+      "bfdf81f5dd5336e29bde1bab1589116e2d7d8e64a1ac910ed8a1c8ce3d13b09c",
+      "8f83e04fbdc152da96a5d8584f815a1c1a4a59a82c9d2cb489f1fdf58e354bfb",
+      "4be897d47333b386e82435e8cdfc693454b847daa2d1e4b0969c86d35dc74c64",
+      "40b8a11b657c0d3920bd722e8fc246e3da8030c8acb7f8bf533d821be7dfb5a9"
+    ],
+    "validity": [
+      false,
+      true,
+      true,
+      true,
+      false,
+      true,
+      true,
+      true
+    ],
+    "timeline": [
+      {
+        "kind": "original",
+        "source": 0
+      },
+      {
+        "kind": "generated",
+        "source": 0,
+        "slot": 0
+      },
+      {
+        "kind": "original",
+        "source": 1
+      },
+      {
+        "kind": "generated",
+        "source": 1,
+        "slot": 0
+      },
+      {
+        "kind": "original",
+        "source": 2
+      },
+      {
+        "kind": "generated",
+        "source": 2,
+        "slot": 0
+      },
+      {
+        "kind": "original",
+        "source": 3
+      },
+      {
+        "kind": "hold",
+        "source": 3,
+        "slot": 0
+      },
+      {
+        "kind": "original",
+        "source": 4
+      },
+      {
+        "kind": "generated",
+        "source": 4,
+        "slot": 0
+      },
+      {
+        "kind": "original",
+        "source": 5
+      },
+      {
+        "kind": "generated",
+        "source": 5,
+        "slot": 0
+      },
+      {
+        "kind": "original",
+        "source": 6
+      },
+      {
+        "kind": "generated",
+        "source": 6,
+        "slot": 0
+      },
+      {
+        "kind": "original",
+        "source": 7
+      },
+      {
+        "kind": "hold",
+        "source": 7,
+        "slot": 0
+      }
+    ],
+    "encoded_sha256": "fd790131765d416c4affb7a558c29716f83c32c3f25cb54dbadf1e97a50defe0",
+    "packet_count": 7
+  },
+  "summary": {
+    "cpu-bounce": 34.94282499923429,
+    "resident": 31.343250000190892
+  },
+  "status": "measurements_completed"
+}

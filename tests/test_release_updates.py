@@ -61,7 +61,7 @@ class ReleaseUpdateWorkflowTests(unittest.TestCase):
     def test_two_payloads_generated_and_gate_passes(self):
         assets, report = self.build()
         self.assertEqual(len(list(assets.glob('*.dlssupdate'))), 2)
-        self.assertEqual(workflow.verify_upload_updates(assets), report['incremental_updates'])
+        self.assertEqual(workflow.verify_upload_updates(assets, policy_path=self.policy), report['incremental_updates'])
         for entry in report['incremental_updates']['assets']:
             self.assertEqual(entry['payload_bytes'], 3 if entry['edition'] == 'lite' else 6)
 
@@ -136,7 +136,7 @@ class ReleaseUpdateWorkflowTests(unittest.TestCase):
         assets, report = self.build()
         (assets / delta.asset_name('v2.2.0', 'v2.2.1', 'full')).unlink()
         with self.assertRaisesRegex(delta.DeltaError, 'Missing or unexpected'):
-            workflow.verify_upload_updates(assets, report)
+            workflow.verify_upload_updates(assets, report, policy_path=self.policy)
 
     def test_gate_rejects_corrupt_payload_or_checksum(self):
         assets, report = self.build()
@@ -144,11 +144,11 @@ class ReleaseUpdateWorkflowTests(unittest.TestCase):
         original = path.read_bytes()
         path.write_bytes(b'corrupt')
         with self.assertRaises(delta.DeltaError):
-            workflow.verify_upload_updates(assets, report)
+            workflow.verify_upload_updates(assets, report, policy_path=self.policy)
         path.write_bytes(original)
         (assets / 'SHA256SUMS.txt').write_text('')
         with self.assertRaises(delta.DeltaError):
-            workflow.verify_upload_updates(assets, report)
+            workflow.verify_upload_updates(assets, report, policy_path=self.policy)
 
     def test_failure_does_not_silently_skip_full(self):
         real = builder.build
@@ -213,11 +213,13 @@ class ReleaseUpdateWorkflowTests(unittest.TestCase):
               mock.patch.object(package_editions, 'APP_VERSION', 'v2.2.1'),
               mock.patch.object(package_editions, 'WORKER_SHA', hashlib.sha256(b'worker new').hexdigest()),
               mock.patch.object(package_editions, 'plan_updates', return_value=self.plan()),
+              mock.patch.object(package_editions, 'verify_upload_updates',
+                  side_effect=lambda assets, report: workflow.verify_upload_updates(assets, report, policy_path=self.policy)),
               contextlib.redirect_stdout(io.StringIO()) as log):
             package_editions.main()
         self.assertIn('DONE', log.getvalue())
         assets = output / 'github-assets'
-        self.assertEqual(len(workflow.verify_upload_updates(assets)['assets']), 2)
+        self.assertEqual(len(workflow.verify_upload_updates(assets, policy_path=self.policy)['assets']), 2)
         notice = (assets / 'README-UPLOAD.txt').read_text()
         for edition in ('lite', 'full'):
             self.assertIn(delta.asset_name('v2.2.0', 'v2.2.1', edition), notice)

@@ -1,0 +1,31 @@
+{
+  "scope": "Actual production export loop + NVOFA + DLSSG + GPU conversion/mux gate.",
+  "argv": [
+    "scripts/gpu_export_fg_gate.py",
+    "--work",
+    "tmp/export-integration-20260917",
+    "--label",
+    "hdr-pq-fg2",
+    "--hdr",
+    "pq",
+    "--multiplier",
+    "2"
+  ],
+  "sources": {
+    "dlss5tool/frame_generation.py": "94b0fdf96a3653e58b4fceb0674de36a8032c53a373b068c78123bc5934ac831",
+    "dlss5tool/gpu_video_export.py": "04e562cea6d35afb2003d614560d4fd23a86a9328812509416f9d2a9fc53177b",
+    "dlss5tool/packet_mux.py": "9ed61974bd3a77ba9a72c08e04439672a8900b01fd0dcc6fb184c4689c8ed9ef",
+    "dlss5tool/cuda_interop.py": "889fdd69bda85a868f57ce972ae7457b697f5169a4dbd9540c1553783e88a6b7",
+    "scripts/dlssg_video_worker.cpp": "81c6768f25715bbff127b808d0ce8ad40c644ce4bc33576e73571a069f00233b",
+    "scripts/gpu_export_fg_gate.py": "dba5583ec0e5769f397831208b412532dfe9948ebb2bf1b1acde116f6b4d987e"
+  },
+  "binaries": {
+    "native_library": "80d9d538034b16f0d82a079b23682b58ecbad98c0b04b52fff178d9782dd76ea",
+    "sdr_ptx": "88bc614cc473e288256bba677ff49ab8a10f0860b25e2ce01552174d56ec62e0",
+    "worker": "4a179114a31e3cd55b61c02f517f32362671192fa58a909228aabff06e309951",
+    "hdr_ptx": "2646f8659a64486218d160e807358d552e3350c3d0b4a64e1955ab2d4db7638a"
+  },
+  "status": "failed",
+  "error": "RuntimeError('这个视频是变帧率或时间戳不连续，实验入口暂不重定时；未转换为恒定帧率\\n诊断记录：F:\\\\project\\\\DLSS5Tool\\\\tmp\\\\export-integration-20260917\\\\hdr-pq-fg2-baseline-logs')",
+  "traceback": "Traceback (most recent call last):\n  File \"F:\\project\\DLSS5Tool\\dlss5tool\\frame_generation.py\", line 368, in export_video\n    meta, rate, w, h, total = inspect(source, cancel, progress=progress)\n                              ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"F:\\project\\DLSS5Tool\\dlss5tool\\frame_generation.py\", line 316, in inspect_source\n    count = validate_timestamps(timestamps(), rate)\n  File \"F:\\project\\DLSS5Tool\\dlss5tool\\frame_generation.py\", line 220, in validate_timestamps\n    raise ValueError('这个视频是变帧率或时间戳不连续，实验入口暂不重定时；未转换为恒定帧率')\nValueError: 这个视频是变帧率或时间戳不连续，实验入口暂不重定时；未转换为恒定帧率\n\nThe above exception was the direct cause of the following exception:\n\nTraceback (most recent call last):\n  File \"F:\\project\\DLSS5Tool\\scripts\\gpu_export_fg_gate.py\", line 60, in main\n    results[mode]=export_video(source,target,multiplier=args.multiplier,\n                  ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n        log_dir=work/(args.label+'-'+mode+'-logs'),\n        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n        gpu_export=options if mode=='gpu' else None)\n        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"F:\\project\\DLSS5Tool\\dlss5tool\\frame_generation.py\", line 606, in export_video\n    raise RuntimeError(f'{error}\\n诊断记录：{log_dir}') from error\nRuntimeError: 这个视频是变帧率或时间戳不连续，实验入口暂不重定时；未转换为恒定帧率\n诊断记录：F:\\project\\DLSS5Tool\\tmp\\export-integration-20260917\\hdr-pq-fg2-baseline-logs\n"
+}

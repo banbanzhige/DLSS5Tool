@@ -21,6 +21,16 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 
+def load_candidates():
+    """Load the research candidate module without requiring a scripts package."""
+    import importlib.util
+    path = ROOT / "scripts" / "gpu_pipeline_candidates.py"
+    spec = importlib.util.spec_from_file_location("_gpu_pipeline_candidates", path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
 def child(cmd: list[str], timeout: int = 30, stdin=None) -> dict:
     started = time.perf_counter()
     p = subprocess.run(cmd, stdin=stdin, stdout=subprocess.PIPE,
@@ -50,39 +60,39 @@ def frame_audit(ffmpeg: str, source: Path, profile: str, frames: int) -> dict:
     w, h = int(video.get("width", 0)), int(video.get("height", 0))
     expected = w * h * 8 * frames
     got = len(r["stdout"])
-    # Interpret normalized 16-bit RGBA codes and compare the existing candidate
-    # against a scalar NumPy implementation on actual PQ/HLG decoded frames.
+    # Compare the isolated Torch candidate with the production NumPy functions
+    # on decoded PQ/HLG fixtures. This is CPU arithmetic, not a DLSS/NVENC run.
     numeric = {"available": False}
     if r["returncode"] == 0 and w and h and got == expected:
         try:
             import numpy as np
             import torch
-            from scripts.gpu_pipeline_candidates import analysis_hdr, compose_hdr, hdr_transfer
+            from dlss5tool.guidance_color import analysis_rgba8
+            from dlss5tool.video_export import compose_hdr_frame
+            candidates = load_candidates()
             arr = np.frombuffer(r["stdout"], dtype="<u2").reshape(frames, h, w, 4)
+            rgba16 = (arr.astype(np.float32) / 65535.0).astype(np.float16)
+            settings = {"frame_format": "rgba16f", "color_profile": profile,
+                        "color_primaries": "bt2020"}
+            production = np.stack([analysis_rgba8(frame, settings) for frame in rgba16])
             x = torch.from_numpy(arr.astype(np.float32) / 65535.0).half()
-            cand = analysis_hdr(x, profile).numpy()
-            # A scalar reference keeps the contract explicit and avoids random data.
-            v = x[..., :3].float().clamp(0, 1).numpy()
-            if profile == "hdr10_pq":
-                m1, m2 = 2610.0 / 16384.0, 2523.0 / 32.0
-                c1, c2, c3 = 3424.0 / 4096.0, 2413.0 / 128.0, 2392.0 / 128.0
-                lin = np.maximum((np.power(v, 1 / m2) - c1) /
-                                  np.maximum(c2 - c3 * np.power(v, 1 / m2), 1e-7), 0) ** (1 / m1)
-                lin *= 100.0
-            else:
-                a, b, c = .17883277, 1 - 4 * .17883277, .5 - .17883277 * np.log(4 * .17883277)
-                lin = np.where(v <= .5, v * v / 3,
-                               (np.exp((v - c) / a) + b) / 12) * 12.0
-            mapped = np.maximum(lin, 0) / (1 + np.maximum(lin, 0))
-            srgb = np.where(mapped <= .0031308, mapped * 12.92,
-                            1.055 * np.power(mapped, 1 / 2.4) - .055)
-            ref = np.empty_like(cand); ref[..., :3] = np.clip(srgb, 0, 1) * 255 + .5; ref[..., 3] = 255
-            numeric = {"available": True, "candidate_shape": list(cand.shape),
-                       "analysis_max_abs_code_error": int(np.max(np.abs(cand.astype(np.int16) - ref.astype(np.uint8)))),
-                       "analysis_sha256": hashlib.sha256(cand.tobytes()).hexdigest()}
-            # Exercise mix numerically on real frames; this is not a DLSS result.
-            mixed = compose_hdr(x, x, .7, profile)
-            numeric["mix_self_max_abs"] = float((mixed.float() - x.float()).abs().max())
+            cand = candidates.analysis_hdr(x, profile).numpy()
+            delta = np.abs(cand.astype(np.int16) - production.astype(np.int16))
+            mixed_prod = compose_hdr_frame(rgba16[0], rgba16[min(1, frames - 1)], 0, 0.7, profile)
+            mixed_cand = candidates.compose_hdr(x[0], x[min(1, frames - 1)], 0.7, profile)
+            mix_delta = (mixed_cand.float() - torch.from_numpy(np.asarray(mixed_prod, np.float32))).abs()
+            numeric = {
+                "available": True,
+                "reference": "production analysis_rgba8 / compose_hdr_frame",
+                "candidate_device": str(x.device),
+                "candidate_shape": list(cand.shape),
+                "analysis_mismatch_channels": int(np.count_nonzero(delta)),
+                "analysis_max_abs_code_error": int(delta.max()),
+                "analysis_sha256": hashlib.sha256(cand.tobytes()).hexdigest(),
+                "production_analysis_sha256": hashlib.sha256(production.tobytes()).hexdigest(),
+                "mix_max_abs": float(mix_delta.max()),
+                "promotion_gate": "reject" if int(delta.max()) or float(mix_delta.max()) else "pass",
+            }
         except Exception as exc:  # optional CPU deps must not hide decode evidence
             numeric = {"available": False, "error": repr(exc)}
     return {"profile": profile, "width": w, "height": h, "requested_frames": frames,

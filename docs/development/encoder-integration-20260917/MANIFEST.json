@@ -1,0 +1,430 @@
+{
+  "records": [
+    {
+      "source": "tmp\\encode-integration-20260917\\cuda-profiles-hlg-p5-cq19.hevc",
+      "archive": "cuda-profiles-hlg-p5-cq19.hevc",
+      "bytes": 61584,
+      "sha256": "a2caa817b9c9ba089ad33666db74e31f13dc35fac02fdce21a8815b6195e7082"
+    },
+    {
+      "source": "tmp\\encode-integration-20260917\\cuda-profiles-hlg-p5-cq19.mp4",
+      "archive": "cuda-profiles-hlg-p5-cq19.mp4",
+      "bytes": 62736,
+      "sha256": "66654f8e3650858d1d7683a3b8270b12c646a6df6e4016ce19111e19f064dab4"
+    },
+    {
+      "source": "tmp\\encode-integration-20260917\\cuda-profiles-hlg-p5-cq23.hevc",
+      "archive": "cuda-profiles-hlg-p5-cq23.hevc",
+      "bytes": 44191,
+      "sha256": "e5ffb801f8470bed8d51f20d87063b6824a52696cecb5bbaab44f82f273fc0a9"
+    },
+    {
+      "source": "tmp\\encode-integration-20260917\\cuda-profiles-hlg-p5-cq23.mp4",
+      "archive": "cuda-profiles-hlg-p5-cq23.mp4",
+      "bytes": 45343,
+      "sha256": "c32a67dd7d575a85bed91d7f37cea394ac085edc56786903c6e9160daee039ec"
+    },
+    {
+      "source": "tmp\\encode-integration-20260917\\cuda-profiles-pq-p5-cq19.hevc",
+      "archive": "cuda-profiles-pq-p5-cq19.hevc",
+      "bytes": 16810,
+      "sha256": "5b84b2420b137b55d1117169a9dbc686c386c6c0cce51af7e569155c628b3763"
+    },
+    {
+      "source": "tmp\\encode-integration-20260917\\cuda-profiles-pq-p5-cq19.mp4",
+      "archive": "cuda-profiles-pq-p5-cq19.mp4",
+      "bytes": 17962,
+      "sha256": "2c19544027962561c081ea64082ec05f8b310afd26f77a70bec23ecb29780aba"
+    },
+    {
+      "source": "tmp\\encode-integration-20260917\\cuda-profiles-pq-p5-cq23.hevc",
+      "archive": "cuda-profiles-pq-p5-cq23.hevc",
+      "bytes": 11527,
+      "sha256": "779eaa8cbc9e5b251fc616d9ba03652be3376be299928f29a31b34e8ea45d0d8"
+    },
+    {
+      "source": "tmp\\encode-integration-20260917\\cuda-profiles-pq-p5-cq23.mp4",
+      "archive": "cuda-profiles-pq-p5-cq23.mp4",
+      "bytes": 12679,
+      "sha256": "c3ad3ea429e46c41c1616ac2315f46c376b1664443e86e37fc3e40706d73bd66"
+    },
+    {
+      "source": "tmp\\encode-integration-20260917\\cuda-profiles-sdr-p5-cq19.h264",
+      "archive": "cuda-profiles-sdr-p5-cq19.h264",
+      "bytes": 85453,
+      "sha256": "8fbebcfe0fd11b353764badef3c46038d76e899108e5a7faf9e5877dd489be1a"
+    },
+    {
+      "source": "tmp\\encode-integration-20260917\\cuda-profiles-sdr-p5-cq19.mp4",
+      "archive": "cuda-profiles-sdr-p5-cq19.mp4",
+      "bytes": 86556,
+      "sha256": "96a17bc37b01d4c12410fa0217d0fdabce2e97cb347195c2cb6bccf88ded06b1"
+    },
+    {
+      "source": "tmp\\encode-integration-20260917\\cuda-profiles-sdr-p5-cq23.h264",
+      "archive": "cuda-profiles-sdr-p5-cq23.h264",
+      "bytes": 54014,
+      "sha256": "d4becab938c89a8634916b09f711dc0f4e06070832ebe6fc428d636fdc950061"
+    },
+    {
+      "source": "tmp\\encode-integration-20260917\\cuda-profiles-sdr-p5-cq23.mp4",
+      "archive": "cuda-profiles-sdr-p5-cq23.mp4",
+      "bytes": 55117,
+      "sha256": "6583f41b28e9263c68d0a21b9e0debf21724b6230007867fd1bcb90c94576655"
+    },
+    {
+      "source": "tmp\\encode-integration-20260917\\cuda-profiles.json",
+      "archive": "cuda-profiles.json",
+      "bytes": 41268,
+      "sha256": "b88a86cdc6c2a59b130da5ec105b6baf06deb9cf4b700e75ca206146b3581cc3"
+    },
+    {
+      "source": "tmp\\encode-integration-20260917\\delay\\ring-ffmpeg-bgr.mp4",
+      "archive": "delay/ring-ffmpeg-bgr.mp4",
+      "bytes": 125974,
+      "sha256": "960c501d06caa8007477c3d3a41c184d4e7b689be0e2ebcc8a1fd8a6257412dc"
+    },
+    {
+      "source": "tmp\\encode-integration-20260917\\delay\\ring-ffmpeg-nv12.mp4",
+      "archive": "delay/ring-ffmpeg-nv12.mp4",
+      "bytes": 125445,
+      "sha256": "93cd9a0c87e1fd6727ed5a312f71a54526df77239e6ce137faefa77534579a51"
+    },
+    {
+      "source": "tmp\\encode-integration-20260917\\delay\\ring-ffmpeg-yuv420p.mp4",
+      "archive": "delay/ring-ffmpeg-yuv420p.mp4",
+      "bytes": 125974,
+      "sha256": "960c501d06caa8007477c3d3a41c184d4e7b689be0e2ebcc8a1fd8a6257412dc"
+    },
+    {
+      "source": "tmp\\encode-integration-20260917\\delay\\ring-hq.json",
+      "archive": "delay/ring-hq.json",
+      "bytes": 8075,
+      "sha256": "a7c1804fbd42df27924e003469d1d33c069745e767132d5472fe77361eaf5b4f"
+    },
+    {
+      "source": "tmp\\encode-integration-20260917\\delay\\ring-native.h264",
+      "archive": "delay/ring-native.h264",
+      "bytes": 126641,
+      "sha256": "be30b5e64fc1ba5eed59054146de7fa848a6b687113ff8e5bc490f6c5750cf7f"
+    },
+    {
+      "source": "tmp\\encode-integration-20260917\\global-header\\ring-ffmpeg-bgr.mp4",
+      "archive": "global-header/ring-ffmpeg-bgr.mp4",
+      "bytes": 125974,
+      "sha256": "960c501d06caa8007477c3d3a41c184d4e7b689be0e2ebcc8a1fd8a6257412dc"
+    },
+    {
+      "source": "tmp\\encode-integration-20260917\\global-header\\ring-ffmpeg-nv12.mp4",
+      "archive": "global-header/ring-ffmpeg-nv12.mp4",
+      "bytes": 125445,
+      "sha256": "93cd9a0c87e1fd6727ed5a312f71a54526df77239e6ce137faefa77534579a51"
+    },
+    {
+      "source": "tmp\\encode-integration-20260917\\global-header\\ring-ffmpeg-yuv420p.mp4",
+      "archive": "global-header/ring-ffmpeg-yuv420p.mp4",
+      "bytes": 125974,
+      "sha256": "960c501d06caa8007477c3d3a41c184d4e7b689be0e2ebcc8a1fd8a6257412dc"
+    },
+    {
+      "source": "tmp\\encode-integration-20260917\\global-header\\ring-hq.json",
+      "archive": "global-header/ring-hq.json",
+      "bytes": 8117,
+      "sha256": "8ec3264b92d3a23db2b93be38a3455be5b57b1ec468016fcdf8376b683fac93c"
+    },
+    {
+      "source": "tmp\\encode-integration-20260917\\global-header\\ring-native.h264",
+      "archive": "global-header/ring-native.h264",
+      "bytes": 126641,
+      "sha256": "be30b5e64fc1ba5eed59054146de7fa848a6b687113ff8e5bc490f6c5750cf7f"
+    },
+    {
+      "source": "tmp\\encode-integration-20260917\\interface-profiles-hlg-p5-cq19.hevc",
+      "archive": "interface-profiles-hlg-p5-cq19.hevc",
+      "bytes": 61584,
+      "sha256": "a2caa817b9c9ba089ad33666db74e31f13dc35fac02fdce21a8815b6195e7082"
+    },
+    {
+      "source": "tmp\\encode-integration-20260917\\interface-profiles-hlg-p5-cq19.mp4",
+      "archive": "interface-profiles-hlg-p5-cq19.mp4",
+      "bytes": 62736,
+      "sha256": "66654f8e3650858d1d7683a3b8270b12c646a6df6e4016ce19111e19f064dab4"
+    },
+    {
+      "source": "tmp\\encode-integration-20260917\\interface-profiles-hlg-p5-cq23.hevc",
+      "archive": "interface-profiles-hlg-p5-cq23.hevc",
+      "bytes": 44191,
+      "sha256": "e5ffb801f8470bed8d51f20d87063b6824a52696cecb5bbaab44f82f273fc0a9"
+    },
+    {
+      "source": "tmp\\encode-integration-20260917\\interface-profiles-hlg-p5-cq23.mp4",
+      "archive": "interface-profiles-hlg-p5-cq23.mp4",
+      "bytes": 45343,
+      "sha256": "c32a67dd7d575a85bed91d7f37cea394ac085edc56786903c6e9160daee039ec"
+    },
+    {
+      "source": "tmp\\encode-integration-20260917\\interface-profiles-pq-p5-cq19.hevc",
+      "archive": "interface-profiles-pq-p5-cq19.hevc",
+      "bytes": 16810,
+      "sha256": "5b84b2420b137b55d1117169a9dbc686c386c6c0cce51af7e569155c628b3763"
+    },
+    {
+      "source": "tmp\\encode-integration-20260917\\interface-profiles-pq-p5-cq19.mp4",
+      "archive": "interface-profiles-pq-p5-cq19.mp4",
+      "bytes": 17962,
+      "sha256": "2c19544027962561c081ea64082ec05f8b310afd26f77a70bec23ecb29780aba"
+    },
+    {
+      "source": "tmp\\encode-integration-20260917\\interface-profiles-pq-p5-cq23.hevc",
+      "archive": "interface-profiles-pq-p5-cq23.hevc",
+      "bytes": 11527,
+      "sha256": "779eaa8cbc9e5b251fc616d9ba03652be3376be299928f29a31b34e8ea45d0d8"
+    },
+    {
+      "source": "tmp\\encode-integration-20260917\\interface-profiles-pq-p5-cq23.mp4",
+      "archive": "interface-profiles-pq-p5-cq23.mp4",
+      "bytes": 12679,
+      "sha256": "c3ad3ea429e46c41c1616ac2315f46c376b1664443e86e37fc3e40706d73bd66"
+    },
+    {
+      "source": "tmp\\encode-integration-20260917\\interface-profiles-sdr-p5-cq19.h264",
+      "archive": "interface-profiles-sdr-p5-cq19.h264",
+      "bytes": 85453,
+      "sha256": "8fbebcfe0fd11b353764badef3c46038d76e899108e5a7faf9e5877dd489be1a"
+    },
+    {
+      "source": "tmp\\encode-integration-20260917\\interface-profiles-sdr-p5-cq19.mp4",
+      "archive": "interface-profiles-sdr-p5-cq19.mp4",
+      "bytes": 86556,
+      "sha256": "96a17bc37b01d4c12410fa0217d0fdabce2e97cb347195c2cb6bccf88ded06b1"
+    },
+    {
+      "source": "tmp\\encode-integration-20260917\\interface-profiles-sdr-p5-cq23.h264",
+      "archive": "interface-profiles-sdr-p5-cq23.h264",
+      "bytes": 54014,
+      "sha256": "d4becab938c89a8634916b09f711dc0f4e06070832ebe6fc428d636fdc950061"
+    },
+    {
+      "source": "tmp\\encode-integration-20260917\\interface-profiles-sdr-p5-cq23.mp4",
+      "archive": "interface-profiles-sdr-p5-cq23.mp4",
+      "bytes": 55117,
+      "sha256": "6583f41b28e9263c68d0a21b9e0debf21724b6230007867fd1bcb90c94576655"
+    },
+    {
+      "source": "tmp\\encode-integration-20260917\\interface-profiles.json",
+      "archive": "interface-profiles.json",
+      "bytes": 33850,
+      "sha256": "81ee7cde967acc0778d249bc7286371e5d87f6f43dc4dc8dc89b5046ebbdbe7b"
+    },
+    {
+      "source": "tmp\\encode-integration-20260917\\lifecycle.json",
+      "archive": "lifecycle.json",
+      "bytes": 2062,
+      "sha256": "56946923a2f53adc558599a802380e4ee75f8f7284ac3ea6f72a0d12b4f97734"
+    },
+    {
+      "source": "tmp\\encode-integration-20260917\\profiles-hlg-p5-cq19.hevc",
+      "archive": "profiles-hlg-p5-cq19.hevc",
+      "bytes": 61584,
+      "sha256": "a2caa817b9c9ba089ad33666db74e31f13dc35fac02fdce21a8815b6195e7082"
+    },
+    {
+      "source": "tmp\\encode-integration-20260917\\profiles-hlg-p5-cq19.mp4",
+      "archive": "profiles-hlg-p5-cq19.mp4",
+      "bytes": 62736,
+      "sha256": "66654f8e3650858d1d7683a3b8270b12c646a6df6e4016ce19111e19f064dab4"
+    },
+    {
+      "source": "tmp\\encode-integration-20260917\\profiles-hlg-p5-cq23.hevc",
+      "archive": "profiles-hlg-p5-cq23.hevc",
+      "bytes": 44191,
+      "sha256": "e5ffb801f8470bed8d51f20d87063b6824a52696cecb5bbaab44f82f273fc0a9"
+    },
+    {
+      "source": "tmp\\encode-integration-20260917\\profiles-hlg-p5-cq23.mp4",
+      "archive": "profiles-hlg-p5-cq23.mp4",
+      "bytes": 45343,
+      "sha256": "c32a67dd7d575a85bed91d7f37cea394ac085edc56786903c6e9160daee039ec"
+    },
+    {
+      "source": "tmp\\encode-integration-20260917\\profiles-pq-p5-cq19.hevc",
+      "archive": "profiles-pq-p5-cq19.hevc",
+      "bytes": 16810,
+      "sha256": "5b84b2420b137b55d1117169a9dbc686c386c6c0cce51af7e569155c628b3763"
+    },
+    {
+      "source": "tmp\\encode-integration-20260917\\profiles-pq-p5-cq19.mp4",
+      "archive": "profiles-pq-p5-cq19.mp4",
+      "bytes": 17962,
+      "sha256": "2c19544027962561c081ea64082ec05f8b310afd26f77a70bec23ecb29780aba"
+    },
+    {
+      "source": "tmp\\encode-integration-20260917\\profiles-pq-p5-cq23.hevc",
+      "archive": "profiles-pq-p5-cq23.hevc",
+      "bytes": 11527,
+      "sha256": "779eaa8cbc9e5b251fc616d9ba03652be3376be299928f29a31b34e8ea45d0d8"
+    },
+    {
+      "source": "tmp\\encode-integration-20260917\\profiles-pq-p5-cq23.mp4",
+      "archive": "profiles-pq-p5-cq23.mp4",
+      "bytes": 12679,
+      "sha256": "c3ad3ea429e46c41c1616ac2315f46c376b1664443e86e37fc3e40706d73bd66"
+    },
+    {
+      "source": "tmp\\encode-integration-20260917\\profiles-sdr-p5-cq19.h264",
+      "archive": "profiles-sdr-p5-cq19.h264",
+      "bytes": 85453,
+      "sha256": "8fbebcfe0fd11b353764badef3c46038d76e899108e5a7faf9e5877dd489be1a"
+    },
+    {
+      "source": "tmp\\encode-integration-20260917\\profiles-sdr-p5-cq19.mp4",
+      "archive": "profiles-sdr-p5-cq19.mp4",
+      "bytes": 86556,
+      "sha256": "96a17bc37b01d4c12410fa0217d0fdabce2e97cb347195c2cb6bccf88ded06b1"
+    },
+    {
+      "source": "tmp\\encode-integration-20260917\\profiles-sdr-p5-cq23.h264",
+      "archive": "profiles-sdr-p5-cq23.h264",
+      "bytes": 54014,
+      "sha256": "d4becab938c89a8634916b09f711dc0f4e06070832ebe6fc428d636fdc950061"
+    },
+    {
+      "source": "tmp\\encode-integration-20260917\\profiles-sdr-p5-cq23.mp4",
+      "archive": "profiles-sdr-p5-cq23.mp4",
+      "bytes": 55117,
+      "sha256": "6583f41b28e9263c68d0a21b9e0debf21724b6230007867fd1bcb90c94576655"
+    },
+    {
+      "source": "tmp\\encode-integration-20260917\\profiles.json",
+      "archive": "profiles.json",
+      "bytes": 41230,
+      "sha256": "c04e157db003dc7b938fe64f12ddbde8ec3e304dd45e6a6309b623ea6e12a49a"
+    },
+    {
+      "source": "tmp\\encode-integration-20260917\\qp-defaults\\ring-ffmpeg-bgr.mp4",
+      "archive": "qp-defaults/ring-ffmpeg-bgr.mp4",
+      "bytes": 125974,
+      "sha256": "960c501d06caa8007477c3d3a41c184d4e7b689be0e2ebcc8a1fd8a6257412dc"
+    },
+    {
+      "source": "tmp\\encode-integration-20260917\\qp-defaults\\ring-ffmpeg-nv12.mp4",
+      "archive": "qp-defaults/ring-ffmpeg-nv12.mp4",
+      "bytes": 125445,
+      "sha256": "93cd9a0c87e1fd6727ed5a312f71a54526df77239e6ce137faefa77534579a51"
+    },
+    {
+      "source": "tmp\\encode-integration-20260917\\qp-defaults\\ring-ffmpeg-yuv420p.mp4",
+      "archive": "qp-defaults/ring-ffmpeg-yuv420p.mp4",
+      "bytes": 125974,
+      "sha256": "960c501d06caa8007477c3d3a41c184d4e7b689be0e2ebcc8a1fd8a6257412dc"
+    },
+    {
+      "source": "tmp\\encode-integration-20260917\\qp-defaults\\ring-hq.json",
+      "archive": "qp-defaults/ring-hq.json",
+      "bytes": 8110,
+      "sha256": "b5a65daec077bdba89d3f840e7bd17e9511fdceb72929b1540d21406cbeec78f"
+    },
+    {
+      "source": "tmp\\encode-integration-20260917\\qp-defaults\\ring-native.h264",
+      "archive": "qp-defaults/ring-native.h264",
+      "bytes": 124871,
+      "sha256": "19dd3f1170c867df8f36c2b0a98aa4be754a6a141eb793bad37bde3829a30cc1"
+    },
+    {
+      "source": "tmp\\encode-integration-20260917\\ring-ffmpeg-bgr.mp4",
+      "archive": "ring-ffmpeg-bgr.mp4",
+      "bytes": 125974,
+      "sha256": "960c501d06caa8007477c3d3a41c184d4e7b689be0e2ebcc8a1fd8a6257412dc"
+    },
+    {
+      "source": "tmp\\encode-integration-20260917\\ring-ffmpeg-nv12.mp4",
+      "archive": "ring-ffmpeg-nv12.mp4",
+      "bytes": 125445,
+      "sha256": "93cd9a0c87e1fd6727ed5a312f71a54526df77239e6ce137faefa77534579a51"
+    },
+    {
+      "source": "tmp\\encode-integration-20260917\\ring-ffmpeg-yuv420p.mp4",
+      "archive": "ring-ffmpeg-yuv420p.mp4",
+      "bytes": 125974,
+      "sha256": "960c501d06caa8007477c3d3a41c184d4e7b689be0e2ebcc8a1fd8a6257412dc"
+    },
+    {
+      "source": "tmp\\encode-integration-20260917\\ring-hq.json",
+      "archive": "ring-hq.json",
+      "bytes": 8007,
+      "sha256": "69a0fb4ff1a015c16c767206fd332ed218f3249741b705c2c4e9411fd8cff0c8"
+    },
+    {
+      "source": "tmp\\encode-integration-20260917\\ring-native.h264",
+      "archive": "ring-native.h264",
+      "bytes": 126641,
+      "sha256": "be30b5e64fc1ba5eed59054146de7fa848a6b687113ff8e5bc490f6c5750cf7f"
+    },
+    {
+      "source": "dlss5tool\\encoding_contract.py",
+      "archive": "sources/encoding_contract.py.txt",
+      "bytes": 2361,
+      "sha256": "01c9451c573b798f8c62eaf57194c089453ce9ecee86aba3695624cc70c50cff"
+    },
+    {
+      "source": "dlss5tool\\nvenc_yuv.py",
+      "archive": "sources/nvenc_yuv.py.txt",
+      "bytes": 8300,
+      "sha256": "7cd1665a17d0e28856947444db7125e8f5db4d31e2b5094bc4c4a4c290785111"
+    },
+    {
+      "source": "dlss5tool\\video_export.py",
+      "archive": "sources/video_export.py.txt",
+      "bytes": 37961,
+      "sha256": "7100420503fbc3591e098e7af4b6b8f25bddb01976fad44bd66697e5eab87c0b"
+    },
+    {
+      "source": "scripts\\gpu_nvenc_ring.cpp",
+      "archive": "sources/gpu_nvenc_ring.cpp.txt",
+      "bytes": 20293,
+      "sha256": "394496513fc6d79e5c8b75b7dd425d80439dc8c4b7770e0cb6a43ee6b62bcbd3"
+    },
+    {
+      "source": "scripts\\encoder_contract_gate.py",
+      "archive": "sources/encoder_contract_gate.py.txt",
+      "bytes": 7559,
+      "sha256": "8e2b4e7165bfee89f8908ae4a1d2ea3b3f6b853930f3dfa1b4837ff9c95c4896"
+    },
+    {
+      "source": "scripts\\encoder_lifecycle_gate.py",
+      "archive": "sources/encoder_lifecycle_gate.py.txt",
+      "bytes": 3639,
+      "sha256": "c1c5588e831b48f5beb95a074ee9b37bf842823ae39c5e7e24d1dc6006d7f2ea"
+    },
+    {
+      "source": "scripts\\build_nvenc_ring_probe.bat",
+      "archive": "sources/build_nvenc_ring_probe.bat.txt",
+      "bytes": 970,
+      "sha256": "4de2a4ad9f61f971110166e42aa4c14bf750c45a05587cbf625ee3acc61c386d"
+    },
+    {
+      "source": "scripts\\encode_acceptance_nvenc_ring.py",
+      "archive": "sources/encode_acceptance_nvenc_ring.py.txt",
+      "bytes": 14612,
+      "sha256": "fc6ac84e01d4d94f228bc46255dd689564122dfb25931b1a369d06c166ede8d0"
+    },
+    {
+      "source": "tests\\test_encoding_contract.py",
+      "archive": "sources/test_encoding_contract.py.txt",
+      "bytes": 1933,
+      "sha256": "eafc556d9dd7315490d354d8f8b0103ac3bf3d68cf03f43519970bb3aa60275d"
+    },
+    {
+      "source": "tests\\test_nvenc_yuv.py",
+      "archive": "sources/test_nvenc_yuv.py.txt",
+      "bytes": 2990,
+      "sha256": "870d7f55603b78cb7099dfc6a4d01a435ff1f9e1a2755514c120f73d7cb0fc93"
+    }
+  ],
+  "total_bytes": 3927619,
+  "candidate_sha256": "500aaf6fb2627c3b43d9ed938a30bf6f43d01ff21c52ada9047cb7c37d78f3bc",
+  "runtime_sha256": {
+    "runtime/dlssnr_host_v2.dll": "c8ad631f8f78b2dedec6aec418c7a570d6fc5bf1b9ffa9f3514bcb0edd58fc13",
+    "runtime/dlssg_video_worker.exe": "7e6c281608be2e8a6d63a574a3eae8621c6c38635260e150571ef20f422c4659"
+  }
+}

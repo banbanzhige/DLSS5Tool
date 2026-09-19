@@ -1,0 +1,1358 @@
+{
+  "case": "hdr",
+  "argv": [
+    "scripts/encode_recheck.py",
+    "--work",
+    "tmp/encode-recheck-20260916",
+    "--case",
+    "hdr",
+    "--label",
+    "hdr-final"
+  ],
+  "script_sha256": "b15a52a139cc8e4905b737f16b5537ebe4d6603239479daa380f44ab8b66db9b",
+  "source_files": {
+    "dlss5tool/video_export.py": "f636105c8ad29d759d108fe50de7a17ff78721d50d9ee3f93f23bad09172c808",
+    "scripts/gpu_pipeline_candidates.py": "3a1e6252cf023399554454a61b95254c0ddedb34913ca056ec1caab7f0ff0648",
+    "scripts/encode_acceptance_nvenc_contract.py": "cc86996e41a7ba47cf922e992728d0509fa05bd2308598faa183dac687003ded",
+    "scripts/gpu_nvenc_probe.cpp": "277a6a533cff266528ba1c1d24ad5a8a6229dcbf983d72bffd1e7a34751e278e",
+    "scripts/gpu_nvenc_ring.cpp": "c84f1fa677e986f9076779136b530bea55d759481ada6c1b48ed58ed8cd04506"
+  },
+  "git_head": "0ecfad33c61c7a93497456ab9e597a62ab817ab7",
+  "scope": "actual production HDR decode -> DLSS -> CPU mix .7 -> HEVC Main10, synthetic fixtures; separate GPU arithmetic audit",
+  "cases": [
+    {
+      "profile": "hdr10_pq",
+      "fixture": "F:\\project\\DLSS5Tool\\tmp\\hdr-e2e\\source-hdr10.mp4",
+      "source_sha256": "443c65b122f9022cf46cdffb4e196a1ae7ffb36b20cb0e9b1d242818a250aae8",
+      "input_metadata": {
+        "width": 320,
+        "height": 180,
+        "pix_fmt": "yuv420p10le",
+        "color_range": "tv",
+        "color_space": "bt2020nc",
+        "color_transfer": "smpte2084",
+        "color_primaries": "bt2020",
+        "r_frame_rate": "24/1",
+        "avg_frame_rate": "24/1",
+        "duration": "1.000000",
+        "nb_frames": "24",
+        "fps": 24.0,
+        "frames": 24,
+        "pixel_format": "yuv420p10le",
+        "profile": "hdr10_pq",
+        "is_hdr": true,
+        "label": "HDR10 / PQ"
+      },
+      "frames": [
+        {
+          "index": 0,
+          "processed_sha256": "603dcdd0301b3bcf55f4e22b43e3e69b851ba41e2715f3c0f4a380dfda969079",
+          "mixed_sha256": "b9a187801f9d091ca67fd55ed76ffa38ea983dcf7a5c8777d6c5b284a8e88840",
+          "gpu_analysis": {
+            "equal": true,
+            "changed": 0,
+            "values": 230400,
+            "max_abs": 0.0,
+            "mae": 0.0,
+            "bias": 0.0,
+            "psnr_db": null,
+            "psnr_scope": "8-bit decoded values only; no HDR code-value PSNR"
+          },
+          "gpu_mix": {
+            "equal": false,
+            "changed": 95,
+            "values": 230400,
+            "max_abs": 0.000244140625,
+            "mae": 9.748670789930556e-08,
+            "bias": 6.67572021484375e-08,
+            "psnr_db": null,
+            "psnr_scope": "8-bit decoded values only; no HDR code-value PSNR"
+          }
+        },
+        {
+          "index": 1,
+          "processed_sha256": "f4ea4ef6737eedda3e21dadaa2ca2c0bfb40c241abb8cca06364724ca997f764",
+          "mixed_sha256": "e8eb187e50667bb40fe58b002d017b8ead1e5c5e5c77c54227c1b378775aaff3",
+          "gpu_analysis": {
+            "equal": true,
+            "changed": 0,
+            "values": 230400,
+            "max_abs": 0.0,
+            "mae": 0.0,
+            "bias": 0.0,
+            "psnr_db": null,
+            "psnr_scope": "8-bit decoded values only; no HDR code-value PSNR"
+          },
+          "gpu_mix": {
+            "equal": false,
+            "changed": 35,
+            "values": 230400,
+            "max_abs": 0.000244140625,
+            "mae": 3.6027696397569445e-08,
+            "bias": 3.1789143880208335e-09,
+            "psnr_db": null,
+            "psnr_scope": "8-bit decoded values only; no HDR code-value PSNR"
+          }
+        },
+        {
+          "index": 2,
+          "processed_sha256": "78615087236179e4b3237942530c92ecece8342a28847fe8fe536ab47530edae",
+          "mixed_sha256": "2b2dfbbf5e568321206011fb0360185c0702e02814ea2c63762830b7cbd02e9d",
+          "gpu_analysis": {
+            "equal": true,
+            "changed": 0,
+            "values": 230400,
+            "max_abs": 0.0,
+            "mae": 0.0,
+            "bias": 0.0,
+            "psnr_db": null,
+            "psnr_scope": "8-bit decoded values only; no HDR code-value PSNR"
+          },
+          "gpu_mix": {
+            "equal": false,
+            "changed": 45,
+            "values": 230400,
+            "max_abs": 0.000244140625,
+            "mae": 4.715389675564236e-08,
+            "bias": -2.9140048556857638e-08,
+            "psnr_db": null,
+            "psnr_scope": "8-bit decoded values only; no HDR code-value PSNR"
+          }
+        },
+        {
+          "index": 3,
+          "processed_sha256": "91bb638c15858561e31e83c1bfc615254a71be13a0b6a6ba9a17366c01ff78d0",
+          "mixed_sha256": "442f58c4cf7147ef49a5e5fa23eb887de5fe9c9f343d82730e8ee753c8f7dd67",
+          "gpu_analysis": {
+            "equal": false,
+            "changed": 1,
+            "values": 230400,
+            "max_abs": 1.0,
+            "mae": 4.340277777777778e-06,
+            "bias": 4.340277777777778e-06,
+            "psnr_db": 101.75562835619084,
+            "psnr_scope": "8-bit decoded values only; no HDR code-value PSNR"
+          },
+          "gpu_mix": {
+            "equal": false,
+            "changed": 26,
+            "values": 230400,
+            "max_abs": 0.000244140625,
+            "mae": 2.7020772298177082e-08,
+            "bias": -1.006656222873264e-08,
+            "psnr_db": null,
+            "psnr_scope": "8-bit decoded values only; no HDR code-value PSNR"
+          }
+        },
+        {
+          "index": 4,
+          "processed_sha256": "0cf2c366013506b1aa76fa7778b272b2d168b7d2f02844031eb2afcaba7d4559",
+          "mixed_sha256": "ead152fafb1c1341c995e31f8743bb19905095a8ad5a22516d18b4d4ac859701",
+          "gpu_analysis": {
+            "equal": true,
+            "changed": 0,
+            "values": 230400,
+            "max_abs": 0.0,
+            "mae": 0.0,
+            "bias": 0.0,
+            "psnr_db": null,
+            "psnr_scope": "8-bit decoded values only; no HDR code-value PSNR"
+          },
+          "gpu_mix": {
+            "equal": false,
+            "changed": 71,
+            "values": 230400,
+            "max_abs": 0.000244140625,
+            "mae": 7.36448499891493e-08,
+            "bias": -1.5364752875434027e-08,
+            "psnr_db": null,
+            "psnr_scope": "8-bit decoded values only; no HDR code-value PSNR"
+          }
+        },
+        {
+          "index": 5,
+          "processed_sha256": "ba4399e7cbfaa36bb965fb2a2bf2eec812a6536813ef7eabdf6eceac630c314f",
+          "mixed_sha256": "48f5d669e323506245cd5d238edeec0b9ba04ad40b33b2ae98d453b2d43bdd6c",
+          "gpu_analysis": {
+            "equal": true,
+            "changed": 0,
+            "values": 230400,
+            "max_abs": 0.0,
+            "mae": 0.0,
+            "bias": 0.0,
+            "psnr_db": null,
+            "psnr_scope": "8-bit decoded values only; no HDR code-value PSNR"
+          },
+          "gpu_mix": {
+            "equal": false,
+            "changed": 61,
+            "values": 230400,
+            "max_abs": 0.000244140625,
+            "mae": 6.304846869574652e-08,
+            "bias": 6.887647840711805e-09,
+            "psnr_db": null,
+            "psnr_scope": "8-bit decoded values only; no HDR code-value PSNR"
+          }
+        },
+        {
+          "index": 6,
+          "processed_sha256": "153168122a09619c919079a985308448af5bc67725f07ce3812a6afb6663fb9d",
+          "mixed_sha256": "39e0f0725e9b35db7c7c22e9c7827332055549615222a93e331036d0ddf2dd1e",
+          "gpu_analysis": {
+            "equal": true,
+            "changed": 0,
+            "values": 230400,
+            "max_abs": 0.0,
+            "mae": 0.0,
+            "bias": 0.0,
+            "psnr_db": null,
+            "psnr_scope": "8-bit decoded values only; no HDR code-value PSNR"
+          },
+          "gpu_mix": {
+            "equal": false,
+            "changed": 60,
+            "values": 230400,
+            "max_abs": 0.000244140625,
+            "mae": 6.304846869574652e-08,
+            "bias": 5.298190646701389e-10,
+            "psnr_db": null,
+            "psnr_scope": "8-bit decoded values only; no HDR code-value PSNR"
+          }
+        },
+        {
+          "index": 7,
+          "processed_sha256": "944bc5f98ede9a908a616e6b35dfb0403a9b447d58507c269b08d3e6858cbc47",
+          "mixed_sha256": "9ea489a0666a835268fafd56d0994f169caef9dc0b84f352a24742f22c3051ec",
+          "gpu_analysis": {
+            "equal": true,
+            "changed": 0,
+            "values": 230400,
+            "max_abs": 0.0,
+            "mae": 0.0,
+            "bias": 0.0,
+            "psnr_db": null,
+            "psnr_scope": "8-bit decoded values only; no HDR code-value PSNR"
+          },
+          "gpu_mix": {
+            "equal": false,
+            "changed": 55,
+            "values": 230400,
+            "max_abs": 0.000244140625,
+            "mae": 5.748536851671007e-08,
+            "bias": -1.854366726345486e-09,
+            "psnr_db": null,
+            "psnr_scope": "8-bit decoded values only; no HDR code-value PSNR"
+          }
+        },
+        {
+          "index": 8,
+          "processed_sha256": "2b3f813b68ff3a44aed5b75a6675fc7a9a296f25c6858f0f1ee75cf4dd391ecc",
+          "mixed_sha256": "3dd1e0b34ece28c4aba0a33ef0c554816057b076cee7b169f2a926212c7443c1",
+          "gpu_analysis": {
+            "equal": true,
+            "changed": 0,
+            "values": 230400,
+            "max_abs": 0.0,
+            "mae": 0.0,
+            "bias": 0.0,
+            "psnr_db": null,
+            "psnr_scope": "8-bit decoded values only; no HDR code-value PSNR"
+          },
+          "gpu_mix": {
+            "equal": false,
+            "changed": 48,
+            "values": 230400,
+            "max_abs": 0.000244140625,
+            "mae": 4.980299207899306e-08,
+            "bias": -2.2252400716145834e-08,
+            "psnr_db": null,
+            "psnr_scope": "8-bit decoded values only; no HDR code-value PSNR"
+          }
+        },
+        {
+          "index": 9,
+          "processed_sha256": "70b740a3b002b47ef764788293f00910b27d40435ad42c2969f2760be411883b",
+          "mixed_sha256": "c4a3007533299f163067df50e4ff71b9288f74589e05ce1a7a5297217dd5e3aa",
+          "gpu_analysis": {
+            "equal": true,
+            "changed": 0,
+            "values": 230400,
+            "max_abs": 0.0,
+            "mae": 0.0,
+            "bias": 0.0,
+            "psnr_db": null,
+            "psnr_scope": "8-bit decoded values only; no HDR code-value PSNR"
+          },
+          "gpu_mix": {
+            "equal": false,
+            "changed": 34,
+            "values": 230400,
+            "max_abs": 0.000244140625,
+            "mae": 3.496805826822917e-08,
+            "bias": -7.417466905381944e-09,
+            "psnr_db": null,
+            "psnr_scope": "8-bit decoded values only; no HDR code-value PSNR"
+          }
+        },
+        {
+          "index": 10,
+          "processed_sha256": "e0e0e9e15674ff14f225841634f336104fbe068b1955ae2821a64ca4ae230812",
+          "mixed_sha256": "60d19b489807432096014e479c8674c5ff8a493aad723e35d74eee61b4799de2",
+          "gpu_analysis": {
+            "equal": true,
+            "changed": 0,
+            "values": 230400,
+            "max_abs": 0.0,
+            "mae": 0.0,
+            "bias": 0.0,
+            "psnr_db": null,
+            "psnr_scope": "8-bit decoded values only; no HDR code-value PSNR"
+          },
+          "gpu_mix": {
+            "equal": false,
+            "changed": 57,
+            "values": 230400,
+            "max_abs": 0.000244140625,
+            "mae": 5.854500664605035e-08,
+            "bias": -1.0331471761067709e-08,
+            "psnr_db": null,
+            "psnr_scope": "8-bit decoded values only; no HDR code-value PSNR"
+          }
+        },
+        {
+          "index": 11,
+          "processed_sha256": "d26a3d1658a170caa9dff014bc0d90d883ed368399f0bd5f498cb4545effaebf",
+          "mixed_sha256": "17c8708b27137b0002fd575ef4610cf5bd793c590ed9424e586e296a0304f7de",
+          "gpu_analysis": {
+            "equal": true,
+            "changed": 0,
+            "values": 230400,
+            "max_abs": 0.0,
+            "mae": 0.0,
+            "bias": 0.0,
+            "psnr_db": null,
+            "psnr_scope": "8-bit decoded values only; no HDR code-value PSNR"
+          },
+          "gpu_mix": {
+            "equal": false,
+            "changed": 43,
+            "values": 230400,
+            "max_abs": 0.000244140625,
+            "mae": 4.450480143229167e-08,
+            "bias": 0.0,
+            "psnr_db": null,
+            "psnr_scope": "8-bit decoded values only; no HDR code-value PSNR"
+          }
+        },
+        {
+          "index": 12,
+          "processed_sha256": "e2c85c4a962f7acd89c52d53153b199b1d7788f7aebc6fbf040d2bf923861df5",
+          "mixed_sha256": "da48e764e3a6fe91c536965e285165f35def3604f74f07f72070c1e75bf3ffc7",
+          "gpu_analysis": {
+            "equal": true,
+            "changed": 0,
+            "values": 230400,
+            "max_abs": 0.0,
+            "mae": 0.0,
+            "bias": 0.0,
+            "psnr_db": null,
+            "psnr_scope": "8-bit decoded values only; no HDR code-value PSNR"
+          },
+          "gpu_mix": {
+            "equal": false,
+            "changed": 36,
+            "values": 230400,
+            "max_abs": 0.000244140625,
+            "mae": 3.7352244059244794e-08,
+            "bias": -7.152557373046875e-09,
+            "psnr_db": null,
+            "psnr_scope": "8-bit decoded values only; no HDR code-value PSNR"
+          }
+        },
+        {
+          "index": 13,
+          "processed_sha256": "9b477e3db7d56e117c00e4d2b93ec35a39120dc1bf215bef5d1abfb6233bd5e9",
+          "mixed_sha256": "784b231b966d720ed21c0fc2ab767aa596bb81e945af19dfaced9014d794aa70",
+          "gpu_analysis": {
+            "equal": false,
+            "changed": 3,
+            "values": 230400,
+            "max_abs": 1.0,
+            "mae": 1.3020833333333334e-05,
+            "bias": 1.3020833333333334e-05,
+            "psnr_db": 96.98441580899421,
+            "psnr_scope": "8-bit decoded values only; no HDR code-value PSNR"
+          },
+          "gpu_mix": {
+            "equal": false,
+            "changed": 47,
+            "values": 230400,
+            "max_abs": 0.000244140625,
+            "mae": 4.874335394965278e-08,
+            "bias": -1.377529568142361e-08,
+            "psnr_db": null,
+            "psnr_scope": "8-bit decoded values only; no HDR code-value PSNR"
+          }
+        },
+        {
+          "index": 14,
+          "processed_sha256": "e1f224b3f5148c753de23782d294185ed620d64c1f86f4f49eac8850256a5ab4",
+          "mixed_sha256": "0af8ce0a7d37c19c63511a8750ace8a97b0fec757b30fbca185ec6a1f9a94ff9",
+          "gpu_analysis": {
+            "equal": true,
+            "changed": 0,
+            "values": 230400,
+            "max_abs": 0.0,
+            "mae": 0.0,
+            "bias": 0.0,
+            "psnr_db": null,
+            "psnr_scope": "8-bit decoded values only; no HDR code-value PSNR"
+          },
+          "gpu_mix": {
+            "equal": false,
+            "changed": 23,
+            "values": 230400,
+            "max_abs": 0.000244140625,
+            "mae": 2.1722581651475695e-08,
+            "bias": -5.828009711371528e-09,
+            "psnr_db": null,
+            "psnr_scope": "8-bit decoded values only; no HDR code-value PSNR"
+          }
+        },
+        {
+          "index": 15,
+          "processed_sha256": "d7873f32f22e37b16e0d06577250b086a6bfed733ab34582810489e4c9acf093",
+          "mixed_sha256": "4ebd3ab63c2d513bfd47f7ee352687ca0912679e1be5d8ebed3d37e0305ee1ba",
+          "gpu_analysis": {
+            "equal": false,
+            "changed": 1,
+            "values": 230400,
+            "max_abs": 1.0,
+            "mae": 4.340277777777778e-06,
+            "bias": 4.340277777777778e-06,
+            "psnr_db": 101.75562835619084,
+            "psnr_scope": "8-bit decoded values only; no HDR code-value PSNR"
+          },
+          "gpu_mix": {
+            "equal": false,
+            "changed": 29,
+            "values": 230400,
+            "max_abs": 0.000244140625,
+            "mae": 3.019968668619792e-08,
+            "bias": -9.006924099392361e-09,
+            "psnr_db": null,
+            "psnr_scope": "8-bit decoded values only; no HDR code-value PSNR"
+          }
+        },
+        {
+          "index": 16,
+          "processed_sha256": "68f87792c349d3922b95a66078e7453be2a0c6005a9e6b200d4d325a5fd1f6d0",
+          "mixed_sha256": "0ee66818a3e46e29cf2d84aa558fe0308eb42c06af1cbeff14aa08d480e276a0",
+          "gpu_analysis": {
+            "equal": true,
+            "changed": 0,
+            "values": 230400,
+            "max_abs": 0.0,
+            "mae": 0.0,
+            "bias": 0.0,
+            "psnr_db": null,
+            "psnr_scope": "8-bit decoded values only; no HDR code-value PSNR"
+          },
+          "gpu_mix": {
+            "equal": false,
+            "changed": 27,
+            "values": 230400,
+            "max_abs": 0.000244140625,
+            "mae": 2.808041042751736e-08,
+            "bias": -5.828009711371528e-09,
+            "psnr_db": null,
+            "psnr_scope": "8-bit decoded values only; no HDR code-value PSNR"
+          }
+        },
+        {
+          "index": 17,
+          "processed_sha256": "bc44630b8bdf461eb41abe777ec351b4396af1a83018518b73cf1466afdf27f3",
+          "mixed_sha256": "577de65b4e36bfbe0cd2d3d1d6ae396475d65a24026c75d7c7a615380ecd0eaa",
+          "gpu_analysis": {
+            "equal": false,
+            "changed": 2,
+            "values": 230400,
+            "max_abs": 1.0,
+            "mae": 8.680555555555556e-06,
+            "bias": 0.0,
+            "psnr_db": 98.74532839955103,
+            "psnr_scope": "8-bit decoded values only; no HDR code-value PSNR"
+          },
+          "gpu_mix": {
+            "equal": false,
+            "changed": 40,
+            "values": 230400,
+            "max_abs": 0.000244140625,
+            "mae": 4.185570610894097e-08,
+            "bias": -7.947285970052083e-09,
+            "psnr_db": null,
+            "psnr_scope": "8-bit decoded values only; no HDR code-value PSNR"
+          }
+        },
+        {
+          "index": 18,
+          "processed_sha256": "12b7ab7dca74480581421ed945e27bb707d2eeb4be370c655e58d1b66521570f",
+          "mixed_sha256": "f83ed290e17a4a2c599f6081ee7213ed5aa528e0e4ccf4da9cb4682446281f92",
+          "gpu_analysis": {
+            "equal": false,
+            "changed": 1,
+            "values": 230400,
+            "max_abs": 1.0,
+            "mae": 4.340277777777778e-06,
+            "bias": 4.340277777777778e-06,
+            "psnr_db": 101.75562835619084,
+            "psnr_scope": "8-bit decoded values only; no HDR code-value PSNR"
+          },
+          "gpu_mix": {
+            "equal": false,
+            "changed": 63,
+            "values": 230400,
+            "max_abs": 0.000244140625,
+            "mae": 6.410810682508681e-08,
+            "bias": -1.5364752875434027e-08,
+            "psnr_db": null,
+            "psnr_scope": "8-bit decoded values only; no HDR code-value PSNR"
+          }
+        },
+        {
+          "index": 19,
+          "processed_sha256": "08efe0ad8dfd78e0c5b1c96a7a572a1206e7da6f3be476bb5ae985703ac22547",
+          "mixed_sha256": "92c187e014b9b7bbfd30fb476b1e4b28602bc897642daca6f355a63b1c07ee6a",
+          "gpu_analysis": {
+            "equal": false,
+            "changed": 1,
+            "values": 230400,
+            "max_abs": 1.0,
+            "mae": 4.340277777777778e-06,
+            "bias": -4.340277777777778e-06,
+            "psnr_db": 101.75562835619084,
+            "psnr_scope": "8-bit decoded values only; no HDR code-value PSNR"
+          },
+          "gpu_mix": {
+            "equal": false,
+            "changed": 48,
+            "values": 230400,
+            "max_abs": 0.000244140625,
+            "mae": 4.874335394965278e-08,
+            "bias": -1.0596381293402778e-08,
+            "psnr_db": null,
+            "psnr_scope": "8-bit decoded values only; no HDR code-value PSNR"
+          }
+        },
+        {
+          "index": 20,
+          "processed_sha256": "dd3f3059fa58e48f96a2bc5b56159444917cdfc3023ee39272d61c790100365e",
+          "mixed_sha256": "e457be86747df8e88821e2bc72486c8799cfe9b2b2c1f495a9ba55070ae29e96",
+          "gpu_analysis": {
+            "equal": true,
+            "changed": 0,
+            "values": 230400,
+            "max_abs": 0.0,
+            "mae": 0.0,
+            "bias": 0.0,
+            "psnr_db": null,
+            "psnr_scope": "8-bit decoded values only; no HDR code-value PSNR"
+          },
+          "gpu_mix": {
+            "equal": false,
+            "changed": 42,
+            "values": 230400,
+            "max_abs": 0.000244140625,
+            "mae": 4.238552517361111e-08,
+            "bias": -5.298190646701389e-09,
+            "psnr_db": null,
+            "psnr_scope": "8-bit decoded values only; no HDR code-value PSNR"
+          }
+        },
+        {
+          "index": 21,
+          "processed_sha256": "236a0e698b8a9c3d9ec970da3ac7843284806057dd8cce3123a4f37131a6d743",
+          "mixed_sha256": "8554dff4d7aa99b639210949d303dbb51528b17172e113c99cdcf105464996e8",
+          "gpu_analysis": {
+            "equal": true,
+            "changed": 0,
+            "values": 230400,
+            "max_abs": 0.0,
+            "mae": 0.0,
+            "bias": 0.0,
+            "psnr_db": null,
+            "psnr_scope": "8-bit decoded values only; no HDR code-value PSNR"
+          },
+          "gpu_mix": {
+            "equal": false,
+            "changed": 50,
+            "values": 230400,
+            "max_abs": 0.000244140625,
+            "mae": 4.980299207899306e-08,
+            "bias": -1.2715657552083334e-08,
+            "psnr_db": null,
+            "psnr_scope": "8-bit decoded values only; no HDR code-value PSNR"
+          }
+        },
+        {
+          "index": 22,
+          "processed_sha256": "fbbd8a7a55a2529b99bfecec66cca56bad86312c7e87463634dc333102fcdb3c",
+          "mixed_sha256": "2743b79117e801c4e2fbb1149f2be62812f3caa3d01a61d9a9c308fb2d77d328",
+          "gpu_analysis": {
+            "equal": true,
+            "changed": 0,
+            "values": 230400,
+            "max_abs": 0.0,
+            "mae": 0.0,
+            "bias": 0.0,
+            "psnr_db": null,
+            "psnr_scope": "8-bit decoded values only; no HDR code-value PSNR"
+          },
+          "gpu_mix": {
+            "equal": false,
+            "changed": 50,
+            "values": 230400,
+            "max_abs": 0.000244140625,
+            "mae": 4.9273173014322916e-08,
+            "bias": -1.1126200358072917e-08,
+            "psnr_db": null,
+            "psnr_scope": "8-bit decoded values only; no HDR code-value PSNR"
+          }
+        },
+        {
+          "index": 23,
+          "processed_sha256": "6f5c4c49335d345005871cc2cdfafbd6bd82f79a73edfd3b98350c54e100b79a",
+          "mixed_sha256": "3de2ef0cfb1dfac96e6dcbe0596a082b7fc7e28a9e0344ec5b13a5d22452b6bf",
+          "gpu_analysis": {
+            "equal": true,
+            "changed": 0,
+            "values": 230400,
+            "max_abs": 0.0,
+            "mae": 0.0,
+            "bias": 0.0,
+            "psnr_db": null,
+            "psnr_scope": "8-bit decoded values only; no HDR code-value PSNR"
+          },
+          "gpu_mix": {
+            "equal": false,
+            "changed": 50,
+            "values": 230400,
+            "max_abs": 0.000244140625,
+            "mae": 5.0862630208333337e-08,
+            "bias": -3.0729505750868055e-08,
+            "psnr_db": null,
+            "psnr_scope": "8-bit decoded values only; no HDR code-value PSNR"
+          }
+        }
+      ],
+      "output_files": [
+        {
+          "file": "hdr-final-hdr10-production-0.mp4",
+          "sha256": "1fbef06d9f031b509b5dc576ca79482f4708c27f1a5e87d7ed580455193310a4",
+          "bytes": 20490,
+          "metadata": {
+            "codec_name": "hevc",
+            "profile": "Main 10",
+            "pix_fmt": "yuv420p10le",
+            "color_space": "bt2020nc",
+            "color_transfer": "smpte2084",
+            "color_primaries": "bt2020",
+            "color_range": "tv",
+            "nb_read_frames": "24",
+            "duration": "1.000000",
+            "avg_frame_rate": "24/1"
+          }
+        },
+        {
+          "file": "hdr-final-hdr10-production-1.mp4",
+          "sha256": "1fbef06d9f031b509b5dc576ca79482f4708c27f1a5e87d7ed580455193310a4",
+          "bytes": 20490,
+          "metadata": {
+            "codec_name": "hevc",
+            "profile": "Main 10",
+            "pix_fmt": "yuv420p10le",
+            "color_space": "bt2020nc",
+            "color_transfer": "smpte2084",
+            "color_primaries": "bt2020",
+            "color_range": "tv",
+            "nb_read_frames": "24",
+            "duration": "1.000000",
+            "avg_frame_rate": "24/1"
+          }
+        }
+      ],
+      "repeat_raw_equal": true,
+      "encoded_repeat_equal": true,
+      "gpu_analysis_equal": false,
+      "gpu_mix_equal": false
+    },
+    {
+      "profile": "hdr10_hlg",
+      "fixture": "F:\\project\\DLSS5Tool\\tmp\\hdr-e2e\\source-hlg.mp4",
+      "source_sha256": "4029b556f0e3535e73311d35729ebc283097f58044c31eb15939c34053cbe7b9",
+      "input_metadata": {
+        "width": 320,
+        "height": 180,
+        "pix_fmt": "yuv420p10le",
+        "color_range": "tv",
+        "color_space": "bt2020nc",
+        "color_transfer": "arib-std-b67",
+        "color_primaries": "bt2020",
+        "r_frame_rate": "24/1",
+        "avg_frame_rate": "24/1",
+        "duration": "1.000000",
+        "nb_frames": "24",
+        "fps": 24.0,
+        "frames": 24,
+        "pixel_format": "yuv420p10le",
+        "profile": "hdr10_hlg",
+        "is_hdr": true,
+        "label": "HDR / HLG"
+      },
+      "frames": [
+        {
+          "index": 0,
+          "processed_sha256": "ef1abc2e8de7a7be92e6a94bde17965f53f45e690d0e52063095f490cbc208ac",
+          "mixed_sha256": "9b42a8e17e28eefe925acc53b576524a29fb07e8ef3b3125ff0b22ed7529e20b",
+          "gpu_analysis": {
+            "equal": true,
+            "changed": 0,
+            "values": 230400,
+            "max_abs": 0.0,
+            "mae": 0.0,
+            "bias": 0.0,
+            "psnr_db": null,
+            "psnr_scope": "8-bit decoded values only; no HDR code-value PSNR"
+          },
+          "gpu_mix": {
+            "equal": false,
+            "changed": 14,
+            "values": 230400,
+            "max_abs": 0.00048828125,
+            "mae": 2.9669867621527777e-08,
+            "bias": -8.477105034722222e-09,
+            "psnr_db": null,
+            "psnr_scope": "8-bit decoded values only; no HDR code-value PSNR"
+          }
+        },
+        {
+          "index": 1,
+          "processed_sha256": "9141702cd47f33b6a67dde2bb7ed6ff624d0b5bd0294a5557ed8d136bf8ba2b7",
+          "mixed_sha256": "98adf91833a7554a6577f12342467991ba4112e5a993cd39362713337cfdd0cd",
+          "gpu_analysis": {
+            "equal": true,
+            "changed": 0,
+            "values": 230400,
+            "max_abs": 0.0,
+            "mae": 0.0,
+            "bias": 0.0,
+            "psnr_db": null,
+            "psnr_scope": "8-bit decoded values only; no HDR code-value PSNR"
+          },
+          "gpu_mix": {
+            "equal": false,
+            "changed": 194,
+            "values": 230400,
+            "max_abs": 0.00048828125,
+            "mae": 4.111395941840278e-07,
+            "bias": 3.814697265625e-07,
+            "psnr_db": null,
+            "psnr_scope": "8-bit decoded values only; no HDR code-value PSNR"
+          }
+        },
+        {
+          "index": 2,
+          "processed_sha256": "4e5a720d6befccce48be86ece8e6879f7bb2e1dcbb685ce0a2a5ba1dcc7ee44c",
+          "mixed_sha256": "ad9938413b770971785d373b1181cb5a3943f00bc0724b6931d7a8a90cdca67a",
+          "gpu_analysis": {
+            "equal": true,
+            "changed": 0,
+            "values": 230400,
+            "max_abs": 0.0,
+            "mae": 0.0,
+            "bias": 0.0,
+            "psnr_db": null,
+            "psnr_scope": "8-bit decoded values only; no HDR code-value PSNR"
+          },
+          "gpu_mix": {
+            "equal": false,
+            "changed": 21,
+            "values": 230400,
+            "max_abs": 0.00048828125,
+            "mae": 4.291534423828125e-08,
+            "bias": 1.3245476616753471e-08,
+            "psnr_db": null,
+            "psnr_scope": "8-bit decoded values only; no HDR code-value PSNR"
+          }
+        },
+        {
+          "index": 3,
+          "processed_sha256": "b1263f8314d8cad248f5f8b1533c201d3faa06cca3b9a27d74b512449ed83dce",
+          "mixed_sha256": "678c7d58bbe94c1ce7d3336484289b1c0bcace379d2dbf450423cf2e000284e9",
+          "gpu_analysis": {
+            "equal": true,
+            "changed": 0,
+            "values": 230400,
+            "max_abs": 0.0,
+            "mae": 0.0,
+            "bias": 0.0,
+            "psnr_db": null,
+            "psnr_scope": "8-bit decoded values only; no HDR code-value PSNR"
+          },
+          "gpu_mix": {
+            "equal": false,
+            "changed": 40,
+            "values": 230400,
+            "max_abs": 0.00048828125,
+            "mae": 8.318159315321181e-08,
+            "bias": 3.54978773328993e-08,
+            "psnr_db": null,
+            "psnr_scope": "8-bit decoded values only; no HDR code-value PSNR"
+          }
+        },
+        {
+          "index": 4,
+          "processed_sha256": "853b89c79f958bf3e2eb4f9ea98625540fe30ff304d282b92d89461275ae582f",
+          "mixed_sha256": "03f41fe4d31fc99af8267cb1f01167fe73ad5844b6fb40134601a5ecfeab7fb9",
+          "gpu_analysis": {
+            "equal": true,
+            "changed": 0,
+            "values": 230400,
+            "max_abs": 0.0,
+            "mae": 0.0,
+            "bias": 0.0,
+            "psnr_db": null,
+            "psnr_scope": "8-bit decoded values only; no HDR code-value PSNR"
+          },
+          "gpu_mix": {
+            "equal": false,
+            "changed": 42,
+            "values": 230400,
+            "max_abs": 0.00048828125,
+            "mae": 8.715523613823785e-08,
+            "bias": 3.6292605929904516e-08,
+            "psnr_db": null,
+            "psnr_scope": "8-bit decoded values only; no HDR code-value PSNR"
+          }
+        },
+        {
+          "index": 5,
+          "processed_sha256": "f2961543cefd982e42d9d9375d3944825a2c7d8d96d55713693339f15ffdc274",
+          "mixed_sha256": "b20ba5c2411966a56688019d5580e788ae9070a9fbbba3543465efbe86fdfac0",
+          "gpu_analysis": {
+            "equal": true,
+            "changed": 0,
+            "values": 230400,
+            "max_abs": 0.0,
+            "mae": 0.0,
+            "bias": 0.0,
+            "psnr_db": null,
+            "psnr_scope": "8-bit decoded values only; no HDR code-value PSNR"
+          },
+          "gpu_mix": {
+            "equal": false,
+            "changed": 127,
+            "values": 230400,
+            "max_abs": 0.00048828125,
+            "mae": 2.6914808485243054e-07,
+            "bias": 2.2676255967881945e-07,
+            "psnr_db": null,
+            "psnr_scope": "8-bit decoded values only; no HDR code-value PSNR"
+          }
+        },
+        {
+          "index": 6,
+          "processed_sha256": "bd7051193f7a56323b4cef762ed7ef9665f9fc44e282ebd8ad91047bba3fb782",
+          "mixed_sha256": "796938b238143f452092edf7771ef24d3758cbb8bbbc886ca0e0155617bfd000",
+          "gpu_analysis": {
+            "equal": true,
+            "changed": 0,
+            "values": 230400,
+            "max_abs": 0.0,
+            "mae": 0.0,
+            "bias": 0.0,
+            "psnr_db": null,
+            "psnr_scope": "8-bit decoded values only; no HDR code-value PSNR"
+          },
+          "gpu_mix": {
+            "equal": false,
+            "changed": 233,
+            "values": 230400,
+            "max_abs": 0.00048828125,
+            "mae": 4.937913682725694e-07,
+            "bias": 4.090203179253472e-07,
+            "psnr_db": null,
+            "psnr_scope": "8-bit decoded values only; no HDR code-value PSNR"
+          }
+        },
+        {
+          "index": 7,
+          "processed_sha256": "939a464f3385d35c69a95c462351a1b68832c7dc95506bffb154ccb906745659",
+          "mixed_sha256": "53d6f465a7484fb68499983eaf01b2e796ace9664d83fd0908051a72ec48e6f5",
+          "gpu_analysis": {
+            "equal": true,
+            "changed": 0,
+            "values": 230400,
+            "max_abs": 0.0,
+            "mae": 0.0,
+            "bias": 0.0,
+            "psnr_db": null,
+            "psnr_scope": "8-bit decoded values only; no HDR code-value PSNR"
+          },
+          "gpu_mix": {
+            "equal": false,
+            "changed": 60,
+            "values": 230400,
+            "max_abs": 0.00048828125,
+            "mae": 1.2609693739149305e-07,
+            "bias": 1.5894571940104166e-08,
+            "psnr_db": null,
+            "psnr_scope": "8-bit decoded values only; no HDR code-value PSNR"
+          }
+        },
+        {
+          "index": 8,
+          "processed_sha256": "140cd1685d075e5813f03f10e88c914f8c2d71fdc52eac2df996625144c25dcd",
+          "mixed_sha256": "6d19fa01dc13a60cf3a332fe0400ce94cab2629e73d6398c02c30260cf52b05f",
+          "gpu_analysis": {
+            "equal": true,
+            "changed": 0,
+            "values": 230400,
+            "max_abs": 0.0,
+            "mae": 0.0,
+            "bias": 0.0,
+            "psnr_db": null,
+            "psnr_scope": "8-bit decoded values only; no HDR code-value PSNR"
+          },
+          "gpu_mix": {
+            "equal": false,
+            "changed": 219,
+            "values": 230400,
+            "max_abs": 0.00048828125,
+            "mae": 4.641215006510417e-07,
+            "bias": 3.7087334526909723e-07,
+            "psnr_db": null,
+            "psnr_scope": "8-bit decoded values only; no HDR code-value PSNR"
+          }
+        },
+        {
+          "index": 9,
+          "processed_sha256": "09ca47c8be66440312a7029cb2bfa1626af03dc3c9d93a517192ac4df5b9ca3e",
+          "mixed_sha256": "912f553cc67911768041f00eefbab6530ac6af4235615b240112f83e1fd2de82",
+          "gpu_analysis": {
+            "equal": true,
+            "changed": 0,
+            "values": 230400,
+            "max_abs": 0.0,
+            "mae": 0.0,
+            "bias": 0.0,
+            "psnr_db": null,
+            "psnr_scope": "8-bit decoded values only; no HDR code-value PSNR"
+          },
+          "gpu_mix": {
+            "equal": false,
+            "changed": 154,
+            "values": 230400,
+            "max_abs": 0.00048828125,
+            "mae": 3.2636854383680554e-07,
+            "bias": 2.712673611111111e-07,
+            "psnr_db": null,
+            "psnr_scope": "8-bit decoded values only; no HDR code-value PSNR"
+          }
+        },
+        {
+          "index": 10,
+          "processed_sha256": "d0b77ec6753536d831ef13703c0b80b851c70fa63a7607526c331c6582c3b9eb",
+          "mixed_sha256": "8dc58faf21f491778e33cc6ba4c0fb75c2002a26e3e9f958329fcaf93d3cea02",
+          "gpu_analysis": {
+            "equal": true,
+            "changed": 0,
+            "values": 230400,
+            "max_abs": 0.0,
+            "mae": 0.0,
+            "bias": 0.0,
+            "psnr_db": null,
+            "psnr_scope": "8-bit decoded values only; no HDR code-value PSNR"
+          },
+          "gpu_mix": {
+            "equal": false,
+            "changed": 198,
+            "values": 230400,
+            "max_abs": 0.00048828125,
+            "mae": 4.1961669921875e-07,
+            "bias": 3.0093722873263887e-07,
+            "psnr_db": null,
+            "psnr_scope": "8-bit decoded values only; no HDR code-value PSNR"
+          }
+        },
+        {
+          "index": 11,
+          "processed_sha256": "3f62642d1a9636efd8062a24472beb8eae7727a131b9501a931e46ec025b4a40",
+          "mixed_sha256": "469e2af1de3450665b943d7cf028ef4f94826e9ab338a750b6c184fde31ee178",
+          "gpu_analysis": {
+            "equal": true,
+            "changed": 0,
+            "values": 230400,
+            "max_abs": 0.0,
+            "mae": 0.0,
+            "bias": 0.0,
+            "psnr_db": null,
+            "psnr_scope": "8-bit decoded values only; no HDR code-value PSNR"
+          },
+          "gpu_mix": {
+            "equal": false,
+            "changed": 42,
+            "values": 230400,
+            "max_abs": 0.00048828125,
+            "mae": 8.900960286458334e-08,
+            "bias": 5.0862630208333337e-08,
+            "psnr_db": null,
+            "psnr_scope": "8-bit decoded values only; no HDR code-value PSNR"
+          }
+        },
+        {
+          "index": 12,
+          "processed_sha256": "1f401135f457dec9b0f769c76c8bd09c0045bb6040b1a914143671917bfca179",
+          "mixed_sha256": "8c9640639769393418712df12cfbc46bef15bc17e1eef7475af7d69bcea85af2",
+          "gpu_analysis": {
+            "equal": true,
+            "changed": 0,
+            "values": 230400,
+            "max_abs": 0.0,
+            "mae": 0.0,
+            "bias": 0.0,
+            "psnr_db": null,
+            "psnr_scope": "8-bit decoded values only; no HDR code-value PSNR"
+          },
+          "gpu_mix": {
+            "equal": false,
+            "changed": 106,
+            "values": 230400,
+            "max_abs": 0.00048828125,
+            "mae": 2.2464328342013888e-07,
+            "bias": 1.864963107638889e-07,
+            "psnr_db": null,
+            "psnr_scope": "8-bit decoded values only; no HDR code-value PSNR"
+          }
+        },
+        {
+          "index": 13,
+          "processed_sha256": "fc41a0787830b075e51bfac1b3669261251b428bcf05686fb2026d93146f0a01",
+          "mixed_sha256": "c01d7a5aed1249f1b68883bec4998775b5a3aac09950f3f32908f85d4ef488d2",
+          "gpu_analysis": {
+            "equal": true,
+            "changed": 0,
+            "values": 230400,
+            "max_abs": 0.0,
+            "mae": 0.0,
+            "bias": 0.0,
+            "psnr_db": null,
+            "psnr_scope": "8-bit decoded values only; no HDR code-value PSNR"
+          },
+          "gpu_mix": {
+            "equal": false,
+            "changed": 70,
+            "values": 230400,
+            "max_abs": 0.00048828125,
+            "mae": 1.483493381076389e-07,
+            "bias": 1.0596381293402777e-07,
+            "psnr_db": null,
+            "psnr_scope": "8-bit decoded values only; no HDR code-value PSNR"
+          }
+        },
+        {
+          "index": 14,
+          "processed_sha256": "c65ac3142df4efba3816dd2c89dbd14fa6c32108f79508b55a36bf65f32d8e07",
+          "mixed_sha256": "847ed62fb12c0a557f06dcaa1375540db1be708c1ca33eee17df5b0c8acc8cb9",
+          "gpu_analysis": {
+            "equal": true,
+            "changed": 0,
+            "values": 230400,
+            "max_abs": 0.0,
+            "mae": 0.0,
+            "bias": 0.0,
+            "psnr_db": null,
+            "psnr_scope": "8-bit decoded values only; no HDR code-value PSNR"
+          },
+          "gpu_mix": {
+            "equal": false,
+            "changed": 101,
+            "values": 230400,
+            "max_abs": 0.00048828125,
+            "mae": 2.140469021267361e-07,
+            "bias": 1.71661376953125e-07,
+            "psnr_db": null,
+            "psnr_scope": "8-bit decoded values only; no HDR code-value PSNR"
+          }
+        },
+        {
+          "index": 15,
+          "processed_sha256": "cc9c6de3f12a9c4e9a39660d9ff3f68ad4854fd74a6292f3ae48c4e1244d8e7a",
+          "mixed_sha256": "88bc92e1a098bcf5573a38b5ad8f7bdeaeaf1a35a6123e3e77b37a6ea915f77f",
+          "gpu_analysis": {
+            "equal": true,
+            "changed": 0,
+            "values": 230400,
+            "max_abs": 0.0,
+            "mae": 0.0,
+            "bias": 0.0,
+            "psnr_db": null,
+            "psnr_scope": "8-bit decoded values only; no HDR code-value PSNR"
+          },
+          "gpu_mix": {
+            "equal": false,
+            "changed": 163,
+            "values": 230400,
+            "max_abs": 0.00048828125,
+            "mae": 3.4544203016493056e-07,
+            "bias": 3.072950575086806e-07,
+            "psnr_db": null,
+            "psnr_scope": "8-bit decoded values only; no HDR code-value PSNR"
+          }
+        },
+        {
+          "index": 16,
+          "processed_sha256": "fdfd8af7f4e6626da1c8c96a38a10e22aa976dd597fea7d70d10163bfdca62f5",
+          "mixed_sha256": "2ca0b7e15afbd42370c69f50ada7a3c31d3153e2aaeb84ea7e378ff236b606b2",
+          "gpu_analysis": {
+            "equal": true,
+            "changed": 0,
+            "values": 230400,
+            "max_abs": 0.0,
+            "mae": 0.0,
+            "bias": 0.0,
+            "psnr_db": null,
+            "psnr_scope": "8-bit decoded values only; no HDR code-value PSNR"
+          },
+          "gpu_mix": {
+            "equal": false,
+            "changed": 141,
+            "values": 230400,
+            "max_abs": 0.00048828125,
+            "mae": 2.9775831434461807e-07,
+            "bias": 2.5537278917100695e-07,
+            "psnr_db": null,
+            "psnr_scope": "8-bit decoded values only; no HDR code-value PSNR"
+          }
+        },
+        {
+          "index": 17,
+          "processed_sha256": "2b7393411b127db6fa6c3844e07c4aed456fd08e4bac6466095651867c8c4da7",
+          "mixed_sha256": "3f5e4846a5ccefbcdaa467c4c1a8208dd058c2446cc5681965f2125c029ed64c",
+          "gpu_analysis": {
+            "equal": true,
+            "changed": 0,
+            "values": 230400,
+            "max_abs": 0.0,
+            "mae": 0.0,
+            "bias": 0.0,
+            "psnr_db": null,
+            "psnr_scope": "8-bit decoded values only; no HDR code-value PSNR"
+          },
+          "gpu_mix": {
+            "equal": false,
+            "changed": 166,
+            "values": 230400,
+            "max_abs": 0.00048828125,
+            "mae": 3.502104017469618e-07,
+            "bias": 3.2054053412543405e-07,
+            "psnr_db": null,
+            "psnr_scope": "8-bit decoded values only; no HDR code-value PSNR"
+          }
+        },
+        {
+          "index": 18,
+          "processed_sha256": "e4d0c7e67c60a8329aabab69e8c44d6234d984d6cb94e8e56a704f5ea5e5be6b",
+          "mixed_sha256": "38d3bcce7a6886e1294fc6c7527587ebea36e3005b4613bfd02f164e7845c2d4",
+          "gpu_analysis": {
+            "equal": false,
+            "changed": 1,
+            "values": 230400,
+            "max_abs": 1.0,
+            "mae": 4.340277777777778e-06,
+            "bias": 4.340277777777778e-06,
+            "psnr_db": 101.75562835619084,
+            "psnr_scope": "8-bit decoded values only; no HDR code-value PSNR"
+          },
+          "gpu_mix": {
+            "equal": false,
+            "changed": 32,
+            "values": 230400,
+            "max_abs": 0.00048828125,
+            "mae": 6.781684027777778e-08,
+            "bias": 3.390842013888889e-08,
+            "psnr_db": null,
+            "psnr_scope": "8-bit decoded values only; no HDR code-value PSNR"
+          }
+        },
+        {
+          "index": 19,
+          "processed_sha256": "b549e921691155bb57287a90198ad6174a100f9a25b7ea578cb210000525364b",
+          "mixed_sha256": "6092c0eaaf73fa16a90d800df8dbfb4904b80d65a9c9ae1af1afd144868d4628",
+          "gpu_analysis": {
+            "equal": false,
+            "changed": 1,
+            "values": 230400,
+            "max_abs": 1.0,
+            "mae": 4.340277777777778e-06,
+            "bias": 4.340277777777778e-06,
+            "psnr_db": 101.75562835619084,
+            "psnr_scope": "8-bit decoded values only; no HDR code-value PSNR"
+          },
+          "gpu_mix": {
+            "equal": false,
+            "changed": 45,
+            "values": 230400,
+            "max_abs": 0.00048828125,
+            "mae": 9.5367431640625e-08,
+            "bias": 4.874335394965278e-08,
+            "psnr_db": null,
+            "psnr_scope": "8-bit decoded values only; no HDR code-value PSNR"
+          }
+        },
+        {
+          "index": 20,
+          "processed_sha256": "7d085bcd6e2d4e5fcf6f3c5211bd8cc264f067c5dfb48b906b66287bac6f9ecb",
+          "mixed_sha256": "e55c534e17c27cf5667606243e30635597d6fb252e7b9ce6d9ff01fb6d6733ab",
+          "gpu_analysis": {
+            "equal": true,
+            "changed": 0,
+            "values": 230400,
+            "max_abs": 0.0,
+            "mae": 0.0,
+            "bias": 0.0,
+            "psnr_db": null,
+            "psnr_scope": "8-bit decoded values only; no HDR code-value PSNR"
+          },
+          "gpu_mix": {
+            "equal": false,
+            "changed": 42,
+            "values": 230400,
+            "max_abs": 0.00048828125,
+            "mae": 8.900960286458334e-08,
+            "bias": 2.9669867621527777e-08,
+            "psnr_db": null,
+            "psnr_scope": "8-bit decoded values only; no HDR code-value PSNR"
+          }
+        },
+        {
+          "index": 21,
+          "processed_sha256": "138039fedfde9f9c9dbfec8af558bd4903170770d6daa948b911e60fb095c4fd",
+          "mixed_sha256": "2d79e81ca1f32c83eb917b809cd135cd279e4fa42322d3c5b8cc8ead114d84bc",
+          "gpu_analysis": {
+            "equal": true,
+            "changed": 0,
+            "values": 230400,
+            "max_abs": 0.0,
+            "mae": 0.0,
+            "bias": 0.0,
+            "psnr_db": null,
+            "psnr_scope": "8-bit decoded values only; no HDR code-value PSNR"
+          },
+          "gpu_mix": {
+            "equal": false,
+            "changed": 116,
+            "values": 230400,
+            "max_abs": 0.00048828125,
+            "mae": 2.43981679280599e-07,
+            "bias": 1.9311904907226564e-07,
+            "psnr_db": null,
+            "psnr_scope": "8-bit decoded values only; no HDR code-value PSNR"
+          }
+        },
+        {
+          "index": 22,
+          "processed_sha256": "fc8d59cf1ae81aea927c2c0980745f5d585b9206e9400c859808be07b95cc817",
+          "mixed_sha256": "2500807cd5cf21e64197b73c992d2b3fe6112afa7191863d62f4512633426a1d",
+          "gpu_analysis": {
+            "equal": true,
+            "changed": 0,
+            "values": 230400,
+            "max_abs": 0.0,
+            "mae": 0.0,
+            "bias": 0.0,
+            "psnr_db": null,
+            "psnr_scope": "8-bit decoded values only; no HDR code-value PSNR"
+          },
+          "gpu_mix": {
+            "equal": false,
+            "changed": 193,
+            "values": 230400,
+            "max_abs": 0.00048828125,
+            "mae": 4.090203179253472e-07,
+            "bias": 3.751118977864583e-07,
+            "psnr_db": null,
+            "psnr_scope": "8-bit decoded values only; no HDR code-value PSNR"
+          }
+        },
+        {
+          "index": 23,
+          "processed_sha256": "7ec13342ed26f5f0abd96f4600f70ffbbf8f81a5214c0a88fffaeb5ecec66059",
+          "mixed_sha256": "71f088b55beddb9f412f055e6c3f7a2678e5bce31deae328dc54596c69354c1e",
+          "gpu_analysis": {
+            "equal": true,
+            "changed": 0,
+            "values": 230400,
+            "max_abs": 0.0,
+            "mae": 0.0,
+            "bias": 0.0,
+            "psnr_db": null,
+            "psnr_scope": "8-bit decoded values only; no HDR code-value PSNR"
+          },
+          "gpu_mix": {
+            "equal": false,
+            "changed": 174,
+            "values": 230400,
+            "max_abs": 0.00048828125,
+            "mae": 3.6716461181640626e-07,
+            "bias": 3.3749474419487845e-07,
+            "psnr_db": null,
+            "psnr_scope": "8-bit decoded values only; no HDR code-value PSNR"
+          }
+        }
+      ],
+      "output_files": [
+        {
+          "file": "hdr-final-hlg-production-0.mp4",
+          "sha256": "f2060c857947b4f5559fe0cab06a2f08f462f01ab1a6aa188a8ff63bb4afe83b",
+          "bytes": 73296,
+          "metadata": {
+            "codec_name": "hevc",
+            "profile": "Main 10",
+            "pix_fmt": "yuv420p10le",
+            "color_space": "bt2020nc",
+            "color_transfer": "arib-std-b67",
+            "color_primaries": "bt2020",
+            "color_range": "tv",
+            "nb_read_frames": "24",
+            "duration": "1.000000",
+            "avg_frame_rate": "24/1"
+          }
+        },
+        {
+          "file": "hdr-final-hlg-production-1.mp4",
+          "sha256": "f2060c857947b4f5559fe0cab06a2f08f462f01ab1a6aa188a8ff63bb4afe83b",
+          "bytes": 73296,
+          "metadata": {
+            "codec_name": "hevc",
+            "profile": "Main 10",
+            "pix_fmt": "yuv420p10le",
+            "color_space": "bt2020nc",
+            "color_transfer": "arib-std-b67",
+            "color_primaries": "bt2020",
+            "color_range": "tv",
+            "nb_read_frames": "24",
+            "duration": "1.000000",
+            "avg_frame_rate": "24/1"
+          }
+        }
+      ],
+      "repeat_raw_equal": true,
+      "encoded_repeat_equal": true,
+      "gpu_analysis_equal": false,
+      "gpu_mix_equal": false
+    }
+  ],
+  "promotion": "baseline supported; GPU arithmetic/10bit shared encoder NOT accepted",
+  "status": "completed"
+}

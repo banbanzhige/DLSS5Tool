@@ -19,6 +19,7 @@ import numpy as np
 
 from dlss5tool import i18n
 from dlss5tool import paths
+from dlss5tool.image_sequence import ImageSequence, is_sequence, open_capture, source_bytes, audio_source
 from dlss5tool.guidance_color import analysis_rgba8
 from dlss5tool.video_export import (
     FFmpegHDRVideoReader, FFmpegVideoWriter, find_ffmpeg, find_ffprobe,
@@ -61,8 +62,11 @@ def _read_exact(pipe, size):
 
 
 class NativeStream:
-    def __init__(self, width, height, multiplier, hdr, log_dir, cancel):
+    def __init__(self, width, height, multiplier, hdr, log_dir, cancel, *, gpu_worker=None):
         worker, runtime = runtime_files()
+        self.gpu_mode=gpu_worker is not None
+        self.shared_descriptor=None
+        if self.gpu_mode:worker=Path(gpu_worker).resolve(strict=True)
         if not worker.is_file() or not runtime.is_file():
             raise RuntimeError('缺少插帧组件。源码环境请先运行 scripts\\build_dlssg_video.bat。')
         with runtime.open('rb') as handle:
@@ -78,13 +82,20 @@ class NativeStream:
         try:
             self.proc = subprocess.Popen(
                 [str(worker), str(runtime.parent), str(log_dir), str(width), str(height), str(multiplier),
-                 'hdr-coded' if hdr else 'sdr'], stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+                 'hdr-coded' if hdr else 'sdr', *(['gpu'] if self.gpu_mode else [])], stdin=subprocess.PIPE, stdout=subprocess.PIPE,
                 stderr=self.log, cwd=log_dir, creationflags=getattr(subprocess, 'CREATE_NO_WINDOW', 0), bufsize=0,
             )
             magic, low, high = struct.unpack('<III', self.call(lambda: _read_exact(self.proc.stdout, 12)))
-            if magic != 0x31474746:
+            if magic != (0x32474746 if self.gpu_mode else 0x31474746):
                 raise RuntimeError('插帧组件协议不匹配')
             self.luid = (high << 32) | low
+            if self.gpu_mode:
+                handle,allocation,pitch,pid=struct.unpack('<QQQQ',self.call(lambda:_read_exact(self.proc.stdout,32)))
+                if pid!=self.proc.pid or pitch<width*(8 if hdr else 4) or pitch*height>allocation or allocation>1024**3:
+                    raise RuntimeError('Invalid GPU output descriptor')
+                self.shared_descriptor=dict(producer_pid=pid,handle=handle,allocation=allocation,
+                    size=pitch*height,producer_luid=self.luid)
+                self.shared_pitch=pitch
         except BaseException:
             self.close()
             raise
@@ -142,6 +153,44 @@ class NativeStream:
             return frames, all(valid)
         return self.call(exchange)
 
+    def process_device(self,rgba,motion,reset,consume):
+        """Call consume(subframe, valid) on the owner thread before reuse ACK.
+
+        Only pipe IO runs on the cancellable helper; CUDA/NVENC remains confined
+        to the export thread. The worker waits for ACK after each completed D3D
+        fence, including all 3x/4x subframes. Callback failure kills the worker.
+        """
+        if not self.gpu_mode:raise RuntimeError('GPU worker protocol not negotiated')
+        if rgba.shape!=self.shape or rgba.dtype!=self.dtype:raise ValueError('Wrong GPU input dimensions/type')
+        if motion.shape!=self.shape[:2]+(2,) or not np.isfinite(motion).all():raise ValueError('Invalid motion')
+        if self.dtype==np.float16 and (not np.isfinite(rgba).all() or rgba.min()<0 or rgba.max()>1):
+            raise ValueError('Invalid HDR input')
+        def send():
+            for block in (struct.pack('<I',int(reset)|4),memoryview(np.ascontiguousarray(rgba)).cast('B'),
+                          memoryview(np.ascontiguousarray(motion,dtype=np.float32)).cast('B')):
+                view=memoryview(block)
+                while view:
+                    count=self.proc.stdin.write(view)
+                    if not count:raise RuntimeError('GPU worker input pipe closed')
+                    view=view[count:]
+            self.proc.stdin.flush()
+        try:
+            self.call(send)
+            for index in range(self.multiplier-1):
+                flag=struct.unpack('<I',self.call(lambda:_read_exact(self.proc.stdout,4)))[0]
+                if flag not in (0,1):raise RuntimeError('Invalid GPU frame validity flag')
+                check_cancel(self.cancel)
+                consume(index,flag==1)
+                self.call(lambda:self._ack_device())
+        except BaseException:
+            if self.proc.poll() is None:
+                self.proc.kill();self.proc.wait(timeout=5)
+            raise
+
+    def _ack_device(self):
+        if self.proc.stdin.write(struct.pack('<I',0xA11CE001))!=4:raise RuntimeError('GPU ACK failed')
+        self.proc.stdin.flush()
+
     def close(self):
         if self.proc:
             try:
@@ -189,6 +238,10 @@ def _emit_progress(progress, text, fraction, counts=None):
 
 
 def inspect_source(source, cancel, progress=None):
+    if is_sequence(source):
+        sequence = ImageSequence.load(source)
+        sequence.validate(lambda: check_cancel(cancel))
+        return sequence.metadata, sequence.rate, sequence.width, sequence.height, len(sequence.files)
     ffmpeg = find_ffmpeg()
     probe = find_ffprobe(ffmpeg)
     if not probe:
@@ -288,7 +341,7 @@ def is_cut(previous, current):
 
 def export_video(source, output, *, multiplier=2, scale=1, enhance=False, settings=None,
                  cancel=None, progress=None, log_dir=None, frame_sink=None, render_gate=None,
-                 metadata_sink=None, input_session=None, source_inspector=None):
+                 metadata_sink=None, input_session=None, source_inspector=None, gpu_export=None):
     cancel = cancel or threading.Event()
     progress = progress or (lambda text, value: None)
     source = Path(source).resolve(strict=True)
@@ -311,7 +364,7 @@ def export_video(source, output, *, multiplier=2, scale=1, enhance=False, settin
     report = {'experimental': True, 'warning': WARNING, 'source': str(source), 'output': str(output),
               'multiplier': multiplier, 'spatial_scale': scale, 'enhance': enhance, 'status': 'running',
               'real_frames': 0, 'generated_frames': 0, 'cut_holds': 0, 'endpoint_holds': 0}
-    writer = native = flow = capture = sr = nr = None
+    writer = native = flow = capture = sr = nr = shared_output = shared_enhancement = None
     staging = output.with_name(f'.{output.stem}.fg-{uuid.uuid4().hex}{output.suffix}') if output else None
     try:
         if input_session is None:
@@ -335,7 +388,7 @@ def export_video(source, output, *, multiplier=2, scale=1, enhance=False, settin
         if min(ow, oh) < 128 or max(ow, oh) > 8192 or ow % 2 or oh % 2:
             raise ValueError('实验入口要求最终宽高均为偶数、128～8192，不会自动缩小或裁剪')
         estimate = ow*oh*(8 if meta['is_hdr'] else 4)*20
-        disk_need = source.stat().st_size*multiplier*scale*scale*3
+        disk_need = source_bytes(source)*multiplier*scale*scale*3
         if not render_only and shutil.disk_usage(output.parent).free < disk_need + 15*1024**3:
             raise ValueError('输出盘余量不足预计峰值＋15 GiB，请选择其他输出目录')
         from dlss5tool.super_resolution import query_gpu_memory
@@ -343,12 +396,29 @@ def export_video(source, output, *, multiplier=2, scale=1, enhance=False, settin
         if memory and memory['free_bytes'] < estimate + 1024**3:
             raise ValueError('当前显存余量不足此配置，请关闭其他 GPU 任务或自行更改配置；未自动降级')
         hdr = bool(meta['is_hdr'] and config.get('hdr_mode', True))
+        if gpu_export is None and hdr and not render_only and input_session is None and not view:
+            from dlss5tool.gpu_export_runtime import eligible,load_components
+            if ow*oh>=1920*1080 and eligible(ow,oh,hdr_metadata=meta,
+                nvenc_preset=config.get('nvenc_preset','p5'),rate_control=config.get('rate_control','quality'),
+                quality_profile=config.get('quality_profile','high')):
+                gpu_export=load_components()
+        if gpu_export is not None:
+            if render_only or input_session is not None or view:
+                raise ValueError('GPU export currently accepts direct final-view output only; no silent fallback')
+            if hdr and not gpu_export.get('hdr_ptx'):raise ValueError('GPU HDR export requires verified HDR PTX')
         config.update(frame_format='rgba16f' if hdr else 'rgba8', color_profile=meta['profile'] if hdr else 'srgb',
                       color_primaries=meta['color_primaries'], host_auto_fallback=False,
                       host_in_flight=1, guidance_flow_fallback=False)
+        direct_enhancement=bool(gpu_export is not None and gpu_export.get('host_library') and enhance
+            and multiplier==1 and scale==1 and (ow,oh)==(w,h) and not view and config.get('output_mix',1)==1)
+        if direct_enhancement:
+            config['_gpu_export_host']=str(gpu_export['host_library'])
+            config['host_backend']='v2'
         if multiplier > 1:
             _emit_progress(progress, i18n.tr('status.init_dlssg'), 0)
-        native = NativeStream(ow, oh, multiplier, hdr, log_dir, cancel) if multiplier > 1 else None
+        native = (NativeStream(ow,oh,multiplier,hdr,log_dir,cancel,
+                  **({'gpu_worker':gpu_export['worker']} if gpu_export is not None else {}))
+                  if multiplier>1 else None)
         need_reference = bool(view or render_only)
         from dlss5tool.nvofa import OpticalFlow, align_size
         fw, fh = align_size(ow, oh)
@@ -368,13 +438,28 @@ def export_video(source, output, *, multiplier=2, scale=1, enhance=False, settin
             from dlss5tool.dlss_host_process import ProcessLive
             nr = ProcessLive(process_w, process_h, config)
         if input_session is None:
-            capture = FFmpegHDRVideoReader(source, w, h, meta) if meta['is_hdr'] else cv2.VideoCapture(str(source))
-        writer = None if render_only else FFmpegVideoWriter(staging, ow, oh, float(rate*multiplier), audio_source=source,
+            capture = FFmpegHDRVideoReader(source, w, h, meta) if meta['is_hdr'] else open_capture(source)
+        writer_class=FFmpegVideoWriter
+        writer_options={}
+        if gpu_export is not None:
+            from dlss5tool.gpu_export_process import ProcessGpuVideoWriter
+            writer_class=ProcessGpuVideoWriter
+            writer_options={key:gpu_export[key] for key in ('native_library','sdr_ptx')}
+            writer_options['hdr_ptx']=gpu_export.get('hdr_ptx')
+            writer_options['device_ordinal']=gpu_export.get('device_ordinal',0)
+            writer_options['cancel']=cancel
+        writer = None if render_only else writer_class(staging, ow, oh, float(rate*multiplier), audio_source=audio_source(source),
                                    use_nvenc=True, hdr_metadata=meta if hdr else None,
                                    nvenc_preset=config.get('nvenc_preset', 'p5'),
                                    rate_control=config.get('rate_control', 'quality'),
                                    quality_profile=config.get('quality_profile', 'high'),
-                                   video_bitrate_mbps=config.get('video_bitrate_mbps', 20))
+                                   video_bitrate_mbps=config.get('video_bitrate_mbps', 20),**writer_options)
+        if gpu_export is not None and native:
+            shared_output=writer.import_shared_output(**native.shared_descriptor)
+        if direct_enhancement:
+            descriptor=nr.gpu_output_create()
+            enhancement_pitch=descriptor.pop('pitch')
+            shared_enhancement=writer.import_shared_output(**descriptor)
         report.update(width=ow, height=oh, source_rate=str(rate), output_rate=str(rate*multiplier),
                       color=meta['profile'] if hdr else 'srgb', output_view=view,
                       runtime_sha256=native.runtime_hash if native else None, log_dir=str(log_dir))
@@ -458,7 +543,11 @@ def export_video(source, output, *, multiplier=2, scale=1, enhance=False, settin
                 publish_metadata()
             if not need_reference:
                 reference = None
-            if nr:
+            if shared_enhancement:
+                nr.process_device(rgba,reset=index==0 or cut)
+                writer.write_device(shared_enhancement.pointer.value,shared_enhancement.size,
+                    'rgba16f' if hdr else 'rgba',writer.adapter_luid,enhancement_pitch,strict_hdr=False)
+            elif nr:
                 mix_source = rgba
                 processed = nr.process(rgba, reset=index == 0 or cut)
                 if processed is None:
@@ -482,12 +571,26 @@ def export_video(source, output, *, multiplier=2, scale=1, enhance=False, settin
             if input_session is not None and config.get('_render_stage') == 'output' and reference is not None:
                 reference = final_size(reference)
             proxy = analysis_rgba8(rgba, config)
-            if native:
+            if shared_output:
+                motion=motion_for(proxy,previous_proxy,previous is None or cut)
+                def consume_generated(subframe,valid):
+                    if previous is None:return
+                    if cut:
+                        write(previous,previous_reference)
+                        report['cut_holds']+=1
+                    else:
+                        if not valid:raise RuntimeError(f'帧对 {index-1}→{index} 返回无效插帧')
+                        writer.write_device(shared_output.pointer.value,shared_output.size,'rgba16f' if hdr else 'rgba',
+                            native.luid,native.shared_pitch)
+                        report['generated_frames']+=1
+                native.process_device(rgba,motion,previous is None or cut,consume_generated)
+                frames,valid=[],True
+            elif native:
                 motion = motion_for(proxy, previous_proxy, previous is None or cut)
                 frames, valid = native.process(rgba, motion, reset=previous is None or cut)
             else:
                 frames, valid = [], True
-            if previous is not None:
+            if previous is not None and shared_output is None:
                 if not cut and not valid:
                     raise RuntimeError(f'帧对 {index-1}→{index} 返回无效插帧，已停止，未补重复帧')
                 for interpolated in frames:
@@ -497,8 +600,9 @@ def export_video(source, output, *, multiplier=2, scale=1, enhance=False, settin
                 report['cut_holds' if cut else 'generated_frames'] += multiplier-1
             # Real frames do not depend on a future frame. Publish immediately;
             # the next iteration inserts the intervening generated frames.
-            write(rgba, reference, mix_source=(mix_source
-                  if config.get('_render_stage') == 'base' and scale > 1 else None))
+            if shared_enhancement is None:
+                write(rgba, reference, mix_source=(mix_source
+                      if config.get('_render_stage') == 'base' and scale > 1 else None))
             previous, previous_proxy = rgba.copy(), proxy.copy()
             previous_reference = reference
             previous_scene_proxy = cv2.resize(scene_proxy, (64, 64), interpolation=cv2.INTER_AREA)
@@ -511,6 +615,10 @@ def export_video(source, output, *, multiplier=2, scale=1, enhance=False, settin
             write(previous, previous_reference)
         report['endpoint_holds'] = multiplier-1
         progress('编码完成，正在封装原音轨…', .99)
+        if shared_output:
+            shared_output.close();shared_output=None
+        if shared_enhancement:
+            shared_enhancement.close();shared_enhancement=None
         if writer:
             writer.finish()
         check_cancel(cancel)
@@ -527,6 +635,10 @@ def export_video(source, output, *, multiplier=2, scale=1, enhance=False, settin
     finally:
         cleanup_errors = []
         actions = []
+        if shared_output:
+            actions.append(shared_output.close)
+        if shared_enhancement:
+            actions.append(shared_enhancement.close)
         if writer and report['status'] != 'complete':
             actions.append(writer.abort)
         for item in (native, flow, capture, nr, sr):
@@ -582,12 +694,22 @@ def main():
     parser = argparse.ArgumentParser(description=WARNING)
     parser.add_argument('source')
     parser.add_argument('output')
-    parser.add_argument('--multiplier', type=int, choices=[2, 3, 4], default=2)
+    parser.add_argument('--multiplier', type=int, choices=[1, 2, 3, 4], default=2)
     parser.add_argument('--scale', type=int, choices=[1, 2, 4], default=1)
     parser.add_argument('--enhance', action='store_true')
+    parser.add_argument('--gpu-worker',type=Path,help='Explicit candidate worker (SDR final-view only)')
+    parser.add_argument('--gpu-encoder',type=Path,help='Explicit candidate NVENC DLL')
+    parser.add_argument('--gpu-sdr-ptx',type=Path,help='Verified SDR conversion PTX')
+    parser.add_argument('--gpu-hdr-ptx',type=Path,help='Verified HDR conversion PTX')
+    parser.add_argument('--gpu-host',type=Path,help='Compatible v2 enhancement host for GPU output')
+    parser.add_argument('--gpu-device',type=int,default=0)
     args = parser.parse_args()
+    selected=(args.gpu_worker,args.gpu_encoder,args.gpu_sdr_ptx)
+    if any(selected) and not all(selected):parser.error('All three GPU candidate paths are required')
+    gpu_export=(dict(worker=args.gpu_worker,native_library=args.gpu_encoder,sdr_ptx=args.gpu_sdr_ptx,
+        hdr_ptx=args.gpu_hdr_ptx,host_library=args.gpu_host,device_ordinal=args.gpu_device) if all(selected) else None)
     export_video(args.source, args.output, multiplier=args.multiplier, scale=args.scale,
-                 enhance=args.enhance, progress=lambda message, _: print(message, flush=True))
+                 enhance=args.enhance, progress=lambda message, _: print(message, flush=True),gpu_export=gpu_export)
 
 
 if __name__ == '__main__':

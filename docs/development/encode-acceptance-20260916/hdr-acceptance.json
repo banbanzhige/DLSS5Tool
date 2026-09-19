@@ -1,0 +1,91 @@
+{
+  "scope": "HDR acceptance CPU preparation; DLSS GPU path not executed",
+  "fixture_used": true,
+  "sources": {
+    "hdr10_pq": {
+      "path": "F:\\project\\DLSS5Tool\\tmp\\hdr-e2e\\source-hdr10.mp4",
+      "fixture": true,
+      "metadata": {
+        "codec_name": "hevc",
+        "pix_fmt": "yuv420p10le",
+        "color_space": "bt2020nc",
+        "color_primaries": "bt2020",
+        "color_transfer": "smpte2084",
+        "color_range": "tv"
+      },
+      "audio_streams": 0,
+      "frame_audit": {
+        "profile": "hdr10_pq",
+        "width": 320,
+        "height": 180,
+        "requested_frames": 2,
+        "decoded_bytes": 921600,
+        "expected_bytes": 921600,
+        "decode_returncode": 0,
+        "numeric": {
+          "available": true,
+          "reference": "production analysis_rgba8 / compose_hdr_frame",
+          "candidate_device": "cpu",
+          "candidate_shape": [
+            2,
+            180,
+            320,
+            4
+          ],
+          "analysis_mismatch_channels": 0,
+          "analysis_max_abs_code_error": 0,
+          "analysis_sha256": "7703661e1f048ae0605e416713e2828047ee84e4d942d89bf4eb8c1c23324f3a",
+          "production_analysis_sha256": "7703661e1f048ae0605e416713e2828047ee84e4d942d89bf4eb8c1c23324f3a",
+          "mix_max_abs": 0.000244140625,
+          "promotion_gate": "reject"
+        },
+        "stderr": ""
+      }
+    },
+    "hdr10_hlg": {
+      "path": "F:\\project\\DLSS5Tool\\tmp\\hdr-e2e\\source-hlg.mp4",
+      "fixture": true,
+      "metadata": {
+        "codec_name": "hevc",
+        "pix_fmt": "yuv420p10le",
+        "color_space": "bt2020nc",
+        "color_primaries": "bt2020",
+        "color_transfer": "arib-std-b67",
+        "color_range": "tv"
+      },
+      "audio_streams": 0,
+      "frame_audit": {
+        "profile": "hdr10_hlg",
+        "width": 320,
+        "height": 180,
+        "requested_frames": 2,
+        "decoded_bytes": 921600,
+        "expected_bytes": 921600,
+        "decode_returncode": 0,
+        "numeric": {
+          "available": true,
+          "reference": "production analysis_rgba8 / compose_hdr_frame",
+          "candidate_device": "cpu",
+          "candidate_shape": [
+            2,
+            180,
+            320,
+            4
+          ],
+          "analysis_mismatch_channels": 0,
+          "analysis_max_abs_code_error": 0,
+          "analysis_sha256": "238f57e0468261d9c63faf684724063e961bc1c1c7162ac333e4a4786ad0b969",
+          "production_analysis_sha256": "238f57e0468261d9c63faf684724063e961bc1c1c7162ac333e4a4786ad0b969",
+          "mix_max_abs": 0.00048828125,
+          "promotion_gate": "reject"
+        },
+        "stderr": ""
+      }
+    }
+  },
+  "blocked": [
+    "真实生产 decode→DLSS→混合→Main10 GPU/NVENC 未执行，等待 root GPU slot 与共享编译",
+    "候选算子未达到逐位数值门槛时不得 promotion；现有 8-bit ABGR H264 probe 不构成 HDR 通过",
+    "音频时间线/metadata 仅在源含音频时可检查，不能由无音频 fixture 证明"
+  ]
+}

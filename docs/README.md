@@ -49,6 +49,10 @@
 ## 文档导航
 
 - 下一轮研究交接：[光流性能与质量 TODO（用户决策、缓存收益、异步时序安全）](development/TODO_FLOW_PERFORMANCE_20260915.md)
+- GPU 常驻研究：[2026-09-15 原型](development/GPU_PIPELINE_STUDY_20260915.md)；编码合同补测：[2026-09-16 验收（未批准生产接入）](development/ENCODE_ACCEPTANCE_20260916.md)
+- 当前接入进展：[2026-09-17 编码时间戳与SDR GPU转换（候选通过，未切换默认）](development/ENCODER_INTEGRATION_20260917.md)
+- 后续落地：[2026-09-19 真实插帧与音视频封装接入（显式候选，HDR转换未完成）](development/GPU_EXPORT_INTEGRATION_20260919.md)
+- 最新本地升级：[HDR转换、普通增强、独立导出进程与应用选择已接入](development/GPU_EXPORT_UPGRADE_20260919.md)
 
 - 仓库维护：[卫生守则与空间预算](development/REPOSITORY_HYGIENE.md)、[2026-09-11 临时目录盘点](development/TMP_AUDIT_20260911.md)
 

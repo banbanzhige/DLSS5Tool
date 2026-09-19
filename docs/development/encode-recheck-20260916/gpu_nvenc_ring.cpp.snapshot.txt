@@ -1,0 +1,201 @@
+// Experiment only: FFmpeg-like HQ P5 VBR/CQ using sysmem YV12 input buffers.
+// Isolates encoder policy from CUDA interop. Does not change the application.
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+#include <cstdint>
+#include <cstring>
+#include <cstdio>
+#include "nvEncodeAPI.h"
+
+namespace {
+NV_ENCODE_API_FUNCTION_LIST api{};
+void* encoder = nullptr;
+HMODULE nvenc_mod = nullptr;
+const int kMax = 32;
+struct Slot {
+    NV_ENC_INPUT_PTR input = nullptr;
+    NV_ENC_OUTPUT_PTR bitstream = nullptr;
+};
+Slot slots[kMax];
+int nslots = 0, free_q[kMax], pending_q[kMax], ready_q[kMax];
+int nfree = 0, npending = 0, nready = 0;
+unsigned width = 0, height = 0, host_bytes = 0;
+int last_error = 0;
+char info_json[512]{};
+
+bool ok(NVENCSTATUS s) { last_error = int(s); return s == NV_ENC_SUCCESS; }
+void push(int* q, int& n, int v) { q[n++] = v; }
+int pop(int* q, int& n) { int v = q[0]; for (int i = 1; i < n; ++i) q[i - 1] = q[i]; --n; return v; }
+
+void copy_i420_to_yv12(const unsigned char* src, unsigned char* dst, unsigned pitch) {
+    unsigned chroma_pitch = pitch / 2;
+    const unsigned char* y = src;
+    const unsigned char* u = src + width * height;
+    const unsigned char* v = u + (width * height / 4);
+    for (unsigned row = 0; row < height; ++row)
+        std::memcpy(dst + row * pitch, y + row * width, width);
+    unsigned char* dst_v = dst + pitch * height;
+    unsigned char* dst_u = dst_v + chroma_pitch * (height / 2);
+    for (unsigned row = 0; row < height / 2; ++row) {
+        std::memcpy(dst_v + row * chroma_pitch, v + row * (width / 2), width / 2);
+        std::memcpy(dst_u + row * chroma_pitch, u + row * (width / 2), width / 2);
+    }
+}
+
+void destroy_slots() {
+    for (int i = 0; i < nslots; ++i) {
+        if (encoder && slots[i].bitstream) api.nvEncDestroyBitstreamBuffer(encoder, slots[i].bitstream);
+        if (encoder && slots[i].input) api.nvEncDestroyInputBuffer(encoder, slots[i].input);
+        slots[i] = {};
+    }
+    nslots = nfree = npending = nready = 0;
+}
+}
+
+extern "C" __declspec(dllexport) int ring_error() { return last_error; }
+extern "C" __declspec(dllexport) const char* ring_info() { return info_json; }
+
+extern "C" __declspec(dllexport) void ring_close() {
+    destroy_slots();
+    if (encoder) { api.nvEncDestroyEncoder(encoder); encoder = nullptr; }
+    if (nvenc_mod) { FreeLibrary(nvenc_mod); nvenc_mod = nullptr; }
+    width = height = host_bytes = 0;
+    info_json[0] = 0;
+}
+
+extern "C" __declspec(dllexport) int ring_open(void* context, unsigned w, unsigned h,
+    unsigned fps_num, unsigned fps_den, unsigned cq, unsigned fmt,
+    unsigned* out_pitch, unsigned* out_slots) {
+    if (encoder || !context || !w || !h || w * h > 360 * 640) return 0;
+    if (!fps_num || !fps_den) { fps_num = 30; fps_den = 1; }
+    if (cq > 51) cq = 19;
+    (void)fmt;
+    nvenc_mod = LoadLibraryW(L"nvEncodeAPI64.dll");
+    if (!nvenc_mod) { last_error = -1; ring_close(); return 0; }
+    auto create = reinterpret_cast<NVENCSTATUS (NVENCAPI*)(NV_ENCODE_API_FUNCTION_LIST*)>(
+        GetProcAddress(nvenc_mod, "NvEncodeAPICreateInstance"));
+    if (!create) { last_error = -2; ring_close(); return 0; }
+    api = {}; api.version = NV_ENCODE_API_FUNCTION_LIST_VER;
+    if (!ok(create(&api))) { ring_close(); return 0; }
+    NV_ENC_OPEN_ENCODE_SESSION_EX_PARAMS open{};
+    open.version = NV_ENC_OPEN_ENCODE_SESSION_EX_PARAMS_VER;
+    open.deviceType = NV_ENC_DEVICE_TYPE_CUDA; open.device = context; open.apiVersion = NVENCAPI_VERSION;
+    if (!ok(api.nvEncOpenEncodeSessionEx(&open, &encoder))) { ring_close(); return 0; }
+    NV_ENC_PRESET_CONFIG preset{};
+    preset.version = NV_ENC_PRESET_CONFIG_VER; preset.presetCfg.version = NV_ENC_CONFIG_VER;
+    if (!ok(api.nvEncGetEncodePresetConfigEx(encoder, NV_ENC_CODEC_H264_GUID, NV_ENC_PRESET_P5_GUID,
+        NV_ENC_TUNING_INFO_HIGH_QUALITY, &preset))) { ring_close(); return 0; }
+    auto config = preset.presetCfg;
+    int interval = config.frameIntervalP < 1 ? 1 : config.frameIntervalP;
+    int look = config.rcParams.enableLookahead ? int(config.rcParams.lookaheadDepth) : 0;
+    int needed = 4;
+    if (interval * 4 > needed) needed = interval * 4;
+    if (look > 0) {
+        int extra = look + interval + 1 + 4;
+        if (extra > needed) needed = extra;
+    }
+    if (needed > kMax) needed = kMax;
+    config.rcParams.rateControlMode = NV_ENC_PARAMS_RC_VBR;
+    config.rcParams.enableInitialRCQP = 1;
+    config.rcParams.initialRCQP = {26, 26, 26};
+    config.rcParams.targetQuality = static_cast<uint8_t>(cq);
+    config.rcParams.targetQualityLSB = 0;
+    config.rcParams.averageBitRate = 0;
+    config.rcParams.maxBitRate = 0;
+    config.rcParams.vbvBufferSize = 0;
+    auto& h264 = config.encodeCodecConfig.h264Config;
+    h264.sliceMode = 3; h264.sliceModeData = 1;
+    h264.idrPeriod = config.gopLength;
+    h264.chromaFormatIDC = 1;
+    h264.outputPictureTimingSEI = 1;
+    h264.disableSPSPPS = 0; h264.repeatSPSPPS = 1; h264.outputAUD = 0;
+    auto& vui = h264.h264VUIParameters;
+    vui.videoSignalTypePresentFlag = 0;
+    vui.videoFormat = NV_ENC_VUI_VIDEO_FORMAT_UNSPECIFIED;
+    vui.videoFullRangeFlag = 0;
+    vui.colourDescriptionPresentFlag = 0;
+    vui.colourPrimaries = NV_ENC_VUI_COLOR_PRIMARIES_UNSPECIFIED;
+    vui.transferCharacteristics = NV_ENC_VUI_TRANSFER_CHARACTERISTIC_UNSPECIFIED;
+    vui.colourMatrix = NV_ENC_VUI_MATRIX_COEFFS_UNSPECIFIED;
+    NV_ENC_INITIALIZE_PARAMS init{};
+    init.version = NV_ENC_INITIALIZE_PARAMS_VER;
+    init.encodeGUID = NV_ENC_CODEC_H264_GUID; init.presetGUID = NV_ENC_PRESET_P5_GUID;
+    init.encodeWidth = init.darWidth = w; init.encodeHeight = init.darHeight = h;
+    init.frameRateNum = fps_num; init.frameRateDen = fps_den;
+    init.enablePTD = 1; init.enableEncodeAsync = 0; init.encodeConfig = &config;
+    init.tuningInfo = NV_ENC_TUNING_INFO_HIGH_QUALITY;
+    if (!ok(api.nvEncInitializeEncoder(encoder, &init))) { ring_close(); return 0; }
+    width = w; height = h; host_bytes = w * h * 3 / 2;
+    for (int i = 0; i < needed; ++i) {
+        NV_ENC_CREATE_INPUT_BUFFER in{};
+        in.version = NV_ENC_CREATE_INPUT_BUFFER_VER;
+        in.width = w; in.height = h; in.bufferFmt = NV_ENC_BUFFER_FORMAT_YV12;
+        if (!ok(api.nvEncCreateInputBuffer(encoder, &in))) { ring_close(); return 0; }
+        slots[i].input = in.inputBuffer;
+        NV_ENC_CREATE_BITSTREAM_BUFFER buffer{}; buffer.version = NV_ENC_CREATE_BITSTREAM_BUFFER_VER;
+        if (!ok(api.nvEncCreateBitstreamBuffer(encoder, &buffer))) { ring_close(); return 0; }
+        slots[i].bitstream = buffer.bitstreamBuffer;
+        push(free_q, nfree, i);
+    }
+    nslots = needed;
+    std::snprintf(info_json, sizeof(info_json),
+        "{\"frameIntervalP\":%d,\"gopLength\":%u,\"enableLookahead\":%u,\"lookaheadDepth\":%u,"
+        "\"enableAQ\":%u,\"zeroReorderDelay\":%u,\"slots\":%d,\"hostBytes\":%u,\"targetQuality\":%u,"
+        "\"input\":\"sysmem-yv12\"}",
+        interval, config.gopLength, config.rcParams.enableLookahead, config.rcParams.lookaheadDepth,
+        config.rcParams.enableAQ, config.rcParams.zeroReorderDelay, nslots, host_bytes, cq);
+    if (out_pitch) *out_pitch = w;
+    if (out_slots) *out_slots = unsigned(nslots);
+    return 1;
+}
+
+static int drain_success(NVENCSTATUS status) {
+    if (status == NV_ENC_ERR_NEED_MORE_INPUT) { last_error = int(status); return 1; }
+    if (!ok(status)) return 0;
+    while (npending) push(ready_q, nready, pop(pending_q, npending));
+    return 1;
+}
+
+extern "C" __declspec(dllexport) int ring_feed(const void* host_i420, unsigned nbytes, unsigned index) {
+    if (!encoder || !host_i420 || nbytes != host_bytes || nfree < 1) { last_error = -4; return 0; }
+    int id = pop(free_q, nfree);
+    NV_ENC_LOCK_INPUT_BUFFER lock{}; lock.version = NV_ENC_LOCK_INPUT_BUFFER_VER;
+    lock.inputBuffer = slots[id].input;
+    if (!ok(api.nvEncLockInputBuffer(encoder, &lock))) { push(free_q, nfree, id); return 0; }
+    copy_i420_to_yv12(static_cast<const unsigned char*>(host_i420),
+                      static_cast<unsigned char*>(lock.bufferDataPtr), lock.pitch);
+    api.nvEncUnlockInputBuffer(encoder, slots[id].input);
+    NV_ENC_PIC_PARAMS pic{}; pic.version = NV_ENC_PIC_PARAMS_VER;
+    pic.inputBuffer = slots[id].input;
+    pic.bufferFmt = NV_ENC_BUFFER_FORMAT_YV12;
+    pic.inputWidth = width; pic.inputHeight = height; pic.inputPitch = lock.pitch;
+    pic.outputBitstream = slots[id].bitstream;
+    pic.pictureStruct = NV_ENC_PIC_STRUCT_FRAME;
+    pic.frameIdx = index; pic.inputTimeStamp = index; pic.inputDuration = 1;
+    NVENCSTATUS status = api.nvEncEncodePicture(encoder, &pic);
+    push(pending_q, npending, id);
+    return drain_success(status);
+}
+
+extern "C" __declspec(dllexport) int ring_pop(void* bytes, unsigned capacity, unsigned* size) {
+    if (!encoder || !bytes || !size) return 0;
+    if (!nready) { *size = 0; return 1; }
+    int id = pop(ready_q, nready);
+    NV_ENC_LOCK_BITSTREAM lock{}; lock.version = NV_ENC_LOCK_BITSTREAM_VER;
+    lock.outputBitstream = slots[id].bitstream; lock.doNotWait = 0;
+    if (!ok(api.nvEncLockBitstream(encoder, &lock))) { push(ready_q, nready, id); return 0; }
+    *size = lock.bitstreamSizeInBytes;
+    bool copied = *size <= capacity;
+    if (copied && *size) std::memcpy(bytes, lock.bitstreamBufferPtr, *size);
+    if (!copied) last_error = -3;
+    api.nvEncUnlockBitstream(encoder, slots[id].bitstream);
+    push(free_q, nfree, id);
+    return copied ? 1 : 0;
+}
+
+extern "C" __declspec(dllexport) int ring_flush() {
+    if (!encoder) return 0;
+    NV_ENC_PIC_PARAMS pic{}; pic.version = NV_ENC_PIC_PARAMS_VER;
+    pic.encodePicFlags = NV_ENC_PIC_FLAG_EOS;
+    return drain_success(api.nvEncEncodePicture(encoder, &pic));
+}

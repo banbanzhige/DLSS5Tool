@@ -1,0 +1,156 @@
+{
+  "case": "contract",
+  "argv": [
+    "scripts/encode_recheck.py",
+    "--work",
+    "tmp/encode-recheck-20260916",
+    "--case",
+    "contract"
+  ],
+  "script_sha256": "cd55169955359e80e457c22cd21e92a8e1c2c07dd535d4dd982c9174ed44f94c",
+  "source_files": {
+    "dlss5tool/video_export.py": "f636105c8ad29d759d108fe50de7a17ff78721d50d9ee3f93f23bad09172c808",
+    "scripts/gpu_pipeline_candidates.py": "3a1e6252cf023399554454a61b95254c0ddedb34913ca056ec1caab7f0ff0648",
+    "scripts/encode_acceptance_nvenc_contract.py": "cc86996e41a7ba47cf922e992728d0509fa05bd2308598faa183dac687003ded",
+    "scripts/gpu_nvenc_probe.cpp": "277a6a533cff266528ba1c1d24ad5a8a6229dcbf983d72bffd1e7a34751e278e",
+    "scripts/gpu_nvenc_ring.cpp": "c84f1fa677e986f9076779136b530bea55d759481ada6c1b48ed58ed8cd04506"
+  },
+  "git_head": "0ecfad33c61c7a93497456ab9e597a62ab817ab7",
+  "scope": "24 frames 360x640 encoder-contract retest; no DLSS; native HQ single-slot/ring vs production FFmpeg",
+  "frames": 24,
+  "dimensions": [
+    360,
+    640
+  ],
+  "fps": 60.0,
+  "cases": {
+    "correct-bgra-argb": {
+      "seconds": 0.106335,
+      "packets": 24,
+      "bytes": 161007,
+      "sha256": "aa78ce215e4c203586c53de4d0430715c19e7ab6e82c48463689b363be2ca90a",
+      "vs_production": {
+        "equal": false,
+        "changed": 13414969,
+        "values": 16588800,
+        "max_abs": 21.0,
+        "mae": 1.8976518494405865,
+        "bias": 0.7400547960069445,
+        "psnr_db": 40.09479768867728
+      }
+    },
+    "correct-rgba-abgr": {
+      "seconds": 0.105621,
+      "packets": 24,
+      "bytes": 161007,
+      "sha256": "aa78ce215e4c203586c53de4d0430715c19e7ab6e82c48463689b363be2ca90a",
+      "vs_production": {
+        "equal": false,
+        "changed": 13414969,
+        "values": 16588800,
+        "max_abs": 21.0,
+        "mae": 1.8976518494405865,
+        "bias": 0.7400547960069445,
+        "psnr_db": 40.09479768867728
+      }
+    },
+    "wrong-bgra-abgr-control": {
+      "seconds": 0.097655,
+      "packets": 24,
+      "bytes": 160394,
+      "sha256": "61f463ee68a6c51ef08e24b1d52de94490f5a5ef9143c64d6df65da999e02d84",
+      "vs_production": {
+        "equal": false,
+        "changed": 15353273,
+        "values": 16588800,
+        "max_abs": 130.0,
+        "mae": 14.817114559220679,
+        "bias": 0.5441579861111111,
+        "psnr_db": 21.694706849943604
+      }
+    },
+    "nv12": {
+      "seconds": 0.131014,
+      "packets": 24,
+      "bytes": 159639,
+      "sha256": "03729f5bd80968911af1daac5e535ba6c7e763dcccb909d28706965a20aad57b",
+      "vs_production": {
+        "equal": false,
+        "changed": 13429612,
+        "values": 16588800,
+        "max_abs": 24.0,
+        "mae": 1.896242705922068,
+        "bias": 0.752314754533179,
+        "psnr_db": 40.12092391848279
+      }
+    }
+  },
+  "source_pixels_sha256": "114a069619792a54cf3ec4991fe24fcdc70a7b0de2a5a3b60bf3a1e059e442c6",
+  "baseline_repeat": {
+    "equal": true,
+    "changed": 0,
+    "values": 16588800,
+    "max_abs": 0.0,
+    "mae": 0.0,
+    "bias": 0.0,
+    "psnr_db": null
+  },
+  "ffmpeg_i420_vs_production": {
+    "equal": true,
+    "changed": 0,
+    "values": 16588800,
+    "max_abs": 0.0,
+    "mae": 0.0,
+    "bias": 0.0,
+    "psnr_db": null
+  },
+  "native_binary_sha256": "28fa970d0c4ba6933cc775a27c70cdd308010a4532c09d250e747ed5def33970",
+  "correct_channel_layouts_match": {
+    "equal": true,
+    "changed": 0,
+    "values": 16588800,
+    "max_abs": 0.0,
+    "mae": 0.0,
+    "bias": 0.0,
+    "psnr_db": null
+  },
+  "wrong_layout_vs_correct": {
+    "equal": false,
+    "changed": 15311029,
+    "values": 16588800,
+    "max_abs": 127.0,
+    "mae": 14.81349410445602,
+    "bias": -0.19589680989583333,
+    "psnr_db": 21.68854092662372
+  },
+  "ring_binary_sha256": "f36d7de31ea0ce0b66a3c08fcc34574aa66cd69018ec569e377ed234f754af63",
+  "ring": {
+    "seconds": 0.129719,
+    "packets": 24,
+    "bytes": 126165,
+    "sha256": "5c69b0104bf7cb0e4df41a81c8e5d11235994a5cce36774e0e4695e5c864de73",
+    "preset": {
+      "frameIntervalP": 4,
+      "gopLength": 250,
+      "enableLookahead": 0,
+      "lookaheadDepth": 0,
+      "enableAQ": 0,
+      "zeroReorderDelay": 0,
+      "slots": 16,
+      "hostBytes": 345600,
+      "targetQuality": 19,
+      "input": "sysmem-yv12"
+    },
+    "vs_production": {
+      "equal": false,
+      "changed": 7342043,
+      "values": 16588800,
+      "max_abs": 16.0,
+      "mae": 0.7358807146990741,
+      "bias": 0.026452787422839505,
+      "psnr_db": 46.03039156696138
+    }
+  },
+  "promotion": "not production-equivalent",
+  "status": "completed"
+}

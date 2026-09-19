@@ -1,0 +1,1684 @@
+{
+  "scope": "Exploratory GPU SDR conversion; NOT accepted for production or performance.",
+  "argv": [
+    "scripts/sdr_yuv_conversion_probe.py",
+    "--work",
+    "tmp/encode-integration-20260917/sdr-conversion",
+    "--label",
+    "box-floor",
+    "--method",
+    "floor"
+  ],
+  "script_sha256": "62e48f3515c2ddace2f8a475f95550d36adbfd03c3e7007da32c67a7fbe087c9",
+  "coefficients": {
+    "y": [
+      3208,
+      16519,
+      8414
+    ],
+    "u": [
+      14392,
+      -9528,
+      -4865
+    ],
+    "v": [
+      -2332,
+      -12061,
+      14392
+    ]
+  },
+  "cases": [
+    {
+      "fixture": "black",
+      "size": [
+        64,
+        48
+      ],
+      "input_sha256": "2d07a41ae992770085117e9815300bfd0730745883e60b24aaad5e69dfc087ae",
+      "reference_sha256": "29f9b2b7cf93cdafa8ef4e1b96fe1f22a1742620b6dc31fbd6ca8ad08df0ceed",
+      "gpu_sha256": "29f9b2b7cf93cdafa8ef4e1b96fe1f22a1742620b6dc31fbd6ca8ad08df0ceed",
+      "scalar_sha256": "29f9b2b7cf93cdafa8ef4e1b96fe1f22a1742620b6dc31fbd6ca8ad08df0ceed",
+      "gpu_equal": true,
+      "scalar_equal": true,
+      "gpu_difference": {
+        "y": {
+          "mismatches": 0,
+          "samples": 3072,
+          "max_abs": 0,
+          "signed_sum": 0,
+          "first": []
+        },
+        "u": {
+          "mismatches": 0,
+          "samples": 768,
+          "max_abs": 0,
+          "signed_sum": 0,
+          "first": []
+        },
+        "v": {
+          "mismatches": 0,
+          "samples": 768,
+          "max_abs": 0,
+          "signed_sum": 0,
+          "first": []
+        }
+      },
+      "scalar_difference": {
+        "y": {
+          "mismatches": 0,
+          "samples": 3072,
+          "max_abs": 0,
+          "signed_sum": 0,
+          "first": []
+        },
+        "u": {
+          "mismatches": 0,
+          "samples": 768,
+          "max_abs": 0,
+          "signed_sum": 0,
+          "first": []
+        },
+        "v": {
+          "mismatches": 0,
+          "samples": 768,
+          "max_abs": 0,
+          "signed_sum": 0,
+          "first": []
+        }
+      }
+    },
+    {
+      "fixture": "white",
+      "size": [
+        64,
+        48
+      ],
+      "input_sha256": "a27a50c72e45c4f5a44249d2913d9c56b43815d800757303c49dd643c5f40818",
+      "reference_sha256": "84835c6ac69852dc4f23392a35b5cb6a35a6b3820e9ea2d6cd77c3af83d7df83",
+      "gpu_sha256": "84835c6ac69852dc4f23392a35b5cb6a35a6b3820e9ea2d6cd77c3af83d7df83",
+      "scalar_sha256": "84835c6ac69852dc4f23392a35b5cb6a35a6b3820e9ea2d6cd77c3af83d7df83",
+      "gpu_equal": true,
+      "scalar_equal": true,
+      "gpu_difference": {
+        "y": {
+          "mismatches": 0,
+          "samples": 3072,
+          "max_abs": 0,
+          "signed_sum": 0,
+          "first": []
+        },
+        "u": {
+          "mismatches": 0,
+          "samples": 768,
+          "max_abs": 0,
+          "signed_sum": 0,
+          "first": []
+        },
+        "v": {
+          "mismatches": 0,
+          "samples": 768,
+          "max_abs": 0,
+          "signed_sum": 0,
+          "first": []
+        }
+      },
+      "scalar_difference": {
+        "y": {
+          "mismatches": 0,
+          "samples": 3072,
+          "max_abs": 0,
+          "signed_sum": 0,
+          "first": []
+        },
+        "u": {
+          "mismatches": 0,
+          "samples": 768,
+          "max_abs": 0,
+          "signed_sum": 0,
+          "first": []
+        },
+        "v": {
+          "mismatches": 0,
+          "samples": 768,
+          "max_abs": 0,
+          "signed_sum": 0,
+          "first": []
+        }
+      }
+    },
+    {
+      "fixture": "ramp",
+      "size": [
+        64,
+        48
+      ],
+      "input_sha256": "1a2bb8271ee3bf82c2f61b1815ce0fffbee1476570c0732fbc0c7760b6b85514",
+      "reference_sha256": "162f9fe98f6e83f24a0065116a597a53ffae57c00575326fb6571ac806bcc60b",
+      "gpu_sha256": "ebd05a85573f2f453699322152c154800aa198f17aedeb8c55a9b8ff4e9f881e",
+      "scalar_sha256": "162f9fe98f6e83f24a0065116a597a53ffae57c00575326fb6571ac806bcc60b",
+      "gpu_equal": false,
+      "scalar_equal": true,
+      "gpu_difference": {
+        "y": {
+          "mismatches": 0,
+          "samples": 3072,
+          "max_abs": 0,
+          "signed_sum": 0,
+          "first": []
+        },
+        "u": {
+          "mismatches": 58,
+          "samples": 768,
+          "max_abs": 1,
+          "signed_sum": 58,
+          "first": [
+            {
+              "x": 14,
+              "y": 0,
+              "actual": 136,
+              "expected": 135
+            },
+            {
+              "x": 26,
+              "y": 0,
+              "actual": 143,
+              "expected": 142
+            },
+            {
+              "x": 0,
+              "y": 1,
+              "actual": 127,
+              "expected": 126
+            },
+            {
+              "x": 12,
+              "y": 1,
+              "actual": 134,
+              "expected": 133
+            },
+            {
+              "x": 24,
+              "y": 1,
+              "actual": 141,
+              "expected": 140
+            },
+            {
+              "x": 31,
+              "y": 1,
+              "actual": 145,
+              "expected": 144
+            },
+            {
+              "x": 17,
+              "y": 2,
+              "actual": 136,
+              "expected": 135
+            },
+            {
+              "x": 29,
+              "y": 2,
+              "actual": 143,
+              "expected": 142
+            }
+          ]
+        },
+        "v": {
+          "mismatches": 172,
+          "samples": 768,
+          "max_abs": 1,
+          "signed_sum": -172,
+          "first": [
+            {
+              "x": 1,
+              "y": 0,
+              "actual": 128,
+              "expected": 129
+            },
+            {
+              "x": 5,
+              "y": 0,
+              "actual": 131,
+              "expected": 132
+            },
+            {
+              "x": 9,
+              "y": 0,
+              "actual": 134,
+              "expected": 135
+            },
+            {
+              "x": 13,
+              "y": 0,
+              "actual": 137,
+              "expected": 138
+            },
+            {
+              "x": 16,
+              "y": 0,
+              "actual": 139,
+              "expected": 140
+            },
+            {
+              "x": 20,
+              "y": 0,
+              "actual": 142,
+              "expected": 143
+            },
+            {
+              "x": 24,
+              "y": 0,
+              "actual": 145,
+              "expected": 146
+            },
+            {
+              "x": 28,
+              "y": 0,
+              "actual": 148,
+              "expected": 149
+            }
+          ]
+        }
+      },
+      "scalar_difference": {
+        "y": {
+          "mismatches": 0,
+          "samples": 3072,
+          "max_abs": 0,
+          "signed_sum": 0,
+          "first": []
+        },
+        "u": {
+          "mismatches": 0,
+          "samples": 768,
+          "max_abs": 0,
+          "signed_sum": 0,
+          "first": []
+        },
+        "v": {
+          "mismatches": 0,
+          "samples": 768,
+          "max_abs": 0,
+          "signed_sum": 0,
+          "first": []
+        }
+      }
+    },
+    {
+      "fixture": "random",
+      "size": [
+        64,
+        48
+      ],
+      "input_sha256": "854d86590c72e2fb32890df2207469f344429271c2050b3e2fd3743aa280cd7a",
+      "reference_sha256": "cc9cacbf0401a6ca86cce38eb4920f053bd5a32145528b0368089e9426ffef5a",
+      "gpu_sha256": "d28673fc617f02ca9b84214ee537e78726b21034086e6f50ea724e99199086c5",
+      "scalar_sha256": "cc9cacbf0401a6ca86cce38eb4920f053bd5a32145528b0368089e9426ffef5a",
+      "gpu_equal": false,
+      "scalar_equal": true,
+      "gpu_difference": {
+        "y": {
+          "mismatches": 0,
+          "samples": 3072,
+          "max_abs": 0,
+          "signed_sum": 0,
+          "first": []
+        },
+        "u": {
+          "mismatches": 106,
+          "samples": 768,
+          "max_abs": 1,
+          "signed_sum": 2,
+          "first": [
+            {
+              "x": 2,
+              "y": 0,
+              "actual": 97,
+              "expected": 96
+            },
+            {
+              "x": 5,
+              "y": 0,
+              "actual": 144,
+              "expected": 143
+            },
+            {
+              "x": 24,
+              "y": 0,
+              "actual": 91,
+              "expected": 92
+            },
+            {
+              "x": 25,
+              "y": 0,
+              "actual": 137,
+              "expected": 136
+            },
+            {
+              "x": 26,
+              "y": 0,
+              "actual": 141,
+              "expected": 142
+            },
+            {
+              "x": 30,
+              "y": 0,
+              "actual": 156,
+              "expected": 157
+            },
+            {
+              "x": 9,
+              "y": 1,
+              "actual": 149,
+              "expected": 150
+            },
+            {
+              "x": 10,
+              "y": 1,
+              "actual": 116,
+              "expected": 117
+            }
+          ]
+        },
+        "v": {
+          "mismatches": 109,
+          "samples": 768,
+          "max_abs": 1,
+          "signed_sum": 3,
+          "first": [
+            {
+              "x": 29,
+              "y": 0,
+              "actual": 133,
+              "expected": 134
+            },
+            {
+              "x": 31,
+              "y": 0,
+              "actual": 107,
+              "expected": 106
+            },
+            {
+              "x": 3,
+              "y": 1,
+              "actual": 145,
+              "expected": 146
+            },
+            {
+              "x": 7,
+              "y": 1,
+              "actual": 114,
+              "expected": 115
+            },
+            {
+              "x": 10,
+              "y": 1,
+              "actual": 152,
+              "expected": 153
+            },
+            {
+              "x": 18,
+              "y": 1,
+              "actual": 125,
+              "expected": 126
+            },
+            {
+              "x": 23,
+              "y": 1,
+              "actual": 149,
+              "expected": 150
+            },
+            {
+              "x": 0,
+              "y": 2,
+              "actual": 169,
+              "expected": 170
+            }
+          ]
+        }
+      },
+      "scalar_difference": {
+        "y": {
+          "mismatches": 0,
+          "samples": 3072,
+          "max_abs": 0,
+          "signed_sum": 0,
+          "first": []
+        },
+        "u": {
+          "mismatches": 0,
+          "samples": 768,
+          "max_abs": 0,
+          "signed_sum": 0,
+          "first": []
+        },
+        "v": {
+          "mismatches": 0,
+          "samples": 768,
+          "max_abs": 0,
+          "signed_sum": 0,
+          "first": []
+        }
+      }
+    },
+    {
+      "fixture": "red-row",
+      "size": [
+        64,
+        48
+      ],
+      "input_sha256": "e650dbe28b795f98a33fbf56e28e5b7d7816f12d6fd95538746c111f2371f337",
+      "reference_sha256": "8f21b05b9533d3c00e7339eb103dc4a1c557c36f48cd9b15a3f47efa9e404abf",
+      "gpu_sha256": "8f21b05b9533d3c00e7339eb103dc4a1c557c36f48cd9b15a3f47efa9e404abf",
+      "scalar_sha256": "8f21b05b9533d3c00e7339eb103dc4a1c557c36f48cd9b15a3f47efa9e404abf",
+      "gpu_equal": true,
+      "scalar_equal": true,
+      "gpu_difference": {
+        "y": {
+          "mismatches": 0,
+          "samples": 3072,
+          "max_abs": 0,
+          "signed_sum": 0,
+          "first": []
+        },
+        "u": {
+          "mismatches": 0,
+          "samples": 768,
+          "max_abs": 0,
+          "signed_sum": 0,
+          "first": []
+        },
+        "v": {
+          "mismatches": 0,
+          "samples": 768,
+          "max_abs": 0,
+          "signed_sum": 0,
+          "first": []
+        }
+      },
+      "scalar_difference": {
+        "y": {
+          "mismatches": 0,
+          "samples": 3072,
+          "max_abs": 0,
+          "signed_sum": 0,
+          "first": []
+        },
+        "u": {
+          "mismatches": 0,
+          "samples": 768,
+          "max_abs": 0,
+          "signed_sum": 0,
+          "first": []
+        },
+        "v": {
+          "mismatches": 0,
+          "samples": 768,
+          "max_abs": 0,
+          "signed_sum": 0,
+          "first": []
+        }
+      }
+    },
+    {
+      "fixture": "red-checker",
+      "size": [
+        64,
+        48
+      ],
+      "input_sha256": "5f471b0c7c5e8941a6187956e7e38f79e20a40b8680f26af848ecce203dce6e2",
+      "reference_sha256": "db1c3a5cea13cb98f9b416649a3348cd617f3ec480dd3719f299b7483fcdf486",
+      "gpu_sha256": "db1c3a5cea13cb98f9b416649a3348cd617f3ec480dd3719f299b7483fcdf486",
+      "scalar_sha256": "db1c3a5cea13cb98f9b416649a3348cd617f3ec480dd3719f299b7483fcdf486",
+      "gpu_equal": true,
+      "scalar_equal": true,
+      "gpu_difference": {
+        "y": {
+          "mismatches": 0,
+          "samples": 3072,
+          "max_abs": 0,
+          "signed_sum": 0,
+          "first": []
+        },
+        "u": {
+          "mismatches": 0,
+          "samples": 768,
+          "max_abs": 0,
+          "signed_sum": 0,
+          "first": []
+        },
+        "v": {
+          "mismatches": 0,
+          "samples": 768,
+          "max_abs": 0,
+          "signed_sum": 0,
+          "first": []
+        }
+      },
+      "scalar_difference": {
+        "y": {
+          "mismatches": 0,
+          "samples": 3072,
+          "max_abs": 0,
+          "signed_sum": 0,
+          "first": []
+        },
+        "u": {
+          "mismatches": 0,
+          "samples": 768,
+          "max_abs": 0,
+          "signed_sum": 0,
+          "first": []
+        },
+        "v": {
+          "mismatches": 0,
+          "samples": 768,
+          "max_abs": 0,
+          "signed_sum": 0,
+          "first": []
+        }
+      }
+    },
+    {
+      "fixture": "black",
+      "size": [
+        320,
+        180
+      ],
+      "input_sha256": "53853188f83a941e2f45ec1383293ae935106c5721918079000dcb2254fc550b",
+      "reference_sha256": "77308802cc32b84584f7239a4b3747f790c65ffbd69cf5b4178a2b25f4b73683",
+      "gpu_sha256": "77308802cc32b84584f7239a4b3747f790c65ffbd69cf5b4178a2b25f4b73683",
+      "scalar_sha256": "77308802cc32b84584f7239a4b3747f790c65ffbd69cf5b4178a2b25f4b73683",
+      "gpu_equal": true,
+      "scalar_equal": true,
+      "gpu_difference": {
+        "y": {
+          "mismatches": 0,
+          "samples": 57600,
+          "max_abs": 0,
+          "signed_sum": 0,
+          "first": []
+        },
+        "u": {
+          "mismatches": 0,
+          "samples": 14400,
+          "max_abs": 0,
+          "signed_sum": 0,
+          "first": []
+        },
+        "v": {
+          "mismatches": 0,
+          "samples": 14400,
+          "max_abs": 0,
+          "signed_sum": 0,
+          "first": []
+        }
+      },
+      "scalar_difference": {
+        "y": {
+          "mismatches": 0,
+          "samples": 57600,
+          "max_abs": 0,
+          "signed_sum": 0,
+          "first": []
+        },
+        "u": {
+          "mismatches": 0,
+          "samples": 14400,
+          "max_abs": 0,
+          "signed_sum": 0,
+          "first": []
+        },
+        "v": {
+          "mismatches": 0,
+          "samples": 14400,
+          "max_abs": 0,
+          "signed_sum": 0,
+          "first": []
+        }
+      }
+    },
+    {
+      "fixture": "white",
+      "size": [
+        320,
+        180
+      ],
+      "input_sha256": "07a38b70bc25eaddf9c4c4184b18fd9015598d321c56e013eac1b284f1eabe9b",
+      "reference_sha256": "779c871ed97090345fb550a7333f4f15a116c4c3a96e1c5abfd4a4c4632a4ecf",
+      "gpu_sha256": "779c871ed97090345fb550a7333f4f15a116c4c3a96e1c5abfd4a4c4632a4ecf",
+      "scalar_sha256": "779c871ed97090345fb550a7333f4f15a116c4c3a96e1c5abfd4a4c4632a4ecf",
+      "gpu_equal": true,
+      "scalar_equal": true,
+      "gpu_difference": {
+        "y": {
+          "mismatches": 0,
+          "samples": 57600,
+          "max_abs": 0,
+          "signed_sum": 0,
+          "first": []
+        },
+        "u": {
+          "mismatches": 0,
+          "samples": 14400,
+          "max_abs": 0,
+          "signed_sum": 0,
+          "first": []
+        },
+        "v": {
+          "mismatches": 0,
+          "samples": 14400,
+          "max_abs": 0,
+          "signed_sum": 0,
+          "first": []
+        }
+      },
+      "scalar_difference": {
+        "y": {
+          "mismatches": 0,
+          "samples": 57600,
+          "max_abs": 0,
+          "signed_sum": 0,
+          "first": []
+        },
+        "u": {
+          "mismatches": 0,
+          "samples": 14400,
+          "max_abs": 0,
+          "signed_sum": 0,
+          "first": []
+        },
+        "v": {
+          "mismatches": 0,
+          "samples": 14400,
+          "max_abs": 0,
+          "signed_sum": 0,
+          "first": []
+        }
+      }
+    },
+    {
+      "fixture": "ramp",
+      "size": [
+        320,
+        180
+      ],
+      "input_sha256": "e076a1f631317d9db7319e3c3120aca1c8b61556a7bb2a310ea59f3e005dc361",
+      "reference_sha256": "65a9a485207e7788e273f6fbb3d1abec33d454433a605ce126ab3a16666f0814",
+      "gpu_sha256": "31e32904c946f3c3ab1b987bf86a64a0b353ab1b104557217b275fece59ab183",
+      "scalar_sha256": "65a9a485207e7788e273f6fbb3d1abec33d454433a605ce126ab3a16666f0814",
+      "gpu_equal": false,
+      "scalar_equal": true,
+      "gpu_difference": {
+        "y": {
+          "mismatches": 0,
+          "samples": 57600,
+          "max_abs": 0,
+          "signed_sum": 0,
+          "first": []
+        },
+        "u": {
+          "mismatches": 1071,
+          "samples": 14400,
+          "max_abs": 1,
+          "signed_sum": 1071,
+          "first": [
+            {
+              "x": 14,
+              "y": 0,
+              "actual": 136,
+              "expected": 135
+            },
+            {
+              "x": 26,
+              "y": 0,
+              "actual": 143,
+              "expected": 142
+            },
+            {
+              "x": 38,
+              "y": 0,
+              "actual": 150,
+              "expected": 149
+            },
+            {
+              "x": 57,
+              "y": 0,
+              "actual": 161,
+              "expected": 160
+            },
+            {
+              "x": 69,
+              "y": 0,
+              "actual": 168,
+              "expected": 167
+            },
+            {
+              "x": 81,
+              "y": 0,
+              "actual": 175,
+              "expected": 174
+            },
+            {
+              "x": 93,
+              "y": 0,
+              "actual": 182,
+              "expected": 181
+            },
+            {
+              "x": 100,
+              "y": 0,
+              "actual": 186,
+              "expected": 185
+            }
+          ]
+        },
+        "v": {
+          "mismatches": 3186,
+          "samples": 14400,
+          "max_abs": 1,
+          "signed_sum": -3186,
+          "first": [
+            {
+              "x": 1,
+              "y": 0,
+              "actual": 128,
+              "expected": 129
+            },
+            {
+              "x": 5,
+              "y": 0,
+              "actual": 131,
+              "expected": 132
+            },
+            {
+              "x": 9,
+              "y": 0,
+              "actual": 134,
+              "expected": 135
+            },
+            {
+              "x": 13,
+              "y": 0,
+              "actual": 137,
+              "expected": 138
+            },
+            {
+              "x": 16,
+              "y": 0,
+              "actual": 139,
+              "expected": 140
+            },
+            {
+              "x": 20,
+              "y": 0,
+              "actual": 142,
+              "expected": 143
+            },
+            {
+              "x": 24,
+              "y": 0,
+              "actual": 145,
+              "expected": 146
+            },
+            {
+              "x": 28,
+              "y": 0,
+              "actual": 148,
+              "expected": 149
+            }
+          ]
+        }
+      },
+      "scalar_difference": {
+        "y": {
+          "mismatches": 0,
+          "samples": 57600,
+          "max_abs": 0,
+          "signed_sum": 0,
+          "first": []
+        },
+        "u": {
+          "mismatches": 0,
+          "samples": 14400,
+          "max_abs": 0,
+          "signed_sum": 0,
+          "first": []
+        },
+        "v": {
+          "mismatches": 0,
+          "samples": 14400,
+          "max_abs": 0,
+          "signed_sum": 0,
+          "first": []
+        }
+      }
+    },
+    {
+      "fixture": "random",
+      "size": [
+        320,
+        180
+      ],
+      "input_sha256": "8d6a2229e56754b996554be4f54e8de020cea11c30fa4c0e9847649e3e630745",
+      "reference_sha256": "b8aa1ea1e3d1032397078a2f1d7576d11dd1ebcaf7d4f9eeb6fdf72d3a124202",
+      "gpu_sha256": "329d01b93b277f6017581c68ef94492124bdcf3a9bb548be9f8b50f3b8ab58e3",
+      "scalar_sha256": "b8aa1ea1e3d1032397078a2f1d7576d11dd1ebcaf7d4f9eeb6fdf72d3a124202",
+      "gpu_equal": false,
+      "scalar_equal": true,
+      "gpu_difference": {
+        "y": {
+          "mismatches": 0,
+          "samples": 57600,
+          "max_abs": 0,
+          "signed_sum": 0,
+          "first": []
+        },
+        "u": {
+          "mismatches": 1784,
+          "samples": 14400,
+          "max_abs": 1,
+          "signed_sum": -22,
+          "first": [
+            {
+              "x": 24,
+              "y": 0,
+              "actual": 123,
+              "expected": 124
+            },
+            {
+              "x": 27,
+              "y": 0,
+              "actual": 135,
+              "expected": 136
+            },
+            {
+              "x": 51,
+              "y": 0,
+              "actual": 113,
+              "expected": 112
+            },
+            {
+              "x": 54,
+              "y": 0,
+              "actual": 125,
+              "expected": 126
+            },
+            {
+              "x": 57,
+              "y": 0,
+              "actual": 110,
+              "expected": 109
+            },
+            {
+              "x": 75,
+              "y": 0,
+              "actual": 125,
+              "expected": 126
+            },
+            {
+              "x": 81,
+              "y": 0,
+              "actual": 127,
+              "expected": 126
+            },
+            {
+              "x": 87,
+              "y": 0,
+              "actual": 119,
+              "expected": 118
+            }
+          ]
+        },
+        "v": {
+          "mismatches": 1911,
+          "samples": 14400,
+          "max_abs": 1,
+          "signed_sum": 25,
+          "first": [
+            {
+              "x": 15,
+              "y": 0,
+              "actual": 173,
+              "expected": 174
+            },
+            {
+              "x": 35,
+              "y": 0,
+              "actual": 114,
+              "expected": 115
+            },
+            {
+              "x": 46,
+              "y": 0,
+              "actual": 117,
+              "expected": 116
+            },
+            {
+              "x": 49,
+              "y": 0,
+              "actual": 100,
+              "expected": 99
+            },
+            {
+              "x": 51,
+              "y": 0,
+              "actual": 143,
+              "expected": 144
+            },
+            {
+              "x": 61,
+              "y": 0,
+              "actual": 138,
+              "expected": 137
+            },
+            {
+              "x": 80,
+              "y": 0,
+              "actual": 127,
+              "expected": 126
+            },
+            {
+              "x": 86,
+              "y": 0,
+              "actual": 133,
+              "expected": 134
+            }
+          ]
+        }
+      },
+      "scalar_difference": {
+        "y": {
+          "mismatches": 0,
+          "samples": 57600,
+          "max_abs": 0,
+          "signed_sum": 0,
+          "first": []
+        },
+        "u": {
+          "mismatches": 0,
+          "samples": 14400,
+          "max_abs": 0,
+          "signed_sum": 0,
+          "first": []
+        },
+        "v": {
+          "mismatches": 0,
+          "samples": 14400,
+          "max_abs": 0,
+          "signed_sum": 0,
+          "first": []
+        }
+      }
+    },
+    {
+      "fixture": "red-row",
+      "size": [
+        320,
+        180
+      ],
+      "input_sha256": "4c79571a603ff35e5d522b4d1c7b2c5d65ffbe9f3a90721dec9757e40fb977ef",
+      "reference_sha256": "570479e46777936eb834040ed64e842ac2d76022787c1e70d94153a2daeee830",
+      "gpu_sha256": "570479e46777936eb834040ed64e842ac2d76022787c1e70d94153a2daeee830",
+      "scalar_sha256": "570479e46777936eb834040ed64e842ac2d76022787c1e70d94153a2daeee830",
+      "gpu_equal": true,
+      "scalar_equal": true,
+      "gpu_difference": {
+        "y": {
+          "mismatches": 0,
+          "samples": 57600,
+          "max_abs": 0,
+          "signed_sum": 0,
+          "first": []
+        },
+        "u": {
+          "mismatches": 0,
+          "samples": 14400,
+          "max_abs": 0,
+          "signed_sum": 0,
+          "first": []
+        },
+        "v": {
+          "mismatches": 0,
+          "samples": 14400,
+          "max_abs": 0,
+          "signed_sum": 0,
+          "first": []
+        }
+      },
+      "scalar_difference": {
+        "y": {
+          "mismatches": 0,
+          "samples": 57600,
+          "max_abs": 0,
+          "signed_sum": 0,
+          "first": []
+        },
+        "u": {
+          "mismatches": 0,
+          "samples": 14400,
+          "max_abs": 0,
+          "signed_sum": 0,
+          "first": []
+        },
+        "v": {
+          "mismatches": 0,
+          "samples": 14400,
+          "max_abs": 0,
+          "signed_sum": 0,
+          "first": []
+        }
+      }
+    },
+    {
+      "fixture": "red-checker",
+      "size": [
+        320,
+        180
+      ],
+      "input_sha256": "60b93ac825ca8d6c921e254b14c2ef470f571dc7fc5a95d099e373d7f9b178d1",
+      "reference_sha256": "92809ee452096c521f123c506d7577ea5ba8782d5195e6947709cd399bb1a60c",
+      "gpu_sha256": "92809ee452096c521f123c506d7577ea5ba8782d5195e6947709cd399bb1a60c",
+      "scalar_sha256": "92809ee452096c521f123c506d7577ea5ba8782d5195e6947709cd399bb1a60c",
+      "gpu_equal": true,
+      "scalar_equal": true,
+      "gpu_difference": {
+        "y": {
+          "mismatches": 0,
+          "samples": 57600,
+          "max_abs": 0,
+          "signed_sum": 0,
+          "first": []
+        },
+        "u": {
+          "mismatches": 0,
+          "samples": 14400,
+          "max_abs": 0,
+          "signed_sum": 0,
+          "first": []
+        },
+        "v": {
+          "mismatches": 0,
+          "samples": 14400,
+          "max_abs": 0,
+          "signed_sum": 0,
+          "first": []
+        }
+      },
+      "scalar_difference": {
+        "y": {
+          "mismatches": 0,
+          "samples": 57600,
+          "max_abs": 0,
+          "signed_sum": 0,
+          "first": []
+        },
+        "u": {
+          "mismatches": 0,
+          "samples": 14400,
+          "max_abs": 0,
+          "signed_sum": 0,
+          "first": []
+        },
+        "v": {
+          "mismatches": 0,
+          "samples": 14400,
+          "max_abs": 0,
+          "signed_sum": 0,
+          "first": []
+        }
+      }
+    },
+    {
+      "fixture": "black",
+      "size": [
+        321,
+        181
+      ],
+      "input_sha256": "95d2bc7b78e98cde59b5cca63d6b31b6384ab9f321954e073a3f95fddd5366b7",
+      "reference_sha256": "2efd75a46f7d4bb76cf7376822a6f85d29e906b8c14be84793b8ecc5236461c6",
+      "gpu_sha256": "2efd75a46f7d4bb76cf7376822a6f85d29e906b8c14be84793b8ecc5236461c6",
+      "scalar_sha256": "2efd75a46f7d4bb76cf7376822a6f85d29e906b8c14be84793b8ecc5236461c6",
+      "gpu_equal": true,
+      "scalar_equal": true,
+      "gpu_difference": {
+        "y": {
+          "mismatches": 0,
+          "samples": 58604,
+          "max_abs": 0,
+          "signed_sum": 0,
+          "first": []
+        },
+        "u": {
+          "mismatches": 0,
+          "samples": 14651,
+          "max_abs": 0,
+          "signed_sum": 0,
+          "first": []
+        },
+        "v": {
+          "mismatches": 0,
+          "samples": 14651,
+          "max_abs": 0,
+          "signed_sum": 0,
+          "first": []
+        }
+      },
+      "scalar_difference": {
+        "y": {
+          "mismatches": 0,
+          "samples": 58604,
+          "max_abs": 0,
+          "signed_sum": 0,
+          "first": []
+        },
+        "u": {
+          "mismatches": 0,
+          "samples": 14651,
+          "max_abs": 0,
+          "signed_sum": 0,
+          "first": []
+        },
+        "v": {
+          "mismatches": 0,
+          "samples": 14651,
+          "max_abs": 0,
+          "signed_sum": 0,
+          "first": []
+        }
+      }
+    },
+    {
+      "fixture": "white",
+      "size": [
+        321,
+        181
+      ],
+      "input_sha256": "fd7c29a53e3734c17c8c5d889db769a3d5a1ec04c1a20e2e334d842245b2f6f7",
+      "reference_sha256": "542742d4a599a43dd1bbebfb9bfc9f9c91f416d5a3972418ef55d24a05b935ee",
+      "gpu_sha256": "542742d4a599a43dd1bbebfb9bfc9f9c91f416d5a3972418ef55d24a05b935ee",
+      "scalar_sha256": "542742d4a599a43dd1bbebfb9bfc9f9c91f416d5a3972418ef55d24a05b935ee",
+      "gpu_equal": true,
+      "scalar_equal": true,
+      "gpu_difference": {
+        "y": {
+          "mismatches": 0,
+          "samples": 58604,
+          "max_abs": 0,
+          "signed_sum": 0,
+          "first": []
+        },
+        "u": {
+          "mismatches": 0,
+          "samples": 14651,
+          "max_abs": 0,
+          "signed_sum": 0,
+          "first": []
+        },
+        "v": {
+          "mismatches": 0,
+          "samples": 14651,
+          "max_abs": 0,
+          "signed_sum": 0,
+          "first": []
+        }
+      },
+      "scalar_difference": {
+        "y": {
+          "mismatches": 0,
+          "samples": 58604,
+          "max_abs": 0,
+          "signed_sum": 0,
+          "first": []
+        },
+        "u": {
+          "mismatches": 0,
+          "samples": 14651,
+          "max_abs": 0,
+          "signed_sum": 0,
+          "first": []
+        },
+        "v": {
+          "mismatches": 0,
+          "samples": 14651,
+          "max_abs": 0,
+          "signed_sum": 0,
+          "first": []
+        }
+      }
+    },
+    {
+      "fixture": "ramp",
+      "size": [
+        321,
+        181
+      ],
+      "input_sha256": "bbafe6a871993476294c7c8a3c8782d085703fdeb8353c0c7da0d57171a614f6",
+      "reference_sha256": "d584479f1231e30e4bd234c0d20594e03b205f87e60fb5e56a0eb0c7ba3790b3",
+      "gpu_sha256": "4b598c3f4f9722a4356bab868f470eee4c3e62f0f9779f5182b6dd9b2dbb6498",
+      "scalar_sha256": "d584479f1231e30e4bd234c0d20594e03b205f87e60fb5e56a0eb0c7ba3790b3",
+      "gpu_equal": false,
+      "scalar_equal": true,
+      "gpu_difference": {
+        "y": {
+          "mismatches": 0,
+          "samples": 58604,
+          "max_abs": 0,
+          "signed_sum": 0,
+          "first": []
+        },
+        "u": {
+          "mismatches": 1092,
+          "samples": 14651,
+          "max_abs": 1,
+          "signed_sum": 1072,
+          "first": [
+            {
+              "x": 14,
+              "y": 0,
+              "actual": 136,
+              "expected": 135
+            },
+            {
+              "x": 26,
+              "y": 0,
+              "actual": 143,
+              "expected": 142
+            },
+            {
+              "x": 38,
+              "y": 0,
+              "actual": 150,
+              "expected": 149
+            },
+            {
+              "x": 57,
+              "y": 0,
+              "actual": 161,
+              "expected": 160
+            },
+            {
+              "x": 69,
+              "y": 0,
+              "actual": 168,
+              "expected": 167
+            },
+            {
+              "x": 81,
+              "y": 0,
+              "actual": 175,
+              "expected": 174
+            },
+            {
+              "x": 93,
+              "y": 0,
+              "actual": 182,
+              "expected": 181
+            },
+            {
+              "x": 100,
+              "y": 0,
+              "actual": 186,
+              "expected": 185
+            }
+          ]
+        },
+        "v": {
+          "mismatches": 3204,
+          "samples": 14651,
+          "max_abs": 1,
+          "signed_sum": -3168,
+          "first": [
+            {
+              "x": 1,
+              "y": 0,
+              "actual": 128,
+              "expected": 129
+            },
+            {
+              "x": 5,
+              "y": 0,
+              "actual": 131,
+              "expected": 132
+            },
+            {
+              "x": 9,
+              "y": 0,
+              "actual": 134,
+              "expected": 135
+            },
+            {
+              "x": 13,
+              "y": 0,
+              "actual": 137,
+              "expected": 138
+            },
+            {
+              "x": 16,
+              "y": 0,
+              "actual": 139,
+              "expected": 140
+            },
+            {
+              "x": 20,
+              "y": 0,
+              "actual": 142,
+              "expected": 143
+            },
+            {
+              "x": 24,
+              "y": 0,
+              "actual": 145,
+              "expected": 146
+            },
+            {
+              "x": 28,
+              "y": 0,
+              "actual": 148,
+              "expected": 149
+            }
+          ]
+        }
+      },
+      "scalar_difference": {
+        "y": {
+          "mismatches": 0,
+          "samples": 58604,
+          "max_abs": 0,
+          "signed_sum": 0,
+          "first": []
+        },
+        "u": {
+          "mismatches": 0,
+          "samples": 14651,
+          "max_abs": 0,
+          "signed_sum": 0,
+          "first": []
+        },
+        "v": {
+          "mismatches": 0,
+          "samples": 14651,
+          "max_abs": 0,
+          "signed_sum": 0,
+          "first": []
+        }
+      }
+    },
+    {
+      "fixture": "random",
+      "size": [
+        321,
+        181
+      ],
+      "input_sha256": "a2bb89130a995b185cc00a05de5446246dd58ac1ae1939f98ff4287c239588f4",
+      "reference_sha256": "e6d10e78548314620b8008d3a9fb566229ccf0d982159f7c81749ec5033bc0da",
+      "gpu_sha256": "c3d27bcc5adb7b63f7f9bbcc00a671d28c4e79d0c35018ab81e176c8a00b4d27",
+      "scalar_sha256": "e6d10e78548314620b8008d3a9fb566229ccf0d982159f7c81749ec5033bc0da",
+      "gpu_equal": false,
+      "scalar_equal": true,
+      "gpu_difference": {
+        "y": {
+          "mismatches": 0,
+          "samples": 58604,
+          "max_abs": 0,
+          "signed_sum": 0,
+          "first": []
+        },
+        "u": {
+          "mismatches": 1872,
+          "samples": 14651,
+          "max_abs": 1,
+          "signed_sum": 104,
+          "first": [
+            {
+              "x": 0,
+              "y": 0,
+              "actual": 157,
+              "expected": 158
+            },
+            {
+              "x": 1,
+              "y": 0,
+              "actual": 104,
+              "expected": 105
+            },
+            {
+              "x": 6,
+              "y": 0,
+              "actual": 136,
+              "expected": 135
+            },
+            {
+              "x": 9,
+              "y": 0,
+              "actual": 110,
+              "expected": 109
+            },
+            {
+              "x": 17,
+              "y": 0,
+              "actual": 128,
+              "expected": 127
+            },
+            {
+              "x": 25,
+              "y": 0,
+              "actual": 125,
+              "expected": 126
+            },
+            {
+              "x": 66,
+              "y": 0,
+              "actual": 98,
+              "expected": 99
+            },
+            {
+              "x": 73,
+              "y": 0,
+              "actual": 122,
+              "expected": 121
+            }
+          ]
+        },
+        "v": {
+          "mismatches": 1940,
+          "samples": 14651,
+          "max_abs": 1,
+          "signed_sum": -36,
+          "first": [
+            {
+              "x": 3,
+              "y": 0,
+              "actual": 135,
+              "expected": 134
+            },
+            {
+              "x": 9,
+              "y": 0,
+              "actual": 131,
+              "expected": 130
+            },
+            {
+              "x": 11,
+              "y": 0,
+              "actual": 118,
+              "expected": 119
+            },
+            {
+              "x": 15,
+              "y": 0,
+              "actual": 162,
+              "expected": 163
+            },
+            {
+              "x": 21,
+              "y": 0,
+              "actual": 126,
+              "expected": 127
+            },
+            {
+              "x": 27,
+              "y": 0,
+              "actual": 118,
+              "expected": 117
+            },
+            {
+              "x": 28,
+              "y": 0,
+              "actual": 136,
+              "expected": 137
+            },
+            {
+              "x": 38,
+              "y": 0,
+              "actual": 158,
+              "expected": 159
+            }
+          ]
+        }
+      },
+      "scalar_difference": {
+        "y": {
+          "mismatches": 0,
+          "samples": 58604,
+          "max_abs": 0,
+          "signed_sum": 0,
+          "first": []
+        },
+        "u": {
+          "mismatches": 0,
+          "samples": 14651,
+          "max_abs": 0,
+          "signed_sum": 0,
+          "first": []
+        },
+        "v": {
+          "mismatches": 0,
+          "samples": 14651,
+          "max_abs": 0,
+          "signed_sum": 0,
+          "first": []
+        }
+      }
+    },
+    {
+      "fixture": "red-row",
+      "size": [
+        321,
+        181
+      ],
+      "input_sha256": "e608994fc1e2b68e2dc22d9c4ed29fd89a372951602c1dedaa25cb2d9a5d3a99",
+      "reference_sha256": "c555c967d1175a3e1986d7b3db4d357ea78a52463695dfebb3764128b7db3776",
+      "gpu_sha256": "c555c967d1175a3e1986d7b3db4d357ea78a52463695dfebb3764128b7db3776",
+      "scalar_sha256": "c555c967d1175a3e1986d7b3db4d357ea78a52463695dfebb3764128b7db3776",
+      "gpu_equal": true,
+      "scalar_equal": true,
+      "gpu_difference": {
+        "y": {
+          "mismatches": 0,
+          "samples": 58604,
+          "max_abs": 0,
+          "signed_sum": 0,
+          "first": []
+        },
+        "u": {
+          "mismatches": 0,
+          "samples": 14651,
+          "max_abs": 0,
+          "signed_sum": 0,
+          "first": []
+        },
+        "v": {
+          "mismatches": 0,
+          "samples": 14651,
+          "max_abs": 0,
+          "signed_sum": 0,
+          "first": []
+        }
+      },
+      "scalar_difference": {
+        "y": {
+          "mismatches": 0,
+          "samples": 58604,
+          "max_abs": 0,
+          "signed_sum": 0,
+          "first": []
+        },
+        "u": {
+          "mismatches": 0,
+          "samples": 14651,
+          "max_abs": 0,
+          "signed_sum": 0,
+          "first": []
+        },
+        "v": {
+          "mismatches": 0,
+          "samples": 14651,
+          "max_abs": 0,
+          "signed_sum": 0,
+          "first": []
+        }
+      }
+    },
+    {
+      "fixture": "red-checker",
+      "size": [
+        321,
+        181
+      ],
+      "input_sha256": "753736617f07e729d59c9853efd049e4f74484de86602456753e2b37f942fd9f",
+      "reference_sha256": "9507704738e649f36641fe9651267ef09a089c71a1df972963f5b1e49c888f9c",
+      "gpu_sha256": "9507704738e649f36641fe9651267ef09a089c71a1df972963f5b1e49c888f9c",
+      "scalar_sha256": "9507704738e649f36641fe9651267ef09a089c71a1df972963f5b1e49c888f9c",
+      "gpu_equal": true,
+      "scalar_equal": true,
+      "gpu_difference": {
+        "y": {
+          "mismatches": 0,
+          "samples": 58604,
+          "max_abs": 0,
+          "signed_sum": 0,
+          "first": []
+        },
+        "u": {
+          "mismatches": 0,
+          "samples": 14651,
+          "max_abs": 0,
+          "signed_sum": 0,
+          "first": []
+        },
+        "v": {
+          "mismatches": 0,
+          "samples": 14651,
+          "max_abs": 0,
+          "signed_sum": 0,
+          "first": []
+        }
+      },
+      "scalar_difference": {
+        "y": {
+          "mismatches": 0,
+          "samples": 58604,
+          "max_abs": 0,
+          "signed_sum": 0,
+          "first": []
+        },
+        "u": {
+          "mismatches": 0,
+          "samples": 14651,
+          "max_abs": 0,
+          "signed_sum": 0,
+          "first": []
+        },
+        "v": {
+          "mismatches": 0,
+          "samples": 14651,
+          "max_abs": 0,
+          "signed_sum": 0,
+          "first": []
+        }
+      }
+    }
+  ],
+  "status": "completed",
+  "accepted": false
+}

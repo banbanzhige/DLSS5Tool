@@ -1,0 +1,23 @@
+{
+  "experimental": true,
+  "warning": "实验功能：普通视频采用 NVOFA 估计光流及平面深度；遮挡/字幕/HDR 画质未完整验收。3×/4×目前仅限本机 RTX 4070 SUPER 与固定运行库，已知部分生成帧时间位置偏差。不会自动降倍率或位深；正常帧对生成无效时停止。",
+  "source": "F:\\project\\DLSS5Tool\\tmp\\export-integration-20260917\\isolated-enhance-hdr-source.mp4",
+  "output": "F:\\project\\DLSS5Tool\\tmp\\export-integration-20260917\\isolated-enhance-hdr-baseline.mp4",
+  "multiplier": 1,
+  "spatial_scale": 1,
+  "enhance": true,
+  "status": "complete",
+  "real_frames": 12,
+  "generated_frames": 0,
+  "cut_holds": 0,
+  "endpoint_holds": 0,
+  "width": 320,
+  "height": 180,
+  "source_rate": "24",
+  "output_rate": "24",
+  "color": "hdr10_hlg",
+  "output_view": 0,
+  "runtime_sha256": null,
+  "log_dir": "F:\\project\\DLSS5Tool\\tmp\\export-integration-20260917\\isolated-enhance-hdr-baseline-logs",
+  "cleanup_errors": []
+}
