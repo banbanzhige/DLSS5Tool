@@ -1,0 +1,13 @@
+{
+  "scope": "capability-only; no NR options/evaluation",
+  "files": {
+    "F:\\project\\DLSS5Tool\\tmp\\streamline-nr-probe-20260920\\build\\streamline_nr_probe.exe": "afd753a64cca3f17d7811be6eded0c328baac39cb023cfe494033d9edd64f164",
+    "F:\\project\\DLSS5Tool\\tmp\\streamline-nr-probe-20260920\\plugins\\sl.interposer.dll": "27b2190057994c0b287c2c5716953bf1586f6499ac12fbbb2092b9aaf8396570",
+    "F:\\project\\DLSS5Tool\\tmp\\streamline-nr-probe-20260920\\plugins\\sl.common.dll": "a4b2b5acbe49fbc6d44dd432cac19cd53218f698b2539dc7ed0fb268c72cfc8d",
+    "F:\\project\\DLSS5Tool\\tmp\\streamline-nr-probe-20260920\\plugins\\sl.dlss_nr.dll": "9f6672e5e0170dc118a3188d21bda187e1fc1aa3502895b21ab846d23165c11d",
+    "F:\\project\\DLSS5Tool\\runtime\\nvngx_dlssnr.dll": "ceb6432f6fbdf44d886014bcd47241932bf8b67439feef9bbdd0961436662650"
+  },
+  "timeout_seconds": 45,
+  "returncode": null,
+  "timed_out": true
+}

@@ -1,0 +1,2 @@
+# Preserve original diagnostic bytes, including mixed Windows line endings.
+*.log -text -whitespace

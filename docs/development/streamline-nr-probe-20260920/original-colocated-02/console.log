@@ -1,0 +1,177 @@
+CONFIG child-process-creation=blocked
+SIGNATURE F:\project\DLSS5Tool\tmp\streamline-nr-probe-20260920\plugins\sl.interposer.dll=0x00000000
+SIGNATURE F:\project\DLSS5Tool\tmp\streamline-nr-probe-20260920\plugins\sl.common.dll=0x00000000
+SIGNATURE F:\project\DLSS5Tool\tmp\streamline-nr-probe-20260920\plugins\sl.dlss_nr.dll=0x00000000
+CONFIG sdk=2.12.0 flags=133 model=F:\project\DLSS5Tool\tmp\streamline-nr-probe-20260920\plugins
+SL [10-46-52][streamline][info][tid:31468][0s:003ms:691us]pluginManager.cpp:430[setHostSDKVersion] Streamline v2.13.0.11ffc00ec - built on Mon Aug 10 21:40:30 2026 - host SDK v2.12.0
+
+SL [10-46-52][streamline][info][tid:31468][0s:003ms:971us]ota.cpp:406[parseServerManifest] OTA feature dlss_g_0 version 2.14.0
+
+SL [10-46-52][streamline][info][tid:31468][0s:004ms:141us]ota.cpp:406[parseServerManifest] OTA feature dlss_0 version 2.14.0
+
+SL [10-46-52][streamline][info][tid:31468][0s:004ms:339us]ota.cpp:406[parseServerManifest] OTA feature pcl_0 version 2.14.0
+
+SL [10-46-52][streamline][info][tid:31468][0s:004ms:487us]ota.cpp:406[parseServerManifest] OTA feature reflex_0 version 2.14.0
+
+SL [10-46-52][streamline][info][tid:31468][0s:005ms:092us]ota.cpp:406[parseServerManifest] OTA feature common_0 version 2.14.0
+
+SL [10-46-52][streamline][info][tid:31468][0s:005ms:420us]ota.cpp:406[parseServerManifest] OTA feature dlss_d_0 version 2.14.0
+
+SL [10-46-52][streamline][info][tid:31468][0s:005ms:644us]ota.cpp:406[parseServerManifest] OTA feature sdk_0 version 2.14.0
+
+SL [10-46-52][streamline][info][tid:31468][0s:005ms:808us]ota.cpp:406[parseServerManifest] OTA feature deepdvc_0 version 2.14.0
+
+SL [10-46-52][streamline][info][tid:31468][0s:006ms:000us]ota.cpp:406[parseServerManifest] OTA feature nis_0 version 2.14.0
+
+SL [10-46-52][streamline][info][tid:31468][0s:006ms:149us]ota.cpp:406[parseServerManifest] OTA feature nvperf_0 version 2.14.0
+
+SL [10-46-52][streamline][info][tid:31468][0s:120ms:117us]ota.cpp:832[getNVDAArchitecture] Found NVIDIA GPUs, [000000AD0BF1ED50]: 1
+
+SL [10-46-52][streamline][info][tid:31468][0s:121ms:338us]ota.cpp:838[getNVDAArchitecture] Found GPU 0, arch=0x190
+
+SL [10-46-52][streamline][info][tid:31468][0s:121ms:822us]ota.cpp:242[invokeNGXUpdater] Invoking NGX Updater: C:\WINDOWS\System32\DriverStore\FileRepository\nv_dispi.inf_amd64_b20cc8aeaed64fc2\nvngx_update.exe -cmsid 0 -feature sl_sdk_0 -api update -type zip -gpuarch 0x190 -bootstrap
+
+SL [10-46-52][streamline][info][tid:31468][0s:122ms:148us]pluginManager.cpp:545[findPlugins] Looking for plugins in F:\project\DLSS5Tool\tmp\streamline-nr-probe-20260920\plugins ...
+
+SL [10-46-52][streamline][info][tid:31468][0s:122ms:364us]pluginManager.cpp:1048[loadPlugins] eLoadDownloadedPlugins flag not passed to preferences, OTA'd plugins will not be loaded!
+
+SL [10-46-52][streamline][error][tid:26304][0s:123ms:084us]ota.cpp:134[execThreadProc] Failed to create process C:\WINDOWS\System32\DriverStore\FileRepository\nv_dispi.inf_amd64_b20cc8aeaed64fc2\nvngx_update.exe -cmsid 0 -feature sl_sdk_0 -api update -type zip -gpuarch 0x190 -bootstrap
+
+SL [10-46-52][streamline][info][tid:26304][0s:123ms:505us]ota.cpp:144[execThreadProc] execThreadProc: C:\WINDOWS\System32\DriverStore\FileRepository\nv_dispi.inf_amd64_b20cc8aeaed64fc2\nvngx_update.exe -cmsid 0 -feature sl_sdk_0 -api update -type zip -gpuarch 0x190 -bootstrap
+
+File 'F:\project\DLSS5Tool\tmp\streamline-nr-probe-20260920\plugins/sl.common.dll' is signed by NVIDIA and the signature was verified.
+SL [10-46-53][streamline][info][tid:31468][0s:285ms:886us]plugin.cpp:94[isAppDenylisted] Plugin path: F:\project\DLSS5Tool\tmp\streamline-nr-probe-20260920\plugins\
+
+SL [10-46-53][streamline][info][tid:31468][0s:286ms:342us]plugin.cpp:110[isAppDenylisted] Plugin is not from OTA - denylist does not apply
+
+SL [10-46-53][streamline][info][tid:31468][0s:286ms:481us]commonInterface.cpp:165[getSystemCaps] Enumerating up to 8 adapters but only one of them can be used to create a device - no mGPU support in this SDK
+
+SL [10-46-53][streamline][info][tid:31468][0s:302ms:490us]commonInterface.cpp:287[getSystemCaps] >-----------------------------------------
+
+SL [10-46-53][streamline][info][tid:31468][0s:302ms:620us]commonInterface.cpp:290[getSystemCaps] NVIDIA driver 616.92
+
+SL [10-46-53][streamline][info][tid:31468][0s:303ms:185us]commonInterface.cpp:315[getSystemCaps] Adapter 0 architecture 0x190 implementation 0x4 revision 0xa1 - bit 0x1 - LUID 0.82026
+
+SL [10-46-53][streamline][info][tid:31468][0s:303ms:414us]commonInterface.cpp:321[getSystemCaps] -----------------------------------------<
+
+SL [10-46-53][streamline][info][tid:31468][0s:304ms:248us]commonEntry.cpp:1944[getOSVersionAndUpdateTimerResolution] Changed high resolution timer resolution to 5000 [100 ns units].
+
+SL [10-46-53][streamline][info][tid:31468][0s:304ms:466us]commonEntry.cpp:2023[updateEmbeddedJSON] Detected Windows OS version 10.0.26200
+
+SL [10-46-53][streamline][info][tid:31468][0s:304ms:621us]pluginManager.cpp:907[mapPlugins] Loaded plugin 'sl.common' - version 2.13.0.11ffc00ec PRODUCTION - id 4294967295 - priority 0 - adapter mask 0x1f - interposer 'no'
+
+File 'F:\project\DLSS5Tool\tmp\streamline-nr-probe-20260920\plugins/sl.dlss_nr.dll' is signed by NVIDIA and the signature was verified.
+SL [10-46-53][streamline][info][tid:31468][0s:340ms:302us]plugin.cpp:94[isAppDenylisted] Plugin path: F:\project\DLSS5Tool\tmp\streamline-nr-probe-20260920\plugins\
+
+SL [10-46-53][streamline][info][tid:31468][0s:340ms:723us]plugin.cpp:110[isAppDenylisted] Plugin is not from OTA - denylist does not apply
+
+SL [10-46-53][streamline][info][tid:31468][0s:732ms:969us]commonEntry.cpp:1014[getNGXFeatureRequirements] NGX_*_GetFeatureRequirements feature: 18 FeatureSupported == AdapterUnsupported
+
+SL [10-46-53][streamline][info][tid:31468][0s:733ms:652us]commonEntry.cpp:988[getNGXFeatureRequirements] NGX_*_GetFeatureRequirements returned 0xbad00001 for adapter: 1 feature: 18
+
+SL [10-46-53][streamline][info][tid:31468][0s:734ms:319us]commonEntry.cpp:988[getNGXFeatureRequirements] NGX_*_GetFeatureRequirements returned 0xbad00001 for adapter: 2 feature: 18
+
+SL [10-46-53][streamline][info][tid:31468][0s:734ms:974us]commonEntry.cpp:988[getNGXFeatureRequirements] NGX_*_GetFeatureRequirements returned 0xbad00001 for adapter: 3 feature: 18
+
+SL [10-46-53][streamline][info][tid:31468][0s:735ms:613us]commonEntry.cpp:988[getNGXFeatureRequirements] NGX_*_GetFeatureRequirements returned 0xbad00001 for adapter: 4 feature: 18
+
+RESULT slInit=0
+SL [10-46-53][streamline][warn][tid:31468][0s:735ms:846us]dlss_nrEntry.cpp:444[updateEmbeddedJSON] DLSS-NR feature is not supported. Please check if you have a valid nvngx_dlssnr.dll or your driver supports DLSS-NR.
+
+MODULE after-init F:\project\DLSS5Tool\tmp\streamline-nr-probe-20260920\plugins\sl.interposer.dll
+SL [10-46-53][streamline][info][tid:31468][0s:736ms:342us]pluginManager.cpp:907[mapPlugins] Loaded plugin 'sl.dlss_nr' - version 2.13.0.11ffc00ec PRODUCTION - id 1004 - priority 100 - adapter mask 0x0 - interposer 'no'
+
+MODULE after-init F:\project\DLSS5Tool\tmp\streamline-nr-probe-20260920\plugins\sl.common.dll
+SL [10-46-53][streamline][warn][tid:31468][0s:736ms:735us]pluginManager.cpp:1090[loadPlugins] Ignoring plugin 'sl.dlss_nr' since it is not supported on this platform
+
+MODULE after-init C:\WINDOWS\System32\DriverStore\FileRepository\nv_dispi.inf_amd64_b20cc8aeaed64fc2\_nvngx.dll
+SL [10-46-53][streamline][info][tid:31468][0s:737ms:040us]pluginManager.cpp:1190[loadPlugins] Plugin execution order based on priority:
+
+MODULE after-init F:\project\DLSS5Tool\tmp\streamline-nr-probe-20260920\plugins\nvngx_dlssnr.dll
+SL [10-46-53][streamline][info][tid:31468][0s:737ms:333us]pluginManager.cpp:1193[loadPlugins] P0 - sl.common
+
+RESULT loaded-before=31
+SL [10-46-53][streamline][error][tid:31468][0s:737ms:548us]sl.cpp:179[slValidateFeatureContext] 'kFeatureDLSS_NR' context is missing.
+
+LOADED before=0
+RESULT requirements=0
+REQUIREMENTS flags=6 viewports=0 driver=616.92.0 required-driver=570.0.0 tag-count=0
+ADAPTER NVIDIA GeForce RTX 4070 SUPER vendor=10de device=2783
+RESULT supported-before=6
+SL [10-46-53][streamline][info][tid:31468][0s:985ms:133us]pluginManager.cpp:1393[initializePlugins] Initializing plugins - api 0.0.1 - application ID 100721531
+
+SL [10-46-53][streamline][info][tid:31468][0s:985ms:694us]d3d12.cpp:1324[createKernel] Creating DXBC kernel copy_to_buffer.cs:main hash 12564409127886710297
+
+RESULT set-device=0
+SL [10-46-53][streamline][info][tid:31468][0s:985ms:887us]d3d12.cpp:1014[initNsightActivity] NSight Graphics not attached, capture activity initialization failed (6)
+
+SL [10-46-53][streamline][info][tid:31468][0s:986ms:132us]d3d12.cpp:1024[initNsightActivity] NSight Systems not attached, profiling activity initialization failed (6)
+
+MODULE after-device F:\project\DLSS5Tool\tmp\streamline-nr-probe-20260920\plugins\sl.interposer.dll
+SL [10-46-53][streamline][info][tid:31468][0s:986ms:367us]pluginManager.cpp:1499[mapPluginCallbacks] Callback sl.common:slSetData:0x0
+
+SL [10-46-53][streamline][info][tid:31468][0s:986ms:679us]pluginManager.cpp:1500[mapPluginCallbacks] Callback sl.common:slGetData:0x0
+
+MODULE after-device F:\project\DLSS5Tool\tmp\streamline-nr-probe-20260920\plugins\sl.common.dll
+SL [10-46-53][streamline][info][tid:31468][0s:986ms:846us]pluginManager.cpp:1501[mapPluginCallbacks] Callback sl.common:slAllocateResources:0x0
+
+MODULE after-device C:\WINDOWS\System32\DriverStore\FileRepository\nv_dispi.inf_amd64_b20cc8aeaed64fc2\_nvngx.dll
+SL [10-46-53][streamline][info][tid:31468][0s:987ms:120us]pluginManager.cpp:1502[mapPluginCallbacks] Callback sl.common:slFreeResources:0x0
+
+MODULE after-device F:\project\DLSS5Tool\tmp\streamline-nr-probe-20260920\plugins\nvngx_dlssnr.dll
+SL [10-46-53][streamline][info][tid:31468][0s:987ms:398us]pluginManager.cpp:1503[mapPluginCallbacks] Callback sl.common:slEvaluateFeature:0x7ffb3c4ba090
+
+RESULT supported-after=6
+RESULT loaded-after=31
+SL [10-46-53][streamline][info][tid:31468][0s:987ms:712us]pluginManager.cpp:1504[mapPluginCallbacks] Callback sl.common:slSetTag:0x7ffb3c4b8b70
+
+LOADED after=0
+SL [10-46-53][streamline][info][tid:31468][0s:987ms:891us]pluginManager.cpp:1505[mapPluginCallbacks] Callback sl.common:slSetTagForFrame:0x7ffb3c4b8ce0
+
+RESULT feature-version=0
+SL [10-46-53][streamline][info][tid:31468][0s:988ms:076us]pluginManager.cpp:1506[mapPluginCallbacks] Callback sl.common:slSetConsts:0x7ffb3c4b9b70
+
+VERSION sl=2.13.0 ngx=0.0.0
+SL [10-46-53][streamline][info][tid:31468][0s:988ms:256us]pluginManager.cpp:1266[processPluginHooks] Hook sl.common:slHookVkPresent:before - skipped
+
+RESULT find-options=31
+SL [10-46-53][streamline][info][tid:31468][0s:988ms:449us]pluginManager.cpp:1266[processPluginHooks] Hook sl.common:slHookVkAfterPresent:after - skipped
+
+NO_INFERENCE no NR options or evaluation called
+SL [10-46-53][streamline][info][tid:31468][0s:988ms:635us]pluginManager.cpp:1266[processPluginHooks] Hook sl.common:slHookVkCmdBindPipeline:after - skipped
+
+SHUTDOWN begin
+SL [10-46-53][streamline][info][tid:31468][0s:988ms:823us]pluginManager.cpp:1266[processPluginHooks] Hook sl.common:slHookVkCmdBindDescriptorSets:after - skipped
+
+SL [10-46-53][streamline][info][tid:31468][0s:988ms:982us]pluginManager.cpp:1266[processPluginHooks] Hook sl.common:slHookVkBeginCommandBuffer:after - skipped
+
+SL [10-46-53][streamline][info][tid:31468][0s:989ms:095us]pluginManager.cpp:1290[processPluginHooks] Hook sl.common:slHookCreateSwapChain:before - OK
+
+SL [10-46-53][streamline][info][tid:31468][0s:989ms:287us]pluginManager.cpp:1290[processPluginHooks] Hook sl.common:slHookCreateSwapChainForHwnd:before - OK
+
+SL [10-46-53][streamline][info][tid:31468][0s:989ms:474us]pluginManager.cpp:1290[processPluginHooks] Hook sl.common:slHookCreateSwapChainForCoreWindow:before - OK
+
+SL [10-46-53][streamline][info][tid:31468][0s:989ms:670us]pluginManager.cpp:1290[processPluginHooks] Hook sl.common:slHookResizeSwapChainPre:before - OK
+
+SL [10-46-53][streamline][info][tid:31468][0s:989ms:842us]pluginManager.cpp:1290[processPluginHooks] Hook sl.common:slHookPresent:before - OK
+
+SL [10-46-53][streamline][info][tid:31468][0s:990ms:035us]pluginManager.cpp:1290[processPluginHooks] Hook sl.common:slHookAfterPresent:after - OK
+
+SL [10-46-53][streamline][info][tid:31468][0s:990ms:193us]pluginManager.cpp:1290[processPluginHooks] Hook sl.common:slHookPresent1:before - OK
+
+SL [10-46-53][streamline][info][tid:31468][0s:990ms:367us]pluginManager.cpp:1290[processPluginHooks] Hook sl.common:slHookAfterPresent:after - OK
+
+SL [10-46-53][streamline][error][tid:31468][0s:990ms:517us]sl.cpp:179[slValidateFeatureContext] 'kFeatureDLSS_NR' context is missing.
+
+SL [10-46-53][streamline][error][tid:31468][0s:990ms:689us]sl.cpp:179[slValidateFeatureContext] 'kFeatureDLSS_NR' context is missing.
+
+SL [10-46-53][streamline][info][tid:31468][0s:990ms:859us]pluginManager.cpp:1202[unloadPlugins] Unloading all plugins ...
+
+SL [10-46-53][streamline][info][tid:31468][0s:991ms:009us]plugin.cpp:344[onShutdown] Shutting down plugin sl.common
+
+SL [10-46-53][streamline][info][tid:31468][0s:991ms:143us]d3d12.cpp:1360[destroyKernel] Destroying kernel copy_to_buffer.cs
+
+SL [10-46-53][streamline][info][tid:31468][0s:991ms:278us]generic.cpp:325[shutdown] Delayed destroy resource list count 0
+
+RESULT shutdown=0
+DONE

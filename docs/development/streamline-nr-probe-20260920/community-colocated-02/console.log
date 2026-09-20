@@ -1,0 +1,813 @@
+CONFIG child-process-creation=blocked
+SIGNATURE F:\project\DLSS5Tool\tmp\streamline-nr-probe-20260920\plugins\sl.interposer.dll=0x00000000
+SIGNATURE F:\project\DLSS5Tool\tmp\streamline-nr-probe-20260920\plugins\sl.common.dll=0x00000000
+SIGNATURE F:\project\DLSS5Tool\tmp\streamline-nr-probe-20260920\plugins\sl.dlss_nr.dll=0x00000000
+CONFIG sdk=2.12.0 flags=133 model=F:\project\DLSS5Tool\tmp\streamline-nr-probe-20260920\plugins
+SL [10-47-36][streamline][info][tid:36980][0s:003ms:579us]pluginManager.cpp:430[setHostSDKVersion] Streamline v2.13.0.11ffc00ec - built on Mon Aug 10 21:40:30 2026 - host SDK v2.12.0
+
+SL [10-47-36][streamline][info][tid:36980][0s:003ms:802us]ota.cpp:406[parseServerManifest] OTA feature dlss_g_0 version 2.14.0
+
+SL [10-47-36][streamline][info][tid:36980][0s:004ms:096us]ota.cpp:406[parseServerManifest] OTA feature dlss_0 version 2.14.0
+
+SL [10-47-36][streamline][info][tid:36980][0s:004ms:248us]ota.cpp:406[parseServerManifest] OTA feature pcl_0 version 2.14.0
+
+SL [10-47-36][streamline][info][tid:36980][0s:004ms:393us]ota.cpp:406[parseServerManifest] OTA feature reflex_0 version 2.14.0
+
+SL [10-47-36][streamline][info][tid:36980][0s:004ms:656us]ota.cpp:406[parseServerManifest] OTA feature common_0 version 2.14.0
+
+SL [10-47-36][streamline][info][tid:36980][0s:004ms:852us]ota.cpp:406[parseServerManifest] OTA feature dlss_d_0 version 2.14.0
+
+SL [10-47-36][streamline][info][tid:36980][0s:005ms:015us]ota.cpp:406[parseServerManifest] OTA feature sdk_0 version 2.14.0
+
+SL [10-47-36][streamline][info][tid:36980][0s:005ms:153us]ota.cpp:406[parseServerManifest] OTA feature deepdvc_0 version 2.14.0
+
+SL [10-47-36][streamline][info][tid:36980][0s:005ms:316us]ota.cpp:406[parseServerManifest] OTA feature nis_0 version 2.14.0
+
+SL [10-47-36][streamline][info][tid:36980][0s:005ms:458us]ota.cpp:406[parseServerManifest] OTA feature nvperf_0 version 2.14.0
+
+SL [10-47-36][streamline][info][tid:36980][0s:116ms:774us]ota.cpp:832[getNVDAArchitecture] Found NVIDIA GPUs, [000000CFCD39E980]: 1
+
+SL [10-47-36][streamline][info][tid:36980][0s:117ms:920us]ota.cpp:838[getNVDAArchitecture] Found GPU 0, arch=0x190
+
+SL [10-47-36][streamline][info][tid:36980][0s:118ms:345us]ota.cpp:242[invokeNGXUpdater] Invoking NGX Updater: C:\WINDOWS\System32\DriverStore\FileRepository\nv_dispi.inf_amd64_b20cc8aeaed64fc2\nvngx_update.exe -cmsid 0 -feature sl_sdk_0 -api update -type zip -gpuarch 0x190 -bootstrap
+
+SL [10-47-36][streamline][info][tid:36980][0s:118ms:764us]pluginManager.cpp:545[findPlugins] Looking for plugins in F:\project\DLSS5Tool\tmp\streamline-nr-probe-20260920\plugins ...
+
+SL [10-47-36][streamline][info][tid:36980][0s:118ms:988us]pluginManager.cpp:1048[loadPlugins] eLoadDownloadedPlugins flag not passed to preferences, OTA'd plugins will not be loaded!
+
+SL [10-47-36][streamline][error][tid:27812][0s:119ms:577us]ota.cpp:134[execThreadProc] Failed to create process C:\WINDOWS\System32\DriverStore\FileRepository\nv_dispi.inf_amd64_b20cc8aeaed64fc2\nvngx_update.exe -cmsid 0 -feature sl_sdk_0 -api update -type zip -gpuarch 0x190 -bootstrap
+
+SL [10-47-36][streamline][info][tid:27812][0s:119ms:862us]ota.cpp:144[execThreadProc] execThreadProc: C:\WINDOWS\System32\DriverStore\FileRepository\nv_dispi.inf_amd64_b20cc8aeaed64fc2\nvngx_update.exe -cmsid 0 -feature sl_sdk_0 -api update -type zip -gpuarch 0x190 -bootstrap
+
+File 'F:\project\DLSS5Tool\tmp\streamline-nr-probe-20260920\plugins/sl.common.dll' is signed by NVIDIA and the signature was verified.
+SL [10-47-36][streamline][info][tid:36980][0s:256ms:660us]plugin.cpp:94[isAppDenylisted] Plugin path: F:\project\DLSS5Tool\tmp\streamline-nr-probe-20260920\plugins\
+
+SL [10-47-36][streamline][info][tid:36980][0s:257ms:169us]plugin.cpp:110[isAppDenylisted] Plugin is not from OTA - denylist does not apply
+
+SL [10-47-36][streamline][info][tid:36980][0s:257ms:355us]commonInterface.cpp:165[getSystemCaps] Enumerating up to 8 adapters but only one of them can be used to create a device - no mGPU support in this SDK
+
+SL [10-47-36][streamline][info][tid:36980][0s:277ms:591us]commonInterface.cpp:287[getSystemCaps] >-----------------------------------------
+
+SL [10-47-36][streamline][info][tid:36980][0s:277ms:776us]commonInterface.cpp:290[getSystemCaps] NVIDIA driver 616.92
+
+SL [10-47-36][streamline][info][tid:36980][0s:278ms:418us]commonInterface.cpp:315[getSystemCaps] Adapter 0 architecture 0x190 implementation 0x4 revision 0xa1 - bit 0x1 - LUID 0.82026
+
+SL [10-47-36][streamline][info][tid:36980][0s:278ms:635us]commonInterface.cpp:321[getSystemCaps] -----------------------------------------<
+
+SL [10-47-36][streamline][info][tid:36980][0s:280ms:425us]commonEntry.cpp:1944[getOSVersionAndUpdateTimerResolution] Changed high resolution timer resolution to 5000 [100 ns units].
+
+SL [10-47-36][streamline][info][tid:36980][0s:280ms:775us]commonEntry.cpp:2023[updateEmbeddedJSON] Detected Windows OS version 10.0.26200
+
+SL [10-47-36][streamline][info][tid:36980][0s:280ms:937us]pluginManager.cpp:907[mapPlugins] Loaded plugin 'sl.common' - version 2.13.0.11ffc00ec PRODUCTION - id 4294967295 - priority 0 - adapter mask 0x1f - interposer 'no'
+
+File 'F:\project\DLSS5Tool\tmp\streamline-nr-probe-20260920\plugins/sl.dlss_nr.dll' is signed by NVIDIA and the signature was verified.
+SL [10-47-36][streamline][info][tid:36980][0s:316ms:549us]plugin.cpp:94[isAppDenylisted] Plugin path: F:\project\DLSS5Tool\tmp\streamline-nr-probe-20260920\plugins\
+
+SL [10-47-36][streamline][info][tid:36980][0s:316ms:989us]plugin.cpp:110[isAppDenylisted] Plugin is not from OTA - denylist does not apply
+
+SL [10-47-37][streamline][warn][tid:36980][0s:967ms:633us]commonEntry.cpp:992[getNGXFeatureRequirements] ngxResult not implemented
+
+RESULT slInit=0
+SL [10-47-37][streamline][warn][tid:36980][0s:967ms:816us]dlss_nrEntry.cpp:444[updateEmbeddedJSON] DLSS-NR feature is not supported. Please check if you have a valid nvngx_dlssnr.dll or your driver supports DLSS-NR.
+
+SL [10-47-37][streamline][info][tid:36980][0s:968ms:123us]commonEntry.cpp:1356[updateCommonEmbeddedJSONConfig] Registering required tag 'kBufferTypeUpliftInputColor' life-cycle 'ResourceLifecycle::eValidUntilEvaluate' for feature `kFeatureDLSS_NR`
+
+MODULE after-init F:\project\DLSS5Tool\tmp\streamline-nr-probe-20260920\plugins\sl.interposer.dll
+SL [10-47-37][streamline][info][tid:36980][0s:968ms:406us]commonEntry.cpp:1356[updateCommonEmbeddedJSONConfig] Registering required tag 'kBufferTypeUpliftOutputColor' life-cycle 'ResourceLifecycle::eValidUntilEvaluate' for feature `kFeatureDLSS_NR`
+
+MODULE after-init F:\project\DLSS5Tool\tmp\streamline-nr-probe-20260920\plugins\sl.common.dll
+SL [10-47-37][streamline][info][tid:36980][0s:968ms:863us]commonEntry.cpp:1356[updateCommonEmbeddedJSONConfig] Registering required tag 'kBufferTypeMotionVectors' life-cycle 'ResourceLifecycle::eValidUntilEvaluate' for feature `kFeatureDLSS_NR`
+
+MODULE after-init C:\WINDOWS\System32\DriverStore\FileRepository\nv_dispi.inf_amd64_b20cc8aeaed64fc2\_nvngx.dll
+SL [10-47-37][streamline][info][tid:36980][0s:969ms:251us]commonEntry.cpp:1356[updateCommonEmbeddedJSONConfig] Registering required tag 'kBufferTypeDepth' life-cycle 'ResourceLifecycle::eValidUntilEvaluate' for feature `kFeatureDLSS_NR`
+
+RESULT loaded-before=31
+SL [10-47-37][streamline][info][tid:36980][0s:969ms:655us]pluginManager.cpp:907[mapPlugins] Loaded plugin 'sl.dlss_nr' - version 2.13.0.11ffc00ec PRODUCTION - id 1004 - priority 100 - adapter mask 0x1 - interposer 'no'
+
+LOADED before=0
+SL [10-47-37][streamline][warn][tid:36980][0s:969ms:922us]pluginManager.cpp:1090[loadPlugins] Ignoring plugin 'sl.dlss_nr' since it is not supported on this platform
+
+RESULT requirements=0
+SL [10-47-37][streamline][info][tid:36980][0s:970ms:223us]pluginManager.cpp:1190[loadPlugins] Plugin execution order based on priority:
+
+REQUIREMENTS flags=6 viewports=0 driver=616.92.0 required-driver=570.0.0 tag-count=4
+REQUIREMENTS tag[0]=70
+SL [10-47-37][streamline][info][tid:36980][0s:970ms:526us]pluginManager.cpp:1193[loadPlugins] P0 - sl.common
+
+REQUIREMENTS tag[1]=71
+SL [10-47-37][streamline][error][tid:36980][0s:970ms:890us]sl.cpp:179[slValidateFeatureContext] 'kFeatureDLSS_NR' context is missing.
+
+REQUIREMENTS tag[2]=1
+REQUIREMENTS tag[3]=0
+ADAPTER NVIDIA GeForce RTX 4070 SUPER vendor=10de device=2783
+RESULT supported-before=32
+SL [10-47-37][streamline][info][tid:36980][1s:231ms:246us]pluginManager.cpp:1393[initializePlugins] Initializing plugins - api 0.0.1 - application ID 100721531
+
+SL [10-47-37][streamline][info][tid:36980][1s:231ms:880us]d3d12.cpp:1324[createKernel] Creating DXBC kernel copy_to_buffer.cs:main hash 12564409127886710297
+
+SL [10-47-37][streamline][info][tid:36980][1s:232ms:096us]d3d12.cpp:1014[initNsightActivity] NSight Graphics not attached, capture activity initialization failed (6)
+
+SL [10-47-37][streamline][info][tid:36980][1s:232ms:277us]d3d12.cpp:1024[initNsightActivity] NSight Systems not attached, profiling activity initialization failed (6)
+
+SL [10-47-37][streamline][info][tid:36980][1s:232ms:468us]commonEntry.cpp:1467[slOnPluginStartup] At least one plugin requires NGX, trying to initialize ...
+
+SL [10-47-37][streamline][info][tid:36980][1s:232ms:634us]commonEntry.cpp:1267[ngxLog] [Unknown(32764)] [2026-09-20 10:47:37] [NGXSafeInitializeLog:150] App logging hooks successfully initialized
+
+
+SL [10-47-37][streamline][info][tid:36980][1s:232ms:848us]commonEntry.cpp:1267[ngxLog] [Unknown(32765)] [2026-09-20 10:47:37] [NGXSafeInitializeLog:139] App logging hooks successfully initialized
+
+
+SL [10-47-37][streamline][info][tid:36980][1s:233ms:427us]commonEntry.cpp:1268[ngxLog] [Unknown(32765)] [2026-09-20 10:47:37] [NGXCheckArchitectureSupport:229] Found matching adapter with NVAPI physical GPU handle: 0x100 and LUID: { 0x0, 0x1406a }
+
+
+SL [10-47-37][streamline][info][tid:36980][1s:233ms:721us]commonEntry.cpp:1268[ngxLog] [Unknown(32765)] [2026-09-20 10:47:37] [NGXGetPathUsingQAI:475] Checking for path to NGX using QueryAdapterInfo
+
+
+SL [10-47-37][streamline][info][tid:36980][1s:233ms:936us]commonEntry.cpp:1267[ngxLog] [Unknown(32765)] [2026-09-20 10:47:37] [NGXGetPathUsingQAI:512] Path to driverStore found using QAI: C:\WINDOWS\System32\DriverStore\FileRepository\nv_dispi.inf_amd64_b20cc8aeaed64fc2
+
+
+SL [10-47-37][streamline][info][tid:36980][1s:234ms:245us]commonEntry.cpp:1267[ngxLog] [Unknown(32765)] [2026-09-20 10:47:37] [NGXGetPath:1046] using path for models: C:\ProgramData\NVIDIA\NGX\models
+
+
+SL [10-47-37][streamline][info][tid:36980][1s:234ms:477us]commonEntry.cpp:1267[ngxLog] [Unknown(32765)] [2026-09-20 10:47:37] [NGXGetPath:1046] using path for models: C:\ProgramData\NVIDIA\NGX\models
+
+
+SL [10-47-37][streamline][info][tid:36980][1s:234ms:696us]commonEntry.cpp:1268[ngxLog] [Unknown(32765)] [2026-09-20 10:47:37] [CreateSecurityDescriptor:94] security attributes generated successfully
+
+
+SL [10-47-37][streamline][info][tid:36980][1s:234ms:913us]commonEntry.cpp:1268[ngxLog] [Unknown(32765)] [2026-09-20 10:47:37] [CreateFolderWithACEs:154] using generated security descriptor for creating folder at: C:\ProgramData\NVIDIA\NGX\models
+
+
+SL [10-47-37][streamline][info][tid:36980][1s:235ms:312us]commonEntry.cpp:1267[ngxLog] [Unknown(32765)] [2026-09-20 10:47:37] [ModifyExistingFolderDACL:196] unable to set named security info, error: 参数错误。
+
+
+
+SL [10-47-37][streamline][info][tid:36980][1s:235ms:570us]commonEntry.cpp:1267[ngxLog] [Unknown(32765)] [2026-09-20 10:47:37] [ModifyExistingFolderDACL:215] cannot update access control list for NGX cache, must work with existing access rights
+
+
+SL [10-47-37][streamline][info][tid:36980][1s:235ms:846us]commonEntry.cpp:1267[ngxLog] [Unknown(32765)] [2026-09-20 10:47:37] [NGXCreateModelsFolder:1073] model folder created: C:\ProgramData\NVIDIA\NGX\models
+
+
+SL [10-47-37][streamline][info][tid:36980][1s:236ms:077us]commonEntry.cpp:1267[ngxLog] [Unknown(32765)] [2026-09-20 10:47:37] [NGXLoadConfig:1145] [dlss]
+
+
+SL [10-47-37][streamline][info][tid:36980][1s:236ms:260us]commonEntry.cpp:1267[ngxLog] [Unknown(32765)] [2026-09-20 10:47:37] [NGXLoadConfig:1151] app_E658702=0.0.0
+
+
+SL [10-47-37][streamline][info][tid:36980][1s:236ms:434us]commonEntry.cpp:1267[ngxLog] [Unknown(32765)] [2026-09-20 10:47:37] [NGXLoadConfig:1151] app_E658701=0.0.0
+
+
+SL [10-47-37][streamline][info][tid:36980][1s:236ms:636us]commonEntry.cpp:1267[ngxLog] [Unknown(32765)] [2026-09-20 10:47:37] [NGXLoadConfig:1151] app_B9FEB50=1.0.108
+
+
+SL [10-47-37][streamline][info][tid:36980][1s:236ms:829us]commonEntry.cpp:1267[ngxLog] [Unknown(32765)] [2026-09-20 10:47:37] [NGXLoadConfig:1151] app_B9FF4BC=1.0.108
+
+
+SL [10-47-37][streamline][info][tid:36980][1s:237ms:017us]commonEntry.cpp:1267[ngxLog] [Unknown(32765)] [2026-09-20 10:47:37] [NGXLoadConfig:1151] app_B9FD524=1.0.108
+
+
+SL [10-47-37][streamline][info][tid:36980][1s:237ms:196us]commonEntry.cpp:1267[ngxLog] [Unknown(32765)] [2026-09-20 10:47:37] [NGXLoadConfig:1151] app_86A5718=0.0.0
+
+
+SL [10-47-37][streamline][info][tid:36980][1s:237ms:385us]commonEntry.cpp:1267[ngxLog] [Unknown(32765)] [2026-09-20 10:47:37] [NGXLoadConfig:1151] app_B9DF510=1.3.106
+
+
+SL [10-47-37][streamline][info][tid:36980][1s:237ms:584us]commonEntry.cpp:1267[ngxLog] [Unknown(32765)] [2026-09-20 10:47:37] [NGXLoadConfig:1151] app_B9CB0B8=1.0.108
+
+
+SL [10-47-37][streamline][info][tid:36980][1s:237ms:754us]commonEntry.cpp:1267[ngxLog] [Unknown(32765)] [2026-09-20 10:47:37] [NGXLoadConfig:1151] app_B9E26B0=2.1.28
+
+
+SL [10-47-37][streamline][info][tid:36980][1s:237ms:945us]commonEntry.cpp:1267[ngxLog] [Unknown(32765)] [2026-09-20 10:47:37] [NGXLoadConfig:1151] app_B9D48D0=1.0.108
+
+
+SL [10-47-37][streamline][info][tid:36980][1s:238ms:144us]commonEntry.cpp:1267[ngxLog] [Unknown(32765)] [2026-09-20 10:47:37] [NGXLoadConfig:1151] app_E99B5EC=1.2.109
+
+
+SL [10-47-37][streamline][info][tid:36980][1s:238ms:336us]commonEntry.cpp:1267[ngxLog] [Unknown(32765)] [2026-09-20 10:47:37] [NGXLoadConfig:1151] app_B9DFA64=1.0.108
+
+
+SL [10-47-37][streamline][info][tid:36980][1s:238ms:536us]commonEntry.cpp:1267[ngxLog] [Unknown(32765)] [2026-09-20 10:47:37] [NGXLoadConfig:1151] app_866D3C8=0.0.0
+
+
+SL [10-47-37][streamline][info][tid:36980][1s:238ms:741us]commonEntry.cpp:1267[ngxLog] [Unknown(32765)] [2026-09-20 10:47:37] [NGXLoadConfig:1151] app_B9FD6C0=1.0.108
+
+
+SL [10-47-37][streamline][info][tid:36980][1s:238ms:939us]commonEntry.cpp:1267[ngxLog] [Unknown(32765)] [2026-09-20 10:47:37] [NGXLoadConfig:1151] app_B9CF688=2.2.15
+
+
+SL [10-47-37][streamline][info][tid:36980][1s:239ms:129us]commonEntry.cpp:1267[ngxLog] [Unknown(32765)] [2026-09-20 10:47:37] [NGXLoadConfig:1151] app_B9D6F08=1.0.108
+
+
+SL [10-47-37][streamline][info][tid:36980][1s:239ms:331us]commonEntry.cpp:1267[ngxLog] [Unknown(32765)] [2026-09-20 10:47:37] [NGXLoadConfig:1151] app_B9BF564=2.1.201
+
+
+SL [10-47-37][streamline][info][tid:36980][1s:239ms:527us]commonEntry.cpp:1267[ngxLog] [Unknown(32765)] [2026-09-20 10:47:37] [NGXLoadConfig:1151] app_B9DB4F4=1.0.108
+
+
+SL [10-47-37][streamline][info][tid:36980][1s:239ms:721us]commonEntry.cpp:1267[ngxLog] [Unknown(32765)] [2026-09-20 10:47:37] [NGXLoadConfig:1151] app_B9D2F5C=1.2.110
+
+
+SL [10-47-37][streamline][info][tid:36980][1s:239ms:920us]commonEntry.cpp:1267[ngxLog] [Unknown(32765)] [2026-09-20 10:47:37] [NGXLoadConfig:1151] app_B9D7388=1.0.108
+
+
+SL [10-47-37][streamline][info][tid:36980][1s:240ms:105us]commonEntry.cpp:1267[ngxLog] [Unknown(32765)] [2026-09-20 10:47:37] [NGXLoadConfig:1151] app_B9F5618=2.1.29
+
+
+SL [10-47-37][streamline][info][tid:36980][1s:240ms:292us]commonEntry.cpp:1267[ngxLog] [Unknown(32765)] [2026-09-20 10:47:37] [NGXLoadConfig:1151] app_B9DAE68=1.2.109
+
+
+SL [10-47-37][streamline][info][tid:36980][1s:240ms:490us]commonEntry.cpp:1267[ngxLog] [Unknown(32765)] [2026-09-20 10:47:37] [NGXLoadConfig:1151] app_B9D8C54=1.2.109
+
+
+SL [10-47-37][streamline][info][tid:36980][1s:240ms:693us]commonEntry.cpp:1267[ngxLog] [Unknown(32765)] [2026-09-20 10:47:37] [NGXLoadConfig:1151] app_B9D3EF0=2.1.28
+
+
+SL [10-47-37][streamline][info][tid:36980][1s:240ms:886us]commonEntry.cpp:1267[ngxLog] [Unknown(32765)] [2026-09-20 10:47:37] [NGXLoadConfig:1151] app_B9FACDC=2.1.201
+
+
+SL [10-47-37][streamline][info][tid:36980][1s:241ms:079us]commonEntry.cpp:1267[ngxLog] [Unknown(32765)] [2026-09-20 10:47:37] [NGXLoadConfig:1151] app_8669AB4=0.0.0
+
+
+SL [10-47-37][streamline][info][tid:36980][1s:241ms:272us]commonEntry.cpp:1267[ngxLog] [Unknown(32765)] [2026-09-20 10:47:37] [NGXLoadConfig:1151] app_F7361DC=2.1.28
+
+
+SL [10-47-37][streamline][info][tid:36980][1s:241ms:445us]commonEntry.cpp:1267[ngxLog] [Unknown(32765)] [2026-09-20 10:47:37] [NGXLoadConfig:1151] app_B9C3560=2.1.201
+
+
+SL [10-47-37][streamline][info][tid:36980][1s:241ms:638us]commonEntry.cpp:1267[ngxLog] [Unknown(32765)] [2026-09-20 10:47:37] [NGXLoadConfig:1151] app_B9B0430=2.1.28
+
+
+SL [10-47-37][streamline][info][tid:36980][1s:241ms:833us]commonEntry.cpp:1267[ngxLog] [Unknown(32765)] [2026-09-20 10:47:37] [NGXLoadConfig:1151] app_844E6FC=0.0.0
+
+
+SL [10-47-37][streamline][info][tid:36980][1s:242ms:028us]commonEntry.cpp:1267[ngxLog] [Unknown(32765)] [2026-09-20 10:47:37] [NGXLoadConfig:1151] app_E658703=0.0.0
+
+
+SL [10-47-37][streamline][info][tid:36980][1s:242ms:213us]commonEntry.cpp:1267[ngxLog] [Unknown(32765)] [2026-09-20 10:47:37] [NGXLoadConfig:1151] app_86B0DB4=0.0.0
+
+
+SL [10-47-37][streamline][info][tid:36980][1s:242ms:401us]commonEntry.cpp:1267[ngxLog] [Unknown(32765)] [2026-09-20 10:47:37] [NGXLoadConfig:1151] app_B9DB490=2.3.4
+
+
+SL [10-47-37][streamline][info][tid:36980][1s:242ms:584us]commonEntry.cpp:1267[ngxLog] [Unknown(32765)] [2026-09-20 10:47:37] [NGXLoadConfig:1151] app_86AA7B4=0.0.0
+
+
+SL [10-47-37][streamline][info][tid:36980][1s:242ms:774us]commonEntry.cpp:1267[ngxLog] [Unknown(32765)] [2026-09-20 10:47:37] [NGXLoadConfig:1151] app_E658700=310.9.0
+
+
+SL [10-47-37][streamline][info][tid:36980][1s:242ms:993us]commonEntry.cpp:1267[ngxLog] [Unknown(32765)] [2026-09-20 10:47:37] [NGXLoadConfig:1145] [dlisp]
+
+
+SL [10-47-37][streamline][info][tid:36980][1s:243ms:176us]commonEntry.cpp:1267[ngxLog] [Unknown(32765)] [2026-09-20 10:47:37] [NGXLoadConfig:1151] app_B9CF688=2.1.15
+
+
+SL [10-47-37][streamline][info][tid:36980][1s:243ms:375us]commonEntry.cpp:1267[ngxLog] [Unknown(32765)] [2026-09-20 10:47:37] [NGXLoadConfig:1151] app_E658701=0.0.0
+
+
+SL [10-47-37][streamline][info][tid:36980][1s:243ms:599us]commonEntry.cpp:1267[ngxLog] [Unknown(32765)] [2026-09-20 10:47:37] [NGXLoadConfig:1151] app_E99B5EC=1.2.102
+
+
+SL [10-47-37][streamline][info][tid:36980][1s:243ms:794us]commonEntry.cpp:1267[ngxLog] [Unknown(32765)] [2026-09-20 10:47:37] [NGXLoadConfig:1151] app_E658702=0.0.0
+
+
+SL [10-47-37][streamline][info][tid:36980][1s:243ms:987us]commonEntry.cpp:1267[ngxLog] [Unknown(32765)] [2026-09-20 10:47:37] [NGXLoadConfig:1151] app_E658703=310.0.0
+
+
+SL [10-47-37][streamline][info][tid:36980][1s:244ms:165us]commonEntry.cpp:1267[ngxLog] [Unknown(32765)] [2026-09-20 10:47:37] [NGXLoadConfig:1151] app_B9D8C54=1.2.106
+
+
+SL [10-47-37][streamline][info][tid:36980][1s:244ms:362us]commonEntry.cpp:1267[ngxLog] [Unknown(32765)] [2026-09-20 10:47:37] [NGXLoadConfig:1151] app_B9D2F5C=1.2.106
+
+
+SL [10-47-37][streamline][info][tid:36980][1s:244ms:556us]commonEntry.cpp:1267[ngxLog] [Unknown(32765)] [2026-09-20 10:47:37] [NGXLoadConfig:1151] app_B9DF510=1.3.101
+
+
+SL [10-47-37][streamline][info][tid:36980][1s:244ms:749us]commonEntry.cpp:1267[ngxLog] [Unknown(32765)] [2026-09-20 10:47:37] [NGXLoadConfig:1151] app_B9DAE68=1.2.106
+
+
+SL [10-47-37][streamline][info][tid:36980][1s:244ms:941us]commonEntry.cpp:1267[ngxLog] [Unknown(32765)] [2026-09-20 10:47:37] [NGXLoadConfig:1151] app_8669AB4=0.0.0
+
+
+SL [10-47-37][streamline][info][tid:36980][1s:245ms:141us]commonEntry.cpp:1267[ngxLog] [Unknown(32765)] [2026-09-20 10:47:37] [NGXLoadConfig:1145] [sl_dlss_g_0]
+
+
+SL [10-47-37][streamline][info][tid:36980][1s:245ms:326us]commonEntry.cpp:1267[ngxLog] [Unknown(32765)] [2026-09-20 10:47:37] [NGXLoadConfig:1151] app_E658703=2.14.0
+
+
+SL [10-47-37][streamline][info][tid:36980][1s:245ms:510us]commonEntry.cpp:1267[ngxLog] [Unknown(32765)] [2026-09-20 10:47:37] [NGXLoadConfig:1145] [sl_dlss_0]
+
+
+SL [10-47-37][streamline][info][tid:36980][1s:245ms:681us]commonEntry.cpp:1267[ngxLog] [Unknown(32765)] [2026-09-20 10:47:37] [NGXLoadConfig:1151] app_E658703=2.14.0
+
+
+SL [10-47-37][streamline][info][tid:36980][1s:245ms:873us]commonEntry.cpp:1267[ngxLog] [Unknown(32765)] [2026-09-20 10:47:37] [NGXLoadConfig:1145] [sl_pcl_0]
+
+
+SL [10-47-37][streamline][info][tid:36980][1s:246ms:069us]commonEntry.cpp:1267[ngxLog] [Unknown(32765)] [2026-09-20 10:47:37] [NGXLoadConfig:1151] app_E658703=2.14.0
+
+
+SL [10-47-37][streamline][info][tid:36980][1s:246ms:242us]commonEntry.cpp:1267[ngxLog] [Unknown(32765)] [2026-09-20 10:47:37] [NGXLoadConfig:1145] [sl_reflex_0]
+
+
+SL [10-47-37][streamline][info][tid:36980][1s:246ms:410us]commonEntry.cpp:1267[ngxLog] [Unknown(32765)] [2026-09-20 10:47:37] [NGXLoadConfig:1151] app_E658703=2.14.0
+
+
+SL [10-47-37][streamline][info][tid:36980][1s:246ms:578us]commonEntry.cpp:1267[ngxLog] [Unknown(32765)] [2026-09-20 10:47:37] [NGXLoadConfig:1145] [sl_common_0]
+
+
+SL [10-47-37][streamline][info][tid:36980][1s:246ms:770us]commonEntry.cpp:1267[ngxLog] [Unknown(32765)] [2026-09-20 10:47:37] [NGXLoadConfig:1151] app_E658703=2.14.0
+
+
+SL [10-47-37][streamline][info][tid:36980][1s:246ms:941us]commonEntry.cpp:1267[ngxLog] [Unknown(32765)] [2026-09-20 10:47:37] [NGXLoadConfig:1145] [dlssg]
+
+
+SL [10-47-37][streamline][info][tid:36980][1s:247ms:106us]commonEntry.cpp:1267[ngxLog] [Unknown(32765)] [2026-09-20 10:47:37] [NGXLoadConfig:1151] app_E658701=0.0.0
+
+
+SL [10-47-37][streamline][info][tid:36980][1s:247ms:305us]commonEntry.cpp:1267[ngxLog] [Unknown(32765)] [2026-09-20 10:47:37] [NGXLoadConfig:1151] app_86AA7B4=0.0.0
+
+
+SL [10-47-37][streamline][info][tid:36980][1s:247ms:482us]commonEntry.cpp:1267[ngxLog] [Unknown(32765)] [2026-09-20 10:47:37] [NGXLoadConfig:1151] app_E658702=0.0.0
+
+
+SL [10-47-37][streamline][info][tid:36980][1s:247ms:651us]commonEntry.cpp:1267[ngxLog] [Unknown(32765)] [2026-09-20 10:47:37] [NGXLoadConfig:1151] app_B9DB490=0.0.0
+
+
+SL [10-47-37][streamline][info][tid:36980][1s:247ms:834us]commonEntry.cpp:1267[ngxLog] [Unknown(32765)] [2026-09-20 10:47:37] [NGXLoadConfig:1151] app_844E6FC=0.0.0
+
+
+SL [10-47-37][streamline][info][tid:36980][1s:248ms:009us]commonEntry.cpp:1267[ngxLog] [Unknown(32765)] [2026-09-20 10:47:37] [NGXLoadConfig:1151] app_E658703=0.0.0
+
+
+SL [10-47-37][streamline][info][tid:36980][1s:248ms:182us]commonEntry.cpp:1267[ngxLog] [Unknown(32765)] [2026-09-20 10:47:37] [NGXLoadConfig:1151] app_5FA3A53=0.0.0
+
+
+SL [10-47-37][streamline][info][tid:36980][1s:248ms:359us]commonEntry.cpp:1267[ngxLog] [Unknown(32765)] [2026-09-20 10:47:37] [NGXLoadConfig:1151] app_E658700=310.9.0
+
+
+SL [10-47-37][streamline][info][tid:36980][1s:248ms:534us]commonEntry.cpp:1267[ngxLog] [Unknown(32765)] [2026-09-20 10:47:37] [NGXLoadConfig:1145] [sl_dlss_d_0]
+
+
+SL [10-47-37][streamline][info][tid:36980][1s:248ms:734us]commonEntry.cpp:1267[ngxLog] [Unknown(32765)] [2026-09-20 10:47:37] [NGXLoadConfig:1151] app_E658703=2.14.0
+
+
+SL [10-47-37][streamline][info][tid:36980][1s:248ms:914us]commonEntry.cpp:1267[ngxLog] [Unknown(32765)] [2026-09-20 10:47:37] [NGXLoadConfig:1145] [dlssd]
+
+
+SL [10-47-37][streamline][info][tid:36980][1s:249ms:081us]commonEntry.cpp:1267[ngxLog] [Unknown(32765)] [2026-09-20 10:47:37] [NGXLoadConfig:1151] app_E658701=0.0.0
+
+
+SL [10-47-37][streamline][info][tid:36980][1s:249ms:250us]commonEntry.cpp:1267[ngxLog] [Unknown(32765)] [2026-09-20 10:47:37] [NGXLoadConfig:1151] app_B9DB490=0.0.0
+
+
+SL [10-47-37][streamline][info][tid:36980][1s:249ms:443us]commonEntry.cpp:1267[ngxLog] [Unknown(32765)] [2026-09-20 10:47:37] [NGXLoadConfig:1151] app_E658703=0.0.0
+
+
+SL [10-47-37][streamline][info][tid:36980][1s:249ms:608us]commonEntry.cpp:1267[ngxLog] [Unknown(32765)] [2026-09-20 10:47:37] [NGXLoadConfig:1151] app_E658702=0.0.0
+
+
+SL [10-47-37][streamline][info][tid:36980][1s:249ms:802us]commonEntry.cpp:1267[ngxLog] [Unknown(32765)] [2026-09-20 10:47:37] [NGXLoadConfig:1151] app_E658700=310.9.0
+
+
+SL [10-47-37][streamline][info][tid:36980][1s:250ms:002us]commonEntry.cpp:1267[ngxLog] [Unknown(32765)] [2026-09-20 10:47:37] [NGXLoadConfig:1145] [dlss_override]
+
+
+SL [10-47-37][streamline][info][tid:36980][1s:250ms:179us]commonEntry.cpp:1267[ngxLog] [Unknown(32765)] [2026-09-20 10:47:37] [NGXLoadConfig:1151] app_E658700=310.9.0
+
+
+SL [10-47-37][streamline][info][tid:36980][1s:250ms:356us]commonEntry.cpp:1267[ngxLog] [Unknown(32765)] [2026-09-20 10:47:37] [NGXLoadConfig:1145] [sl_sdk_0]
+
+
+SL [10-47-37][streamline][info][tid:36980][1s:250ms:595us]commonEntry.cpp:1267[ngxLog] [Unknown(32765)] [2026-09-20 10:47:37] [NGXLoadConfig:1151] app_E658703=2.14.0
+
+
+SL [10-47-37][streamline][info][tid:36980][1s:250ms:789us]commonEntry.cpp:1267[ngxLog] [Unknown(32765)] [2026-09-20 10:47:37] [NGXLoadConfig:1145] [sl_deepdvc_0]
+
+
+SL [10-47-37][streamline][info][tid:36980][1s:250ms:977us]commonEntry.cpp:1267[ngxLog] [Unknown(32765)] [2026-09-20 10:47:37] [NGXLoadConfig:1151] app_E658703=2.14.0
+
+
+SL [10-47-37][streamline][info][tid:36980][1s:251ms:166us]commonEntry.cpp:1267[ngxLog] [Unknown(32765)] [2026-09-20 10:47:37] [NGXLoadConfig:1145] [sl_nis_0]
+
+
+SL [10-47-37][streamline][info][tid:36980][1s:251ms:344us]commonEntry.cpp:1267[ngxLog] [Unknown(32765)] [2026-09-20 10:47:37] [NGXLoadConfig:1151] app_E658703=2.14.0
+
+
+SL [10-47-37][streamline][info][tid:36980][1s:251ms:541us]commonEntry.cpp:1267[ngxLog] [Unknown(32765)] [2026-09-20 10:47:37] [NGXLoadConfig:1145] [sl_deepdvc_override_0]
+
+
+SL [10-47-37][streamline][info][tid:36980][1s:251ms:751us]commonEntry.cpp:1267[ngxLog] [Unknown(32765)] [2026-09-20 10:47:37] [NGXLoadConfig:1151] app_E658700=2.14.0
+
+
+SL [10-47-37][streamline][info][tid:36980][1s:251ms:938us]commonEntry.cpp:1267[ngxLog] [Unknown(32765)] [2026-09-20 10:47:37] [NGXLoadConfig:1145] [sl_nvperf_0]
+
+
+SL [10-47-37][streamline][info][tid:36980][1s:252ms:143us]commonEntry.cpp:1267[ngxLog] [Unknown(32765)] [2026-09-20 10:47:37] [NGXLoadConfig:1151] app_E658703=2.14.0
+
+
+SL [10-47-37][streamline][info][tid:36980][1s:252ms:356us]commonEntry.cpp:1267[ngxLog] [Unknown(32765)] [2026-09-20 10:47:37] [NGXLoadConfig:1145] [vsr]
+
+
+SL [10-47-37][streamline][info][tid:36980][1s:252ms:548us]commonEntry.cpp:1267[ngxLog] [Unknown(32765)] [2026-09-20 10:47:37] [NGXLoadConfig:1151] app_E658703=1.6.0
+
+
+SL [10-47-37][streamline][info][tid:36980][1s:252ms:756us]commonEntry.cpp:1267[ngxLog] [Unknown(32765)] [2026-09-20 10:47:37] [NGXLoadConfig:1145] [sl_sdk_override_0]
+
+
+SL [10-47-37][streamline][info][tid:36980][1s:252ms:960us]commonEntry.cpp:1267[ngxLog] [Unknown(32765)] [2026-09-20 10:47:37] [NGXLoadConfig:1151] app_E658700=2.14.0
+
+
+SL [10-47-37][streamline][info][tid:36980][1s:253ms:167us]commonEntry.cpp:1267[ngxLog] [Unknown(32765)] [2026-09-20 10:47:37] [NGXLoadConfig:1145] [sl_dlss_g_override_0]
+
+
+SL [10-47-37][streamline][info][tid:36980][1s:253ms:377us]commonEntry.cpp:1267[ngxLog] [Unknown(32765)] [2026-09-20 10:47:37] [NGXLoadConfig:1151] app_E658700=2.14.0
+
+
+SL [10-47-37][streamline][info][tid:36980][1s:253ms:581us]commonEntry.cpp:1267[ngxLog] [Unknown(32765)] [2026-09-20 10:47:37] [NGXLoadConfig:1145] [sl_common_override_0]
+
+
+SL [10-47-37][streamline][info][tid:36980][1s:253ms:801us]commonEntry.cpp:1267[ngxLog] [Unknown(32765)] [2026-09-20 10:47:37] [NGXLoadConfig:1151] app_E658700=2.14.0
+
+
+SL [10-47-37][streamline][info][tid:36980][1s:254ms:003us]commonEntry.cpp:1267[ngxLog] [Unknown(32765)] [2026-09-20 10:47:37] [NGXLoadConfig:1145] [sl_dlss_override_0]
+
+
+SL [10-47-37][streamline][info][tid:36980][1s:254ms:175us]commonEntry.cpp:1267[ngxLog] [Unknown(32765)] [2026-09-20 10:47:37] [NGXLoadConfig:1151] app_E658700=2.14.0
+
+
+SL [10-47-37][streamline][info][tid:36980][1s:254ms:404us]commonEntry.cpp:1267[ngxLog] [Unknown(32765)] [2026-09-20 10:47:37] [NGXLoadConfig:1145] [sl_nis_override_0]
+
+
+SL [10-47-37][streamline][info][tid:36980][1s:254ms:556us]commonEntry.cpp:1267[ngxLog] [Unknown(32765)] [2026-09-20 10:47:37] [NGXLoadConfig:1151] app_E658700=2.14.0
+
+
+SL [10-47-37][streamline][info][tid:36980][1s:254ms:744us]commonEntry.cpp:1267[ngxLog] [Unknown(32765)] [2026-09-20 10:47:37] [NGXLoadConfig:1145] [sl_dlss_d_override_0]
+
+
+SL [10-47-37][streamline][info][tid:36980][1s:254ms:941us]commonEntry.cpp:1267[ngxLog] [Unknown(32765)] [2026-09-20 10:47:37] [NGXLoadConfig:1151] app_E658700=2.14.0
+
+
+SL [10-47-37][streamline][info][tid:36980][1s:255ms:117us]commonEntry.cpp:1267[ngxLog] [Unknown(32765)] [2026-09-20 10:47:37] [NGXLoadConfig:1145] [sl_nvperf_override_0]
+
+
+SL [10-47-37][streamline][info][tid:36980][1s:255ms:367us]commonEntry.cpp:1267[ngxLog] [Unknown(32765)] [2026-09-20 10:47:37] [NGXLoadConfig:1151] app_E658700=2.14.0
+
+
+SL [10-47-37][streamline][info][tid:36980][1s:255ms:552us]commonEntry.cpp:1267[ngxLog] [Unknown(32765)] [2026-09-20 10:47:37] [NGXLoadConfig:1145] [sl_pcl_override_0]
+
+
+SL [10-47-37][streamline][info][tid:36980][1s:255ms:723us]commonEntry.cpp:1267[ngxLog] [Unknown(32765)] [2026-09-20 10:47:37] [NGXLoadConfig:1151] app_E658700=2.14.0
+
+
+SL [10-47-37][streamline][info][tid:36980][1s:255ms:912us]commonEntry.cpp:1267[ngxLog] [Unknown(32765)] [2026-09-20 10:47:37] [NGXLoadConfig:1145] [sl_reflex_override_0]
+
+
+SL [10-47-37][streamline][info][tid:36980][1s:256ms:090us]commonEntry.cpp:1267[ngxLog] [Unknown(32765)] [2026-09-20 10:47:37] [NGXLoadConfig:1151] app_E658700=2.14.0
+
+
+SL [10-47-37][streamline][info][tid:36980][1s:256ms:267us]commonEntry.cpp:1267[ngxLog] [Unknown(32765)] [2026-09-20 10:47:37] [`anonymous-namespace'::LoadMappingFileData:269] listItem.engineVersion .* listItem.genericCMSId 86aa7b4
+
+
+SL [10-47-37][streamline][info][tid:36980][1s:256ms:534us]commonEntry.cpp:1267[ngxLog] [Unknown(32765)] [2026-09-20 10:47:37] [`anonymous-namespace'::LoadMappingFileData:283]  project id 3F9D696D4363312194B0ECB2671E899F cms id B9FBD50
+
+
+SL [10-47-37][streamline][info][tid:36980][1s:256ms:787us]commonEntry.cpp:1267[ngxLog] [Unknown(32765)] [2026-09-20 10:47:37] [`anonymous-namespace'::LoadMappingFileData:269] listItem.engineVersion .* listItem.genericCMSId 8618954
+
+
+SL [10-47-37][streamline][info][tid:36980][1s:257ms:036us]commonEntry.cpp:1267[ngxLog] [Unknown(32765)] [2026-09-20 10:47:37] [`anonymous-namespace'::LoadMappingFileData:269] listItem.engineVersion .* listItem.genericCMSId b9b05cc
+
+
+SL [10-47-37][streamline][info][tid:36980][1s:257ms:277us]commonEntry.cpp:1267[ngxLog] [Unknown(32765)] [2026-09-20 10:47:37] [`anonymous-namespace'::LoadMappingFileData:269] listItem.engineVersion .* listItem.genericCMSId 876232c
+
+
+SL [10-47-37][streamline][info][tid:36980][1s:257ms:544us]commonEntry.cpp:1267[ngxLog] [Unknown(32765)] [2026-09-20 10:47:37] [MapProjectId:1879] Found cms id 876232c for engine: custom engineVersion DLSS5Tool-NR-Probe projectID 7c134ab9-9677-4af5-a2b2-bca943350861
+
+
+SL [10-47-37][streamline][info][tid:36980][1s:293ms:668us]commonEntry.cpp:1267[ngxLog] [Unknown(32765)] [2026-09-20 10:47:37] [NGXDRSInit:182] NvAPI_DRS_FindApplicationByName -166
+
+
+SL [10-47-37][streamline][info][tid:36980][1s:298ms:339us]commonEntry.cpp:1267[ngxLog] [Unknown(32765)] [2026-09-20 10:47:37] [NGXInitContext:245] called from module sl.common.dll at F:\project\DLSS5Tool\tmp\streamline-nr-probe-20260920\plugins
+
+
+SL [10-47-37][streamline][info][tid:36980][1s:298ms:678us]commonEntry.cpp:1268[ngxLog] [Unknown(32765)] [2026-09-20 10:47:37] [NGXSecureLoadFeature:1221] unable to read the deny list. Assuming that the feature is allowed.
+
+
+SL [10-47-37][streamline][info][tid:36980][1s:298ms:945us]commonEntry.cpp:1268[ngxLog] [Unknown(32765)] [2026-09-20 10:47:37] [`anonymous-namespace'::SnippetLocationInfo::load:716] Module not found at F:\project\DLSS5Tool\tmp\streamline-nr-probe-20260920\plugins
+
+
+SL [10-47-37][streamline][info][tid:36980][1s:299ms:240us]commonEntry.cpp:1268[ngxLog] [Unknown(32765)] [2026-09-20 10:47:37] [`anonymous-namespace'::SnippetLocationInfo::load:716] Module not found at F:\project\DLSS5Tool\tmp\streamline-nr-probe-20260920\plugins
+
+
+SL [10-47-37][streamline][info][tid:36980][1s:299ms:529us]commonEntry.cpp:1268[ngxLog] [Unknown(32765)] [2026-09-20 10:47:37] [NGXSecureLoadFeature:1286] warning: ModuleName - nvngx_dldenoiser.dll doesn't exist in any of the search paths!
+
+
+SL [10-47-37][streamline][info][tid:36980][1s:299ms:816us]commonEntry.cpp:1267[ngxLog] [Unknown(32765)] [2026-09-20 10:47:37] [NGXReportStatusFeedback:1103] Override shared memory was opened successfully
+
+
+SL [10-47-37][streamline][info][tid:36980][1s:300ms:048us]commonEntry.cpp:1267[ngxLog] [Unknown(32765)] [2026-09-20 10:47:37] [NGXReportStatusFeedback:1115] Override shared memory was mapped successfully
+
+
+SL [10-47-37][streamline][info][tid:36980][1s:300ms:294us]commonEntry.cpp:1268[ngxLog] [Unknown(32765)] [2026-09-20 10:47:37] [NGXSecureLoadFeature:1221] unable to read the deny list. Assuming that the feature is allowed.
+
+
+SL [10-47-37][streamline][info][tid:36980][1s:300ms:537us]commonEntry.cpp:1268[ngxLog] [Unknown(32765)] [2026-09-20 10:47:37] [`anonymous-namespace'::SnippetLocationInfo::load:716] Module not found at F:\project\DLSS5Tool\tmp\streamline-nr-probe-20260920\plugins
+
+
+SL [10-47-37][streamline][info][tid:36980][1s:300ms:839us]commonEntry.cpp:1268[ngxLog] [Unknown(32765)] [2026-09-20 10:47:37] [`anonymous-namespace'::SnippetLocationInfo::load:716] Module not found at F:\project\DLSS5Tool\tmp\streamline-nr-probe-20260920\plugins
+
+
+SL [10-47-37][streamline][info][tid:36980][1s:301ms:114us]commonEntry.cpp:1268[ngxLog] [Unknown(32765)] [2026-09-20 10:47:37] [NGXSecureLoadFeature:1286] warning: ModuleName - nvngx_dlss.dll doesn't exist in any of the search paths!
+
+
+SL [10-47-37][streamline][info][tid:36980][1s:301ms:388us]commonEntry.cpp:1268[ngxLog] [Unknown(32765)] [2026-09-20 10:47:37] [NGXSecureLoadFeature:1221] unable to read the deny list. Assuming that the feature is allowed.
+
+
+SL [10-47-37][streamline][info][tid:36980][1s:301ms:646us]commonEntry.cpp:1268[ngxLog] [Unknown(32765)] [2026-09-20 10:47:37] [`anonymous-namespace'::SnippetLocationInfo::load:716] Module not found at F:\project\DLSS5Tool\tmp\streamline-nr-probe-20260920\plugins
+
+
+SL [10-47-37][streamline][info][tid:36980][1s:301ms:965us]commonEntry.cpp:1268[ngxLog] [Unknown(32765)] [2026-09-20 10:47:37] [`anonymous-namespace'::SnippetLocationInfo::load:716] Module not found at F:\project\DLSS5Tool\tmp\streamline-nr-probe-20260920\plugins
+
+
+SL [10-47-37][streamline][info][tid:36980][1s:302ms:319us]commonEntry.cpp:1268[ngxLog] [Unknown(32765)] [2026-09-20 10:47:37] [NGXSecureLoadFeature:1286] warning: ModuleName - nvngx_dlinpainting.dll doesn't exist in any of the search paths!
+
+
+SL [10-47-37][streamline][info][tid:36980][1s:302ms:621us]commonEntry.cpp:1268[ngxLog] [Unknown(32765)] [2026-09-20 10:47:37] [NGXSecureLoadFeature:1221] unable to read the deny list. Assuming that the feature is allowed.
+
+
+SL [10-47-37][streamline][info][tid:36980][1s:302ms:895us]commonEntry.cpp:1268[ngxLog] [Unknown(32765)] [2026-09-20 10:47:37] [`anonymous-namespace'::SnippetLocationInfo::load:716] Module not found at F:\project\DLSS5Tool\tmp\streamline-nr-probe-20260920\plugins
+
+
+SL [10-47-37][streamline][info][tid:36980][1s:303ms:178us]commonEntry.cpp:1268[ngxLog] [Unknown(32765)] [2026-09-20 10:47:37] [`anonymous-namespace'::SnippetLocationInfo::load:716] Module not found at F:\project\DLSS5Tool\tmp\streamline-nr-probe-20260920\plugins
+
+
+SL [10-47-37][streamline][info][tid:36980][1s:303ms:468us]commonEntry.cpp:1268[ngxLog] [Unknown(32765)] [2026-09-20 10:47:37] [NGXSecureLoadFeature:1286] warning: ModuleName - nvngx_dlisr.dll doesn't exist in any of the search paths!
+
+
+SL [10-47-37][streamline][info][tid:36980][1s:303ms:755us]commonEntry.cpp:1268[ngxLog] [Unknown(32765)] [2026-09-20 10:47:37] [NGXSecureLoadFeature:1221] unable to read the deny list. Assuming that the feature is allowed.
+
+
+SL [10-47-37][streamline][info][tid:36980][1s:304ms:005us]commonEntry.cpp:1268[ngxLog] [Unknown(32765)] [2026-09-20 10:47:37] [`anonymous-namespace'::SnippetLocationInfo::load:716] Module not found at F:\project\DLSS5Tool\tmp\streamline-nr-probe-20260920\plugins
+
+
+SL [10-47-37][streamline][info][tid:36980][1s:304ms:307us]commonEntry.cpp:1268[ngxLog] [Unknown(32765)] [2026-09-20 10:47:37] [`anonymous-namespace'::SnippetLocationInfo::load:716] Module not found at F:\project\DLSS5Tool\tmp\streamline-nr-probe-20260920\plugins
+
+
+SL [10-47-37][streamline][info][tid:36980][1s:304ms:607us]commonEntry.cpp:1268[ngxLog] [Unknown(32765)] [2026-09-20 10:47:37] [NGXSecureLoadFeature:1286] warning: ModuleName - nvngx_dlslowmo.dll doesn't exist in any of the search paths!
+
+
+SL [10-47-37][streamline][info][tid:36980][1s:304ms:892us]commonEntry.cpp:1268[ngxLog] [Unknown(32765)] [2026-09-20 10:47:37] [NGXSecureLoadFeature:1221] unable to read the deny list. Assuming that the feature is allowed.
+
+
+SL [10-47-37][streamline][info][tid:36980][1s:305ms:151us]commonEntry.cpp:1268[ngxLog] [Unknown(32765)] [2026-09-20 10:47:37] [`anonymous-namespace'::SnippetLocationInfo::load:716] Module not found at F:\project\DLSS5Tool\tmp\streamline-nr-probe-20260920\plugins
+
+
+SL [10-47-37][streamline][info][tid:36980][1s:305ms:459us]commonEntry.cpp:1268[ngxLog] [Unknown(32765)] [2026-09-20 10:47:37] [`anonymous-namespace'::SnippetLocationInfo::load:716] Module not found at F:\project\DLSS5Tool\tmp\streamline-nr-probe-20260920\plugins
+
+
+SL [10-47-37][streamline][info][tid:36980][1s:305ms:756us]commonEntry.cpp:1268[ngxLog] [Unknown(32765)] [2026-09-20 10:47:37] [NGXSecureLoadFeature:1286] warning: ModuleName - nvngx_dlvsr.dll doesn't exist in any of the search paths!
+
+
+SL [10-47-37][streamline][info][tid:36980][1s:306ms:036us]commonEntry.cpp:1268[ngxLog] [Unknown(32765)] [2026-09-20 10:47:37] [NGXSecureLoadFeature:1221] unable to read the deny list. Assuming that the feature is allowed.
+
+
+SL [10-47-37][streamline][info][tid:36980][1s:306ms:289us]commonEntry.cpp:1268[ngxLog] [Unknown(32765)] [2026-09-20 10:47:37] [`anonymous-namespace'::SnippetLocationInfo::load:716] Module not found at F:\project\DLSS5Tool\tmp\streamline-nr-probe-20260920\plugins
+
+
+SL [10-47-37][streamline][info][tid:36980][1s:306ms:576us]commonEntry.cpp:1268[ngxLog] [Unknown(32765)] [2026-09-20 10:47:37] [`anonymous-namespace'::SnippetLocationInfo::load:716] Module not found at F:\project\DLSS5Tool\tmp\streamline-nr-probe-20260920\plugins
+
+
+SL [10-47-37][streamline][info][tid:36980][1s:306ms:856us]commonEntry.cpp:1268[ngxLog] [Unknown(32765)] [2026-09-20 10:47:37] [NGXSecureLoadFeature:1286] warning: ModuleName - nvngx_dlcolorize.dll doesn't exist in any of the search paths!
+
+
+SL [10-47-37][streamline][info][tid:36980][1s:307ms:121us]commonEntry.cpp:1268[ngxLog] [Unknown(32765)] [2026-09-20 10:47:37] [NGXSecureLoadFeature:1221] unable to read the deny list. Assuming that the feature is allowed.
+
+
+SL [10-47-37][streamline][info][tid:36980][1s:307ms:356us]commonEntry.cpp:1268[ngxLog] [Unknown(32765)] [2026-09-20 10:47:37] [`anonymous-namespace'::SnippetLocationInfo::load:716] Module not found at F:\project\DLSS5Tool\tmp\streamline-nr-probe-20260920\plugins
+
+
+SL [10-47-37][streamline][info][tid:36980][1s:307ms:661us]commonEntry.cpp:1268[ngxLog] [Unknown(32765)] [2026-09-20 10:47:37] [`anonymous-namespace'::SnippetLocationInfo::load:716] Module not found at F:\project\DLSS5Tool\tmp\streamline-nr-probe-20260920\plugins
+
+
+SL [10-47-37][streamline][info][tid:36980][1s:307ms:962us]commonEntry.cpp:1268[ngxLog] [Unknown(32765)] [2026-09-20 10:47:37] [NGXSecureLoadFeature:1286] warning: ModuleName - nvngx_dlstyletransfer.dll doesn't exist in any of the search paths!
+
+
+SL [10-47-37][streamline][info][tid:36980][1s:308ms:208us]commonEntry.cpp:1268[ngxLog] [Unknown(32765)] [2026-09-20 10:47:37] [NGXSecureLoadFeature:1221] unable to read the deny list. Assuming that the feature is allowed.
+
+
+SL [10-47-37][streamline][info][tid:36980][1s:308ms:490us]commonEntry.cpp:1268[ngxLog] [Unknown(32765)] [2026-09-20 10:47:37] [`anonymous-namespace'::SnippetLocationInfo::load:716] Module not found at F:\project\DLSS5Tool\tmp\streamline-nr-probe-20260920\plugins
+
+
+SL [10-47-37][streamline][info][tid:36980][1s:308ms:793us]commonEntry.cpp:1268[ngxLog] [Unknown(32765)] [2026-09-20 10:47:37] [`anonymous-namespace'::SnippetLocationInfo::load:716] Module not found at F:\project\DLSS5Tool\tmp\streamline-nr-probe-20260920\plugins
+
+
+SL [10-47-37][streamline][info][tid:36980][1s:309ms:149us]commonEntry.cpp:1268[ngxLog] [Unknown(32765)] [2026-09-20 10:47:37] [NGXSecureLoadFeature:1286] warning: ModuleName - nvngx_dlvdenoiser.dll doesn't exist in any of the search paths!
+
+
+SL [10-47-37][streamline][info][tid:36980][1s:309ms:502us]commonEntry.cpp:1268[ngxLog] [Unknown(32765)] [2026-09-20 10:47:37] [NGXSecureLoadFeature:1221] unable to read the deny list. Assuming that the feature is allowed.
+
+
+SL [10-47-37][streamline][info][tid:36980][1s:309ms:800us]commonEntry.cpp:1268[ngxLog] [Unknown(32765)] [2026-09-20 10:47:37] [`anonymous-namespace'::SnippetLocationInfo::load:716] Module not found at F:\project\DLSS5Tool\tmp\streamline-nr-probe-20260920\plugins
+
+
+SL [10-47-37][streamline][info][tid:36980][1s:310ms:092us]commonEntry.cpp:1268[ngxLog] [Unknown(32765)] [2026-09-20 10:47:37] [`anonymous-namespace'::SnippetLocationInfo::load:716] Module not found at F:\project\DLSS5Tool\tmp\streamline-nr-probe-20260920\plugins
+
+
+SL [10-47-37][streamline][info][tid:36980][1s:310ms:407us]commonEntry.cpp:1268[ngxLog] [Unknown(32765)] [2026-09-20 10:47:37] [NGXSecureLoadFeature:1286] warning: ModuleName - nvngx_dlisp.dll doesn't exist in any of the search paths!
+
+
+SL [10-47-37][streamline][info][tid:36980][1s:310ms:711us]commonEntry.cpp:1268[ngxLog] [Unknown(32765)] [2026-09-20 10:47:37] [NGXSecureLoadFeature:1221] unable to read the deny list. Assuming that the feature is allowed.
+
+
+SL [10-47-37][streamline][info][tid:36980][1s:310ms:953us]commonEntry.cpp:1268[ngxLog] [Unknown(32765)] [2026-09-20 10:47:37] [`anonymous-namespace'::SnippetLocationInfo::load:716] Module not found at F:\project\DLSS5Tool\tmp\streamline-nr-probe-20260920\plugins
+
+
+SL [10-47-37][streamline][info][tid:36980][1s:311ms:248us]commonEntry.cpp:1268[ngxLog] [Unknown(32765)] [2026-09-20 10:47:37] [`anonymous-namespace'::SnippetLocationInfo::load:716] Module not found at F:\project\DLSS5Tool\tmp\streamline-nr-probe-20260920\plugins
+
+
+SL [10-47-37][streamline][info][tid:36980][1s:311ms:514us]commonEntry.cpp:1268[ngxLog] [Unknown(32765)] [2026-09-20 10:47:37] [NGXSecureLoadFeature:1286] warning: ModuleName - nvngx_dlresolve.dll doesn't exist in any of the search paths!
+
+
+SL [10-47-37][streamline][info][tid:36980][1s:311ms:845us]commonEntry.cpp:1268[ngxLog] [Unknown(32765)] [2026-09-20 10:47:37] [NGXSecureLoadFeature:1221] unable to read the deny list. Assuming that the feature is allowed.
+
+
+SL [10-47-37][streamline][info][tid:36980][1s:312ms:123us]commonEntry.cpp:1268[ngxLog] [Unknown(32765)] [2026-09-20 10:47:37] [`anonymous-namespace'::SnippetLocationInfo::load:716] Module not found at F:\project\DLSS5Tool\tmp\streamline-nr-probe-20260920\plugins
+
+
+SL [10-47-37][streamline][info][tid:36980][1s:312ms:411us]commonEntry.cpp:1268[ngxLog] [Unknown(32765)] [2026-09-20 10:47:37] [`anonymous-namespace'::SnippetLocationInfo::load:716] Module not found at F:\project\DLSS5Tool\tmp\streamline-nr-probe-20260920\plugins
+
+
+SL [10-47-37][streamline][info][tid:36980][1s:312ms:753us]commonEntry.cpp:1268[ngxLog] [Unknown(32765)] [2026-09-20 10:47:37] [NGXSecureLoadFeature:1286] warning: ModuleName - nvngx_dlssg.dll doesn't exist in any of the search paths!
+
+
+SL [10-47-37][streamline][info][tid:36980][1s:313ms:107us]commonEntry.cpp:1268[ngxLog] [Unknown(32765)] [2026-09-20 10:47:37] [NGXSecureLoadFeature:1221] unable to read the deny list. Assuming that the feature is allowed.
+
+
+SL [10-47-37][streamline][info][tid:36980][1s:313ms:407us]commonEntry.cpp:1268[ngxLog] [Unknown(32765)] [2026-09-20 10:47:37] [`anonymous-namespace'::SnippetLocationInfo::load:716] Module not found at F:\project\DLSS5Tool\tmp\streamline-nr-probe-20260920\plugins
+
+
+SL [10-47-37][streamline][info][tid:36980][1s:313ms:710us]commonEntry.cpp:1268[ngxLog] [Unknown(32765)] [2026-09-20 10:47:37] [`anonymous-namespace'::SnippetLocationInfo::load:716] Module not found at F:\project\DLSS5Tool\tmp\streamline-nr-probe-20260920\plugins
+
+
+SL [10-47-37][streamline][info][tid:36980][1s:314ms:129us]commonEntry.cpp:1268[ngxLog] [Unknown(32765)] [2026-09-20 10:47:37] [NGXSecureLoadFeature:1286] warning: ModuleName - nvngx_deepdvc.dll doesn't exist in any of the search paths!
+
+
+SL [10-47-37][streamline][info][tid:36980][1s:314ms:438us]commonEntry.cpp:1268[ngxLog] [Unknown(32765)] [2026-09-20 10:47:37] [NGXSecureLoadFeature:1221] unable to read the deny list. Assuming that the feature is allowed.
+
+
+SL [10-47-37][streamline][info][tid:36980][1s:314ms:716us]commonEntry.cpp:1268[ngxLog] [Unknown(32765)] [2026-09-20 10:47:37] [`anonymous-namespace'::SnippetLocationInfo::load:716] Module not found at F:\project\DLSS5Tool\tmp\streamline-nr-probe-20260920\plugins
+
+
+SL [10-47-37][streamline][info][tid:36980][1s:315ms:035us]commonEntry.cpp:1268[ngxLog] [Unknown(32765)] [2026-09-20 10:47:37] [`anonymous-namespace'::SnippetLocationInfo::load:716] Module not found at F:\project\DLSS5Tool\tmp\streamline-nr-probe-20260920\plugins
+
+
+SL [10-47-37][streamline][info][tid:36980][1s:315ms:347us]commonEntry.cpp:1268[ngxLog] [Unknown(32765)] [2026-09-20 10:47:37] [NGXSecureLoadFeature:1286] warning: ModuleName - nvngx_dlssd.dll doesn't exist in any of the search paths!
+
+
+SL [10-47-37][streamline][info][tid:36980][1s:315ms:611us]commonEntry.cpp:1268[ngxLog] [Unknown(32765)] [2026-09-20 10:47:37] [NGXSecureLoadFeature:1221] unable to read the deny list. Assuming that the feature is allowed.
+
+
+SL [10-47-37][streamline][info][tid:36980][1s:315ms:876us]commonEntry.cpp:1268[ngxLog] [Unknown(32765)] [2026-09-20 10:47:37] [`anonymous-namespace'::SnippetLocationInfo::load:716] Module not found at F:\project\DLSS5Tool\tmp\streamline-nr-probe-20260920\plugins
+
+
+SL [10-47-37][streamline][info][tid:36980][1s:316ms:184us]commonEntry.cpp:1268[ngxLog] [Unknown(32765)] [2026-09-20 10:47:37] [`anonymous-namespace'::SnippetLocationInfo::load:716] Module not found at F:\project\DLSS5Tool\tmp\streamline-nr-probe-20260920\plugins
+
+
+SL [10-47-37][streamline][info][tid:36980][1s:316ms:461us]commonEntry.cpp:1268[ngxLog] [Unknown(32765)] [2026-09-20 10:47:37] [NGXSecureLoadFeature:1286] warning: ModuleName - nvngx_truehdr.dll doesn't exist in any of the search paths!
+
+
+SL [10-47-37][streamline][info][tid:36980][1s:316ms:737us]commonEntry.cpp:1268[ngxLog] [Unknown(32765)] [2026-09-20 10:47:37] [NGXSecureLoadFeature:1221] unable to read the deny list. Assuming that the feature is allowed.
+
+
+SL [10-47-37][streamline][info][tid:36980][1s:316ms:966us]commonEntry.cpp:1268[ngxLog] [Unknown(32765)] [2026-09-20 10:47:37] [`anonymous-namespace'::SnippetLocationInfo::load:716] Module not found at F:\project\DLSS5Tool\tmp\streamline-nr-probe-20260920\plugins
+
+
+SL [10-47-37][streamline][info][tid:36980][1s:317ms:285us]commonEntry.cpp:1268[ngxLog] [Unknown(32765)] [2026-09-20 10:47:37] [`anonymous-namespace'::SnippetLocationInfo::load:716] Module not found at F:\project\DLSS5Tool\tmp\streamline-nr-probe-20260920\plugins
+
+
+SL [10-47-37][streamline][info][tid:36980][1s:317ms:572us]commonEntry.cpp:1268[ngxLog] [Unknown(32765)] [2026-09-20 10:47:37] [NGXSecureLoadFeature:1286] warning: ModuleName - nvngx_latewarp.dll doesn't exist in any of the search paths!
+
+
+SL [10-47-37][streamline][info][tid:36980][1s:317ms:839us]commonEntry.cpp:1268[ngxLog] [Unknown(32765)] [2026-09-20 10:47:37] [NGXSecureLoadFeature:1221] unable to read the deny list. Assuming that the feature is allowed.
+
+
+SL [10-47-37][streamline][info][tid:36980][1s:318ms:102us]commonEntry.cpp:1268[ngxLog] [Unknown(32765)] [2026-09-20 10:47:37] [`anonymous-namespace'::SnippetLocationInfo::load:716] Module not found at F:\project\DLSS5Tool\tmp\streamline-nr-probe-20260920\plugins
+
+
+SL [10-47-37][streamline][info][tid:36980][1s:318ms:406us]commonEntry.cpp:1268[ngxLog] [Unknown(32765)] [2026-09-20 10:47:37] [`anonymous-namespace'::SnippetLocationInfo::load:716] Module not found at F:\project\DLSS5Tool\tmp\streamline-nr-probe-20260920\plugins
+
+
+SL [10-47-37][streamline][info][tid:36980][1s:318ms:726us]commonEntry.cpp:1268[ngxLog] [Unknown(32765)] [2026-09-20 10:47:37] [NGXSecureLoadFeature:1286] warning: ModuleName - nvngx_vsr.dll doesn't exist in any of the search paths!
+
+
+SL [10-47-37][streamline][info][tid:36980][1s:319ms:001us]commonEntry.cpp:1268[ngxLog] [Unknown(32765)] [2026-09-20 10:47:37] [NGXSecureLoadFeature:1221] unable to read the deny list. Assuming that the feature is allowed.
+
+
+SL [10-47-37][streamline][info][tid:36980][1s:319ms:241us]commonEntry.cpp:1268[ngxLog] [Unknown(32765)] [2026-09-20 10:47:37] [`anonymous-namespace'::SnippetLocationInfo::load:716] Module not found at F:\project\DLSS5Tool\tmp\streamline-nr-probe-20260920\plugins
+
+
+SL [10-47-37][streamline][info][tid:36980][1s:319ms:540us]commonEntry.cpp:1268[ngxLog] [Unknown(32765)] [2026-09-20 10:47:37] [`anonymous-namespace'::SnippetLocationInfo::load:716] Module not found at F:\project\DLSS5Tool\tmp\streamline-nr-probe-20260920\plugins
+
+
+SL [10-47-37][streamline][info][tid:36980][1s:319ms:857us]commonEntry.cpp:1268[ngxLog] [Unknown(32765)] [2026-09-20 10:47:37] [NGXSecureLoadFeature:1286] warning: ModuleName - nvngx_fgx.dll doesn't exist in any of the search paths!
+
+
+SL [10-47-37][streamline][info][tid:36980][1s:320ms:198us]commonEntry.cpp:1268[ngxLog] [Unknown(32765)] [2026-09-20 10:47:37] [NGXSecureLoadFeature:1221] unable to read the deny list. Assuming that the feature is allowed.
+
+
+SL [10-47-38][streamline][info][tid:36980][1s:468ms:237us]commonEntry.cpp:1267[ngxLog] [Unknown(32765)] [2026-09-20 10:47:38] [NGXLoadAndValidateSnippet:1586] nvLoadSignedLibraryW() failed on snippet 'F:\project\DLSS5Tool\tmp\streamline-nr-probe-20260920\plugins/nvngx_dlssnr.dll' missing or corrupted - last error 没有验证对象的数字签名。
+
+
+
+SL [10-47-38][streamline][info][tid:36980][1s:471ms:810us]commonEntry.cpp:1267[ngxLog] [Unknown(32765)] [2026-09-20 10:47:38] [NGXLoadMetaDataViaGetFileVersionInfo:1420] swscanf_s() failed on snippet 'F:\project\DLSS5Tool\tmp\streamline-nr-probe-20260920\plugins/nvngx_dlssnr.dll' missing or corrupted
+
+
+SL [10-47-38][streamline][info][tid:36980][1s:472ms:149us]commonEntry.cpp:1268[ngxLog] [Unknown(32765)] [2026-09-20 10:47:38] [NGXLoadAndValidateSnippet:1593] error: unable to load DLL metadata via FileVersionInfo for snippet 'F:\project\DLSS5Tool\tmp\streamline-nr-probe-20260920\plugins/nvngx_dlssnr.dll'
+
+
+SL [10-47-38][streamline][info][tid:36980][1s:472ms:497us]commonEntry.cpp:1267[ngxLog] [Unknown(32765)] [2026-09-20 10:47:38] [`anonymous-namespace'::SnippetLocationInfo::load:720] Error: NGXLoadFromPath failed for F:\project\DLSS5Tool\tmp\streamline-nr-probe-20260920\plugins: 0xBAD00000
+
+
+SL [10-47-38][streamline][info][tid:36980][1s:639ms:586us]commonEntry.cpp:1267[ngxLog] [Unknown(32765)] [2026-09-20 10:47:38] [NGXLoadAndValidateSnippet:1586] nvLoadSignedLibraryW() failed on snippet 'F:\project\DLSS5Tool\tmp\streamline-nr-probe-20260920\plugins/nvngx_dlssnr.dll' missing or corrupted - last error 没有验证对象的数字签名。
+
+
+
+SL [10-47-38][streamline][info][tid:36980][1s:642ms:592us]commonEntry.cpp:1267[ngxLog] [Unknown(32765)] [2026-09-20 10:47:38] [NGXLoadMetaDataViaGetFileVersionInfo:1420] swscanf_s() failed on snippet 'F:\project\DLSS5Tool\tmp\streamline-nr-probe-20260920\plugins/nvngx_dlssnr.dll' missing or corrupted
+
+
+SL [10-47-38][streamline][info][tid:36980][1s:642ms:969us]commonEntry.cpp:1268[ngxLog] [Unknown(32765)] [2026-09-20 10:47:38] [NGXLoadAndValidateSnippet:1593] error: unable to load DLL metadata via FileVersionInfo for snippet 'F:\project\DLSS5Tool\tmp\streamline-nr-probe-20260920\plugins/nvngx_dlssnr.dll'
+
+
+SL [10-47-38][streamline][info][tid:36980][1s:643ms:280us]commonEntry.cpp:1267[ngxLog] [Unknown(32765)] [2026-09-20 10:47:38] [`anonymous-namespace'::SnippetLocationInfo::load:720] Error: NGXLoadFromPath failed for F:\project\DLSS5Tool\tmp\streamline-nr-probe-20260920\plugins: 0xBAD00000
+
+
+SL [10-47-38][streamline][info][tid:36980][1s:643ms:717us]commonEntry.cpp:1268[ngxLog] [Unknown(32765)] [2026-09-20 10:47:38] [NGXSecureLoadFeature:1286] warning: ModuleName - nvngx_dlssnr.dll doesn't exist in any of the search paths!
+
+
+RESULT set-device=0
+SL [10-47-38][streamline][info][tid:36980][1s:699ms:426us]commonEntry.cpp:1594[slOnPluginStartup] NGX loaded - app id 100721531 - application data path F:\project\DLSS5Tool\tmp\streamline-nr-probe-20260920\logs\community-colocated-02\
+
+SL [10-47-38][streamline][info][tid:36980][1s:699ms:755us]pluginManager.cpp:1499[mapPluginCallbacks] Callback sl.common:slSetData:0x0
+
+MODULE after-device F:\project\DLSS5Tool\tmp\streamline-nr-probe-20260920\plugins\sl.interposer.dll
+SL [10-47-38][streamline][info][tid:36980][1s:699ms:899us]pluginManager.cpp:1500[mapPluginCallbacks] Callback sl.common:slGetData:0x0
+
+MODULE after-device F:\project\DLSS5Tool\tmp\streamline-nr-probe-20260920\plugins\sl.common.dll
+SL [10-47-38][streamline][info][tid:36980][1s:700ms:444us]pluginManager.cpp:1501[mapPluginCallbacks] Callback sl.common:slAllocateResources:0x0
+
+MODULE after-device C:\WINDOWS\System32\DriverStore\FileRepository\nv_dispi.inf_amd64_b20cc8aeaed64fc2\_nvngx.dll
+SL [10-47-38][streamline][info][tid:36980][1s:700ms:728us]pluginManager.cpp:1502[mapPluginCallbacks] Callback sl.common:slFreeResources:0x0
+
+RESULT supported-after=32
+SL [10-47-38][streamline][info][tid:36980][1s:701ms:032us]pluginManager.cpp:1503[mapPluginCallbacks] Callback sl.common:slEvaluateFeature:0x7ffb3c4ba090
+
+RESULT loaded-after=31
+LOADED after=0
+SL [10-47-38][streamline][info][tid:36980][1s:701ms:236us]pluginManager.cpp:1504[mapPluginCallbacks] Callback sl.common:slSetTag:0x7ffb3c4b8b70
+
+RESULT feature-version=0
+SL [10-47-38][streamline][info][tid:36980][1s:701ms:449us]pluginManager.cpp:1505[mapPluginCallbacks] Callback sl.common:slSetTagForFrame:0x7ffb3c4b8ce0
+
+VERSION sl=2.13.0 ngx=0.0.0
+SL [10-47-38][streamline][info][tid:36980][1s:701ms:645us]pluginManager.cpp:1506[mapPluginCallbacks] Callback sl.common:slSetConsts:0x7ffb3c4b9b70
+
+RESULT find-options=31
+SL [10-47-38][streamline][info][tid:36980][1s:701ms:838us]pluginManager.cpp:1266[processPluginHooks] Hook sl.common:slHookVkPresent:before - skipped
+
+NO_INFERENCE no NR options or evaluation called
+SHUTDOWN begin
+SL [10-47-38][streamline][info][tid:36980][1s:702ms:031us]pluginManager.cpp:1266[processPluginHooks] Hook sl.common:slHookVkAfterPresent:after - skipped
+
+SL [10-47-38][streamline][info][tid:36980][1s:702ms:216us]pluginManager.cpp:1266[processPluginHooks] Hook sl.common:slHookVkCmdBindPipeline:after - skipped
+
+SL [10-47-38][streamline][info][tid:36980][1s:702ms:472us]pluginManager.cpp:1266[processPluginHooks] Hook sl.common:slHookVkCmdBindDescriptorSets:after - skipped
+
+SL [10-47-38][streamline][info][tid:36980][1s:702ms:669us]pluginManager.cpp:1266[processPluginHooks] Hook sl.common:slHookVkBeginCommandBuffer:after - skipped
+
+SL [10-47-38][streamline][info][tid:36980][1s:702ms:854us]pluginManager.cpp:1290[processPluginHooks] Hook sl.common:slHookCreateSwapChain:before - OK
+
+SL [10-47-38][streamline][info][tid:36980][1s:703ms:027us]pluginManager.cpp:1290[processPluginHooks] Hook sl.common:slHookCreateSwapChainForHwnd:before - OK
+
+SL [10-47-38][streamline][info][tid:36980][1s:703ms:212us]pluginManager.cpp:1290[processPluginHooks] Hook sl.common:slHookCreateSwapChainForCoreWindow:before - OK
+
+SL [10-47-38][streamline][info][tid:36980][1s:703ms:408us]pluginManager.cpp:1290[processPluginHooks] Hook sl.common:slHookResizeSwapChainPre:before - OK
+
+SL [10-47-38][streamline][info][tid:36980][1s:703ms:600us]pluginManager.cpp:1290[processPluginHooks] Hook sl.common:slHookPresent:before - OK
+
+SL [10-47-38][streamline][info][tid:36980][1s:703ms:758us]pluginManager.cpp:1290[processPluginHooks] Hook sl.common:slHookAfterPresent:after - OK
+
+SL [10-47-38][streamline][info][tid:36980][1s:703ms:927us]pluginManager.cpp:1290[processPluginHooks] Hook sl.common:slHookPresent1:before - OK
+
+SL [10-47-38][streamline][info][tid:36980][1s:704ms:099us]pluginManager.cpp:1290[processPluginHooks] Hook sl.common:slHookAfterPresent:after - OK
+
+SL [10-47-38][streamline][error][tid:36980][1s:704ms:266us]sl.cpp:179[slValidateFeatureContext] 'kFeatureDLSS_NR' context is missing.
+
+SL [10-47-38][streamline][error][tid:36980][1s:704ms:427us]sl.cpp:179[slValidateFeatureContext] 'kFeatureDLSS_NR' context is missing.
+
+SL [10-47-38][streamline][info][tid:36980][1s:704ms:583us]pluginManager.cpp:1202[unloadPlugins] Unloading all plugins ...
+
+SL [10-47-38][streamline][info][tid:36980][1s:704ms:730us]commonEntry.cpp:1771[slOnPluginShutdown] Shutting down NGX
+
+SL [10-47-38][streamline][info][tid:36980][1s:704ms:858us]commonEntry.cpp:1268[ngxLog] [Unknown(32765)] [2026-09-20 10:47:38] [NGXSendTelemetryShutdownData:1103] Sending Telemetry Shutdown Data
+
+
