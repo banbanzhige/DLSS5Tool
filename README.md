@@ -15,7 +15,7 @@
 </p>
 
 <p align="center">
-  <a href="CHANGELOG.md"><img src="https://img.shields.io/badge/release-v2.3.0-0E7490?style=flat&amp;labelColor=475569" alt="源码版本 v2.3.0" height="20"></a>
+  <a href="CHANGELOG.md"><img src="https://img.shields.io/badge/release-v2.3.1-0E7490?style=flat&amp;labelColor=475569" alt="源码版本 v2.3.1" height="20"></a>
   <a href="#快速开始"><img src="https://img.shields.io/badge/platform-Windows_x64-0369A1?style=flat&amp;labelColor=475569" alt="平台 Windows x64" height="20"></a>
   <a href="#2-选择显卡运行库"><img src="https://img.shields.io/badge/GPU-NVIDIA_RTX-0E7490?style=flat&amp;labelColor=475569" alt="显卡 NVIDIA RTX；请按代际选择运行库" height="20"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-0369A1?style=flat&amp;labelColor=475569" alt="项目自有源码采用 MIT 许可证" height="20"></a>
@@ -188,7 +188,9 @@ HDR 图片序列支持已加入当前源码，但已有本地候选包尚未包�
 
 **如何更新？**
 
-通过「更多 → 检查更新」，或直接下载最新 Release。增量包仅适配上一个正式版本：**v2.3.0 对应 v2.2.2 → v2.3.0 的轻量版／完整版更新包**；更早版本请下载整包升级。
+通过「更多 → 检查更新」，或直接下载最新 Release。增量包仅适配上一个正式版本：**v2.3.1 对应 v2.3.0 → v2.3.1 的轻量版／完整版更新包**；更早版本不提供直达本版的增量包。
+
+若提示 `_internal/nvngx_dlssnr.dll` 被修改，或希望保留 v2.2.2 / v2.3.0 已安装的官方推理组件以减少下载，请看 [旧版省流量升级说明](docs/release/UPGRADE_v2.3.1.md)。无需一律重新下载完整版；不要只替换 EXE。
 
 有匹配包时，更新器只下载当前安装形态的变化文件，校验后再次确认退出，由独立助手安装。没有匹配包时，轻量版可下载整包，完整版引导到发布页选择完整版或同版本轻量版＋附加包。没有更新助手的旧版请手动将新版完整解压到新目录；增量更新需发布页提供对应附件。详见[更新说明](docs/USER_GUIDE.md)。
 

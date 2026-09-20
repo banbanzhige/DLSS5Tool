@@ -33,6 +33,7 @@ class DeltaTests(unittest.TestCase):
         files = {
             'DLSS5Tool.exe': b'old exe', 'DLSS5Update.exe': b'old helper',
             '_internal/unchanged.dll': b'large dependency reused',
+            '_internal/nvngx_dlssnr.dll': b'bundled GPU runtime',
             '_internal/obsolete.dll': b'remove me',
             '_internal/change.dll': b'old dll', 'mods/README.md': b'instructions',
         }
@@ -110,6 +111,123 @@ class DeltaTests(unittest.TestCase):
         with self.assertRaisesRegex(delta.DeltaError, 'modified'):
             self.prepare()
         self.assertEqual((self.install / 'DLSS5Tool.exe').read_bytes(), b'old exe')
+
+    def test_legacy_internal_runtime_is_preserved_with_or_without_mods(self):
+        for has_mods in (True, False):
+            with self.subTest(has_mods=has_mods):
+                if not has_mods:
+                    delta.discard_transaction(self.install)
+                    shutil.rmtree(self.install)
+                    shutil.copytree(self.before, self.install)
+                custom = b'custom legacy runtime with a different size'
+                self.put(self.install, delta.LEGACY_RUNTIME, custom)
+                manifest = self.prepare()
+                self.assertNotIn(delta.LEGACY_RUNTIME, delta.changes(manifest))
+                with delta.transaction_lock(self.install):
+                    delta.apply_transaction(self.install)
+                self.assertEqual(delta.status(self.install)['phase'], 'complete')
+                self.assertEqual((self.install / delta.LEGACY_RUNTIME).read_bytes(), custom)
+                for name, record in manifest['after'].items():
+                    if name != delta.LEGACY_RUNTIME:
+                        self.assertEqual(delta.file_record(self.install / name), record)
+                self.assertFalse((self.install / delta.TRANSACTION / 'backup' / delta.LEGACY_RUNTIME).exists())
+                if has_mods:
+                    self.assertEqual((self.install / 'mods/nvngx_dlssnr.dll').read_bytes(), b'user GPU runtime')
+
+    def test_legacy_runtime_exception_does_not_weaken_other_files(self):
+        self.put(self.install, delta.LEGACY_RUNTIME, b'custom runtime')
+        self.put(self.install, '_internal/unchanged.dll', b'custom dependency')
+        with self.assertRaisesRegex(delta.DeltaError, 'unchanged.dll'):
+            self.prepare()
+
+    def test_missing_empty_or_directory_runtime_is_not_tolerated(self):
+        runtime = self.install / delta.LEGACY_RUNTIME
+        runtime.unlink()
+        for kind in ('missing', 'empty', 'directory'):
+            with self.subTest(kind=kind):
+                if kind == 'empty':
+                    runtime.touch()
+                elif kind == 'directory':
+                    runtime.unlink()
+                    runtime.mkdir()
+                with self.assertRaisesRegex(delta.DeltaError, 'nvngx_dlssnr.dll'):
+                    delta.check_baseline(self.install, self.manifest())
+
+    def test_custom_runtime_cannot_be_replaced_or_removed_by_update(self):
+        self.put(self.install, delta.LEGACY_RUNTIME, b'custom runtime')
+        for operation in ('replace', 'remove'):
+            with self.subTest(operation=operation):
+                manifest = self.manifest()
+                if operation == 'replace':
+                    manifest['after'][delta.LEGACY_RUNTIME] = manifest['after']['DLSS5Tool.exe']
+                else:
+                    del manifest['after'][delta.LEGACY_RUNTIME]
+                with self.assertRaisesRegex(delta.DeltaError, 'nvngx_dlssnr.dll'):
+                    delta.check_baseline(self.install, manifest)
+
+    def test_official_runtime_can_still_be_updated(self):
+        self.put(self.after, delta.LEGACY_RUNTIME, b'new official runtime')
+        self.package = builder.build(self.before, self.after, self.root / 'runtime-output',
+                                     'v3.0.0', 'v3.0.1', 'lite')
+        self.prepare()
+        delta.apply_transaction(self.install)
+        self.assertEqual(delta.status(self.install)['phase'], 'complete')
+        self.assertEqual((self.install / delta.LEGACY_RUNTIME).read_bytes(), b'new official runtime')
+
+    def test_legacy_runtime_hardlink_is_rejected(self):
+        (self.install / delta.LEGACY_RUNTIME).unlink()
+        os.link(self.install / 'mods/nvngx_dlssnr.dll', self.install / delta.LEGACY_RUNTIME)
+        with self.assertRaisesRegex(delta.DeltaError, 'Hard-linked'):
+            self.prepare()
+
+    def test_runtime_changed_to_custom_after_prepare_is_preserved(self):
+        self.prepare()
+        self.put(self.install, delta.LEGACY_RUNTIME, b'custom after download')
+        delta.apply_transaction(self.install)
+        self.assertEqual(delta.status(self.install)['phase'], 'complete')
+        self.assertEqual((self.install / delta.LEGACY_RUNTIME).read_bytes(), b'custom after download')
+
+    def test_missing_runtime_after_prepare_aborts_before_replacement(self):
+        self.prepare()
+        (self.install / delta.LEGACY_RUNTIME).unlink()
+        with self.assertRaisesRegex(delta.DeltaError, 'nvngx_dlssnr.dll'):
+            delta.apply_transaction(self.install)
+        self.assertEqual((self.install / 'DLSS5Tool.exe').read_bytes(), b'old exe')
+
+    def test_legacy_runtime_survives_rollback(self):
+        custom = b'custom legacy runtime'
+        self.put(self.install, delta.LEGACY_RUNTIME, custom)
+        self.prepare()
+        original = delta._replace_copy
+
+        def fail_payload(source, destination, scratch):
+            if destination.name == 'change.dll' and 'payload' in str(source):
+                raise PermissionError('simulated failure')
+            return original(source, destination, scratch)
+
+        with mock.patch.object(delta, '_replace_copy', side_effect=fail_payload):
+            with self.assertRaises(PermissionError):
+                delta.apply_transaction(self.install)
+        self.assertEqual(delta.status(self.install)['phase'], 'rolled_back')
+        self.assertEqual((self.install / delta.LEGACY_RUNTIME).read_bytes(), custom)
+        self.assertEqual((self.install / 'DLSS5Tool.exe').read_bytes(), b'old exe')
+
+    def test_runtime_changed_during_apply_is_detected(self):
+        self.put(self.install, delta.LEGACY_RUNTIME, b'custom before apply')
+        self.prepare()
+        original = delta._replace_copy
+
+        def change_runtime(source, destination, scratch):
+            original(source, destination, scratch)
+            if destination.name == 'DLSS5Tool.exe' and 'payload' in str(source):
+                self.put(self.install, delta.LEGACY_RUNTIME, b'changed during apply')
+
+        with mock.patch.object(delta, '_replace_copy', side_effect=change_runtime):
+            with self.assertRaisesRegex(delta.DeltaError, 'Installed file verification failed'):
+                delta.apply_transaction(self.install)
+        self.assertEqual(delta.status(self.install)['phase'], 'rolled_back')
+        self.assertEqual((self.install / 'DLSS5Tool.exe').read_bytes(), b'old exe')
+        self.assertEqual((self.install / delta.LEGACY_RUNTIME).read_bytes(), b'changed during apply')
 
     def test_new_file_collision_is_not_overwritten(self):
         self.put(self.install, '_internal/added.dll', b'local file')
@@ -313,6 +431,13 @@ class DeltaTests(unittest.TestCase):
         delta.apply_transaction(self.install)
         self.assertEqual((self.install / 'mods/enhancement/guidance_worker.exe').read_bytes(), b'worker new')
         self.assertEqual((self.install / 'mods/models/custom.pth').read_bytes(), b'user model')
+
+    def test_full_addon_update_preserves_legacy_internal_runtime(self):
+        self.put(self.install, delta.LEGACY_RUNTIME, b'legacy full runtime')
+        self.test_full_addon_update_reuses_models_and_updates_worker()
+        self.assertEqual(delta.status(self.install)['phase'], 'complete')
+        self.assertEqual((self.install / delta.LEGACY_RUNTIME).read_bytes(), b'legacy full runtime')
+        self.assertEqual((self.install / 'mods/nvngx_dlssnr.dll').read_bytes(), b'user GPU runtime')
 
     def test_external_mods_require_manual_update(self):
         with self.assertRaisesRegex(delta.DeltaError, 'Custom mods'):

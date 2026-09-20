@@ -208,6 +208,11 @@ class PreviewComparison:
         self._last_viewport_image = None
         self._sync_comparison_controls()
         self.on_view_change()
+        # Navigation explicitly froze the ordinary producer without a timer.
+        # Display-only view changes no longer resume a frozen cache themselves.
+        if (not context and self.video and self.view_var.get() in ('dlss', 'compare')
+                and not self._uses_shared_render()):
+            self._schedule_preview_cache_resume()
 
     def _on_preview_selection(self):
         selection = self.preview_selector.get()

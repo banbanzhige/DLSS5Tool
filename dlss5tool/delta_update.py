@@ -1,8 +1,8 @@
 """Version-pair file updates. No third-party dependencies; shared by the helper.
 
-Only explicitly allowlisted release files are owned by the updater. A baseline
-hash mismatch fails closed, including unchanged dependencies. The updater never
-executes anything from a downloaded archive.
+Only explicitly allowlisted release files are owned by the updater. Baseline
+hash mismatches fail closed except for an unchanged, user-replaceable DLSS runtime.
+The updater never executes anything from a downloaded archive.
 """
 from __future__ import annotations
 
@@ -29,6 +29,9 @@ ROOT_FILES = {
     'changelog.md', 'license', 'third_party_notices.md',
     'nvidia_rtx_video_sdk_license.pdf', 'distribution-review.txt',
 }
+# Legacy users sometimes replaced the bundled runtime instead of using mods/.
+# This exception never applies when the release changes or removes that file.
+LEGACY_RUNTIME = '_internal/nvngx_dlssnr.dll'
 
 
 class DeltaError(updater.UpdateError):
@@ -196,17 +199,25 @@ def changes(manifest):
 
 
 def check_baseline(root, manifest, cancelled=None):
+    """Validate managed files; return local runtime records to preserve at apply."""
     if installed_edition(root) != manifest['edition']:
         raise DeltaError('Installed components changed; update edition no longer matches')
+    preserved = {}
     for name, expected in manifest['before'].items():
         if cancelled and cancelled():
             raise updater.DownloadCancelled('Update cancelled')
         path = safe_path(root, name)
-        if not path.is_file() or file_record(path) != expected:
+        actual = file_record(path) if path.is_file() else None
+        if actual != expected:
+            if (name.lower() == LEGACY_RUNTIME and actual and actual['size'] > 0
+                    and manifest['after'].get(name) == expected):
+                preserved[name] = actual
+                continue
             raise DeltaError(f'Installed file missing or modified; no files replaced: {name}')
     for name in manifest['after'].keys() - manifest['before'].keys():
         if safe_path(root, name).exists():
             raise DeltaError(f'New release file conflicts with a local file: {name}')
+    return preserved
 
 
 def check_space(root, required):
@@ -389,7 +400,7 @@ def apply_transaction(root, *, recover=False):
         raise DeltaError('Update is not ready to apply')
     touched = []
     try:
-        check_baseline(root, manifest)
+        preserved = check_baseline(root, manifest)
         delta = changes(manifest)
         check_space(root, sum(manifest['before'][p]['size'] for p in delta if p in manifest['before'])
                     + max((manifest['after'][p]['size'] for p in delta if p in manifest['after']), default=0))
@@ -420,7 +431,9 @@ def apply_transaction(root, *, recover=False):
             else:
                 destination.unlink()
         for name, expected in manifest['after'].items():
-            if file_record(safe_path(root, name)) != expected:
+            # A tolerated runtime is not in delta, so it is never backed up,
+            # overwritten or rolled back. Still verify it stayed unchanged.
+            if file_record(safe_path(root, name)) != preserved.get(name, expected):
                 raise DeltaError(f'Installed file verification failed: {name}')
         set_state(root, 'complete', target=manifest['to'])
     except Exception as ex:

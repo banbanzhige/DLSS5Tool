@@ -332,6 +332,21 @@ class GuidanceTabTests(unittest.TestCase):
             self.assertEqual(app.view_var.get(), 'dlss')
             resume.assert_called_once_with()
 
+    def test_leaving_guidance_does_not_start_ordinary_cache_for_shared_or_original(self):
+        app = self.app
+        app.video = 'fixture.mp4'
+        for view, shared in (('original', False), ('dlss', True)):
+            with self.subTest(view=view, shared=shared):
+                app.view_var.set(view)
+                with mock.patch.object(app, 'display_view'), \
+                        mock.patch.object(app, '_shared_display'), \
+                        mock.patch.object(app, '_uses_shared_render', return_value=shared), \
+                        mock.patch.object(app, '_schedule_preview_cache_resume') as resume:
+                    app.workspace_tabs.select(app._guidance_page)
+                    app.workspace_tabs.select(app._preview_page)
+                    self.assertEqual(app.view_var.get(), view)
+                    resume.assert_not_called()
+
     def _comparison_fixture(self, target='depth', layout='wipe'):
         app = self.app
         app.workspace_tabs.select(app._guidance_page)

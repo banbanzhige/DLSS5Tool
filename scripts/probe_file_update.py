@@ -17,6 +17,8 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--helper', required=True, type=Path)
     parser.add_argument('--output', required=True, type=Path)
+    parser.add_argument('--legacy-runtime', action='store_true',
+                        help='Also verify a custom bundled runtime and mods runtime survive the frozen helper')
     args = parser.parse_args()
     output = args.output.absolute()
     output.mkdir()  # Never overwrite a previous probe.
@@ -27,10 +29,16 @@ def main():
         shutil.copyfile(args.helper, folder / delta.HELPER)
         (folder / '_internal').mkdir()
         (folder / '_internal/unchanged.dll').write_bytes(b'unchanged dependency')
+        if args.legacy_runtime:
+            (folder / delta.LEGACY_RUNTIME).write_bytes(b'official unchanged runtime')
     package = build(before, after, output / 'payload', 'v9.0.0', 'v9.0.1', 'lite')
     install = output / 'installed'
     shutil.copytree(before, install)
     (install / 'dlss5_settings.json').write_bytes(b'keep settings')
+    if args.legacy_runtime:
+        (install / delta.LEGACY_RUNTIME).write_bytes(b'legacy custom runtime')
+        (install / 'mods').mkdir()
+        (install / 'mods/nvngx_dlssnr.dll').write_bytes(b'custom mods runtime')
     data = package.read_bytes()
     record = delta.file_record(package)
     asset = updater.ReleaseAsset(package.name,
@@ -49,9 +57,13 @@ def main():
     assert (install / 'DLSS5Tool.exe').read_bytes() == b'new'
     assert (install / 'dlss5_settings.json').read_bytes() == b'keep settings'
     assert (install / delta.TRANSACTION / 'backup/DLSS5Tool.exe').read_bytes() == b'old'
+    if args.legacy_runtime:
+        assert (install / delta.LEGACY_RUNTIME).read_bytes() == b'legacy custom runtime'
+        assert (install / 'mods/nvngx_dlssnr.dll').read_bytes() == b'custom mods runtime'
     report = {'frozen_helper_sha256': delta.file_record(args.helper)['sha256'],
               'exit_code': result.returncode, 'state': delta.status(install),
               'settings_preserved': True, 'backup_verified': True,
+              'legacy_runtime_preserved': args.legacy_runtime,
               'scope': 'Synthetic files; not full app/GPU/clean-machine acceptance'}
     delta.write_json(output / 'report.json', report)
     print(json.dumps(report))

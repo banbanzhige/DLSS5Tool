@@ -15,7 +15,7 @@
 </p>
 
 <p align="center">
-  <a href="CHANGELOG.md"><img src="https://img.shields.io/badge/release-v2.3.0-0E7490?style=flat&amp;labelColor=475569" alt="Source version v2.3.0" height="20"></a>
+  <a href="CHANGELOG.md"><img src="https://img.shields.io/badge/release-v2.3.1-0E7490?style=flat&amp;labelColor=475569" alt="Source version v2.3.1" height="20"></a>
   <a href="#quick-start"><img src="https://img.shields.io/badge/platform-Windows_x64-0369A1?style=flat&amp;labelColor=475569" alt="Platform: Windows x64" height="20"></a>
   <a href="#2-select-the-runtime-for-your-gpu"><img src="https://img.shields.io/badge/GPU-NVIDIA_RTX-0E7490?style=flat&amp;labelColor=475569" alt="GPU: NVIDIA RTX; select the runtime for your GPU generation" height="20"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-0369A1?style=flat&amp;labelColor=475569" alt="Project source is licensed under MIT" height="20"></a>
@@ -182,7 +182,7 @@ Lower playback quality, try smaller media or 2× scaling, and temporarily disabl
 
 **How do I update?**
 
-Use **More → Check for updates**, or download the latest Release. Incremental packages support only the previous official release: **v2.3.0 targets v2.2.2 → v2.3.0 for both Lite and Full**. Earlier versions require a complete package.
+Use **More → Check for updates**, or download the latest Release. Incremental packages support only the previous official release: **v2.3.1 targets v2.3.0 → v2.3.1 for both Lite and Full**. Earlier versions have no direct delta to this release. Users with official v2.2.2 / v2.3.0 inference components can reuse them with the new Lite package; see the [upgrade guide](docs/release/UPGRADE_v2.3.1.md). Do not replace only the EXE.
 
 When a matching payload exists, the updater downloads changed files for the installed edition, verifies them, then asks again before exiting for the standalone helper to install it. Without a matching payload, Lite offers its complete archive; Full directs you to the release page for Full or Lite plus the matching add-on. Versions without the update helper must be upgraded by fully extracting the new release into a new folder. Incremental updates require the matching assets on the release page. See the [update guide](docs/USER_GUIDE.en.md).
 
