@@ -242,21 +242,50 @@ def test_import_dialog_recovers_from_sdr_error_and_imports_hdr(hdr_sequence, tmp
             yield from walk(child)
     def controls():
         widgets = list(walk(root))
-        return (next(w for w in widgets if isinstance(w, ttk.Combobox)),
-                next(w for w in widgets if isinstance(w, ttk.Button) and w.cget('text') == dialog.tr('sequence.confirm')))
+        def shown(widget):
+            node = widget
+            top = widget.winfo_toplevel()
+            while node is not None and node is not top:
+                parent = node.master
+                if node.winfo_manager():
+                    node = parent
+                    continue
+                if parent is not None and parent.winfo_class() == 'Canvas':
+                    node = parent
+                    continue
+                return False
+            return True
+        colors = [widget for widget in widgets if isinstance(widget, ttk.Combobox) and shown(widget)]
+        submits = []
+        for widget in widgets:
+            if not callable(getattr(widget, 'invoke', None)):
+                continue
+            try:
+                if (widget.cget('text') == dialog.tr('sequence.confirm')
+                        and str(widget.cget('state')) == 'normal'):
+                    submits.append(widget)
+            except tk.TclError:
+                continue
+        if not colors or not submits:
+            return None
+        return colors[0], submits[0]
+    def state_path(name):
+        if name == 'image-sequences':
+            return tmp_path / 'dialog-records'
+        return tmp_path / name
     def start():
-        color, submit = controls()
-        assert color.current() == 0
-        submit.invoke()  # default SDR must reject the high-depth source
-        assert str(color.cget('state')) == 'disabled'
-        root.after(50, retry)
-    def retry():
-        color, submit = controls()
-        if str(submit.cget('state')) == 'disabled':
-            root.after(50, retry)
+        found = controls()
+        if found is None:
+            root.after(30, start)
             return
-        assert str(color.cget('state')) == 'readonly'
-        color.current(dialog.COLOR_PROFILES.index(sequence.color_profile))
+        color, submit = found
+        assert color.get() == ''
+        assert list(color.cget('values')) == [
+            dialog.tr('sequence.color_' + profile)
+            for profile in dialog.COLOR_PROFILES if profile != 'srgb']
+        submit.invoke()
+        assert str(submit.cget('state')) == 'normal'
+        color.current(0 if sequence.color_profile == 'hdr10_pq' else 1)
         retried.append(True)
         submit.invoke()
     def timeout():
@@ -266,10 +295,10 @@ def test_import_dialog_recovers_from_sdr_error_and_imports_hdr(hdr_sequence, tmp
     root.after(50, start)
     timer = root.after(5000, timeout)
     try:
-        with mock.patch.object(dialog.paths, 'state_path', return_value=tmp_path / 'dialog-records'):
-            manifest = dialog.ask_sequence(root, str(sequence.files[0]))
+        with mock.patch.object(dialog.paths, 'state_path', side_effect=state_path):
+            manifests = dialog.ask_sequence(root, str(sequence.files[0]))
         assert not failures and retried
-        assert ImageSequence.load(manifest).color_profile == sequence.color_profile
+        assert ImageSequence.load(manifests[0]).color_profile == sequence.color_profile
     finally:
         root.after_cancel(timer)
         root.destroy()

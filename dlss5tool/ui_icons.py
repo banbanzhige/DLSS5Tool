@@ -80,6 +80,7 @@ LUCIDE = {
         '<circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/>'
         '<circle cx="5" cy="12" r="1"/>'
     ),
+
     "clear": (
         '<path d="M11 12H3"/><path d="M16 6H3"/><path d="M16 18H3"/>'
         '<path d="m19 10-4 4"/><path d="m15 10 4 4"/>'
@@ -183,7 +184,7 @@ def _arc_points(x1, y1, rx, ry, phi_deg, large, sweep, x2, y2):
     return pts
 
 
-def _path_points(d):
+def _path_points(d, steps=4):
     x = y = mx = my = 0.0
     cx = cy = qx = qy = None
     parts, current = [], []
@@ -236,7 +237,8 @@ def _path_points(d):
                     x1, y1, x2, y2, nx, ny = (
                         x + x1, y + y1, x + x2, y + y2, x + nx, y + ny,
                     )
-                for t in (0.25, 0.5, 0.75, 1.0):
+                for i in range(1, steps + 1):
+                    t = i / steps
                     u = 1 - t
                     px = u**3 * x + 3 * u**2 * t * x1 + 3 * u * t**2 * x2 + t**3 * nx
                     py = u**3 * y + 3 * u**2 * t * y1 + 3 * u * t**2 * y2 + t**3 * ny
@@ -250,7 +252,8 @@ def _path_points(d):
                     x2, y2, nx, ny = x + x2, y + y2, x + nx, y + ny
                 x1 = 2 * x - cx if cx is not None else x
                 y1 = 2 * y - cy if cy is not None else y
-                for t in (0.25, 0.5, 0.75, 1.0):
+                for i in range(1, steps + 1):
+                    t = i / steps
                     u = 1 - t
                     px = u**3 * x + 3 * u**2 * t * x1 + 3 * u * t**2 * x2 + t**3 * nx
                     py = u**3 * y + 3 * u**2 * t * y1 + 3 * u * t**2 * y2 + t**3 * ny
@@ -268,7 +271,8 @@ def _path_points(d):
                     x1, y1, nx, ny = (a.pop(0) for _ in range(4))
                     if rel:
                         x1, y1, nx, ny = x + x1, y + y1, x + nx, y + ny
-                for t in (0.25, 0.5, 0.75, 1.0):
+                for i in range(1, steps + 1):
+                    t = i / steps
                     u = 1 - t
                     px = u * u * x + 2 * u * t * x1 + t * t * nx
                     py = u * u * y + 2 * u * t * y1 + t * t * ny
@@ -354,6 +358,71 @@ def _draw_svg(draw, markup, k, pad, color, stroke, filled=False):
                 draw.rounded_rectangle(box, radius=rr * k, outline=color, width=stroke)
 
 
+# Primer Octicons mark-github, the filled circle people expect on a GitHub link.
+# One nonzero-winding contour: the circle is filled and the cat is cut out.
+_GITHUB_MARK = (
+    "M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38"
+    " 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13"
+    "-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66"
+    ".07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15"
+    "-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0"
+    " 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82"
+    " 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01"
+    " 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8z"
+)
+LUCIDE["github"] = _GITHUB_MARK
+
+
+def _fill_winding(mask, polygons):
+    """Nonzero fill. A reversed inner contour knocks the cat out of the circle."""
+    pixels = mask.load()
+    width, height = mask.size
+    edges = []
+    for polygon in polygons:
+        ring = polygon + [polygon[0]]
+        for (x1, y1), (x2, y2) in zip(ring, ring[1:]):
+            edges.append((x1, y1, x2, y2))
+    for y in range(height):
+        ymid = y + 0.5
+        crossings = []
+        for x1, y1, x2, y2 in edges:
+            if (y1 <= ymid < y2) or (y2 <= ymid < y1):
+                if y1 == y2:
+                    continue
+                t = (ymid - y1) / (y2 - y1)
+                crossings.append((x1 + t * (x2 - x1), 1 if y1 < y2 else -1))
+        crossings.sort(key=lambda item: item[0])
+        wind = 0
+        span = None
+        for x, delta in crossings:
+            if wind and span is not None:
+                start = max(0, int(span))
+                stop = min(width, int(x) + 1)
+                for column in range(start, stop):
+                    pixels[column, y] = 255
+            wind += delta
+            span = x
+
+
+def _github_mark(size, color):
+    sample = max(128, int(size) * 8)
+    pad = sample * 0.04
+    scale = (sample - 2 * pad) / 16.0
+    polygons = [
+        _scale_pts(part, scale, pad)
+        for part in _path_points(_GITHUB_MARK, steps=24)
+        if len(part) >= 3
+    ]
+    mask = Image.new("L", (sample, sample), 0)
+    _fill_winding(mask, polygons)
+    mask = mask.resize((int(size), int(size)), Image.Resampling.LANCZOS)
+    image = Image.new("RGBA", (int(size), int(size)), (0, 0, 0, 0))
+    image.paste(Image.new("RGBA", image.size, color), mask=mask)
+    framed = Image.new("RGBA", (int(size) + 4, int(size) + 4), (0, 0, 0, 0))
+    framed.paste(image, (2, 2))
+    return framed
+
+
 def icon_photo(master, name, size, color):
     """Return a PhotoImage for a Lucide icon, cached per Tcl interpreter."""
     if not name or size < 8:
@@ -363,6 +432,13 @@ def icon_photo(master, name, size, color):
     photo = _CACHE.get(key)
     if photo is not None:
         _CACHE.move_to_end(key)
+        return photo
+    if name == "github":
+        image = _github_mark(int(size), _rgba(color))
+        photo = ImageTk.PhotoImage(image, master=master)
+        _CACHE[key] = photo
+        while len(_CACHE) > _CACHE_LIMIT:
+            _CACHE.popitem(last=False)
         return photo
     markup = LUCIDE.get(name)
     if not markup:

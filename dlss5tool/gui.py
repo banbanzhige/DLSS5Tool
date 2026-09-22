@@ -1406,6 +1406,13 @@ class App(SharedRenderPreview, PreviewComparison, GuidanceExportUI):
         self._inspector_drag = None
         self._schedule_settings_save()
 
+    def _open_about(self):
+        from dlss5tool.about_dialog import show_about
+        show_about(
+            self.root,
+            on_check_updates=lambda: self.check_for_updates(manual=True),
+        )
+
     def _popup_more(self):
         menu = tk.Menu(self.root, tearoff=0)
         menu.add_command(label=str(self.log_btn.cget("text")), command=self.toggle_log_panel)
@@ -1494,6 +1501,13 @@ class App(SharedRenderPreview, PreviewComparison, GuidanceExportUI):
         self.more_btn.pack(side="right")
         self._theme_widgets.append(self.more_btn)
         Tooltip(self.more_btn, tr("tooltip.more"))
+        self.about_btn = ChromeButton(
+            utility, text=tr("about.open"), variant="plain", width=28,
+            icon="github", icon_only=True, command=self._open_about, ui=self._ui,
+        )
+        self.about_btn.pack(side="right", padx=(0, 4))
+        self._theme_widgets.append(self.about_btn)
+        Tooltip(self.about_btn, tr("about.open"))
 
     def _build_progress_rule(self, parent):
         rule = ProgressRule(parent, ui=self._ui)
@@ -1540,6 +1554,7 @@ class App(SharedRenderPreview, PreviewComparison, GuidanceExportUI):
         if name is not None:
             self._ui_theme_name = ui_theme.normalize_theme_name(name)
         self._ui = ui_theme.tokens(self._ui_theme_name)
+        self.root._dlss_ui = self._ui
         Tooltip.set_palette(self._ui)
         ui_theme.apply_ttk(self.root, self._ui)
         themed_windows = [self.root]
@@ -8169,13 +8184,13 @@ class App(SharedRenderPreview, PreviewComparison, GuidanceExportUI):
             return
         self._freeze_preview_cache(resume_ms=None)
         try:
-            selected = filedialog.askopenfilename(parent=self.root,
+            selected = filedialog.askopenfilenames(parent=self.root,
                 title=tr('sequence.choose'), filetypes=[('PNG / JPG', '*.png *.jpg *.jpeg')])
             if selected:
                 from dlss5tool.image_sequence_dialog import ask_sequence
-                manifest = ask_sequence(self.root, selected)
-                if manifest:
-                    self._add_paths_to_queue([manifest])
+                manifests = ask_sequence(self.root, selected)
+                if manifests:
+                    self._add_paths_to_queue(list(manifests))
         finally:
             self._schedule_preview_cache_resume()
 

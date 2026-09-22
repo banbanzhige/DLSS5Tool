@@ -888,6 +888,8 @@ class ChromeButton(tk.Canvas):
     def _surface(self):
         if self._variant == "tool":
             return self._ui.get("timeline_bg", "#10161c")
+        if self._variant == "plain":
+            return self._ui.get("surface", "#f6f7f9")
         return self._ui.get("panel", "#161d24")
 
     def apply_theme(self, ui):
@@ -1080,6 +1082,14 @@ class ChromeButton(tk.Canvas):
                 fg = ui.get("faint", fg)
                 fill = ui.get("surface", fill)
                 outline = ui.get("line", outline)
+        elif self._variant == "plain":
+            fill = ui.get("surface", "#f6f7f9")
+            fg = ui.get("muted", "#566477")
+            outline = fill
+            if self._hover or self._pressed:
+                fg = ui.get("text", "#202b3a")
+            if disabled:
+                fg = ui.get("faint", fg)
         elif self._variant == "tool":
             fill = ui.get("transport_btn", "#1a232b")
             fg = ui.get("hud", ui.get("text", "#e8eef3"))
@@ -1191,10 +1201,11 @@ class ChromeButton(tk.Canvas):
                 needed += icon_size + 8
         width, height = self._paint_size(needed, size)
         self._drawn_size = (width, height)
-        round_rect(
-            self, 1, 1, width - 1, height - 1, RADIUS_CONTROL,
-            fill=fill, outline=outline, width=1,
-        )
+        if self._variant != "plain":
+            round_rect(
+                self, 1, 1, width - 1, height - 1, RADIUS_CONTROL,
+                fill=fill, outline=outline, width=1,
+            )
         if self._variant == "accent" and self._state != "disabled":
             highlight = self._ui.get("primary_active", fill)
             self.create_line(
@@ -1218,7 +1229,7 @@ class ChromeButton(tk.Canvas):
             self.create_text(
                 width / 2, height / 2, text=self._text, fill=fg, font=font,
             )
-        if _has_focus(self) and self._state != "disabled":
+        if _has_focus(self) and self._state != "disabled" and self._variant != "plain":
             round_rect(
                 self, 3, 3, width - 3, height - 3, RADIUS_CONTROL - 1,
                 fill="", outline=self._ui.get("accent_dim", "#4aa8b8"), width=1,
@@ -1703,17 +1714,39 @@ class CheckToggle(tk.Canvas):
         self._redraw()
         return [self._state]
 
+    def invoke(self):
+        self._toggle()
+
+    def instate(self, statespec):
+        selected = self._checked()
+        disabled = self._state == "disabled"
+        for item in statespec:
+            if item == "selected" and not selected:
+                return False
+            if item == "!selected" and selected:
+                return False
+            if item == "disabled" and not disabled:
+                return False
+            if item == "!disabled" and disabled:
+                return False
+        return True
+
     def _redraw(self):
         self.delete("all")
         _clear_chrome_live(self)
         ui = self._ui
         font = UI_FONT
-        probe = self.create_text(0, -40, text=self._text, font=font)
-        bbox = self.bbox(probe) or (0, 0, 48, 12)
-        self.delete(probe)
-        text_w = bbox[2] - bbox[0]
         height = control_height(self)
-        super().configure(width=text_w + 32, height=height)
+        if self._text:
+            probe = self.create_text(0, -40, text=self._text, font=font)
+            bbox = self.bbox(probe) or (0, 0, 48, 12)
+            self.delete(probe)
+            text_w = bbox[2] - bbox[0]
+            width = text_w + 32
+        else:
+            text_w = 0
+            width = 22
+        super().configure(width=width, height=height)
         cy = height / 2
         on = self._checked() and self._state != "disabled"
         box = ui.get("fill", "#3d8eaa") if on else ui.get("elev", "#1c242d")
@@ -1727,8 +1760,8 @@ class CheckToggle(tk.Canvas):
         self.create_text(22, cy, text=self._text, fill=fg, font=font, anchor="w")
         if _has_focus(self) and self._state != "disabled":
             round_rect(
-                self, 1, 1, text_w + 30, height - 1, RADIUS_CONTROL,
-                fill="", outline=ui.get("accent_dim", "#4aa8b8"), width=1,
+                self, 1, 1, (width - 1) if not self._text else text_w + 30, height - 1,
+                RADIUS_CONTROL, fill="", outline=ui.get("accent_dim", "#4aa8b8"), width=1,
             )
 
 

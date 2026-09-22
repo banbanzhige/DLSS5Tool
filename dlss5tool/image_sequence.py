@@ -5,6 +5,7 @@ Every frame is checked against its import snapshot before decoding; changed
 inputs must be re-imported instead of mixing stale cached and new pixels.
 """
 from dataclasses import dataclass
+from decimal import Decimal, ROUND_HALF_UP
 from fractions import Fraction
 import hashlib
 import json
@@ -56,27 +57,262 @@ def _decode(path, color_profile='srgb'):
     return frame
 
 
+def _numbered_parts(path):
+    path = Path(path)
+    match = re.fullmatch(r'(.*?)([0-9]+)([^0-9]*)', path.stem)
+    if path.suffix.lower() not in IMAGE_EXTENSIONS or not match:
+        return None
+    prefix, number, suffix = match.groups()
+    return prefix, int(number), suffix
+
+
+def _family_key(path):
+    parts = _numbered_parts(path)
+    if parts is None:
+        return None
+    prefix, _, suffix = parts
+    return Path(path).parent, prefix, suffix, Path(path).suffix.lower()
+
+
+def _order_members(members):
+    members = sorted(members, key=lambda item: (item[0], item[1].name))
+    if len(members) < 2:
+        return tuple(path for _, path in members), tr('sequence.too_short')
+    previous = members[0][0]
+    for number, path in members[1:]:
+        if number != previous + 1:
+            return tuple(path for _, path in members), tr(
+                'sequence.number_gap', path=path.name, expected=previous + 1)
+        previous = number
+    return tuple(path for _, path in members), ''
+
+
+def _families_in(directory, check_cancel):
+    buckets = {}
+    for path in Path(directory).iterdir():
+        check_cancel()
+        if not path.is_file():
+            continue
+        key = _family_key(path)
+        parts = _numbered_parts(path)
+        if key is None or parts is None:
+            continue
+        buckets.setdefault(key, []).append((parts[1], path))
+    return buckets
+
+
+def _classify(path, frame):
+    channels = frame.shape[2] if frame.ndim == 3 else 0
+    if channels != 3:
+        return ''
+    if frame.dtype == np.uint8:
+        return 'sdr'
+    if frame.dtype == np.uint16 and Path(path).suffix.lower() == '.png':
+        return 'hdr'
+    return ''
+
+
+def _probe(files, check_cancel):
+    """Sample the first and middle frames for size and SDR/HDR kind."""
+    kind = None
+    width = height = 0
+    for index in sorted({0, len(files) // 2}):
+        check_cancel()
+        path = files[index]
+        try:
+            frame = cv2.imdecode(np.fromfile(path, dtype=np.uint8), cv2.IMREAD_UNCHANGED)
+        except OSError:
+            frame = None
+        if frame is None or frame.size == 0:
+            return '', 0, 0, tr('sequence.unreadable', path=path.name)
+        detected = _classify(path, frame)
+        if not detected:
+            return '', 0, 0, tr('sequence.unsupported', path=path.name)
+        frame_height, frame_width = int(frame.shape[0]), int(frame.shape[1])
+        if kind is None:
+            kind, width, height = detected, frame_width, frame_height
+            continue
+        if (frame_width, frame_height) != (width, height):
+            return '', 0, 0, tr('sequence.size_mismatch', path=path.name)
+        if detected != kind:
+            return '', 0, 0, tr('sequence.mixed_format', path=path.name)
+    return kind or '', width, height, ''
+
+
+def _require_consecutive(files):
+    members = []
+    family = None
+    for raw in files:
+        path = Path(raw)
+        key = _family_key(path)
+        parts = _numbered_parts(path)
+        if key is None or parts is None:
+            raise ValueError(tr('sequence.numbered_required'))
+        if family is None:
+            family = key
+        elif key != family:
+            raise ValueError(tr('sequence.numbered_required'))
+        members.append((parts[1], path))
+    ordered, reason = _order_members(members)
+    if reason:
+        raise ValueError(reason)
+    return ordered
+
+
 def discover(selected, check_cancel=lambda: None):
     selected = Path(selected).resolve(strict=True)
-    match = re.fullmatch(r'(.*?)([0-9]+)([^0-9]*)', selected.stem)
-    if selected.suffix.lower() not in IMAGE_EXTENSIONS or not match:
+    key = _family_key(selected)
+    if key is None:
         raise ValueError(tr('sequence.numbered_required'))
-    prefix, _, suffix = match.groups()
-    pattern = re.compile(re.escape(prefix) + r'([0-9]+)' + re.escape(suffix))
-    members = []
-    for path in selected.parent.iterdir():
+    files, reason = _order_members(_families_in(selected.parent, check_cancel).get(key, []))
+    if reason:
+        raise ValueError(reason)
+    return files
+
+
+@dataclass(frozen=True)
+class SequenceGroup:
+    """One numbered run shown in the import dialog."""
+    files: tuple
+    reason: str
+    kind: str
+    width: int
+    height: int
+    recommended: bool
+
+    @property
+    def importable(self):
+        return self.kind in ('sdr', 'hdr') and not self.reason
+
+    def display_name(self):
+        first, last = self.files[0], self.files[-1]
+        if first == last:
+            return first.stem
+        start = _numbered_parts(first)
+        end = _numbered_parts(last)
+        if start and end and (start[0], start[2]) == (end[0], end[2]):
+            prefix, _, suffix = start
+            return f'{prefix}{_number_text(first)}–{_number_text(last)}{suffix}'
+        return f'{first.stem}–{last.stem}'
+
+    def detail(self, rate_text):
+        if not self.importable:
+            return self.reason
+        color = tr('sequence.suggest_hdr' if self.kind == 'hdr' else 'sequence.suggest_sdr')
+        meta = tr('sequence.group_meta', count=len(self.files),
+            width=self.width, height=self.height, color=color)
+        try:
+            duration = format_duration(len(self.files), rate_text)
+        except ValueError:
+            return meta
+        return f'{meta} · {duration}'
+
+
+def _number_text(path):
+    match = re.fullmatch(r'(.*?)([0-9]+)([^0-9]*)', Path(path).stem)
+    return match.group(2) if match else ''
+
+
+def format_duration(frames, rate):
+    """Playback length of the rendered video at this source frame rate."""
+    seconds = Fraction(int(frames)) / parse_rate(rate)
+    centis = int((Decimal(seconds.numerator) / Decimal(seconds.denominator) * 100)
+        .quantize(Decimal('1'), rounding=ROUND_HALF_UP))
+    centis = max(0, centis)
+    remainder, cs = divmod(centis, 100)
+    minutes, secs = divmod(remainder, 60)
+    hours, minutes = divmod(minutes, 60)
+    if hours:
+        clock = f'{hours}:{minutes:02d}:{secs:02d}.{cs:02d}'
+    elif minutes:
+        clock = f'{minutes}:{secs:02d}.{cs:02d}'
+    else:
+        clock = tr('sequence.seconds', seconds=f'{secs}.{cs:02d}')
+    return clock
+
+
+def _describe(files, recommended, check_cancel):
+    kind, width, height, reason = _probe(files, check_cancel)
+    return SequenceGroup(tuple(files), reason, kind, width, height, recommended)
+
+
+def propose(selected, check_cancel=lambda: None):
+    """Group a file-dialog selection into import rows.
+
+    One selected frame stands for its whole consecutive run and is checked.
+    Two or more selected frames from the same run import only that numbered
+    range. Other complete runs in those folders are recommendations.
+    """
+    if isinstance(selected, (str, Path)):
+        raw_paths = [selected] if str(selected).strip() else []
+    else:
+        raw_paths = [item for item in selected if str(item).strip()]
+    if not raw_paths:
+        return ()
+    unique = []
+    seen = set()
+    blocked = []
+    for raw in raw_paths:
         check_cancel()
-        if path.is_file() and path.suffix.lower() == selected.suffix.lower():
-            found = pattern.fullmatch(path.stem)
-            if found:
-                members.append((int(found[1]), path))
-    members.sort(key=lambda item: (item[0], item[1].name))
-    if len(members) < 2:
-        raise ValueError(tr('sequence.too_short'))
-    for (a, _), (b, path) in zip(members, members[1:]):
-        if b != a + 1:
-            raise ValueError(tr('sequence.number_gap', path=path.name, expected=a + 1))
-    return tuple(path for _, path in members)
+        path = Path(raw)
+        try:
+            path = path.resolve(strict=True)
+        except OSError:
+            blocked.append(SequenceGroup(
+                (path,), tr('sequence.unreadable', path=path.name), '', 0, 0, False))
+            continue
+        if path not in seen:
+            seen.add(path)
+            unique.append(path)
+    buckets = {}
+    order = []
+    loose = []
+    parents = []
+    for path in unique:
+        check_cancel()
+        if path.parent not in parents:
+            parents.append(path.parent)
+        key = _family_key(path)
+        if key is None:
+            loose.append(SequenceGroup((path,), tr('sequence.numbered_required'), '', 0, 0, False))
+            continue
+        if key not in buckets:
+            buckets[key] = []
+            order.append(key)
+        buckets[key].append(path)
+    families = {parent: _families_in(parent, check_cancel) for parent in parents}
+    selected_groups = []
+    used = set()
+    for key in order:
+        check_cancel()
+        picked = buckets[key]
+        members = families.get(key[0], {}).get(key, [])
+        if not members:
+            blocked.append(SequenceGroup(
+                (picked[0],), tr('sequence.unreadable', path=picked[0].name), '', 0, 0, False))
+            used.add(key)
+            continue
+        if len(picked) == 1:
+            files, reason = _order_members(members)
+        else:
+            files, reason = _order_members([(_numbered_parts(path)[1], path) for path in picked])
+        used.add(key)
+        if reason:
+            selected_groups.append(SequenceGroup(files, reason, '', 0, 0, False))
+        else:
+            selected_groups.append(_describe(files, False, check_cancel))
+    recommendations = []
+    for parent in parents:
+        for key, members in families.get(parent, {}).items():
+            if key in used:
+                continue
+            files, reason = _order_members(members)
+            if reason:
+                continue
+            recommendations.append(_describe(files, True, check_cancel))
+            used.add(key)
+    recommendations.sort(key=lambda group: str(group.files[0]).lower())
+    return tuple(selected_groups + loose + blocked + recommendations)
 
 
 @dataclass(frozen=True)
@@ -89,14 +325,14 @@ class ImageSequence:
     color_profile: str = 'srgb'
 
     @classmethod
-    def scan(cls, selected, rate, check_cancel=lambda: None, progress=None, *, color_profile='srgb'):
+    def scan_files(cls, files, rate, check_cancel=lambda: None, progress=None, *, color_profile='srgb'):
         if color_profile not in COLOR_PROFILES:
             raise ValueError(tr('sequence.invalid_color'))
         rate = parse_rate(rate)
-        files = discover(selected, check_cancel)
+        ordered = _require_consecutive(files)
         signatures = []
         shape = None
-        for index, path in enumerate(files):
+        for index, path in enumerate(ordered):
             check_cancel()
             signature = _signature(path)
             frame = _decode(path, color_profile)
@@ -107,9 +343,17 @@ class ImageSequence:
                 raise ValueError(tr('sequence.changed', path=path.name))
             signatures.append(signature)
             if progress:
-                progress(index + 1, len(files))
+                progress(index + 1, len(ordered))
         check_cancel()
-        return cls(files, tuple(signatures), rate, shape[1], shape[0], color_profile)
+        return cls(ordered, tuple(signatures), rate, shape[1], shape[0], color_profile)
+
+    @classmethod
+    def scan(cls, selected, rate, check_cancel=lambda: None, progress=None, *, color_profile='srgb'):
+        if color_profile not in COLOR_PROFILES:
+            raise ValueError(tr('sequence.invalid_color'))
+        parse_rate(rate)
+        return cls.scan_files(discover(selected, check_cancel), rate, check_cancel, progress,
+            color_profile=color_profile)
 
     @classmethod
     def load(cls, source):

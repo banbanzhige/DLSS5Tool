@@ -72,6 +72,80 @@ def test_select_one_family_and_numeric_suffix(tmp_path):
         'shot_01_left.jpg', 'shot_02_left.jpg']
 
 
+def test_display_name_and_output_duration():
+    group = seq.SequenceGroup((
+        Path('镜头0050_dlss.png'), Path('镜头0120_dlss.png'),
+    ), '', 'sdr', 3840, 2160, False)
+    assert group.display_name() == '镜头0050–0120_dlss'
+    assert seq.format_duration(71, 24) == '2.96 秒'
+    assert seq.format_duration(4, '24') == '0.17 秒'
+    assert seq.format_duration(1440, 24) == '1:00.00'
+    assert '0.08 秒' in group.detail('24')
+    blocked = seq.SequenceGroup((Path('a1.png'), Path('a3.png')), '缺号', '', 0, 0, False)
+    assert blocked.detail('24') == '缺号'
+
+
+def test_scan_files_keeps_a_selected_range(tmp_path):
+    files = [picture(tmp_path / f'a{i}.png', i) for i in range(1, 6)]
+    value = seq.ImageSequence.scan_files(files[1:3], 24)
+    assert [path.name for path in value.files] == ['a2.png', 'a3.png']
+    with pytest.raises(ValueError):
+        seq.ImageSequence.scan_files([files[0], files[2]], 24)
+
+
+def test_propose_expands_one_frame_and_lists_other_runs(tmp_path):
+    for index in range(1, 5):
+        picture(tmp_path / f'a{index}.png', index)
+    for index in range(1, 3):
+        picture(tmp_path / f'b{index}.png', index)
+    picture(tmp_path / 'note.png')
+    single = seq.propose(tmp_path / 'a2.png')
+    assert [path.name for path in single[0].files] == [f'a{index}.png' for index in range(1, 5)]
+    assert single[0].importable and single[0].kind == 'sdr' and not single[0].recommended
+    assert [path.name for path in single[1].files] == ['b1.png', 'b2.png']
+    assert single[1].recommended and single[1].importable
+    ranged = seq.propose([tmp_path / 'a2.png', tmp_path / 'a3.png'])
+    assert [path.name for path in ranged[0].files] == ['a2.png', 'a3.png']
+    assert ranged[0].importable and not ranged[0].recommended
+    assert [path.name for path in ranged[1].files] == ['b1.png', 'b2.png']
+    seeds = seq.propose([tmp_path / 'a1.png', tmp_path / 'b2.png'])
+    assert [not group.recommended and group.importable for group in seeds] == [True, True]
+    assert [path.name for path in seeds[0].files] == [f'a{index}.png' for index in range(1, 5)]
+    assert [path.name for path in seeds[1].files] == ['b1.png', 'b2.png']
+
+
+def test_propose_reports_gaps_without_blocking_other_runs(tmp_path):
+    for name in ('a1.png', 'a2.png', 'a4.png', 'b1.png', 'b2.png'):
+        picture(tmp_path / name)
+    with pytest.raises(ValueError):
+        seq.discover(tmp_path / 'a1.png')
+    ranged = seq.propose([tmp_path / 'a1.png', tmp_path / 'a2.png'])
+    assert ranged[0].importable
+    assert [path.name for path in ranged[0].files] == ['a1.png', 'a2.png']
+    seeded = seq.propose(tmp_path / 'a1.png')
+    assert not seeded[0].importable and seeded[0].reason
+    assert any(group.recommended and [path.name for path in group.files] == ['b1.png', 'b2.png']
+               for group in seeded)
+    gap = seq.propose([tmp_path / 'a1.png', tmp_path / 'a4.png'])
+    assert not gap[0].importable and 'a4.png' in gap[0].reason
+    assert any(group.recommended for group in gap)
+
+
+def test_propose_classifies_hdr_and_rejects_incompatible_frames(tmp_path):
+    picture(tmp_path / 'h1.png', dtype=np.uint16)
+    picture(tmp_path / 'h2.png', dtype=np.uint16)
+    hdr = seq.propose(tmp_path / 'h1.png')
+    assert hdr[0].kind == 'hdr' and hdr[0].importable and hdr[0].width == 128
+    picture(tmp_path / 'bad1.png')
+    picture(tmp_path / 'bad2.png', shape=(8, 8, 4))
+    blocked = seq.propose([tmp_path / 'bad1.png', tmp_path / 'bad2.png'])[0]
+    assert not blocked.importable and 'bad2.png' in blocked.reason
+    for index, shape in enumerate(((8, 8, 3), (9, 8, 3)), start=1):
+        picture(tmp_path / f's{index}.png', shape=shape)
+    mismatch = seq.propose([tmp_path / 's1.png', tmp_path / 's2.png'])[0]
+    assert not mismatch.importable and 's2.png' in mismatch.reason
+
+
 @pytest.mark.parametrize('shape,dtype', [((130, 128, 3), np.uint8),
     ((128, 128, 4), np.uint8), ((128, 128), np.uint8), ((128, 128, 3), np.uint16)])
 def test_reject_size_alpha_gray_and_high_depth(tmp_path, shape, dtype):
@@ -212,6 +286,51 @@ def test_gui_export_routes_sequences_through_shared_renderer(sequence, tmp_path,
     assert passed['super_resolution_scale'] == scale
 
 
+def sequence_state(tmp_path):
+    def state_path(name):
+        if name == 'image-sequences':
+            return tmp_path / 'dialog-records'
+        return tmp_path / name
+    return state_path
+
+
+def walk(widget):
+    yield widget
+    for child in widget.winfo_children():
+        yield from walk(child)
+
+
+def action_buttons(widgets, text, enabled=False):
+    found = []
+    for item in widgets:
+        if not callable(getattr(item, 'invoke', None)):
+            continue
+        try:
+            if item.cget('text') != text:
+                continue
+            if enabled and str(item.cget('state')) != 'normal':
+                continue
+        except tk.TclError:
+            continue
+        found.append(item)
+    return found
+
+
+def widget_shown(widget):
+    node = widget
+    top = widget.winfo_toplevel()
+    while node is not None and node is not top:
+        parent = node.master
+        if node.winfo_manager():
+            node = parent
+            continue
+        if parent is not None and parent.winfo_class() == 'Canvas':
+            node = parent
+            continue
+        return False
+    return True
+
+
 @pytest.mark.parametrize('theme', ['light', 'dark'])
 def test_import_dialog_validates_and_saves_on_worker(sequence, tmp_path, theme):
     import tkinter as tk
@@ -223,17 +342,27 @@ def test_import_dialog_validates_and_saves_on_worker(sequence, tmp_path, theme):
     ui_theme.apply_ttk(root, ui_theme.THEMES[theme])
     failures = []
     root.report_callback_exception = lambda *args: failures.append(args)
-    def walk(widget):
-        yield widget
-        for child in widget.winfo_children():
-            yield from walk(child)
     def submit():
         widgets = list(walk(root))
-        entry = next(w for w in widgets if isinstance(w, ttk.Entry))
+        confirms = action_buttons(widgets, dialog.tr('sequence.confirm'), enabled=True)
+        entries = [item for item in widgets if isinstance(item, ttk.Entry)]
+        if not confirms or not entries:
+            root.after(30, submit)
+            return
+        assert not any(isinstance(item, ttk.Combobox) and widget_shown(item) for item in widgets)
+        labels = [str(item.cget('text')) for item in widgets if isinstance(item, ttk.Label)]
+        assert dialog.tr('sequence.section_import') not in labels
+        assert any('0.17 秒' in text for text in labels)
+        assert all('输出时长' not in text for text in labels)
+        assert any(isinstance(item, ttk.Label) and ('帧' in str(item.cget('text')) or 'frames' in str(item.cget('text')))
+                   for item in widgets)
+        canvases = [item for item in widgets if isinstance(item, tk.Canvas)]
+        assert canvases and int(float(canvases[0].cget('height'))) > 20
+        entry = entries[0]
+        assert entry.get() == '24'
         entry.delete(0, 'end')
         entry.insert(0, '30')
-        next(w for w in widgets if isinstance(w, ttk.Button)
-             and w.cget('text') == dialog.tr('sequence.confirm')).invoke()
+        confirms[0].invoke()
     def timeout():
         failures.append('dialog timeout')
         for child in root.winfo_children():
@@ -242,10 +371,106 @@ def test_import_dialog_validates_and_saves_on_worker(sequence, tmp_path, theme):
     root.after(50, submit)
     timer = root.after(5000, timeout)
     try:
-        with mock.patch.object(dialog.paths, 'state_path', return_value=tmp_path / 'dialog-records'):
-            manifest = dialog.ask_sequence(root, str(value.files[1]))
+        with mock.patch.object(dialog.paths, 'state_path', side_effect=sequence_state(tmp_path)):
+            manifests = dialog.ask_sequence(root, str(value.files[1]))
         assert not failures
-        assert seq.ImageSequence.load(manifest).rate == 30
+        assert seq.ImageSequence.load(manifests[0]).rate == 30
+        assert len(seq.ImageSequence.load(manifests[0]).files) == 4
+        assert (tmp_path / 'image-sequence-rate.txt').read_text(encoding='utf-8') == '30'
+    finally:
+        root.after_cancel(timer)
+        root.destroy()
+
+
+def test_dialog_imports_a_checked_recommendation(sequence, tmp_path):
+    import tkinter as tk
+    from tkinter import ttk
+    from dlss5tool import image_sequence_dialog as dialog
+    value, _ = sequence
+    folder = value.files[0].parent
+    picture(folder / 'b1.png', 1)
+    picture(folder / 'b2.png', 2)
+    root = tk.Tk()
+    root.withdraw()
+    failures = []
+    root.report_callback_exception = lambda *args: failures.append(args)
+    def submit():
+        widgets = list(walk(root))
+        from dlss5tool.ui_widgets import CheckToggle
+        checks = [item for item in widgets if isinstance(item, CheckToggle)]
+        confirms = action_buttons(widgets, dialog.tr('sequence.confirm'), enabled=True)
+        if len(checks) < 2 or not confirms:
+            root.after(30, submit)
+            return
+        assert checks[0].instate(['selected'])
+        assert not checks[1].instate(['selected'])
+        checks[1].invoke()
+        confirms[0].invoke()
+    def timeout():
+        failures.append('dialog timeout')
+        for child in root.winfo_children():
+            if isinstance(child, tk.Toplevel):
+                child.destroy()
+    root.after(50, submit)
+    timer = root.after(5000, timeout)
+    try:
+        with mock.patch.object(dialog.paths, 'state_path', side_effect=sequence_state(tmp_path)):
+            manifests = dialog.ask_sequence(root, str(value.files[0]))
+        assert not failures
+        loaded = [seq.ImageSequence.load(path) for path in manifests]
+        assert [path.stem for path in loaded[0].files] == [f'画面_{index}' for index in range(8, 12)]
+        assert [path.name for path in loaded[1].files] == ['b1.png', 'b2.png']
+        assert {item.color_profile for item in loaded} == {'srgb'}
+    finally:
+        root.after_cancel(timer)
+        root.destroy()
+
+
+def test_dialog_remembers_rate_and_keeps_sdr_when_hdr_is_chosen(tmp_path):
+    import tkinter as tk
+    from tkinter import ttk
+    from dlss5tool import image_sequence_dialog as dialog
+    for index in range(1, 3):
+        picture(tmp_path / f'a{index}.png', index)
+        picture(tmp_path / f'h{index}.png', index, dtype=np.uint16)
+    (tmp_path / 'image-sequence-rate.txt').write_text('25', encoding='utf-8')
+    root = tk.Tk()
+    root.withdraw()
+    failures = []
+    root.report_callback_exception = lambda *args: failures.append(args)
+    def submit(step=[0]):
+        widgets = list(walk(root))
+        confirms = action_buttons(widgets, dialog.tr('sequence.confirm'), enabled=True)
+        entries = [item for item in widgets if isinstance(item, ttk.Entry)]
+        colors = [item for item in widgets if isinstance(item, ttk.Combobox) and widget_shown(item)]
+        if not confirms or not entries or not colors:
+            root.after(30, submit)
+            return
+        if step[0] == 0:
+            assert entries[0].get() == '25'
+            step[0] = 1
+            confirms[0].invoke()
+            assert str(confirms[0].cget('state')) == 'normal'
+            root.after(30, submit)
+            return
+        colors[0].current(0)
+        confirms[0].invoke()
+    def timeout():
+        failures.append('dialog timeout')
+        for child in root.winfo_children():
+            if isinstance(child, tk.Toplevel):
+                child.destroy()
+    root.after(50, submit)
+    timer = root.after(5000, timeout)
+    try:
+        with mock.patch.object(dialog.paths, 'state_path', side_effect=sequence_state(tmp_path)):
+            manifests = dialog.ask_sequence(root, [tmp_path / 'a1.png', tmp_path / 'h1.png'])
+        assert not failures
+        loaded = {seq.ImageSequence.load(path).color_profile: seq.ImageSequence.load(path) for path in manifests}
+        assert set(loaded) == {'srgb', 'hdr10_pq'}
+        assert [path.name for path in loaded['srgb'].files] == ['a1.png', 'a2.png']
+        assert [path.name for path in loaded['hdr10_pq'].files] == ['h1.png', 'h2.png']
+        assert (tmp_path / 'image-sequence-rate.txt').read_text(encoding='utf-8') == '25'
     finally:
         root.after_cancel(timer)
         root.destroy()
@@ -253,33 +478,30 @@ def test_import_dialog_validates_and_saves_on_worker(sequence, tmp_path, theme):
 
 def test_cancel_import_keeps_records_unwritten(sequence, tmp_path):
     import tkinter as tk
-    from tkinter import ttk
     from dlss5tool import image_sequence_dialog as dialog
     value, _ = sequence
     root = tk.Tk()
     root.withdraw()
-    records = tmp_path / 'cancelled-records'
-    def walk(widget):
-        yield widget
-        for child in widget.winfo_children():
-            yield from walk(child)
     def cancel():
-        for widget in walk(root):
-            if isinstance(widget, ttk.Button) and widget.cget('text') == dialog.tr('sequence.cancel'):
-                widget.invoke()
-                return
+        buttons = action_buttons(list(walk(root)), dialog.tr('sequence.cancel'))
+        if buttons:
+            buttons[0].invoke()
     root.after(50, cancel)
     try:
-        with mock.patch.object(dialog.paths, 'state_path', return_value=records):
-            assert dialog.ask_sequence(root, str(value.files[0])) is None
-        assert not records.exists()
+        with mock.patch.object(dialog.paths, 'state_path', side_effect=sequence_state(tmp_path)):
+            assert dialog.ask_sequence(root, str(value.files[0])) == []
+        assert not (tmp_path / 'dialog-records').exists()
+        assert not (tmp_path / 'image-sequence-rate.txt').exists()
     finally:
         root.destroy()
 
 
-@pytest.mark.parametrize('selected,manifest', [('frame_0001.png', 'clip.dlssseq'),
-    ('frame_0001.png', None), ('', None)])
-def test_queue_sequence_entry_adds_job_without_replacing_preview(selected, manifest):
+@pytest.mark.parametrize('selected,manifests', [
+    (('frame_0001.png',), ['clip.dlssseq']),
+    (('frame_0001.png',), []),
+    ((), []),
+])
+def test_queue_sequence_entry_adds_job_without_replacing_preview(selected, manifests):
     from dlss5tool import gui, image_sequence_dialog
     app = gui.App.__new__(gui.App)
     app.root = mock.Mock()
@@ -289,14 +511,16 @@ def test_queue_sequence_entry_adds_job_without_replacing_preview(selected, manif
     app._schedule_preview_cache_resume = mock.Mock()
     app._add_paths_to_queue = mock.Mock()
     app._load_media = mock.Mock()
-    with mock.patch.object(gui.filedialog, 'askopenfilename', return_value=selected), \
-            mock.patch.object(image_sequence_dialog, 'ask_sequence', return_value=manifest) as ask:
+    with mock.patch.object(gui.filedialog, 'askopenfilenames', return_value=selected), \
+            mock.patch.object(image_sequence_dialog, 'ask_sequence', return_value=manifests) as ask:
         app.add_queue_image_sequence()
-    if selected and manifest:
-        app._add_paths_to_queue.assert_called_once_with([manifest])
+    if selected and manifests:
+        app._add_paths_to_queue.assert_called_once_with(list(manifests))
     else:
         app._add_paths_to_queue.assert_not_called()
-    if not selected:
+    if selected:
+        ask.assert_called_once_with(app.root, selected)
+    else:
         ask.assert_not_called()
     app._load_media.assert_not_called()
     assert app.video == 'current-preview.mp4'
@@ -309,7 +533,7 @@ def test_queue_sequence_entry_ignores_busy_state(busy):
     app = gui.App.__new__(gui.App)
     app._exporting = app._queue_running = app._diagnosing = app._switching_backend = False
     setattr(app, busy, True)
-    with mock.patch.object(gui.filedialog, 'askopenfilename') as choose:
+    with mock.patch.object(gui.filedialog, 'askopenfilenames') as choose:
         app.add_queue_image_sequence()
     choose.assert_not_called()
 
