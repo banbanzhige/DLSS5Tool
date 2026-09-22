@@ -3521,9 +3521,6 @@ class App(SharedRenderPreview, PreviewComparison, GuidanceExportUI):
 
         parent.grid_columnconfigure(0, weight=1)
         preview_group = ttk.Frame(parent, style="Panel.TFrame")
-        ttk.Label(preview_group, text=tr("section.playback_cache"), style="Kicker.TLabel").grid(
-            row=0, column=0, columnspan=2, sticky="w", pady=(0, 6),
-        )
         preview_group.grid(row=0, column=0, sticky="ew", padx=(6, 8), pady=(2, 4))
         preview_group.grid_columnconfigure(1, weight=1)
 
@@ -3543,7 +3540,8 @@ class App(SharedRenderPreview, PreviewComparison, GuidanceExportUI):
         ttk.Label(cache_row, text="MiB", font=ui_theme.UI_MONO).pack(
             side="left", padx=(6, 0),
         )
-        ttk.Label(preview_group, text=tr("label.cache_budget")).grid(row=2, column=0, sticky="w", pady=3)
+        cache_label = ttk.Label(preview_group, text=tr("label.cache_budget"))
+        cache_label.grid(row=2, column=0, sticky="w", pady=3)
         cache_row.grid(row=2, column=1, sticky="w", pady=3)
 
         ttk.Label(preview_group, text=tr("label.startup_buffer")).grid(row=3, column=0, sticky="w", pady=3)
@@ -3565,12 +3563,8 @@ class App(SharedRenderPreview, PreviewComparison, GuidanceExportUI):
         Tooltip(scrub, tr("tooltip.render_after_scrub"))
         d.update({
             'w_quality': quality, 'w_cache_mb': cache_mb, 'w_scrub_ms': scrub,
+            'cache_tooltips': (Tooltip(cache_mb, ""), Tooltip(cache_label, "")),
         })
-        cache_hint = ttk.Label(
-            preview_group, text="", style="Hint.TLabel", justify="left", wraplength=320,
-        )
-        cache_hint.grid(row=5, column=0, columnspan=2, sticky="w", pady=(7, 0))
-        d['w_cache_hint'] = cache_hint
         quality.bind("<<ComboboxSelected>>", self._on_preview_settings_change)
         for widget in (cache_mb, scrub):
             widget.config(command=self._on_preview_settings_change)
@@ -3662,10 +3656,10 @@ class App(SharedRenderPreview, PreviewComparison, GuidanceExportUI):
 
     def _update_preview_memory_hint(self):
         settings = getattr(self, "_preview_runtime_settings", None) or self._collect_preview_settings()
-        budget_mib = settings['preview_cache_mb']
         source_w, source_h = self._source_size()
+        preview = getattr(self, "_preview_settings", None) or {}
         if source_w <= 0 or source_h <= 0:
-            text = tr("hint.cache_budget", budget=budget_mib)
+            tip = tr("guidance.cache_budget")
         else:
             preview_w, preview_h = _realtime_preview_size(
                 source_w, source_h, settings['preview_quality'],
@@ -3673,18 +3667,12 @@ class App(SharedRenderPreview, PreviewComparison, GuidanceExportUI):
             pair_bytes = max((source_w * source_h + preview_w * preview_h) * 3, 1)
             frames = max(int(self._available_frame_cache_bytes() // pair_bytes), 1)
             seconds = frames / max(float(self.fps), 1.0)
-            text = tr(
+            tip = tr(
                 "hint.cache_estimate", frames=frames, seconds=seconds,
-                startup=PREVIEW_BUFFER_SECONDS, width=preview_w, height=preview_h,
+                width=preview_w, height=preview_h,
             )
-        shared_hint = tr('guidance.cache_budget', budget=budget_mib)
-        text = text + '\n' + shared_hint if source_w > 0 and source_h > 0 else shared_hint
-        label = (getattr(self, "_preview_settings", None) or {}).get('w_cache_hint')
-        if label is not None:
-            try:
-                label.config(text=text)
-            except Exception:
-                pass
+        for tooltip in preview.get('cache_tooltips') or ():
+            tooltip.text = tip
 
     def _build_export_settings(self, parent):
         saved = self._saved_settings
@@ -3727,14 +3715,8 @@ class App(SharedRenderPreview, PreviewComparison, GuidanceExportUI):
         parent.grid_columnconfigure(0, weight=1)
         output_group = ttk.Frame(parent, style="Panel.TFrame")
         output_group.grid(row=0, column=0, sticky="ew", padx=(6, 8), pady=(2, 4))
-        ttk.Label(output_group, text=tr("section.output_encoding"), style="Kicker.TLabel").grid(
-            row=0, column=0, columnspan=2, sticky="w", pady=(0, 6),
-        )
         performance_group = ttk.Frame(parent, style="Panel.TFrame")
         performance_group.grid(row=1, column=0, sticky="ew", padx=(6, 8), pady=(0, 4))
-        ttk.Label(performance_group, text=tr("section.performance"), style="Kicker.TLabel").grid(
-            row=0, column=0, columnspan=2, sticky="w", pady=(0, 6),
-        )
         output_group.grid_columnconfigure(1, weight=1)
         performance_group.grid_columnconfigure(1, weight=1)
 
@@ -3813,11 +3795,8 @@ class App(SharedRenderPreview, PreviewComparison, GuidanceExportUI):
         self._theme_widgets.append(hdr)
 
         hint = ttk.Label(
-            output_group,
-            text=tr("hint.hdr_main10"),
-            style="Hint.TLabel", wraplength=320, justify="left",
+            output_group, text="", style="Hint.TLabel", wraplength=320, justify="left",
         )
-        hint.grid(row=11, column=0, columnspan=2, sticky="ew", pady=(2, 0))
         Tooltip(
             hdr,
             tr("tooltip.hdr_precision"),
@@ -3978,9 +3957,6 @@ class App(SharedRenderPreview, PreviewComparison, GuidanceExportUI):
         parent.grid_columnconfigure(0, weight=1)
         host_wrap = ttk.Frame(parent, style="Panel.TFrame")
         host_wrap.grid(row=0, column=0, sticky="ew", padx=(6, 8), pady=(2, 4))
-        ttk.Label(host_wrap, text=tr("section.host_submission"), style="Kicker.TLabel").pack(
-            anchor="w", pady=(0, 6),
-        )
         host_group = ttk.Frame(host_wrap, style="Panel.TFrame")
         host_group.pack(fill="x")
         host_group.grid_columnconfigure(1, weight=1)
@@ -4011,6 +3987,7 @@ class App(SharedRenderPreview, PreviewComparison, GuidanceExportUI):
             wraplength=260, justify='left',
         )
         render_gpu_status.grid(row=2, column=1, sticky='ew', pady=(1, 3))
+        render_gpu_status_tooltip = Tooltip(render_gpu, "")
 
         submission = self._chrome_combo(
             host_group, d['v_submission'], list(HOST_SUBMISSION_CHOICES),
@@ -4052,6 +4029,7 @@ class App(SharedRenderPreview, PreviewComparison, GuidanceExportUI):
             'w_render_gpu': render_gpu,
             'w_render_gpu_refresh': render_gpu_refresh,
             'w_render_gpu_status': render_gpu_status,
+            'render_gpu_status_tooltip': render_gpu_status_tooltip,
             'w_submission': submission,
             'w_zero_fast': zero_fast,
             'w_persistent': persistent,
@@ -4080,6 +4058,26 @@ class App(SharedRenderPreview, PreviewComparison, GuidanceExportUI):
         d['render_gpu_selected_id'] = adapter_id
         d['v_render_gpu'].set(label)
 
+    def _set_render_gpu_status(self, text, detail=""):
+        label = self._host_settings.get('w_render_gpu_status')
+        if label is None:
+            return
+        label.config(text=text, wraplength=0 if len(text) <= 24 else 260)
+        if text:
+            if not label.winfo_manager():
+                label.grid(row=2, column=1, sticky='ew', pady=(1, 3))
+        else:
+            label.grid_remove()
+        tooltip = self._host_settings.get('render_gpu_status_tooltip')
+        if tooltip is not None:
+            tooltip.text = "" if not detail or detail == text else detail
+
+    def _show_active_render_gpu(self, name):
+        full = " ".join(str(name or "").split())
+        if not full:
+            return
+        self._set_render_gpu_status("", tr('gpu.status.active', name=full))
+
     def _on_render_gpu_selected(self, _event=None):
         d = self._host_settings
         selected = d.get('render_gpu_choices', {}).get(d['v_render_gpu'].get())
@@ -4094,7 +4092,7 @@ class App(SharedRenderPreview, PreviewComparison, GuidanceExportUI):
         if self._render_gpu_scan_thread is not None and self._render_gpu_scan_thread.is_alive():
             return
         d = self._host_settings
-        d['w_render_gpu_status'].config(text=tr('gpu.status.loading'))
+        self._set_render_gpu_status(tr('gpu.status.loading'))
         d['w_render_gpu'].config(state='disabled')
         d['w_render_gpu_refresh'].config(state='disabled')
         generation = time.monotonic_ns()
@@ -4152,9 +4150,9 @@ class App(SharedRenderPreview, PreviewComparison, GuidanceExportUI):
         elif selected not in {adapter['id'] for adapter in adapters} and selected != dlss_engine.RENDER_GPU_AUTO:
             status = tr('gpu.saved_unavailable')
         else:
-            status = tr('gpu.status.ready', count=len(adapters))
+            status = ''
         d['render_gpu_scan_status'] = status
-        d['w_render_gpu_status'].config(text=status)
+        self._set_render_gpu_status(status)
         self._update_host_control_states()
 
     def _build_guidance_settings(self, parent):
@@ -4164,25 +4162,33 @@ class App(SharedRenderPreview, PreviewComparison, GuidanceExportUI):
     def _build_module_settings(self, parent):
         d, saved = self._host_settings, self._saved_settings
         group = ttk.Frame(parent, style='Panel.TFrame')
-        group.pack(fill='x', padx=(6, 8), pady=4)
+        group.pack(fill='x', padx=(6, 8), pady=(2, 4))
         group.columnconfigure(0, weight=1)
-        setup_hint = ttk.Label(group, text=tr('mods.setup_hint'), style='Hint.TLabel', wraplength=300)
-        setup_hint.grid(row=0, column=0, sticky='ew', pady=(0, 8))
-        group.bind('<Configure>', lambda e: setup_hint.configure(wraplength=max(160, e.width - 8)), add='+')
         summaries = ttk.Frame(group, style='Panel.TFrame')
-        summaries.grid(row=1, column=0, sticky='ew')
-        summaries.columnconfigure(1, weight=1)
+        summaries.grid(row=0, column=0, sticky='ew')
         d['module_summaries'] = {}
         for row, name in enumerate(('runtime', 'component', 'flow', 'depth') if depth_enabled() else ('runtime', 'component', 'flow')):
-            ttk.Label(summaries, text=tr('mods.summary.' + name)).grid(row=row, column=0, sticky='w', padx=(0, 12), pady=3)
-            label = ttk.Label(summaries, text='', style='Hint.TLabel')
-            label.grid(row=row, column=1, sticky='w', pady=3)
+            ttk.Label(summaries, text=tr('mods.summary.' + name)).grid(
+                row=row, column=0, sticky='w', padx=(0, 16), pady=2,
+            )
+            label = ttk.Label(summaries, text='')
+            label.grid(row=row, column=1, sticky='w', pady=2)
             d['module_summaries'][name] = label
         actions = ttk.Frame(group, style='Panel.TFrame')
-        actions.grid(row=2, column=0, sticky='ew', pady=(8, 4))
-        ttk.Button(actions, text=tr('mods.open'), command=self._open_mods).pack(side='left')
-        ttk.Button(actions, text=tr('mods.refresh'), command=self._refresh_mods).pack(side='left', padx=4)
-        ttk.Button(actions, text=tr('mods.details'), command=self._show_module_details).pack(side='left')
+        actions.grid(row=2, column=0, sticky='ew', pady=(8, 0))
+        actions.columnconfigure((0, 1, 2), weight=1, uniform='mod_actions')
+        open_mods = self._chrome_button(
+            actions, tr('mods.open_short'), self._open_mods, variant='ghost',
+        )
+        open_mods.grid(row=0, column=0, sticky='ew', padx=(0, 4))
+        refresh_mods = self._chrome_button(
+            actions, tr('mods.refresh'), self._refresh_mods, variant='ghost',
+        )
+        refresh_mods.grid(row=0, column=1, sticky='ew', padx=4)
+        details = self._chrome_button(
+            actions, tr('mods.details'), self._show_module_details, variant='ghost',
+        )
+        details.grid(row=0, column=2, sticky='ew', padx=(4, 0))
         # Paths are a first-level section, independent of add-on status.
         editor = CollapsibleSection(
             self._export_inner, tr('mods.path_settings'), collapsed=True, ui=self._ui,
@@ -4191,16 +4197,19 @@ class App(SharedRenderPreview, PreviewComparison, GuidanceExportUI):
         self._theme_widgets.append(editor)
         self._module_editor = editor
         editor.body.columnconfigure(0, weight=1)
-        runtime_combo = self._chrome_combo(editor.body, d['v_runtime'], [tr('mods.auto'), tr('mods.bundled')] + mod_paths.runtime_choices(saved))
         ttk.Label(editor.body, text=tr('mods.runtime')).grid(row=0, column=0, sticky='w', pady=(0, 4))
-        runtime_combo.grid(row=1, column=0, sticky='ew')
+        runtime_row = ttk.Frame(editor.body, style='Panel.TFrame')
+        runtime_row.grid(row=1, column=0, sticky='ew')
+        runtime_row.columnconfigure(0, weight=1)
+        runtime_combo = self._chrome_combo(runtime_row, d['v_runtime'], [tr('mods.auto'), tr('mods.bundled')] + mod_paths.runtime_choices(saved))
+        runtime_combo.grid(row=0, column=0, sticky='ew', padx=(0, 4))
         runtime_combo.bind('<<ComboboxSelected>>', lambda e: self._on_mod_settings_change())
-        buttons = ttk.Frame(editor.body, style='Panel.TFrame')
-        buttons.grid(row=2, column=0, sticky='ew', pady=5)
-        runtime_button = ttk.Button(buttons, text=tr('mods.choose_runtime'), command=self._choose_runtime)
-        runtime_button.pack(side='left')
+        runtime_button = ttk.Button(
+            runtime_row, text=tr('mods.choose_runtime'), command=self._choose_runtime,
+        )
+        runtime_button.grid(row=0, column=1, sticky='e')
         paths = ttk.Frame(editor.body, style='Panel.TFrame')
-        paths.grid(row=3, column=0, sticky='ew')
+        paths.grid(row=2, column=0, sticky='ew', pady=(4, 0))
         paths.columnconfigure(0, weight=1)
         self._module_path_defaults = {
             'guidance_flow_weights': 'models/raft_large_C_T_SKHT_V2-ff5fadd5.pth',
@@ -4225,14 +4234,11 @@ class App(SharedRenderPreview, PreviewComparison, GuidanceExportUI):
             browse.grid(row=row * 2 + 1, column=1, sticky='e')
             path_controls.extend((entry, browse))
         reset_button = ttk.Button(editor.body, text=tr('mods.reset_paths'), command=self._reset_module_paths)
-        reset_button.grid(row=4, column=0, sticky='w', pady=6)
+        reset_button.grid(row=3, column=0, sticky='w', pady=6)
         path_controls.append(reset_button)
-        footer = ttk.Frame(group, style='Panel.TFrame')
-        footer.grid(row=3, column=0, sticky='ew', pady=(4, 0))
-        footer.columnconfigure(0, weight=1)
-        hint = ttk.Label(footer, text='', style='Hint.TLabel')
-        hint.grid(row=0, column=0, sticky='w')
-        d['w_mod_setup_hint'] = setup_hint
+        hint = ttk.Label(group, text='', style='Hint.TLabel', anchor='w')
+        hint.grid(row=1, column=0, sticky='w', pady=(4, 0))
+        d['mod_setup_tooltip'] = Tooltip(open_mods, tr('mods.setup_hint'))
         d.update(w_runtime=runtime_combo, w_mod_hint=hint,
                  w_runtime_button=runtime_button, path_vars=path_vars, path_controls=path_controls, path_entries=path_entries)
         self._last_module_settings = self._collect_host_settings()
@@ -4623,9 +4629,11 @@ class App(SharedRenderPreview, PreviewComparison, GuidanceExportUI):
 
     def _update_module_summary(self, host):
         d = self._host_settings
-        if 'w_mod_setup_hint' in d:
+        if 'mod_setup_tooltip' in d:
             custom = bool(host.get('mods_directory'))
-            d['w_mod_setup_hint'].config(text=tr('mods.custom_hint' if custom else 'mods.setup_hint'))
+            d['mod_setup_tooltip'].text = tr('mods.open') + '\n' + tr(
+                'mods.custom_hint' if custom else 'mods.setup_hint'
+            )
         # File-presence summary only. It never imports torch or starts inference.
         candidates = mod_paths.guidance_candidates({**host, 'guidance_mode': 3 if depth_enabled() else 1})
         present = {key: os.path.isfile(path) for key, path in candidates.items()}
@@ -4756,9 +4764,7 @@ class App(SharedRenderPreview, PreviewComparison, GuidanceExportUI):
             state="normal" if v2_enabled and not scanning else "disabled"
         )
         if not v2_enabled:
-            self._host_settings['w_render_gpu_status'].config(
-                text=tr('gpu.status.legacy')
-            )
+            self._set_render_gpu_status(tr('gpu.status.legacy'))
         elif not scanning:
             adapter_name = (
                 getattr(getattr(self, '_live', None), 'adapter_info', {}).get('name')
@@ -4766,10 +4772,12 @@ class App(SharedRenderPreview, PreviewComparison, GuidanceExportUI):
                 and getattr(self._live, 'backend', None) == 'v2'
                 else ''
             )
-            self._host_settings['w_render_gpu_status'].config(text=(
-                tr('gpu.status.active', name=adapter_name) if adapter_name
-                else self._host_settings.get('render_gpu_scan_status', tr('gpu.status.loading'))
-            ))
+            if adapter_name:
+                self._show_active_render_gpu(adapter_name)
+            else:
+                self._set_render_gpu_status(
+                    self._host_settings.get('render_gpu_scan_status', tr('gpu.status.loading'))
+                )
         self._host_settings['w_submission'].config(
             state="readonly" if v2_enabled else "disabled"
         )
@@ -4893,9 +4901,7 @@ class App(SharedRenderPreview, PreviewComparison, GuidanceExportUI):
                 if adapter_changed:
                     adapter = self._live.adapter_info
                     name = adapter.get('name') or tr('gpu.auto_nvidia')
-                    self._host_settings['w_render_gpu_status'].config(
-                        text=tr('gpu.status.active', name=name)
-                    )
+                    self._show_active_render_gpu(name)
                     self.logln(f"[DLSS GPU] 已切换到 {name}")
                     self.set_status(tr("status.host_applied", backend=self._live.backend))
                 elif self._live.backend != old_backend:
@@ -5120,7 +5126,7 @@ class App(SharedRenderPreview, PreviewComparison, GuidanceExportUI):
             if super_resolution_enabled:
                 parts.append(tr("queue.upscale", scale=super_resolution_scale))
         if not self.video:
-            parts = [tr("hint.hdr_main10").rstrip("。").rstrip(".")]
+            parts = []
         elif color.get("is_hdr") and not export["hdr_mode"]:
             parts.append(tr("hint.tonemap_sdr"))
         if self._is_image:
@@ -5132,7 +5138,13 @@ class App(SharedRenderPreview, PreviewComparison, GuidanceExportUI):
             status = super_resolution_runtime_status()
             if not status["available"]:
                 parts.append(tr("hint.vsr_missing"))
-        self._export_settings["w_hdr_hint"].config(text=" · ".join(parts))
+        hint = self._export_settings["w_hdr_hint"]
+        hint.config(text=" · ".join(part for part in parts if part))
+        if hint.cget("text"):
+            if not hint.winfo_manager():
+                hint.grid(row=11, column=0, columnspan=2, sticky="ew", pady=(2, 0))
+        else:
+            hint.grid_remove()
         if hasattr(self, "_export_summary"):
             if export.get("rate_control") == "bitrate":
                 current = f"{export.get('video_bitrate_mbps', 20):g} Mbps"
@@ -5500,9 +5512,7 @@ class App(SharedRenderPreview, PreviewComparison, GuidanceExportUI):
                     self._last_dlss_frame = -1
                     adapter_name = self._live.adapter_info.get('name')
                     if adapter_name and threading.current_thread() is threading.main_thread():
-                        self._host_settings['w_render_gpu_status'].config(
-                            text=tr('gpu.status.active', name=adapter_name)
-                        )
+                        self._show_active_render_gpu(adapter_name)
                         self.logln(f"[DLSS GPU] {adapter_name}")
                 else:
                     self._live.update(settings)
@@ -5648,13 +5658,26 @@ class App(SharedRenderPreview, PreviewComparison, GuidanceExportUI):
                 original = self._read_frame(frame)
             if original is None:
                 return None
-            processed = self._live_dlss_image(frame, source_bgr=original)
+            processed = self._cached_display_dlss(frame)
+            if processed is None:
+                return None
             settings = self._collect_settings()
             original = self._preview_composition_source(frame, original, processed)
             return compose_preview_frame(
                 original, processed,
                 settings['output_view'], settings['output_mix'],
             )
+        return None
+
+    def _cached_display_dlss(self, frame):
+        """Precise frame when it exists, otherwise the playback proxy. Never runs DLSS."""
+        precise = self._precise_preview_size()
+        image = self._cached_dlss(frame, precise)
+        if image is not None:
+            return image
+        playback = self._playback_preview_size()
+        if playback != precise:
+            return self._cached_dlss(frame, playback)
         return None
 
     def _cached_dlss(self, frame, target_size=None):
@@ -5734,9 +5757,26 @@ class App(SharedRenderPreview, PreviewComparison, GuidanceExportUI):
         return max(int(self._available_frame_cache_bytes() // pair_bytes), 1)
 
     def _prerender_target_frames(self):
+        limit = getattr(self, "_prerender_frame_limit", None)
+        if limit:
+            return max(1, int(limit))
         capacity = self._cache_capacity_frames()
         reserve = PREVIEW_QUEUE_SIZE if capacity > PREVIEW_QUEUE_SIZE else 0
         return max(self._buffer_target_frames(), capacity - reserve)
+
+    def _limit_precise_prerender(self, target_size):
+        """Full resolution fills only the paused frame. Playback stays on the proxy."""
+        still = (
+            getattr(self, "_source_kind", None) == "image"
+            and getattr(self, "_image_bgr", None) is not None
+        )
+        if target_size is None or still:
+            self._prerender_frame_limit = None
+            return
+        precise = tuple(int(value) for value in self._precise_preview_size())
+        playback = tuple(int(value) for value in self._playback_preview_size())
+        requested = tuple(int(value) for value in target_size)
+        self._prerender_frame_limit = 1 if requested == precise and precise != playback else None
 
     def _evict_preview_cache_locked(self):
         pool = getattr(self, '_shared_cache_pool', None)
@@ -5970,10 +6010,13 @@ class App(SharedRenderPreview, PreviewComparison, GuidanceExportUI):
         if self._hold_original:
             view = "original"
         missing = view in ("dlss", "compare") and self._cached_dlss(frame) is None
-        # Full-resolution still images must use the same asynchronous queue as
-        # videos. Never start an IPC/GPU wait while painting the Tk canvas.
-        fast = missing and (quality == "fast" or self._is_image)
-        if missing and self._is_image and quality != "fast" and not self._pre_rendering:
+        # Cache misses stay on the decoded frame. The prefetch thread owns DLSS,
+        # including the one exact paused frame, so painting never waits on the GPU.
+        fast = missing
+        if (
+            missing and quality != "fast" and not self.playing
+            and not getattr(self, "_pre_rendering", False)
+        ):
             self._schedule_full_preview()
         self._dlss_pending = bool(fast)
         if view == "compare":
@@ -6168,33 +6211,30 @@ class App(SharedRenderPreview, PreviewComparison, GuidanceExportUI):
             if fast:
                 self._split_dlss = None
             else:
-                dlss = self._live_dlss_image(frame, source_bgr=orig)
+                dlss = self._cached_display_dlss(frame)
                 if dlss is None:
                     self._split_dlss = None
-                    self._draw_fit(orig, cw, ch, badge="DLSS 生成失败")
-                    return
-                settings = self._collect_settings()
-                orig = self._preview_composition_source(frame, orig, dlss)
-                dlss = compose_preview_frame(
-                    orig, dlss,
-                    settings['output_view'], settings['output_mix'],
-                )
-                self._split_dlss = dlss
+                else:
+                    settings = self._collect_settings()
+                    composed_source = self._preview_composition_source(frame, orig, dlss)
+                    self._split_dlss = compose_preview_frame(
+                        composed_source, dlss,
+                        settings['output_view'], settings['output_mix'],
+                    )
         elif not fast and self._split_dlss is None:
             orig = self._source_cache_get(frame)
             if orig is None:
                 orig = self._read_frame(frame)
-            dlss = self._live_dlss_image(frame, source_bgr=orig) if orig is not None else None
+            dlss = self._cached_display_dlss(frame) if orig is not None else None
             if dlss is None:
-                self._draw_fit(self._split_orig, cw, ch, badge="DLSS 生成失败")
-                return
-            settings = self._collect_settings()
-            orig = self._preview_composition_source(frame, orig, dlss)
-            dlss = compose_preview_frame(
-                orig, dlss,
-                settings['output_view'], settings['output_mix'],
-            )
-            self._split_dlss = dlss
+                self._split_dlss = None
+            else:
+                settings = self._collect_settings()
+                composed_source = self._preview_composition_source(frame, orig, dlss)
+                self._split_dlss = compose_preview_frame(
+                    composed_source, dlss,
+                    settings['output_view'], settings['output_mix'],
+                )
         self._blit_split(cw, ch)
 
     def _blit_split(self, cw, ch):
@@ -6767,6 +6807,10 @@ class App(SharedRenderPreview, PreviewComparison, GuidanceExportUI):
                 self.set_status(tr("status.generating_upscale", scale=sr_scale))
             else:
                 self.set_status(tr("status.generating_original"))
+            self.display_view(quality="fast")
+            if not self.playing and not getattr(self, "_pre_rendering", False):
+                self._start_paused_prerender(target_size=precise_size)
+            return
         self.display_view(quality="full")
         if wants_dlss and self._cached_dlss(self._frame, precise_size) is not None:
             width, height = precise_size
@@ -7290,6 +7334,7 @@ class App(SharedRenderPreview, PreviewComparison, GuidanceExportUI):
 
     def _start_strict_preview_buffering(self):
         self._pre_rendering = False
+        self._prerender_frame_limit = None
         self._active_preview_size = self._playback_preview_size()
         source = self._source_cache_get(self._frame)
         if source is None:
@@ -7298,6 +7343,14 @@ class App(SharedRenderPreview, PreviewComparison, GuidanceExportUI):
             return False
         self._source_cache_store(self._frame, source)
         self._preview_decode_next = self._frame + 1
+        thread = getattr(self, "_play_dlss_thread", None)
+        if thread is not None and thread.is_alive():
+            # A paused exact-frame job may still own the DLSS session at source size.
+            # Let it exit, then the resume callback starts the playback proxy.
+            self._retire_preview_worker()
+            self._enter_preview_buffering(self._frame)
+            self._schedule_preview_cache_resume(PREVIEW_WORKER_POLL_MS)
+            return True
         if self._start_prefetch() is False:
             self._enter_preview_buffering(self._frame)
             self._schedule_preview_cache_resume(PREVIEW_WORKER_POLL_MS)
@@ -7401,10 +7454,31 @@ class App(SharedRenderPreview, PreviewComparison, GuidanceExportUI):
 
     def _stop_paused_prerender(self):
         self._pre_rendering = False
+        self._prerender_frame_limit = None
         self._cancel_after("_preview_decode_after")
         self._prefetch_stop.set()
         self._preview_frame_queue = None
         with self._cache_lock:
+            self._queued_preview_frames.clear()
+
+    def _retire_preview_worker(self):
+        """Stop prefetch work without joining the thread or freezing playback."""
+        self._pre_rendering = False
+        self._prerender_frame_limit = None
+        self._cancel_after("_preview_decode_after")
+        stop = getattr(self, "_prefetch_stop", None)
+        if stop is not None:
+            stop.set()
+        self._preview_frame_queue = None
+        lock = getattr(self, "_cache_lock", None)
+        if lock is None:
+            self._prefetch_gen = getattr(self, "_prefetch_gen", 0) + 1
+            queued = getattr(self, "_queued_preview_frames", None)
+            if queued is not None:
+                queued.clear()
+            return
+        with lock:
+            self._prefetch_gen = getattr(self, "_prefetch_gen", 0) + 1
             self._queued_preview_frames.clear()
 
     def _start_paused_prerender(self, target_size=None):
@@ -7420,6 +7494,7 @@ class App(SharedRenderPreview, PreviewComparison, GuidanceExportUI):
             return False
         self._stop_paused_prerender()
         self._pre_rendering = True
+        self._limit_precise_prerender(target_size)
         self._active_preview_size = target_size or self._playback_preview_size()
         source = self._source_cache_get(self._frame)
         if source is None and self._is_image:
@@ -7524,12 +7599,23 @@ class App(SharedRenderPreview, PreviewComparison, GuidanceExportUI):
             self._schedule_preview_decode(20)
             return
         if self._pre_rendering and not self.playing:
+            handoff = (
+                getattr(self, "_prerender_frame_limit", None) == 1
+                and not (
+                    getattr(self, "_source_kind", None) == "image"
+                    and getattr(self, "_image_bgr", None) is not None
+                )
+            )
             self._pre_rendering = False
+            self._prerender_frame_limit = None
             self._prefetch_stop.set()
             self._preview_frame_queue = None
             # The worker may have completed this frame during the scan above.
             self._present_current_cached_preview()
             self._update_preview_timeline_and_status(force=True)
+            if handoff:
+                # The exact frame is cached. Continue the forward window at playback size.
+                self._schedule_full_preview()
             return
         self._update_preview_timeline_and_status(force=True)
         self._schedule_preview_decode(20)
@@ -7736,10 +7822,19 @@ class App(SharedRenderPreview, PreviewComparison, GuidanceExportUI):
         self._play_orig = (frame, orig)
         cw, ch = self._canvas_size()
         view = "original" if self._hold_original else self.view_var.get()
+        zoom = round(float(getattr(self, "_preview_zoom", 1.0)), 3)
+        split = round(float(getattr(self, "split_x", 0.5)), 4)
         if view == "original" or self._hold_original:
+            present_key = (int(frame), int(cw), int(ch), "original", zoom)
+            if (
+                present_key == getattr(self, "_play_present_key", None)
+                and getattr(self, "_photo", None) is not None
+            ):
+                return
             badge = tr("status.original_held") if self._hold_original and self.view_var.get() != "original" else None
             self._dlss_pending = False
             self._draw_fit(orig, cw, ch, badge=badge)
+            self._play_present_key = present_key
             return
         preview_size = self._active_preview_size or self._playback_preview_size(orig)
         self._queue_preview_frame(frame, orig)
@@ -7748,6 +7843,15 @@ class App(SharedRenderPreview, PreviewComparison, GuidanceExportUI):
             self._cached_dlss(frame),
         )
         exact_frame = cached is not None
+        present_key = (
+            int(frame), int(cw), int(ch), view, bool(exact_frame),
+            None if cached is None else id(cached), zoom, split,
+        )
+        if (
+            present_key == getattr(self, "_play_present_key", None)
+            and getattr(self, "_photo", None) is not None
+        ):
+            return
         settings = self._collect_settings()
         preview = compose_preview_frame(
             orig, cached,
@@ -7755,11 +7859,13 @@ class App(SharedRenderPreview, PreviewComparison, GuidanceExportUI):
         )
         if view == "compare":
             self._blit_play_split(orig, preview, cw, ch, pending=not exact_frame)
+            self._play_present_key = present_key
             return
         img = preview if preview is not None else self._pending_preview_image(orig)
         self._dlss_pending = not exact_frame
         badge = tr("status.rendering_current") if not exact_frame else None
         self._draw_fit(img, cw, ch, badge=badge)
+        self._play_present_key = present_key
 
     @staticmethod
     def _pending_preview_image(orig):
@@ -7838,6 +7944,50 @@ class App(SharedRenderPreview, PreviewComparison, GuidanceExportUI):
                 self._queued_preview_frames.discard(frame)
             return False
 
+    def _submit_preview_rgba(self, session, rgba, settings, reset, stop, gen, frame):
+        """Bind the DLSS session to this frame, then enqueue it under the same lock.
+
+        Returns (session, outcome, discard_pending). outcome is "retired",
+        "queued", or the synchronous output array. discard_pending means a size
+        mismatch replaced the host, so earlier async results will not arrive.
+        """
+        height, width = int(rgba.shape[0]), int(rgba.shape[1])
+        live_settings = (
+            _large_image_host_settings(width, height, settings)
+            if getattr(self, "_source_kind", None) == "image" else settings
+        )
+
+        def bind(current, use_reset):
+            if (
+                current is None
+                or getattr(self, "_live_w", None) != width
+                or getattr(self, "_live_h", None) != height
+            ):
+                current = self._ensure_live(width, height, live_settings)
+                if current is None:
+                    raise RuntimeError(getattr(self, "_live_error", "DLSS 主机不可用"))
+                use_reset = True
+            if current.supports_async:
+                if not current.enqueue(rgba, reset=use_reset):
+                    raise RuntimeError(f"DLSS 异步提交第 {frame} 帧失败")
+                return current, "queued"
+            return current, current.process(rgba, reset=use_reset)
+
+        with self._live_lock:
+            if stop.is_set() or gen != self._prefetch_gen:
+                return session, "retired", False
+            try:
+                session, outcome = bind(session, reset)
+            except ValueError:
+                # Bookkeeping can still name the requested size after the host
+                # buffer changed. Clear it so the retry really rebuilds the session.
+                self._live_w = self._live_h = None
+                session, outcome = bind(None, True)
+                self._live_w, self._live_h = width, height
+                return session, outcome, True
+            self._live_w, self._live_h = width, height
+            return session, outcome, False
+
     def _prefetch_job(self, settings, preview_size, frame_queue, stop, gen):
         sk = self._hash_settings_dict(settings)
         pending = deque()
@@ -7905,28 +8055,35 @@ class App(SharedRenderPreview, PreviewComparison, GuidanceExportUI):
                     rgba = cv2.cvtColor(bgr, cv2.COLOR_BGR2RGBA)
                 if stop.is_set() or gen != self._prefetch_gen:
                     break
-                if live is None:
-                    with self._live_lock:
-                        live_settings = (_large_image_host_settings(target_w, target_h, settings)
-                                         if getattr(self, '_source_kind', None) == 'image' else settings)
-                        live = self._ensure_live(target_w, target_h, live_settings)
-                        if live is None:
-                            raise RuntimeError(getattr(self, "_live_error", "DLSS 主机不可用"))
-                if stop.is_set() or gen != self._prefetch_gen:
-                    break
                 reset = frame != last_submitted + 1
-                if live.supports_async:
+                height, width = int(rgba.shape[0]), int(rgba.shape[1])
+                if (
+                    live is not None
+                    and (
+                        getattr(self, "_live_w", None) != width
+                        or getattr(self, "_live_h", None) != height
+                    )
+                ):
+                    while pending:
+                        receive_one()
+                    reset = True
+                if live is not None and getattr(live, "supports_async", False):
                     while len(pending) >= max(int(live.max_in_flight), 1):
                         receive_one()
-                    with self._live_lock:
-                        accepted = live.enqueue(rgba, reset=reset)
-                    if not accepted:
-                        raise RuntimeError(f"DLSS 异步提交第 {frame} 帧失败")
+                live, outcome, discard_pending = self._submit_preview_rgba(
+                    live, rgba, settings, reset, stop, gen, frame,
+                )
+                if discard_pending:
+                    with self._cache_lock:
+                        for dropped in pending:
+                            self._queued_preview_frames.discard(dropped)
+                    pending.clear()
+                if isinstance(outcome, str):
+                    if outcome == "retired":
+                        break
                     pending.append(frame)
                 else:
-                    with self._live_lock:
-                        output = live.process(rgba, reset=reset)
-                    store_output(frame, output)
+                    store_output(frame, outcome)
                 last_submitted = frame
                 if gen == self._prefetch_gen:
                     self._last_dlss_frame = frame
@@ -7974,6 +8131,7 @@ class App(SharedRenderPreview, PreviewComparison, GuidanceExportUI):
         self._buffer_started_at = None
         self._pre_rendering = False
         self._active_preview_size = None
+        self._play_present_key = None
         self._set_play_btn(False)
         self._cancel_after("_play_after")
         self._cancel_after("_preview_decode_after")

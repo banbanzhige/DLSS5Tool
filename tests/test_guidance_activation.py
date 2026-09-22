@@ -20,7 +20,7 @@ class DefaultTuningTests(unittest.TestCase):
                         guidance_depth_encoder='vitl', guidance_gpu_transport='auto',
                         guidance_depth_profile='sdpa_fp16', guidance_execution='raft_streams',
                         guidance_flow_range=5.0, local_tone=1.0, local_struct=1.0,
-                        nvenc_preset='p5', quality_profile='high', host_submission='compatibility',
+                        nvenc_preset='p5', quality_profile='high', host_submission='merged',
                         host_in_flight=6,
                         preview_prefetch=120, preview_cache=400, preview_cache_mb=8192,
                         preview_view='compare', guidance_preview_view='flow',

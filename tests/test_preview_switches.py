@@ -22,8 +22,8 @@ class PreviewToggleTests(unittest.TestCase):
 
     def test_defaults_and_persistence_validation(self):
         saved = app_settings.validate({'super_resolution_scale': 2, 'frame_generation_multiplier': 4})
-        self.assertFalse(saved['preview_super_resolution'])
-        self.assertFalse(saved['preview_frame_generation'])
+        self.assertTrue(saved['preview_super_resolution'])
+        self.assertTrue(saved['preview_frame_generation'])
         saved = app_settings.validate({'preview_super_resolution': True, 'preview_frame_generation': False})
         self.assertTrue(saved['preview_super_resolution'])
         self.assertFalse(saved['preview_frame_generation'])

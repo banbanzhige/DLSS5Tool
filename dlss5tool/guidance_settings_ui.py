@@ -34,7 +34,8 @@ def build_guidance_settings(app, parent):
         text = '\n\n'.join(tr(message) for message in messages)
         d['guidance_tooltips'][key] = Tooltip(widget, text)
 
-    def group(title, collapse=False, settings_page=False):
+    def group(title, collapse=False, settings_page=False, heading=True):
+        caption = None
         if collapse:
             section = CollapsibleSection(app._export_inner if settings_page else body,
                                          tr(title), collapsed=True, ui=app._ui)
@@ -43,8 +44,9 @@ def build_guidance_settings(app, parent):
             app._theme_widgets.append(section)
             frame = section.body
         else:
-            caption = ttk.Label(body, text=tr(title), style='Kicker.TLabel')
-            caption.pack(fill='x', pady=(12, 6))
+            if heading:
+                caption = ttk.Label(body, text=tr(title), style='Kicker.TLabel')
+                caption.pack(fill='x', pady=(12, 6))
             frame = ttk.Frame(body, style='Panel.TFrame')
             frame.pack(fill='x')
             section = None
@@ -53,7 +55,8 @@ def build_guidance_settings(app, parent):
             if section is not None:
                 section.pack_forget()
             else:
-                caption.pack_forget()
+                if caption is not None:
+                    caption.pack_forget()
                 frame.pack_forget()
         return frame, section
 
@@ -117,17 +120,13 @@ def build_guidance_settings(app, parent):
                        variant='ghost', width=64).grid(row=0, column=1)
     help_for('mode', 'guidance.page_hint' if depth_enabled() else 'guidance.flow_page_hint')
 
-    flow, _ = group('guidance.flow_section')
+    flow, _ = group('guidance.flow_section', heading=False)
     skip_still = CheckToggle(flow, tr('guidance.skip_still_flow'), d['v_skip_still_flow'],
                              command=app._on_mod_settings_change, ui=app._ui)
     skip_still.grid(row=7, column=0, columnspan=2, sticky='ew', pady=(8, 2))
     app._theme_widgets.append(skip_still)
     d['guidance_controls']['skip_still_flow'] = skip_still
     help_for('skip_still_flow', 'guidance.skip_still_flow_hint')
-    skip_hint = ttk.Label(flow, text=tr('guidance.skip_still_flow_hint'),
-                          style='Hint.TLabel', wraplength=250, justify='left')
-    skip_hint.grid(row=8, column=0, columnspan=2, sticky='ew')
-    flow.bind('<Configure>', lambda e: skip_hint.configure(wraplength=max(100, e.width)), add='+')
     combo(flow, 0, 'flow_backend', 'guidance.flow_backend', 'v_flow_backend',
           [tr('guidance.option.' + value) for value in ('raft', 'nvofa')])
     help_for('flow_backend', 'guidance.nvofa_hint')

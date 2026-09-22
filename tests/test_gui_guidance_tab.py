@@ -14,6 +14,17 @@ import numpy as np
 from dlss5tool import ui_theme
 
 
+def _visible_texts(widget):
+    texts = []
+    for child in widget.winfo_children():
+        try:
+            texts.append(child.cget('text'))
+        except tk.TclError:
+            pass
+        texts.extend(_visible_texts(child))
+    return texts
+
+
 @depth_test_case
 class GuidanceTabTests(unittest.TestCase):
     def setUp(self):
@@ -116,6 +127,75 @@ class GuidanceTabTests(unittest.TestCase):
         toggle._on_key()
         self.wait_for_reload()
         self.assertTrue(app._collect_settings()['guidance_skip_still_flow'])
+
+    def test_long_explanations_stay_on_hover(self):
+        app = self.app
+        toggle = app._host_settings['guidance_controls']['skip_still_flow']
+        hint = gui.tr('guidance.skip_still_flow_hint')
+        self.assertEqual(app._host_settings['guidance_tooltips']['skip_still_flow'].text, hint)
+        visible = []
+        for child in toggle.master.winfo_children():
+            try:
+                visible.append(child.cget('text'))
+            except tk.TclError:
+                pass
+        self.assertNotIn(hint, visible)
+
+        app._update_preview_memory_hint()
+        preview = app._preview_settings
+        self.assertNotIn('w_cache_hint', preview)
+        self.assertNotIn('w_cache_frames', preview)
+        self.assertEqual(preview['cache_tooltips'][0].text, gui.tr('guidance.cache_budget'))
+        self.assertNotIn('\n', preview['cache_tooltips'][0].text)
+        app.fps = 60
+        with mock.patch.object(app, '_source_size', return_value=(1080, 1920)), \
+                mock.patch.object(gui, '_realtime_preview_size', return_value=(1080, 1920)), \
+                mock.patch.object(app, '_available_frame_cache_bytes',
+                                  return_value=690 * (1080 * 1920 * 2) * 3):
+            app._update_preview_memory_hint()
+        tip = preview['cache_tooltips'][0].text
+        self.assertEqual(tip, preview['cache_tooltips'][1].text)
+        self.assertNotIn('\n', tip)
+        self.assertIn('11.5', tip)
+        self.assertIn('1080×1920', tip)
+
+        app._show_active_render_gpu('NVIDIA GeForce RTX 4070 SUPER')
+        self.assertEqual(app._host_settings['w_render_gpu_status'].cget('text'), '')
+        self.assertEqual(str(app._host_settings['w_render_gpu_status'].winfo_manager()), '')
+        self.assertEqual(
+            app._host_settings['render_gpu_status_tooltip'].text,
+            gui.tr('gpu.status.active', name='NVIDIA GeForce RTX 4070 SUPER'),
+        )
+        self.assertIs(app._host_settings['render_gpu_status_tooltip'].widget,
+                      app._host_settings['w_render_gpu'])
+        missing = gui.tr('gpu.status.none')
+        app._set_render_gpu_status(missing)
+        self.assertEqual(app._host_settings['w_render_gpu_status'].cget('text'), missing)
+        self.assertEqual(str(app._host_settings['w_render_gpu_status'].winfo_manager()), 'grid')
+        app._set_render_gpu_status('')
+        self.assertEqual(app._host_settings['w_render_gpu_status'].cget('text'), '')
+        self.assertEqual(str(app._host_settings['w_render_gpu_status'].winfo_manager()), '')
+        self.assertEqual(app._host_settings['render_gpu_status_tooltip'].text, '')
+        visible = _visible_texts(app._export_section.body) + _visible_texts(app._preview_section.body) + _visible_texts(app._host_section.body)
+        for key in ('section.output_encoding', 'section.performance', 'section.playback_cache', 'section.host_submission'):
+            self.assertNotIn(gui.tr(key), visible)
+        self.assertIn(gui.tr('label.backend'), visible)
+        self.assertNotIn(gui.tr('guidance.flow_section'), _visible_texts(app._guidance_settings_frame))
+        self.assertNotIn(gui.tr('mods.setup_hint'), _visible_texts(app._modules_section.body))
+        self.assertEqual(
+            app._host_settings['module_summaries']['runtime'].grid_info()['sticky'], 'w',
+        )
+        self.assertEqual(app._export_settings['w_hdr_hint'].cget('text'), '')
+        self.assertEqual(str(app._export_settings['w_hdr_hint'].winfo_manager()), '')
+        self.assertEqual(
+            app._host_settings['w_runtime'].grid_info()['row'],
+            app._host_settings['w_runtime_button'].grid_info()['row'],
+        )
+        self.assertEqual(
+            app._host_settings['w_runtime'].master,
+            app._host_settings['w_runtime_button'].master,
+        )
+        self.assertIn(gui.tr('mods.setup_hint'), app._host_settings['mod_setup_tooltip'].text)
 
     def test_navigation_uses_one_guidance_page_and_does_not_change_settings(self):
         app = self.app

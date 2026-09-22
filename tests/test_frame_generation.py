@@ -160,8 +160,8 @@ class InlineControlTests(unittest.TestCase):
         controls = self.app._effect_preview_controls
         self.assertEqual(set(controls), {'super_resolution', 'frame_generation'})
         d = self.app._export_settings
-        self.assertFalse(d['v_preview_super_resolution'].get())
-        self.assertFalse(d['v_preview_frame_generation'].get())
+        self.assertTrue(d['v_preview_super_resolution'].get())
+        self.assertTrue(d['v_preview_frame_generation'].get())
         d['v_frame_generation'].set('4×')
         d['v_preview_frame_generation'].set(True)
         self.assertEqual(self.app._preview_effect_settings()['frame_generation_multiplier'], 4)

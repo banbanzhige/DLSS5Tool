@@ -559,7 +559,7 @@ class SettingsPanelPersistenceTests(unittest.TestCase):
             "output_view": 0,
             "output_mix": 1.0,
             "use_output_mix": True,
-            "preview_quality": "original",
+            "preview_quality": "auto",
             "preview_cache_mb": 8192,
             "output_container": "mp4",
             "output_resolution": "source",
@@ -574,7 +574,7 @@ class SettingsPanelPersistenceTests(unittest.TestCase):
             "decode_buffer": 4,
             "host_backend": "auto",
             "render_gpu": "auto",
-            "host_submission": "compatibility",
+            "host_submission": "merged",
             "host_in_flight": 6,
             "host_zero_fast_path": False,
             "host_persistent_buffers": True,
@@ -653,7 +653,7 @@ class SettingsPanelPersistenceTests(unittest.TestCase):
             self.assertEqual(loaded["preview_cache_mb"], 4096)
             self.assertEqual(
                 app_settings.validate({"preview_quality": "bad"})["preview_quality"],
-                "original",
+                "auto",
             )
 
     def test_slider_toggles_default_on_and_roundtrip(self):
@@ -1328,6 +1328,162 @@ class PreviewQueueTests(unittest.TestCase):
         app._prefetch_job({}, (8, 4), frames, stop, 3)
         self.assertEqual(stored, [20, 21, 22])
         self.assertEqual(submitted, [True, False, False])
+
+    def test_worker_rebinds_session_when_host_rejects_frame_size(self):
+        app = App.__new__(App)
+        app._prefetch_gen = 1
+        app._play_dlss_busy = True
+        app._frame = 4
+        app._live_lock = threading.RLock()
+        app._last_dlss_frame = -1
+        app._live_error = None
+        app._live_w, app._live_h = 3840, 2160
+        app._cache_lock = threading.RLock()
+        app._queued_preview_frames = {4}
+        app._hash_settings_dict = lambda settings: ("settings",)
+        app._cached_dlss_sk = lambda frame, settings, size: None
+        app._source_kind = "video"
+        stop = threading.Event()
+        ensured = []
+        attempts = []
+
+        class FakeLive:
+            supports_async = False
+            max_in_flight = 1
+
+            def process(self, rgba, reset=False):
+                attempts.append((rgba.shape[1], rgba.shape[0], reset))
+                if len(attempts) == 1:
+                    raise ValueError(
+                        "RGBA frame must be uint8 with shape (2160, 3840, 4), "
+                        "got (4, 8, 4)/uint8"
+                    )
+                stop.set()
+                return rgba.copy()
+
+        def ensure(width, height, settings):
+            ensured.append((width, height))
+            app._live_w, app._live_h = width, height
+            return FakeLive()
+
+        app._ensure_live = ensure
+        stored = []
+        app._cache_store = lambda frame, settings, bgr: stored.append(bgr.shape)
+        frames = queue.Queue()
+        frames.put_nowait((4, np.zeros((4, 8, 3), np.uint8)))
+        app._prefetch_job({}, (8, 4), frames, stop, 1)
+        self.assertEqual(ensured, [(8, 4), (8, 4)])
+        self.assertEqual(stored, [(4, 8, 3)])
+        self.assertEqual(attempts, [(8, 4, True), (8, 4, True)])
+        self.assertIsNone(getattr(app, "_preview_worker_error", None))
+
+    def test_precise_prerender_keeps_only_the_current_frame(self):
+        app = App.__new__(App)
+        calls = []
+        source = np.zeros((4, 8, 3), np.uint8)
+        app.playing = False
+        app.video = "video.mp4"
+        app._exporting = False
+        app._source_kind = "video"
+        app._image_bgr = None
+        app._preview_cache_frozen = False
+        app._hold_original = False
+        app._frame = 3
+        app._pre_rendering = False
+        app._prefetch_stop = threading.Event()
+        app._cache_lock = threading.RLock()
+        app._queued_preview_frames = set()
+        app._cancel_after = lambda name: None
+        app.view_var = type("FakeVar", (), {"get": lambda _self: "compare"})()
+        app._precise_preview_size = lambda: (16, 8)
+        app._playback_preview_size = lambda *_args: (8, 4)
+        app._source_cache_get = lambda frame: source
+        app._source_cache_store = lambda frame, bgr: None
+        app._start_prefetch = lambda preview_size=None: calls.append(preview_size) or True
+        app._queue_preview_frame = lambda frame, bgr: None
+        app._schedule_preview_decode = lambda delay=1: None
+
+        self.assertTrue(app._start_paused_prerender(target_size=(16, 8)))
+        self.assertEqual(app._prerender_frame_limit, 1)
+        self.assertEqual(app._prerender_target_frames(), 1)
+        self.assertEqual(calls, [(16, 8)])
+
+        calls.clear()
+        self.assertTrue(app._start_paused_prerender())
+        self.assertIsNone(app._prerender_frame_limit)
+        self.assertEqual(calls, [None])
+
+    def test_playback_retires_exact_worker_instead_of_sharing_its_session(self):
+        app = App.__new__(App)
+        events = []
+
+        class LiveThread:
+            def is_alive(self):
+                return True
+
+        app.video = "video.mp4"
+        app._source_kind = "video"
+        app._image_bgr = None
+        app._frame = 9
+        app._pre_rendering = True
+        app._prerender_frame_limit = 1
+        app._prefetch_gen = 4
+        app._prefetch_stop = threading.Event()
+        app._preview_frame_queue = object()
+        app._cache_lock = threading.RLock()
+        app._queued_preview_frames = {9}
+        app._play_dlss_thread = LiveThread()
+        app._preview_decode_after = None
+        app._cancel_after = lambda name: events.append(("cancel", name))
+        app.view_var = type("FakeVar", (), {"get": lambda _self: "dlss"})()
+        app._playback_preview_size = lambda *_args: (1920, 1080)
+        app._source_cache_get = lambda frame: np.zeros((8, 16, 3), np.uint8)
+        app._source_cache_store = lambda frame, image: events.append(("store", frame))
+        app._enter_preview_buffering = lambda frame: events.append(("buffer", frame))
+        app._schedule_preview_cache_resume = lambda *args, **kwargs: events.append("resume")
+        app._start_prefetch = lambda *args, **kwargs: events.append("prefetch")
+
+        self.assertTrue(app._start_strict_preview_buffering())
+        self.assertEqual(app._active_preview_size, (1920, 1080))
+        self.assertIsNone(app._prerender_frame_limit)
+        self.assertFalse(app._pre_rendering)
+        self.assertTrue(app._prefetch_stop.is_set())
+        self.assertEqual(app._prefetch_gen, 5)
+        self.assertIsNone(app._preview_frame_queue)
+        self.assertEqual(events[-2:], [("buffer", 9), "resume"])
+        self.assertNotIn("prefetch", events)
+
+    def test_finished_exact_frame_hands_the_forward_window_back_to_playback(self):
+        app = App.__new__(App)
+        scheduled = []
+        app.playing = False
+        app._source_kind = "video"
+        app._image_bgr = None
+        app._pre_rendering = True
+        app._prerender_frame_limit = 1
+        app._prefetch_stop = threading.Event()
+        app._preview_frame_queue = object()
+        app._frame = 2
+        app._last_frame_index = lambda: 10
+        app._active_preview_size = (16, 8)
+        app._playback_preview_size = lambda *_args: (8, 4)
+        app._settings_hash = lambda: ("settings",)
+        app._cached_dlss_sk = lambda frame, settings, size: object()
+        app._source_cache_get = lambda frame: object()
+        app._present_current_cached_preview = lambda: scheduled.append("present")
+        app._update_preview_timeline_and_status = lambda force=False: None
+        app._schedule_preview_decode = lambda delay=1: scheduled.append(("decode", delay))
+        app._schedule_full_preview = lambda: scheduled.append("proxy")
+        app._handle_preview_worker_error = lambda: False
+        app._preview_session_active = lambda: True
+        app._preview_decode_after = "old"
+
+        app._preview_decode_tick()
+        self.assertEqual(scheduled, ["present", "present", "proxy"])
+        self.assertFalse(app._pre_rendering)
+        self.assertIsNone(app._prerender_frame_limit)
+        self.assertTrue(app._prefetch_stop.is_set())
+        self.assertIsNone(app._preview_frame_queue)
 
 
 class WidgetSmokeTests(unittest.TestCase):
