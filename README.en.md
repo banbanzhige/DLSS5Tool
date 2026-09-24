@@ -24,26 +24,27 @@
 ## In-app preview
 
 <p align="center">
-  <a href="img/03.png"><img src="img/03.png" alt="DLSS5Tool showing the original/DLSS split comparison, processing controls, and preview cache status" width="760"></a>
+  <a href="https://www.bilibili.com/video/BV1yhaN6uEWB"><img src="assets/readme-video-cover.png" alt="DLSS5Tool Bilibili introduction video cover; click to watch" width="760"></a>
 </p>
 
-<p align="center"><sub>Application screenshot from v2.1.1</sub></p>
+<p align="center"><a href="https://www.bilibili.com/video/BV1yhaN6uEWB">▶ Watch the introduction on Bilibili</a></p>
+
+<p align="center">
+  <a href="https://www.bilibili.com/video/BV1yhaN6uEWB"><img src="img/03.png" alt="DLSS5Tool in-app preview; click to watch the introduction on Bilibili" width="760"></a>
+</p>
+
+<p align="center"><sub>Application screenshot from v2.3.3</sub></p>
 
 ## Features
 
 DLSS5Tool uses **DLSS 5 Neural Rendering** to enhance local videos and images. No game engine integration is needed.
 
-- **Image enhancement:** Default, Natural, and Cinema styles with strength, tone, structure, and skin-mask controls.
-- **2× / 4× super resolution:** Upscale with RTX Video before enhancement, or process at the original size.
-- **Frame interpolation:** Export at 2× / 3× / 4×. 3× / 4× are experimental and may show motion errors. Super resolution and interpolation each have a preview switch, off by default.
-- **Interactive comparison:** Compare the true original with enhanced output using a draggable wipe, side-by-side views, zoom, frame stepping, fullscreen, or a detachable preview. Active upscale and interpolation multipliers are shown, and display interactions keep pre-caching continuous.
-- **Batch export:** Mix images, videos, and image sequences with independent settings per item. Drag to select multiple items, use batch context menus and shortcuts, undo removal, and hover over long filenames for full paths. Export MP4 / MKV / MOV video and preserve compatible source audio.
-- **Image sequences to video:** Import consecutively numbered, same-size images as one task, set the source frame rate, then enhance, upscale, or interpolate them into a video without audio. Supports SDR PNG/JPG; current source also supports PQ / HLG HDR PNG sequences that meet the input requirements.
-- **HDR / GPU export:** High-precision HDR10 / HLG processing and 10-bit export. Eligible configurations use GPU color conversion and pass enhancement and interpolated frames directly from GPU memory to the encoder, reducing CPU transfers.
-- **Export progress and diagnostics:** Track timestamp scanning before long-video exports. Failed or cancelled GPU exports preserve existing output files; Diagnostics show effective settings and recent export information.
-- **Optical flow guidance:** Estimate inter-frame motion for temporal guidance, for more stable pictures and more accurate lighting.
-- **DLSS render GPU:** Uses a high-performance NVIDIA GPU by default. If the display is on an iGPU, DLSS still runs on the NVIDIA GPU. Multi-GPU systems can pick a device in Settings.
-- **File-level updates:** After installing a release that includes the update helper, **About → Check for updates** can download only changed files.
+- **Enhancement and comparison:** Three styles with strength and detail controls; compare against the original with a wipe, side-by-side view, or frame stepping.
+- **Upscaling and interpolation:** RTX Video 2× / 4× upscaling; export video with 2× / 3× / 4× interpolation (3× / 4× are experimental).
+- **Batch and image sequences:** Queue images and videos with settings per item; turn consecutively numbered images into video.
+- **HDR and GPU export:** HDR10 / HLG 10-bit output, with GPU acceleration when supported.
+- **Optical flow guidance:** Optional RAFT / NVOFA motion estimates provide temporal input for video enhancement.
+- **GPU and updates:** Select a high-performance NVIDIA GPU by default, with multi-GPU selection, diagnostics export, and file-level updates.
 
 The interface supports Simplified Chinese / English and light / dark themes. Change the language under **More → Language**, then restart the app.
 
@@ -83,7 +84,7 @@ In these screenshots, RAFT shows more coherent subject outlines and large motion
 
 ### Measurements
 
-Test setup: RTX 4070 SUPER 12 GB / driver 616.64. Analysis long edge 512; RAFT-Large 6 updates / FP32; NVOFA SLOW / 1×1 grid / temporal hints off. Same DLSS v2 settings, source-resolution SDR, cache off, fallback forbidden. Each clip/backend ran three times with swapped order; values below are medians.
+These measurements were taken on 2026-09-10 in the specified setup; performance may differ with other media or settings: RTX 4070 SUPER 12 GB / driver 616.64. Analysis long edge 512; RAFT-Large 6 updates / FP32; NVOFA SLOW / 1×1 grid / temporal hints off. Same DLSS v2 settings, source-resolution SDR, cache off, fallback forbidden. Each clip/backend ran three times with swapped order; values below are medians.
 
 | Clip | RAFT total time (effective fps) | NVOFA total time (effective fps) | NVOFA time reduction |
 | --- | ---: | ---: | ---: |
@@ -122,13 +123,13 @@ Get the [portable release](https://github.com/banbanzhige/DLSS5Tool/releases/lat
 
 ### 2. Select the runtime for your GPU
 
-Confirm your GPU model first, then download the matching runtime from [Releases](https://github.com/banbanzhige/DLSS5Tool/releases/tag/zip).
+Confirm your GPU model first. If you need a replacement runtime, use the separate [zip download page](https://github.com/banbanzhige/DLSS5Tool/releases/tag/zip):
 
 | GPU | Setup |
 | --- | --- |
 | RTX 40 series | Use the bundled default runtime |
-| RTX 30 series | Download `30系.zip` from the same Release and place the DLL as shown below |
-| RTX 50 series | Download `50系.zip` from the same Release and place the DLL as shown below |
+| RTX 30 series | Download `30系.zip` from the zip page and place the DLL as shown below |
+| RTX 50 series | Download `50系.zip` from the zip page and place the DLL as shown below |
 
 Download and extract the matching [nvngx_dlssnr.dll](https://github.com/banbanzhige/DLSS5Tool/releases/tag/zip). Close the app first, then place `nvngx_dlssnr.dll` from the matching archive into the `mods` folder beside the executable:
 
@@ -149,13 +150,11 @@ Start with the default settings and a short clip or single image. See the [user 
 
 ### 4. Turn an image sequence into video (optional)
 
-Choose **Queue → Add image sequence…** and select any frame, such as `frame_0001.png`. The app checks images in the same folder for matching prefixes, suffixes, and extensions, consecutive numbering, and identical dimensions, then adds the sequence as one queue item.
-
-HDR image-sequence support is in current source but not in the existing local candidate package. Check Releases for the packages actually available to download.
+Under **Queue → Add image sequence…**, select one frame, such as `frame_0001.png`, to include its full consecutively numbered sequence. Select multiple frames from the same sequence to import only the selected consecutive range. Other complete sequences in the folder are listed for you to opt in. Frames must have matching prefixes, suffixes, extensions, and dimensions.
 
 - **Set the source frame rate:** Use the actual source rate, then enable upscaling or interpolation as needed. The output video has no audio.
 - **Standard sequences:** Select **SDR / sRGB** for 8-bit, three-channel RGB PNG/JPG images.
-- **HDR sequences (current source):** Use full-range BT.2020, 16-bit, three-channel RGB PNG images already encoded as PQ or HLG, and select the matching **Input image color**. Enable HDR high-precision processing to retain HDR on export. A 16-bit image is not necessarily HDR; linear EXR, HDR TIFF, grayscale, and HDR sequences with alpha are unsupported.
+- **HDR sequences:** Use full-range BT.2020, 16-bit, three-channel RGB PNG images already encoded as PQ or HLG, and select the matching **Input image color**. Enable HDR high-precision processing to retain HDR on export. A 16-bit image is not necessarily HDR; linear EXR, HDR TIFF, grayscale, and HDR sequences with alpha are unsupported.
 
 Re-import if you move or modify the source images. See the [image-sequence guide](docs/USER_GUIDE.en.md#image-sequences) for full requirements.
 

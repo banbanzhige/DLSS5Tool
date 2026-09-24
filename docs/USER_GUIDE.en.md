@@ -2,7 +2,7 @@
 
 [Back to product overview](../README.en.md) · [简体中文](USER_GUIDE.md)
 
-For installation and GPU selection, start with [Quick start](../README.en.md#quick-start). This guide covers v2.2.2.
+For installation and GPU selection, start with [Quick start](../README.en.md#quick-start). This guide covers detailed app usage.
 
 - [Controls and shortcuts](#controls-and-shortcuts)
 - [Optional optical flow](#optional-optical-flow)
@@ -37,7 +37,7 @@ Each queued job stores the settings active when it was added. Later adjustments 
 
 ### Image sequences
 
-Choose any frame through **Queue → Add image sequence**. Frames must have consecutive numbers, matching prefixes, suffixes, extensions and dimensions in the same folder. Set the source frame rate and **Input image color**. The sequence becomes one silent video job supporting enhancement, super-resolution and frame generation.
+Under **Queue → Add image sequence**, select one frame to include the full consecutively numbered sequence in its folder, or select multiple frames from the same sequence to import only the selected consecutive range. Other complete sequences in the folder are listed for you to opt in. Frames must have matching prefixes, suffixes, extensions and dimensions. Set the source frame rate and **Input image color**; each sequence becomes one silent video job supporting enhancement, super-resolution and frame generation.
 
 - **SDR / sRGB**: 8-bit, three-channel RGB PNG/JPG (default).
 - **HDR / PQ or HLG / BT.2020**: 16-bit, three-channel RGB PNG, already encoded with the selected transfer function. RGB values use the full 0–65535 range. The explicit selection defines interpretation; embedded ICC profiles are not automatically detected or converted.
@@ -64,7 +64,7 @@ mods/
   models/                   # User weight overrides
 ```
 
-A complete component carries its dependencies; end users do not separately install Python, PyTorch, or CUDA Toolkit. Supported GPU hardware and drivers are still required. The app never automatically downloads models, installs dependencies, or runs installers. Compatible `.pth` weights are replaceable; renaming an incompatible architecture does not make it compatible. See [component layout and discovery](../mods/README.md). Candidate full/add-on packages include RAFT weights, not depth weights.
+A complete component carries its dependencies; end users do not separately install Python, PyTorch, or CUDA Toolkit. Supported GPU hardware and drivers are still required. The app never automatically downloads models, installs dependencies, or runs installers. Compatible `.pth` weights are replaceable; renaming an incompatible architecture does not make it compatible. See [component layout and discovery](../mods/README.md). Full and add-on packages include RAFT weights, not depth weights.
 
 ### Activation and recovery
 
@@ -78,7 +78,7 @@ Both the analysis mode and tuning are saved. On restart, the previously enabled 
 
 A successful check does not guarantee enough VRAM for every source. Auto/GPU does not silently fall back to CPU; CPU must be selected explicitly with compatible settings.
 
-### Candidate defaults
+### Defaults for new users
 
 | Setting | Default |
 | --- | --- |

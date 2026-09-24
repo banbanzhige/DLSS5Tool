@@ -67,3 +67,7 @@ Desktop.ini
 /.playwright-mcp
 /assets/src
 /docs/experiments
+
+# Video presentation materials and local assets
+/presentation/
+/03.png

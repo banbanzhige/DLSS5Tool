@@ -24,26 +24,26 @@
 ## 实机演示
 
 <p align="center">
-  <a href="img/03.png"><img src="img/03.png" alt="DLSS5Tool 实机运行界面，显示原图与 DLSS 分界对比、参数面板和预览缓存状态" width="760"></a>
+  <a href="https://www.bilibili.com/video/BV1yhaN6uEWB"><img src="assets/readme-video-cover.png" alt="DLSS5Tool B 站介绍视频封面，点击观看" width="760"></a>
 </p>
 
-<p align="center"><sub>上图为 v2.1.1 实机截图</sub></p>
+<p align="center"><a href="https://www.bilibili.com/video/BV1yhaN6uEWB">▶ 观看 B 站介绍视频</a></p>
+
+<p align="center">
+  <a href="https://www.bilibili.com/video/BV1yhaN6uEWB"><img src="img/03.png" alt="DLSS5Tool 实机运行界面，点击观看 B 站介绍视频" width="760"></a>
+</p>
+
+<p align="center"><sub>上图为 v2.3.3 实机截图</sub></p>
 
 ## 功能概览
 
 DLSS5Tool 使用 **DLSS 5 Neural Rendering** 增强本地视频与图片，无需接入游戏引擎。
 
-- **画面增强**：默认 / 自然 / 电影三种风格，可调整强度、色调、结构与皮肤蒙版。
-- **2× / 4× 超分**：先用 RTX Video 放大，再进行增强；也可保持原尺寸处理。
-- **视频插帧**：导出可选 2× / 3× / 4×；3× / 4× 为实验模式，可能出现运动偏差。超分与插帧各有独立预览开关，默认关闭。
-- **交互对比**：真实原图与增强结果支持滑动分界、左右并排、缩放与逐帧查看，也可全屏或分离预览窗口；画面显示实际超分、插帧倍率，显示操作保持预缓存连续。
-- **批量导出**：图片、视频与图片序列混合排队，每项独立保存参数；支持拖动多选、右键批量操作、快捷键与撤销移除，长文件名可悬停查看完整路径。视频支持 MP4 / MKV / MOV，兼容的原音轨优先保留。
-- **图片序列转视频**：连续编号、同尺寸的图片可作为一个任务，设置原始帧率后进行增强、超分和插帧，导出无音轨视频；支持 SDR PNG/JPG，当前源码还支持符合要求的 PQ / HLG HDR PNG 序列。
-- **HDR / GPU 导出**：支持 HDR10 / HLG 高精度处理与 10-bit 导出；符合条件时使用 GPU 色彩转换，并将增强结果和插帧画面在显存中直接交给编码器，减少 CPU 往返搬运。
-- **导出进度与诊断**：长视频导出前显示时间戳检查进度，GPU 导出失败或取消不覆盖已有文件；一键诊断可查看实际生效设置和近期导出信息。
-- **光流引导**：模型反推帧间运动，为连续画面增强提供时序参考。更接近真实的画面稳定性和光影准确性。
-- **DLSS 渲染 GPU**：默认选用高性能 NVIDIA 显卡；显示器接在核显上时，DLSS 仍运行在 NVIDIA GPU。多卡可在设置中指定。
-- **文件级更新**：安装含更新助手的发行包后，可通过「关于 → 检查更新」只下载变化文件。
+- **画面增强与对比**：三种风格，可调强度与细节；支持原图分界、并排和逐帧查看。
+- **超分与插帧**：RTX Video 2× / 4× 超分；视频可导出 2× / 3× / 4× 插帧（后两者为实验模式）。
+- **批量与图片序列**：图片、视频混合排队，逐项保存参数；连续编号图片可合成为视频。
+- **HDR 与 GPU 导出**：支持 HDR10 / HLG 10-bit；符合条件时使用 GPU 加速导出。
+- **光流引导**：可选 RAFT / NVOFA，为连续画面增强提供帧间运动参考。
 
 界面支持简体中文 / English、浅色 / 暗色主题。通过「更多 → 语言」切换语言，重启后生效。
 
@@ -87,7 +87,7 @@ DLSS5Tool 使用 **DLSS 5 Neural Rendering** 增强本地视频与图片，无�
 
 ### 实测数据
 
-在测试环境中：RTX 4070 SUPER 12 GB / 驱动 616.64。分析长边 512，RAFT-Large 6 次更新 / FP32；NVOFA SLOW / 1×1 网格 / temporal hints 关闭。同参数 DLSS v2、原尺寸 SDR、缓存关闭、禁止回退；每片每后端运行 3 次并交换先后顺序，以下取中位数。
+以下为 2026-09-10 在指定环境下的实测，不代表其他素材或配置的性能：RTX 4070 SUPER 12 GB / 驱动 616.64。分析长边 512，RAFT-Large 6 次更新 / FP32；NVOFA SLOW / 1×1 网格 / temporal hints 关闭。同参数 DLSS v2、原尺寸 SDR、缓存关闭、禁止回退；每片每后端运行 3 次并交换先后顺序，以下取中位数。
 
 | 素材 | RAFT 整段耗时（有效 fps） | NVOFA 整段耗时（有效 fps） | NVOFA 耗时减少 |
 | --- | ---: | ---: | ---: |
@@ -128,13 +128,13 @@ DLSS5Tool 使用 **DLSS 5 Neural Rendering** 增强本地视频与图片，无�
 
 ### 2. 选择显卡运行库
 
-提前确认自己的显卡型号，前往 [Releases](https://github.com/banbanzhige/DLSS5Tool/releases/tag/zip) 下载显卡运行库
+提前确认自己的显卡型号；需要替换运行库时，前往单独的 [zip 下载页](https://github.com/banbanzhige/DLSS5Tool/releases/tag/zip)：
 
 | 显卡 | 使用方式 |
 | --- | --- |
 | RTX 40 系 | 直接使用包内默认运行库 |
-| RTX 30 系 | 下载同一 Release 的 `30系.zip`，按下方说明放置 DLL |
-| RTX 50 系 | 下载同一 Release 的 `50系.zip`，按下方说明放置 DLL |
+| RTX 30 系 | 在 zip 下载页下载 `30系.zip`，按下方说明放置 DLL |
+| RTX 50 系 | 在 zip 下载页下载 `50系.zip`，按下方说明放置 DLL |
 
 将匹配显卡的[nvngx_dlssnr.dll](https://github.com/banbanzhige/DLSS5Tool/releases/tag/zip)下载解压，请先关闭程序，将对应附件中的 `nvngx_dlssnr.dll` 放入程序同级的 `mods` 文件夹：
 
@@ -155,13 +155,11 @@ mods\nvngx_dlssnr.dll
 
 ### 4. 图片序列转视频（可选）
 
-在「队列 → 添加图片序列」选择任意一帧，例如 `frame_0001.png`。程序会检查同目录、相同前后缀及扩展名、连续编号且同尺寸的图片，再将整组图片加入队列。
-
-HDR 图片序列支持已加入当前源码，但已有本地候选包尚未包含；下载版本请以 Releases 中实际提供的包为准。
+在「队列 → 添加图片序列」只选一帧（例如 `frame_0001.png`）会补全该组连续编号图片；同组多选时仅导入选中的连续范围。同目录的其他完整序列会列出供你勾选。序列图片须具有相同前后缀、扩展名和尺寸。
 
 - **设置原始帧率**：按素材实际帧率填写，再按需开启超分或插帧；输出为无音轨视频。
 - **普通图片序列**：选择「SDR / sRGB」，使用 8 位、三通道 RGB PNG/JPG。
-- **HDR 图片序列（当前源码）**：使用已按 PQ 或 HLG 编码的全范围 BT.2020、16 位三通道 RGB PNG，并在「输入图片色彩」选择对应类型。保留 HDR 导出需开启「HDR 高精度处理」。16 位不等于 HDR，不支持线性 EXR、HDR TIFF、灰度或带透明通道的 HDR 序列。
+- **HDR 图片序列**：使用已按 PQ 或 HLG 编码的全范围 BT.2020、16 位三通道 RGB PNG，并在「输入图片色彩」选择对应类型。保留 HDR 导出需开启「HDR 高精度处理」。16 位不等于 HDR，不支持线性 EXR、HDR TIFF、灰度或带透明通道的 HDR 序列。
 
 导入后若移动或修改原图，请重新导入。详细输入要求见[图片序列说明](docs/USER_GUIDE.md#图片序列)。
 
