@@ -61,7 +61,7 @@ class PlayerHelperTests(unittest.TestCase):
         self.assertIn("30系.zip", guidance)
         self.assertIn("_internal\\nvngx_dlssnr.dll", guidance)
         self.assertIn("高性能（NVIDIA GPU）", guidance)
-        self.assertIn("更多 → 一键诊断", guidance)
+        self.assertIn("关于 → 导出诊断", guidance)
         self.assertIn(updater.RELEASES_URL, guidance)
         self.assertFalse(_is_dlss_runtime_unsupported("0xBAD00002"))
 
@@ -575,8 +575,8 @@ class SettingsPanelPersistenceTests(unittest.TestCase):
             "host_backend": "auto",
             "render_gpu": "auto",
             "host_submission": "merged",
-            "host_in_flight": 6,
-            "host_zero_fast_path": False,
+            "host_in_flight": 3,
+            "host_zero_fast_path": True,
             "host_persistent_buffers": True,
             "host_auto_fallback": True,
             "ui_preview_open": False,
@@ -1544,31 +1544,63 @@ class WidgetSmokeTests(unittest.TestCase):
             original_writer = diagnostics.write_diagnostic_report
             original_showinfo = messagebox.showinfo
             original_showerror = messagebox.showerror
+            allow_finish = threading.Event()
+            shown_messages = []
             filedialog.asksaveasfilename = lambda **_kwargs: report_path
 
-            def fake_writer(path, context):
+            def fake_writer(path, context, on_progress=None):
+                on_progress(2, 6, "video")
+                allow_finish.wait(timeout=3.0)
                 with open(path, "w", encoding="utf-8") as handle:
                     handle.write("diagnostic ok")
                 self.assertIn("settings", context)
                 return {"path": path, "passed": 2, "total": 2}
 
             diagnostics.write_diagnostic_report = fake_writer
-            messagebox.showinfo = lambda *args, **kwargs: None
+            messagebox.showinfo = lambda *args, **kwargs: shown_messages.append(args)
             messagebox.showerror = lambda *args, **kwargs: None
             try:
                 app = App(root)
-                app.export_diagnostics()
-                self.assertTrue(app._diagnosing)
-                self.assertEqual(str(app.diagnostic_btn.cget("text")), "诊断中…")
-                deadline = time.monotonic() + 3.0
-                while app._diagnosing and time.monotonic() < deadline:
-                    root.update()
-                    time.sleep(0.01)
+                with mock.patch.object(gui.tk, "Menu") as menu_type:
+                    app._popup_more()
+                    labels = [
+                        call.kwargs.get("label")
+                        for call in menu_type.return_value.add_command.call_args_list
+                    ]
+                    self.assertNotIn("检查更新", labels)
+                    self.assertNotIn("一键诊断", labels)
+                with mock.patch.object(
+                    updater, "fetch_latest_release",
+                    return_value=updater.ReleaseInfo(APP_VERSION, updater.RELEASES_URL, "", ()),
+                ):
+                    app._open_about()
+                    about_window = root._about_window
+                    app.export_diagnostics()
+                    self.assertTrue(app._diagnosing)
+                    self.assertEqual(str(app.diagnostic_btn.cget("text")), "诊断中…")
+                    self.assertEqual(about_window._diagnostics_progress_area.winfo_manager(), "pack")
+                    self.assertEqual(about_window._diagnostics_button.cget("state"), "disabled")
+                    deadline = time.monotonic() + 3.0
+                    while app._diagnostic_progress[0] < 2 and time.monotonic() < deadline:
+                        root.update()
+                        time.sleep(0.01)
+                    self.assertEqual(app._diagnostic_progress, (2, 6, "video"))
+                    self.assertEqual(float(about_window._diagnostics_progress.cget("value")), 2)
+                    allow_finish.set()
+                    deadline = time.monotonic() + 3.0
+                    while app._diagnosing and time.monotonic() < deadline:
+                        root.update()
+                        time.sleep(0.01)
                 self.assertFalse(app._diagnosing)
+                self.assertFalse(about_window._diagnostics_progress_area.winfo_manager())
+                self.assertEqual(about_window._diagnostics_button.cget("state"), "normal")
                 self.assertTrue(os.path.isfile(report_path))
                 self.assertEqual(str(app.diagnostic_btn.cget("text")), "一键诊断")
-                self.assertIn("宿主探针 2/2 通过", app.eta_label.cget("text"))
+                self.assertIn("诊断报告已保存", app.eta_label.cget("text"))
+                self.assertTrue(any("维护者" in str(body) for _, body in shown_messages))
+                self.assertFalse(any("宿主探针" in str(body) for _, body in shown_messages))
             finally:
+                allow_finish.set()
                 filedialog.asksaveasfilename = original_dialog
                 diagnostics.write_diagnostic_report = original_writer
                 messagebox.showinfo = original_showinfo
@@ -1879,7 +1911,7 @@ class WidgetSmokeTests(unittest.TestCase):
                 self.assertIsNone(app.video)
                 self.assertTrue(app.clear_btn.instate(["disabled"]))
                 self.assertTrue(app._preview_section.collapsed)
-                self.assertEqual(app._preview_settings["v_quality"].get(), "原始分辨率")
+                self.assertEqual(app._preview_settings["v_quality"].get(), "自动（推荐）")
                 self.assertTrue(app._export_section.collapsed)
                 self.assertTrue(app._host_section.collapsed)
                 packed = list(app.root.pack_slaves())

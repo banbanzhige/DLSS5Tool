@@ -2,7 +2,7 @@
 import threading
 import unittest
 from types import SimpleNamespace
-from unittest.mock import Mock
+from unittest.mock import Mock, patch
 
 import numpy as np
 
@@ -42,6 +42,21 @@ class PreviewLatencyTests(unittest.TestCase):
         app._update_preview_timeline_and_status = Mock()
         return app
 
+    def test_reimport_reuses_color_probe_until_file_identity_changes(self):
+        app = App.__new__(App)
+        app._video_probe_cache = {}
+        identity = SimpleNamespace(st_dev=1, st_ino=2, st_size=100, st_mtime_ns=1)
+        with (patch('dlss5tool.gui.os.stat', return_value=identity),
+              patch('dlss5tool.gui.find_ffmpeg', return_value='ffmpeg.exe'),
+              patch('dlss5tool.gui.probe_video_stream', return_value={'is_hdr': True}) as probe):
+            first = app._probe_import_video_color('preview.mp4')
+            first['is_hdr'] = False
+            self.assertTrue(app._probe_import_video_color('preview.mp4')['is_hdr'])
+            self.assertEqual(probe.call_count, 1)
+            identity.st_mtime_ns = 2
+            app._probe_import_video_color('preview.mp4')
+            self.assertEqual(probe.call_count, 2)
+
     def test_current_frame_presented_before_filling_ahead_even_if_queue_full(self):
         for accepted in (True, False):
             with self.subTest(queue_accepts=accepted):
@@ -60,6 +75,47 @@ class PreviewLatencyTests(unittest.TestCase):
                 self.assertEqual(events, ["present", "queue"])
                 app._update_preview_timeline_and_status.assert_called()
                 app._schedule_preview_decode.assert_called()
+
+    def test_visible_compare_source_is_reused_by_prerender(self):
+        app = self.make_app()
+        source = np.zeros((4, 8, 3), np.uint8)
+        app._split_frame = -1
+        app._split_orig = None
+        app._read_frame = Mock(return_value=source)
+        app._blit_split = Mock()
+
+        app._draw_split(67, 100, 100, fast=True)
+        self.assertIs(app._source_cache_get(67), source)
+        app._split_frame = -1
+        app._draw_split(67, 100, 100, fast=True)
+        app._read_frame.assert_called_once_with(67)
+
+    def test_first_dlss_result_bounds_forward_decode_when_paused(self):
+        app = self.make_app()
+        source = np.zeros((4, 8, 3), np.uint8)
+        app._source_cache_store(67, source)
+        app._queue_preview_frame = Mock(return_value=True)
+        app._read_frame = Mock(side_effect=AssertionError("visible frame already decoded"))
+        app._background_preview_decoder = Mock()
+        app._background_preview_decoder.get.return_value = source
+        app._video_color_info = {}
+
+        app._preview_decode_tick()
+        self.assertEqual(
+            [call.args[0] for call in app._queue_preview_frame.call_args_list],
+            [67, 68, 69, 70],
+        )
+        self.assertEqual(
+            [call.args[1] for call in app._background_preview_decoder.get.call_args_list],
+            [68, 69, 70],
+        )
+
+        app._cache_store(67, app._settings_hash(), source.copy())
+        app._preview_decode_tick()
+        self.assertIn(
+            71,
+            [call.args[1] for call in app._background_preview_decoder.get.call_args_list],
+        )
 
     def test_unchanged_current_frame_is_not_repainted_every_background_tick(self):
         app = self.make_app()

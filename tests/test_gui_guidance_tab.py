@@ -97,8 +97,10 @@ class GuidanceTabTests(unittest.TestCase):
         host['v_in_flight'].set(16)
         self.assertEqual(app._collect_host_settings()['host_in_flight'], 16)
         self.assertEqual(app_settings.validate(app._collect_persisted_settings())['host_in_flight'], 16)
+        host['v_submission'].set(gui.tr('submission.compatibility'))
         app._update_queue_depth_status()
         self.assertEqual(host['w_queue_status'].cget('text'), gui.tr('queue.depth_serial', requested=16))
+        host['v_submission'].set(gui.tr('submission.merged'))
         with mock.patch.object(app, '_live', mock.Mock(max_in_flight=8)):
             app._update_queue_depth_status()
             self.assertEqual(host['w_queue_status'].cget('text'),

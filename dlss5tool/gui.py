@@ -858,6 +858,7 @@ class App(SharedRenderPreview, PreviewComparison, GuidanceExportUI):
         self._dlss_cache_bytes = 0
         self._source_frame_cache = {}
         self._source_cache_bytes = 0
+        self._video_probe_cache = {}
         self._queued_preview_frames = set()
         self._preview_decode_next = None
         self._buffering = False
@@ -1411,18 +1412,12 @@ class App(SharedRenderPreview, PreviewComparison, GuidanceExportUI):
         show_about(
             self.root,
             on_check_updates=lambda: self.check_for_updates(manual=True),
+            on_export_diagnostics=self.export_diagnostics,
         )
 
     def _popup_more(self):
         menu = tk.Menu(self.root, tearoff=0)
         menu.add_command(label=str(self.log_btn.cget("text")), command=self.toggle_log_panel)
-        menu.add_command(
-            label=str(self.update_btn.cget("text")),
-            command=lambda: self.check_for_updates(manual=True),
-        )
-        menu.add_command(
-            label=str(self.diagnostic_btn.cget("text")), command=self.export_diagnostics,
-        )
         menu.add_separator()
         menu.add_command(label=str(self.theme_btn.cget("text")), command=self.toggle_ui_theme)
         language_menu = tk.Menu(menu, tearoff=0)
@@ -6038,7 +6033,11 @@ class App(SharedRenderPreview, PreviewComparison, GuidanceExportUI):
             self._draw_split(frame, cw, ch, fast=fast)
             return
         if fast:
-            img = self._read_frame(frame)
+            img = self._source_cache_get(frame)
+            if img is None:
+                img = self._read_frame(frame)
+                if img is not None:
+                    self._source_cache_store(frame, img)
             badge = tr("status.previewing_original")
         else:
             img = self.load_view_img(view, frame)
@@ -6211,6 +6210,8 @@ class App(SharedRenderPreview, PreviewComparison, GuidanceExportUI):
             orig = self._source_cache_get(frame)
             if orig is None:
                 orig = self._read_frame(frame)
+                if orig is not None:
+                    self._source_cache_store(frame, orig)
             if orig is None:
                 self.canvas.delete("all")
                 self.canvas.create_text(
@@ -7573,6 +7574,10 @@ class App(SharedRenderPreview, PreviewComparison, GuidanceExportUI):
         )
         target_size = self._active_preview_size or self._playback_preview_size()
         sk = self._settings_hash()
+        if not self.playing and getattr(self, '_preview_processed_frames', 1) == 0:
+            # Show source-cache progress promptly, but cap decoding during cold
+            # DLSS startup so the first visible result keeps CPU/I/O priority.
+            target_end = min(target_end, self._frame + PREVIEW_QUEUE_SIZE)
         waiting_on_worker = False
         queued_this_tick = 0
         for next_frame in range(self._frame, target_end + 1):
@@ -8606,6 +8611,9 @@ class App(SharedRenderPreview, PreviewComparison, GuidanceExportUI):
             ],
         }
         self._diagnosing = True
+        self._diagnostic_progress = (0, 6, "collecting")
+        from dlss5tool.about_dialog import set_diagnostics_progress
+        set_diagnostics_progress(self.root, True, *self._diagnostic_progress)
         self.root.config(cursor="wait")
         self._update_action_labels()
         self._update_host_control_states()
@@ -8615,6 +8623,8 @@ class App(SharedRenderPreview, PreviewComparison, GuidanceExportUI):
 
         def finish(result, error):
             self._diagnosing = False
+            self._diagnostic_progress = None
+            set_diagnostics_progress(self.root, False)
             self._diagnostic_thread = None
             self.root.config(cursor="")
             self._update_action_labels()
@@ -8629,33 +8639,47 @@ class App(SharedRenderPreview, PreviewComparison, GuidanceExportUI):
                 )
                 return
             path = result["path"]
-            passed = int(result.get("passed", 0))
-            total = int(result.get("total", 0))
-            self.set_status(tr("status.diagnostics_complete", passed=passed, total=total))
-            self.logln(f"[诊断] 已导出: {path}；宿主探针 {passed}/{total} 通过")
+            self.set_status(tr("status.diagnostics_complete"))
+            self.logln(f"[诊断] 已导出: {path}")
             messagebox.showinfo(
                 tr("dialog.diagnostics_complete"),
-                tr("message.diagnostics_complete", path=path, passed=passed, total=total),
+                tr("message.diagnostics_complete", path=path),
             )
 
-        result_queue = queue.Queue(maxsize=1)
+        result_queue = queue.Queue()
 
         def worker():
             result = None
             error = None
             try:
-                result = diagnostics.write_diagnostic_report(output_path, context)
+                result = diagnostics.write_diagnostic_report(
+                    output_path, context,
+                    on_progress=lambda completed, total, stage: result_queue.put(
+                        ("progress", completed, total, stage)
+                    ),
+                )
             except BaseException as exception:
                 error = str(exception) or repr(exception)
-            result_queue.put((result, error))
+            result_queue.put(("finished", result, error))
 
         def poll_result():
-            try:
-                result, error = result_queue.get_nowait()
-            except queue.Empty:
-                self.root.after(100, poll_result)
-                return
-            finish(result, error)
+            while True:
+                try:
+                    event = result_queue.get_nowait()
+                except queue.Empty:
+                    self.root.after(100, poll_result)
+                    return
+                if event[0] == "progress":
+                    _, completed, total, stage = event
+                    self._diagnostic_progress = (completed, total, stage)
+                    set_diagnostics_progress(self.root, True, completed, total, stage)
+                    self.set_status(tr(
+                        "status.diagnostics_progress", completed=completed, total=total,
+                    ))
+                else:
+                    _, result, error = event
+                    finish(result, error)
+                    return
 
         self._diagnostic_thread = threading.Thread(
             target=worker, name="dlss5-diagnostic", daemon=True,
@@ -8908,6 +8932,24 @@ class App(SharedRenderPreview, PreviewComparison, GuidanceExportUI):
         self._schedule_preview_cache_resume()
         return True
 
+    def _probe_import_video_color(self, path):
+        if is_sequence(path):
+            return probe_video_stream(None, path)
+        stat = os.stat(path)
+        key = (os.path.normcase(path), stat.st_dev, stat.st_ino,
+               stat.st_size, stat.st_mtime_ns)
+        cache = getattr(self, '_video_probe_cache', None)
+        if cache is None:
+            cache = self._video_probe_cache = {}
+        cached = cache.get(key)
+        if cached is not None:
+            return dict(cached)
+        info = probe_video_stream(find_ffmpeg(), path)
+        if len(cache) >= 8:
+            cache.pop(next(iter(cache)))
+        cache[key] = dict(info)
+        return info
+
     def _load_video(self, path):
         """Validate and load a video from either the file dialog or drag-and-drop."""
         if self._exporting or self._queue_running:
@@ -8954,7 +8996,7 @@ class App(SharedRenderPreview, PreviewComparison, GuidanceExportUI):
             return False
 
         try:
-            color_info = probe_video_stream(None if is_sequence(path) else find_ffmpeg(), path)
+            color_info = self._probe_import_video_color(path)
         except Exception as ex:
             if is_sequence(path):
                 new_cap.release()
@@ -8996,7 +9038,7 @@ class App(SharedRenderPreview, PreviewComparison, GuidanceExportUI):
         duration = n / max(float(fps) or 30.0, 1.0)
         if not is_sequence(path):
             self._audio.prepare(path, duration, callback=self._audio_ready_cb)
-        self._schedule_preview_cache_resume()
+        self._schedule_preview_cache_resume(0)
         if not self._hinted_keys:
             self.set_status(tr("status.preview_shortcuts"))
             self._hinted_keys = True

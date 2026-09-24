@@ -1240,12 +1240,17 @@ def _render_report(context, files, gpu, probes, exports=None, extras=None):
     return "\n".join(lines)
 
 
-def write_diagnostic_report(output_path, context=None):
+def write_diagnostic_report(output_path, context=None, on_progress=None):
     """Run disposable backend probes and atomically write one shareable log."""
+    def advance(completed, stage):
+        if on_progress is not None:
+            on_progress(completed, 6, stage)
+
     output_path = os.path.abspath(output_path)
     output_dir = os.path.dirname(output_path) or os.getcwd()
     if not os.path.isdir(output_dir):
         raise FileNotFoundError("诊断报告目录不存在: " + output_dir)
+    advance(0, "collecting")
     settings = dict((context or {}).get("settings") or {})
     try:
         selected_runtime = mod_paths.runtime_path(settings)
@@ -1276,6 +1281,10 @@ def write_diagnostic_report(output_path, context=None):
         ("vsr", _probe_vsr),
         ("dlssg", _probe_dlssg),
     ):
+        if key == "vsr":
+            advance(1, "image")
+        elif key == "dlssg":
+            advance(2, "video")
         try:
             extras[key] = factory()
         except Exception as exception:
@@ -1285,6 +1294,7 @@ def write_diagnostic_report(output_path, context=None):
                 if key in {"vsr", "dlssg"} else
                 [key + " 收集失败: " + type(exception).__name__ + ": " + str(exception).splitlines()[0]]
             )
+    advance(3, "processing")
     gpu = _command_output([
         "nvidia-smi",
         "--query-gpu=name,driver_version,pci.bus_id,memory.total",
@@ -1299,6 +1309,8 @@ def write_diagnostic_report(output_path, context=None):
             ("v2", dlss_engine.HOST_DLL_V2),
             ("legacy", dlss_engine.HOST_DLL_LEGACY),
         ):
+            if backend == "legacy":
+                advance(4, "compatibility")
             if os.path.isfile(host_path):
                 probes.append(_probe_backend(temp_dir, settings_path, backend))
             else:
@@ -1310,6 +1322,7 @@ def write_diagnostic_report(output_path, context=None):
                     "native_log": "",
                     "timed_out": False,
                 })
+    advance(5, "saving")
     try:
         exports = collect_recent_exports(
             extra=context.get("recent_exports"),
@@ -1323,6 +1336,7 @@ def write_diagnostic_report(output_path, context=None):
         with open(temp_path, "w", encoding="utf-8", newline="\n") as handle:
             handle.write(report)
         os.replace(temp_path, output_path)
+        advance(6, "done")
     finally:
         try:
             os.remove(temp_path)

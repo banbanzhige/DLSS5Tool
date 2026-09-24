@@ -15,7 +15,7 @@
 </p>
 
 <p align="center">
-  <a href="CHANGELOG.md"><img src="https://img.shields.io/badge/release-v2.3.2-0E7490?style=flat&amp;labelColor=475569" alt="Source version v2.3.2" height="20"></a>
+  <a href="CHANGELOG.md"><img src="https://img.shields.io/badge/release-v2.3.3-0E7490?style=flat&amp;labelColor=475569" alt="Source version v2.3.3" height="20"></a>
   <a href="#quick-start"><img src="https://img.shields.io/badge/platform-Windows_x64-0369A1?style=flat&amp;labelColor=475569" alt="Platform: Windows x64" height="20"></a>
   <a href="#2-select-the-runtime-for-your-gpu"><img src="https://img.shields.io/badge/GPU-NVIDIA_RTX-0E7490?style=flat&amp;labelColor=475569" alt="GPU: NVIDIA RTX; select the runtime for your GPU generation" height="20"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-0369A1?style=flat&amp;labelColor=475569" alt="Project source is licensed under MIT" height="20"></a>
@@ -43,7 +43,7 @@ DLSS5Tool uses **DLSS 5 Neural Rendering** to enhance local videos and images. N
 - **Export progress and diagnostics:** Track timestamp scanning before long-video exports. Failed or cancelled GPU exports preserve existing output files; Diagnostics show effective settings and recent export information.
 - **Optical flow guidance:** Estimate inter-frame motion for temporal guidance, for more stable pictures and more accurate lighting.
 - **DLSS render GPU:** Uses a high-performance NVIDIA GPU by default. If the display is on an iGPU, DLSS still runs on the NVIDIA GPU. Multi-GPU systems can pick a device in Settings.
-- **File-level updates:** After installing a release that includes the update helper, **More → Check for updates** can download only changed files.
+- **File-level updates:** After installing a release that includes the update helper, **About → Check for updates** can download only changed files.
 
 The interface supports Simplified Chinese / English and light / dark themes. Change the language under **More → Language**, then restart the app.
 
@@ -164,7 +164,7 @@ Re-import if you move or modify the source images. See the [image-sequence guide
 - **Results and speed vary by source and hardware.** Interactive comparison does not mean real-time model processing. High resolutions, 4× scaling, frame interpolation, and optical flow increase processing time and VRAM use.
 - **Frame interpolation:** Export at 2× / 3× / 4×. 3× / 4× are experimental and may show motion errors. Super-resolution and interpolation previews are off by default and do not change the export selection.
 - **GPU export is conditional:** GPU color conversion and direct transfer depend on hardware, components, resolution, and encoding settings. Ineligible configurations keep the existing encoding path; no fixed speedup is guaranteed. Check export logs and Diagnostics for the actual route.
-- **Optical flow is optional.** With Full or the add-on installed, select a mode under **Models**. The app remembers your selection and restores it after a startup environment check; a failed check turns it off and reports the reason. First use checks RAFT-Large before enabling it; a saved off mode remains off. On Lite without the add-on, a failed first check that leaves flow off is expected. On the same NVIDIA GPU, RAFT flow can connect directly to DLSS. Supports SDR and separate HDR analysis copies, but not tiled temporal guidance. Still images skip flow without blocking tiling or changing video preferences.
+- **Optical flow is off by default.** New users start with base rendering speed. With Full or the add-on installed, enable a mode under **Models** when needed. The app remembers existing selections and restores an enabled mode after a startup environment check; a failed check turns it off and reports the reason. Lite without the add-on does not run a flow check on first use. On the same NVIDIA GPU, RAFT flow can connect directly to DLSS. Supports SDR and separate HDR analysis copies, but not tiled temporal guidance. Still images skip flow without blocking tiling or changing video preferences.
 - **DLSS render GPU:** Uses NVIDIA GPUs in high-performance order by default. If the display is on an iGPU, DLSS still runs on the discrete NVIDIA GPU. Multi-GPU systems can pick a device in Settings.
 - **HDR export and preview.** Export writes HDR10 / HLG color tags (BT.2020, PQ/HLG, limited range) and 10-bit HEVC. Preview is tone-mapped to SDR. Dolby Vision / HDR10+ dynamic metadata is not copied. Single HDR still images are not supported; HDR image-sequence requirements are listed above. See [output and quality](docs/USER_GUIDE.en.md#output-and-quality).
 
@@ -182,13 +182,13 @@ Lower playback quality, try smaller media or 2× scaling, and temporarily disabl
 
 **How do I update?**
 
-Use **More → Check for updates**, or download the latest Release. Incremental packages support only the previous official release: **v2.3.1 targets v2.3.0 → v2.3.1 for both Lite and Full**. Earlier versions have no direct delta to this release. Users with official v2.2.2 / v2.3.0 inference components can reuse them with the new Lite package; see the [upgrade guide](docs/release/UPGRADE_v2.3.1.md). Do not replace only the EXE.
+Use **About → Check for updates**, or download the latest Release. Incremental packages support only the previous official release: **v2.3.3 targets v2.3.2 → v2.3.3 for both Lite and Full**. Earlier versions have no direct delta to this release. Users with official v2.2.2 / v2.3.0 inference components can reuse them with the new Lite package; see the [upgrade guide](docs/release/UPGRADE_v2.3.1.md). Do not replace only the EXE.
 
 When a matching payload exists, the updater downloads changed files for the installed edition, verifies them, then asks again before exiting for the standalone helper to install it. Without a matching payload, Lite offers its complete archive; Full directs you to the release page for Full or Lite plus the matching add-on. Versions without the update helper must be upgraded by fully extracting the new release into a new folder. Incremental updates require the matching assets on the release page. See the [update guide](docs/USER_GUIDE.en.md).
 
 **Still having trouble?**
 
-Use **More → Diagnostics**, then open an [issue](https://github.com/banbanzhige/DLSS5Tool/issues) with the app version, GPU, driver, reproduction steps, and diagnostic log. Check logs for local paths and other private information before posting.
+Use **About → Export diagnostics**, then open an [issue](https://github.com/banbanzhige/DLSS5Tool/issues) with the app version, GPU, driver, reproduction steps, and diagnostic log. Check logs for local paths and other private information before posting.
 
 ## Documentation
 

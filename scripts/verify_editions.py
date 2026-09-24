@@ -56,7 +56,11 @@ def main():
             else:
                 zip.extractall(upgrade)
     expected = json.loads((packages / 'verification/full-files.json').read_text(encoding='utf-8'))
-    if inventory(upgrade) != expected:
+    actual = inventory(upgrade)
+    unmanaged = set(actual) - set(expected)
+    if unmanaged - {'dlss5_queue.json', 'dlss5_settings.json'}:
+        raise RuntimeError('Staged full edition contains unexpected files')
+    if {name: actual.get(name) for name in expected} != expected:
         raise RuntimeError('Extracted lite + add-on does not equal full package')
     if args.stream_overlay and overlay != expected:
         raise RuntimeError('Archive byte overlay does not equal staged full')
@@ -72,7 +76,9 @@ def main():
     child_env.pop('PYTHONHOME', None)
     records = {'version': APP_VERSION, 'overlay_exact': True,
                'overlay_method': 'streamed_archives_against_staged_full' if args.stream_overlay else 'fresh_extraction',
-               'fresh_extraction_verified': not args.stream_overlay, 'frozen_app': [], 'addon_modes': []}
+               'fresh_extraction_verified': not args.stream_overlay,
+               'unmanaged_staged_files': sorted(unmanaged),
+               'frozen_app': [], 'addon_modes': []}
 
     def frozen(kind, folder, mode, expected_ok):
         config = output / f'{kind}-{mode}-settings.json'

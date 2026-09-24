@@ -114,18 +114,14 @@ class GuidanceStartupTests(unittest.TestCase):
         self.assertEqual(saved['guidance_flow_edge'], 768)
         self.assertEqual(saved['guidance_flow_updates'], 12)
 
-    def test_first_run_checks_current_default_flow(self):
-        with mock.patch.object(gui.guidance_client, 'preflight', return_value={
-                'device': 'cuda', 'flow_backend': 'raft'}) as check:
+    def test_first_run_keeps_flow_off_without_checking_models(self):
+        with mock.patch.object(gui.guidance_client, 'preflight') as check:
             self.app = gui.App(self.root)
-            self.wait_for_check()
-        check.assert_called_once()
-        settings = check.call_args.args[0]
-        self.assertEqual(settings['guidance_mode'], 1)
-        self.assertEqual(settings['guidance_flow_backend'], 'raft')
-        self.assertEqual(settings['guidance_flow_edge'], 512)
-        self.assertEqual(settings['guidance_flow_updates'], 6)
-        self.assertEqual(self.app._collect_host_settings()['guidance_mode'], 1)
+            self.root.update()
+        check.assert_not_called()
+        self.assertEqual(self.app._collect_host_settings()['guidance_mode'], 0)
+        self.assertTrue(self.app._collect_host_settings()['host_zero_fast_path'])
+        self.assertFalse(self.app._switching_backend)
 
     def test_saved_off_does_not_probe_or_enable_installed_models(self):
         self.save_mode(0)

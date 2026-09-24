@@ -91,6 +91,7 @@ class DiagnosticReportTests(unittest.TestCase):
         }
         with tempfile.TemporaryDirectory() as temp_dir:
             output = os.path.join(temp_dir, "report.log")
+            progress = []
             with (
                 mock.patch.object(diagnostics, "describe_file", return_value={"exists": True}),
                 mock.patch.object(
@@ -115,7 +116,18 @@ class DiagnosticReportTests(unittest.TestCase):
                 result = diagnostics.write_diagnostic_report(
                     output,
                     {"settings": {"host_backend": "auto"}, "ui_log": "[DLSS] gate"},
+                    on_progress=lambda completed, total, stage: progress.append(
+                        (completed, total, stage)
+                    ),
                 )
+            self.assertEqual(
+                progress,
+                [
+                    (0, 6, "collecting"), (1, 6, "image"), (2, 6, "video"),
+                    (3, 6, "processing"), (4, 6, "compatibility"),
+                    (5, 6, "saving"), (6, 6, "done"),
+                ],
+            )
             self.assertEqual(result["passed"], 1)
             self.assertEqual(result["total"], 2)
             with open(output, encoding="utf-8") as handle:

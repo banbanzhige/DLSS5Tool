@@ -1,4 +1,4 @@
-"""About window: version, repository and author links."""
+"""About window: version, repository, author links and support actions."""
 import queue
 import threading
 import tkinter as tk
@@ -9,7 +9,6 @@ from dlss5tool import ui_theme, updater
 from dlss5tool.app_version import APP_VERSION
 from dlss5tool.i18n import tr
 from dlss5tool.image_sequence_dialog import _dialog_chrome, _place_over_parent
-from dlss5tool.ui_icons import icon_photo
 from dlss5tool.ui_theme import UI_FONT_BOLD
 from dlss5tool.ui_widgets import ChromeButton
 
@@ -19,7 +18,7 @@ AUTHOR_URL = "https://space.bilibili.com/3584419"
 REPO_LABEL = "github.com/banbanzhige/DLSS5Tool"
 
 
-def show_about(parent, on_check_updates, current_version=APP_VERSION):
+def show_about(parent, on_check_updates, on_export_diagnostics, current_version=APP_VERSION):
     """Open one about window. A second click brings the existing one forward."""
     existing = getattr(parent, "_about_window", None)
     if existing is not None:
@@ -43,17 +42,8 @@ def show_about(parent, on_check_updates, current_version=APP_VERSION):
     body = ttk.Frame(window, padding=20)
     body.pack(fill="both", expand=True)
 
-    head = ttk.Frame(body)
-    head.pack(anchor="w")
-    photo = icon_photo(window, "github", 28, ui.get("text", "#202b3a"))
-    if photo is not None:
-        mark = tk.Label(head, image=photo, bg=panel, bd=0, highlightthickness=0)
-        mark.pack(side="left", padx=(0, 10))
-        window._about_mark = photo
-    ttk.Label(head, text="DLSS5Tool", font=UI_FONT_BOLD).pack(side="left")
-
     facts = ttk.Frame(body)
-    facts.pack(anchor="w", fill="x", pady=(14, 0))
+    facts.pack(anchor="w", fill="x")
     ttk.Label(facts, text=tr("about.current")).grid(row=0, column=0, sticky="w", padx=(0, 16), pady=2)
     ttk.Label(facts, text=current_version).grid(row=0, column=1, sticky="w", pady=2)
     ttk.Label(facts, text=tr("about.latest")).grid(row=1, column=0, sticky="w", padx=(0, 16), pady=2)
@@ -70,6 +60,11 @@ def show_about(parent, on_check_updates, current_version=APP_VERSION):
     ttk.Separator(body, orient="horizontal").pack(fill="x", pady=(18, 0))
     actions = ttk.Frame(body)
     actions.pack(fill="x", pady=(12, 0))
+    progress_area = ttk.Frame(body)
+    progress_label = ttk.Label(progress_area)
+    progress_label.pack(anchor="w")
+    progress = ttk.Progressbar(progress_area, mode="determinate", maximum=6)
+    progress.pack(fill="x", pady=(6, 0))
 
     def close():
         window.destroy()
@@ -82,6 +77,19 @@ def show_about(parent, on_check_updates, current_version=APP_VERSION):
     ChromeButton(
         actions, text=tr("action.check_updates"), command=check, ui=ui, variant="outline",
     ).pack(side="right", padx=(0, 8))
+    diagnostic_button = ChromeButton(
+        actions, text=tr("about.export_diagnostics"), command=on_export_diagnostics,
+        ui=ui, variant="outline",
+    )
+    diagnostic_button.pack(side="right", padx=(0, 8))
+    window._diagnostics_progress_area = progress_area
+    window._diagnostics_progress_label = progress_label
+    window._diagnostics_progress = progress
+    window._diagnostics_button = diagnostic_button
+    initial_progress = getattr(parent, "_diagnostic_progress", None) or (0, 6, "collecting")
+    set_diagnostics_progress(
+        parent, bool(getattr(parent, "_diagnosing", False)), *initial_progress,
+    )
 
     window.protocol("WM_DELETE_WINDOW", close)
     window.bind("<Escape>", lambda _event: close())
@@ -92,6 +100,34 @@ def show_about(parent, on_check_updates, current_version=APP_VERSION):
     window.focus_set()
     _load_latest(window, latest, current_version)
     return window
+
+
+def set_diagnostics_progress(parent, running, completed=0, total=6, stage="collecting"):
+    """Reflect the current diagnostic job in an open About window."""
+    window = getattr(parent, "_about_window", None)
+    try:
+        if window is None or not window.winfo_exists():
+            return
+    except tk.TclError:
+        return
+    area = getattr(window, "_diagnostics_progress_area", None)
+    if area is None:
+        return
+    progress = window._diagnostics_progress
+    button = window._diagnostics_button
+    if running:
+        window._diagnostics_progress_label.configure(text=tr(
+            "about.diagnostics_progress",
+            completed=completed, total=total,
+            stage=tr(f"about.diagnostics_stage_{stage}"),
+        ))
+        progress.configure(maximum=total, value=completed)
+        if not area.winfo_manager():
+            area.pack(fill="x", pady=(12, 0), before=button.master)
+        button.configure(state="disabled")
+    else:
+        area.pack_forget()
+        button.configure(state="normal")
 
 
 def _link_row(parent, row, caption, text, url, ui, panel):

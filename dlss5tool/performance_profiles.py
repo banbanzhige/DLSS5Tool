@@ -10,10 +10,14 @@ def mode_key(mode):
 
 def profile(values, mode):
     source = values if isinstance(values, dict) else {}
+    default_submission = 'merged' if int(mode) else 'compatibility'
+    default_in_flight = 6 if int(mode) else 3
     return {
         'host_submission': source.get('host_submission') if source.get('host_submission') in
-                           ('merged', 'compatibility') else 'compatibility',
-        'host_in_flight': clamp_in_flight(source.get('host_in_flight', 3), default=3),
+                           ('merged', 'compatibility') else default_submission,
+        'host_in_flight': clamp_in_flight(
+            source.get('host_in_flight', default_in_flight), default=default_in_flight,
+        ),
         'host_persistent_buffers': source.get('host_persistent_buffers', True) is not False,
         'host_zero_fast_path': False if int(mode) else source.get('host_zero_fast_path', True) is not False,
     }

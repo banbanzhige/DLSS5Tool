@@ -10,7 +10,7 @@ class ZeroGuidanceDefaultTests(unittest.TestCase):
     def test_default_depends_on_effective_mode_and_preserves_manual_override(self):
         self.assertTrue(app_settings.validate({'guidance_mode': 0})['host_zero_fast_path'])
         self.assertFalse(app_settings.validate({'guidance_mode': 1})['host_zero_fast_path'])
-        self.assertFalse(app_settings.validate({})['host_zero_fast_path'])
+        self.assertTrue(app_settings.validate({})['host_zero_fast_path'])
         self.assertFalse(app_settings.validate({
             'guidance_mode': 0, 'host_zero_fast_path': False})['host_zero_fast_path'])
 

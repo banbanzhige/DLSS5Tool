@@ -1,5 +1,16 @@
 # 打包轻量化记录与索引
 
+## v2.3.3 — 2026-09-24 · 本地候选打包完成，未上传
+
+- 正式产物：`dist/v2.3.3-release-20260924/editions/`；上传集合：其下 `github-assets/`。基础 EXE 文件／产品版本均为 2.3.3。候选保留 `DISTRIBUTION-REVIEW.txt`，公开分发材料仍需发布者审查。
+- GitHub v2.3.2 为上一正式版；其附件 SHA 与本地三形态报告一致。原 `editions/full` 目录有用户运行产生的设置／队列，故从摘要匹配的正式 ZIP 只读重建 `dist/v2.3.2-release-20260923/official-baseline-20260924/`，基线预检通过；原用户状态未删除。
+- ZIP：lite 579,761,793 B；full 3,633,541,532 B；addon 3,053,782,250 B。三包 CRC、full＝lite＋addon 的逐文件流式叠加、分卷和上传集合校验通过。
+- 增量仅支持 **v2.3.2 → v2.3.3**：lite 16,271,399 B，full 16,521,267 B。两种 `.dlssupdate` 已核对 SHA 和清单；最终 `--check-upload` 通过。更早版本使用整包。
+- 源码全量测试 712 项通过、10 跳过；冻结 lite 基础增强、缺组件报错、full 与 lite＋addon 的相同输出、RAFT 连续帧均通过。验证报告在 `output/package-v233-20260924-verification/report.json`；流式比对记录了用户运行在 full 目录写入的两份非发行状态文件，正式清单文件严格一致。未做干净机器或跨显卡验收。
+- 三份 v2.3.3 Release Notes 已按最新编辑内容统一，SHA-256 为 `27fc89c0ec95a21deaf360853e1d409f3d38c363969065b728e250242e3085ef`；该文案不在三种大 ZIP 中，无需重压。用户运行写入的设置／队列保留不动。
+- 从正式 v2.3.3 ZIP 重建的干净 lite/full 目录和清单登记到更新策略；`--preflight-version v2.3.4` 通过，后续仅选 v2.3.3。未推送、创建 Release 或上传附件。
+- 本任务构建缓存、重复基础目录和基础 ZIP 已按明确路径清理，F 盘实测合计释放 1,660,342,272 B；`tmp/release-v233-20260924/` 仅留约 1.4 KiB 用途登记，旧依赖和备份未动。正式包及干净基线保留在 `dist/`。
+
 ## v2.3.1 — 2026-09-20 · 本地打包完成，未上传
 
 - 产物：`dist/v2.3.1-release-20260920/editions/`；发布附件位于其 `github-assets/`。

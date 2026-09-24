@@ -68,13 +68,13 @@ A complete component carries its dependencies; end users do not separately insta
 
 ### Activation and recovery
 
-NVOFA needs no flow weights or iterations. Initialization failure is reported before trying RAFT (weights required). Runtime failure stops processing, with no mid-video algorithm switch. RAFT-Large remains the default; the last analysis mode is remembered and restored after a startup environment check. Depth inference is temporarily hidden. Launch the development app with `run.bat` at the repo root.
+NVOFA needs no flow weights or iterations. Initialization failure is reported before trying RAFT (weights required). Runtime failure stops processing, with no mid-video algorithm switch. Optical flow is off for new users; RAFT-Large remains the default backend when flow is enabled. The last analysis mode is remembered and, when enabled, restored after a startup environment check. Depth inference is temporarily hidden. Launch the development app with `run.bat` at the repo root.
 
 1. Under **Models → Analysis mode**, choose Flow only; select RAFT or NVOFA.
 2. Wait for the environment check. The mode remains off during the check and activates only after it succeeds.
 3. If the check fails, read the reason shown below the mode. Check **Settings → Models & add-ons**, correct the component path, weights, device, or precision, then select the mode again. Base enhancement remains available.
 
-Both the analysis mode and tuning are saved. On restart, the previously enabled mode is checked and restored automatically; a missing environment or failed check turns it off and reports the reason. First use checks the default RAFT-Large mode before enabling it; a saved off mode remains off. Installing the full component does not require a separate Python, PyTorch, or CUDA Toolkit installation. Do not copy just the component EXE.
+Both the analysis mode and tuning are saved. On restart, the previously enabled mode is checked and restored automatically; a missing environment or failed check turns it off and reports the reason. First use leaves flow off without a model check; a saved off mode remains off. Installing the full component does not require a separate Python, PyTorch, or CUDA Toolkit installation. Do not copy just the component EXE.
 
 A successful check does not guarantee enough VRAM for every source. Auto/GPU does not silently fall back to CPU; CPU must be selected explicitly with compatible settings.
 
@@ -82,7 +82,7 @@ A successful check does not guarantee enough VRAM for every source. Auto/GPU doe
 
 | Setting | Default |
 | --- | --- |
-| Analysis mode | Flow only; enabled after a startup environment check |
+| Analysis mode | Off; checked and enabled only after the user selects flow |
 | Flow model, analysis long edge, updates | RAFT-Large, 512 px, six updates; alternative NVOFA grid: 1×1 |
 | Flow direction and precision | Current → previous frame, FP32 |
 | Flow display range | 5 px/frame; visualization only |
@@ -141,7 +141,7 @@ Fully extract the archive, keep `_internal` beside the EXE, install the x64 Visu
 
 **DLSS initialization fails, including after replacing the runtime.**
 
-Check the GPU generation, DLL path, and hash. Then use **More → Diagnostics**; no media needs to be imported first. When reporting an issue, include the application version, GPU, driver, reproduction steps, and diagnostic `.log`. Review local paths and other private data before posting a log publicly.
+Check the GPU generation, DLL path, and hash. Then use **About → Export diagnostics**; no media needs to be imported first. When reporting an issue, include the application version, GPU, driver, reproduction steps, and diagnostic `.log`. Review local paths and other private data before posting a log publicly.
 
 By default, the v2 host's **DLSS render GPU** setting selects the first available NVIDIA D3D12 adapter in high-performance order, regardless of whether the display is connected to the integrated or discrete GPU. Systems with multiple NVIDIA GPUs can select one explicitly; changing it rebuilds the isolated DLSS session. If the selected GPU is disabled or removed, the application reports an error instead of silently using the integrated GPU. The legacy host does not support manual selection.
 
@@ -163,7 +163,7 @@ Per-frame models add processing time. A larger cache does not skip first-pass in
 
 **How do updates work?**
 
-The portable build checks GitHub Releases quietly at startup. You can also choose **More → Check for updates**. File updates require a new release containing `DLSS5Update.exe` and a published payload matching the installed version and edition. Existing releases such as 2.1.1/2.1.2 require one manual upgrade first.
+The portable build checks GitHub Releases quietly at startup. You can also choose **About → Check for updates**. File updates require a new release containing `DLSS5Update.exe` and a published payload matching the installed version and edition. Existing releases such as 2.1.1/2.1.2 require one manual upgrade first.
 
 - Lite uses a Lite payload; an add-on beside the app selects Full. Only changed/new files between those releases are transferred; unchanged Torch/CUDA libraries and models are reused.
 - Download size and edition are shown before confirmation. A second confirmation exits for installation after verification. Exports, queue processing and diagnostics must finish first; check for updates again to install later.
