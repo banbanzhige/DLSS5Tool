@@ -237,7 +237,7 @@ def _emit_progress(progress, text, fraction, counts=None):
         progress(text, fraction)
 
 
-def inspect_source(source, cancel, progress=None):
+def inspect_source(source, cancel, progress=None, *, allow_vfr=False):
     if is_sequence(source):
         sequence = ImageSequence.load(source)
         sequence.validate(lambda: check_cancel(cancel))
@@ -248,7 +248,15 @@ def inspect_source(source, cancel, progress=None):
         raise RuntimeError('实验入口需要 ffprobe 检查真实帧时间戳，请安装完整 FFmpeg')
     meta = probe_video_stream(ffmpeg, source)
     try:
-        rate = Fraction(meta['r_frame_rate'])
+        if allow_vfr:
+            try:
+                rate = Fraction(meta['avg_frame_rate'])
+                if rate <= 0:
+                    raise ValueError()
+            except (KeyError, ValueError, ZeroDivisionError):
+                rate = Fraction(meta['r_frame_rate'])
+        else:
+            rate = Fraction(meta['r_frame_rate'])
         width, height = int(meta['width']), int(meta['height'])
         if rate <= 0:
             raise ValueError()
@@ -318,7 +326,30 @@ def inspect_source(source, cancel, progress=None):
                     emit(count)
                 yield field
     try:
-        count = validate_timestamps(timestamps(), rate)
+        if allow_vfr:
+            stamps = list(timestamps())
+            count = len(stamps)
+            if not count:
+                raise ValueError('视频没有可解码画面')
+            values = [Fraction(value) for value in stamps]
+            if values[0] != 0:
+                raise ValueError('视频起始时间不为零，暂不处理音画偏移')
+            if any(right <= left for left, right in zip(values, values[1:])):
+                raise ValueError('视频时间戳重复或倒退，无法保留原时间线')
+            try:
+                validate_timestamps(stamps, rate)
+            except ValueError:
+                meta['_is_vfr'] = True
+                meta['_source_pts'] = stamps
+                try:
+                    end = Fraction(str(meta['duration']))
+                except (KeyError, ValueError, TypeError):
+                    end = Fraction(0)
+                if end <= values[-1]:
+                    end = values[-1] + (values[-1] - values[-2] if count > 1 else 1 / rate)
+                meta['_source_end'] = str(end)
+        else:
+            count = validate_timestamps(timestamps(), rate)
         if proc.wait(timeout=10):
             raise RuntimeError('ffprobe 时间戳扫描失败')
     finally:
@@ -370,7 +401,12 @@ def export_video(source, output, *, multiplier=2, scale=1, enhance=False, settin
         if input_session is None:
             inspect = source_inspector or inspect_source
             try:
-                meta, rate, w, h, total = inspect(source, cancel, progress=progress)
+                if source_inspector is None:
+                    meta, rate, w, h, total = inspect(
+                        source, cancel, progress=progress, allow_vfr=multiplier == 1,
+                    )
+                else:
+                    meta, rate, w, h, total = inspect(source, cancel, progress=progress)
             except TypeError:
                 meta, rate, w, h, total = inspect(source, cancel)
         else:
@@ -379,6 +415,8 @@ def export_video(source, output, *, multiplier=2, scale=1, enhance=False, settin
             rate = Fraction(upstream['source_rate'])
             w, h = upstream['width'], upstream['height']
             total = upstream['source_frames']
+        if multiplier > 1 and meta.get('_is_vfr'):
+            raise ValueError('这个视频是变帧率或时间戳不连续，插帧入口暂不重定时；未转换为恒定帧率')
         config = dict(settings or {})
         process_w, process_h = (w, h) if input_session else (w*scale, h*scale)
         ow, oh = config.get('output_size') or (process_w, process_h)
@@ -396,7 +434,7 @@ def export_video(source, output, *, multiplier=2, scale=1, enhance=False, settin
         if memory and memory['free_bytes'] < estimate + 1024**3:
             raise ValueError('当前显存余量不足此配置，请关闭其他 GPU 任务或自行更改配置；未自动降级')
         hdr = bool(meta['is_hdr'] and config.get('hdr_mode', True))
-        if gpu_export is None and hdr and not render_only and input_session is None and not view:
+        if gpu_export is None and hdr and not render_only and input_session is None and not view and not meta.get('_is_vfr'):
             from dlss5tool.gpu_export_runtime import eligible,load_components
             if ow*oh>=1920*1080 and eligible(ow,oh,hdr_metadata=meta,
                 nvenc_preset=config.get('nvenc_preset','p5'),rate_control=config.get('rate_control','quality'),
@@ -441,6 +479,10 @@ def export_video(source, output, *, multiplier=2, scale=1, enhance=False, settin
             capture = FFmpegHDRVideoReader(source, w, h, meta) if meta['is_hdr'] else open_capture(source)
         writer_class=FFmpegVideoWriter
         writer_options={}
+        if meta.get('_is_vfr') and not render_only:
+            if gpu_export is not None:
+                raise ValueError('变帧率超分导出暂不支持原生 GPU 写入器')
+            writer_options.update(frame_timestamps=meta['_source_pts'], timeline_end=meta['_source_end'])
         if gpu_export is not None:
             from dlss5tool.gpu_export_process import ProcessGpuVideoWriter
             writer_class=ProcessGpuVideoWriter

@@ -782,6 +782,7 @@ class FFmpegVideoWriter:
         use_nvenc=None, nvenc_preset="p5", hdr_metadata=None,
         rate_control="quality", quality_profile="high",
         video_bitrate_mbps=20.0, output_size=None, codec="auto",
+        frame_timestamps=None, timeline_end=None, cancel=None,
     ):
         self.output_path = os.path.abspath(output_path)
         output_ext = os.path.splitext(self.output_path)[1].lower()
@@ -792,6 +793,17 @@ class FFmpegVideoWriter:
         self.height = int(height)
         self.fps = float(fps)
         self.audio_source = os.path.abspath(audio_source) if audio_source else None
+        self.frame_timestamps = tuple(frame_timestamps) if frame_timestamps is not None else None
+        self.timeline_end = timeline_end
+        self.cancel = cancel
+        self._retimed_path = None
+        if self.frame_timestamps is not None:
+            from dlss5tool.vfr_mux import validate_timeline
+            validate_timeline(self.frame_timestamps, timeline_end)
+            try:
+                import av  # noqa: F401 - required before starting the encoder
+            except ImportError as exc:
+                raise RuntimeError('变帧率超分导出需要 PyAV 18.1.0') from exc
         self.ffmpeg = find_ffmpeg()
         self.hdr_metadata = classify_color_info(hdr_metadata) if hdr_metadata else None
         self.is_hdr = bool(self.hdr_metadata and self.hdr_metadata["is_hdr"])
@@ -839,6 +851,8 @@ class FFmpegVideoWriter:
             self.quality_profile, self.video_bitrate_mbps, codec=self.codec,
         ))
         cmd.extend(self.frame_contract.output_color_args)
+        if self.frame_timestamps is not None:
+            cmd.extend(["-bf", "0"])
         if self.output_container in {"mp4", "mov"}:
             if self.codec == "hevc":
                 cmd.extend(["-tag:v", "hvc1"])
@@ -921,14 +935,32 @@ class FFmpegVideoWriter:
             raise RuntimeError("FFmpeg 视频编码失败：\n" + error)
 
         try:
+            video_path = self._temp_path
+            if self.frame_timestamps is not None:
+                if self._frames != len(self.frame_timestamps):
+                    raise ValueError(f'编码帧数与原时间戳不一致：{self._frames}/{len(self.frame_timestamps)}')
+                from dlss5tool.vfr_mux import retime_encoded_video
+                retimed = tempfile.NamedTemporaryFile(
+                    prefix="." + os.path.basename(self.output_path) + ".",
+                    suffix=f".vfr.tmp{output_container_extension(self.output_container)}",
+                    dir=os.path.dirname(self.output_path), delete=False,
+                )
+                self._retimed_path = retimed.name
+                retimed.close()
+                retime_encoded_video(self._temp_path, self._retimed_path,
+                                     self.frame_timestamps, self.timeline_end, cancel=self.cancel)
+                video_path = self._retimed_path
             if self.audio_source:
                 self.audio_mode = mux_source_audio(
-                    self.ffmpeg, self._temp_path, self.audio_source, self.output_path
+                    self.ffmpeg, video_path, self.audio_source, self.output_path
                 )
             else:
-                os.replace(self._temp_path, self.output_path)
+                os.replace(video_path, self.output_path)
                 self.audio_mode = "无音频源"
-                self._temp_path = None
+                if video_path == self._retimed_path:
+                    self._retimed_path = None
+                else:
+                    self._temp_path = None
         finally:
             self._remove_temp()
 
@@ -956,10 +988,11 @@ class FFmpegVideoWriter:
         self._remove_temp()
 
     def _remove_temp(self):
-        path = getattr(self, "_temp_path", None)
-        if path and os.path.isfile(path):
-            try:
-                os.remove(path)
-            except OSError:
-                pass
-        self._temp_path = None
+        for name in ("_temp_path", "_retimed_path"):
+            path = getattr(self, name, None)
+            if path and os.path.isfile(path):
+                try:
+                    os.remove(path)
+                except OSError:
+                    pass
+            setattr(self, name, None)

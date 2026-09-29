@@ -68,6 +68,45 @@ class TimingTests(unittest.TestCase):
         self.assertEqual(reports[-1][2], (24, 24))
         self.assertTrue(all(item[2][0] <= 24 for item in reports))
 
+    def test_inspect_source_allows_vfr_only_when_requested(self):
+        lines = b'0\n0.05\n0.083333\n0.133333\n'
+        meta = {
+            'r_frame_rate': '60/1', 'avg_frame_rate': '30/1',
+            'width': 128, 'height': 128, 'duration': '0.166667', 'frames': 4,
+        }
+        def process():
+            proc = mock.Mock()
+            proc.stdout = io.BytesIO(lines)
+            proc.poll.return_value = None
+            proc.wait.return_value = 0
+            return proc
+        with mock.patch.object(fg, 'find_ffmpeg', return_value='ffmpeg'), \
+                mock.patch.object(fg, 'find_ffprobe', return_value='ffprobe'), \
+                mock.patch.object(fg, 'probe_video_stream', return_value=meta), \
+                mock.patch.object(fg.subprocess, 'Popen', side_effect=lambda *args, **kwargs: process()):
+            with self.assertRaisesRegex(ValueError, '变帧率'):
+                fg.inspect_source('clip.mp4', threading.Event())
+            result, rate, _, _, count = fg.inspect_source(
+                'clip.mp4', threading.Event(), allow_vfr=True,
+            )
+        self.assertEqual((rate, count), (Fraction(30), 4))
+        self.assertTrue(result['_is_vfr'])
+        self.assertEqual(result['_source_pts'], ['0', '0.05', '0.083333', '0.133333'])
+        self.assertEqual(Fraction(result['_source_end']), Fraction('0.166667'))
+
+
+def test_vfr_upstream_remains_rejected_for_frame_generation(tmp_path):
+    source = tmp_path / 'source.mp4'
+    source.write_bytes(b'input')
+    upstream = mock.Mock()
+    upstream.wait_metadata.return_value = {
+        'source_metadata': {'_is_vfr': True}, 'source_rate': '24',
+        'width': 128, 'height': 128, 'source_frames': 4,
+    }
+    with unittest.TestCase().assertRaisesRegex(RuntimeError, '插帧入口暂不重定时'):
+        fg.export_video(source, None, multiplier=2, input_session=upstream,
+                        frame_sink=lambda *args: None, log_dir=tmp_path / 'logs')
+
 
 class NativeProtocolTests(unittest.TestCase):
     def session(self):

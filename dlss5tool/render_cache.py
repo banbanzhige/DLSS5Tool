@@ -374,7 +374,7 @@ class RenderCache:
     def inspect(self, source, cancel, progress=None):
         identity = file_identity(source)
         if self.inspection is None or self.inspection[0] != identity:
-            result = inspect_source(source, cancel, progress=progress)
+            result = inspect_source(source, cancel, progress=progress, allow_vfr=True)
             check_cancel(cancel)
             self.inspection = (identity, result)
         return self.inspection[1]
@@ -502,10 +502,16 @@ def encode_cached(session, output, settings, cancel, progress):
     success = False
     computed_before = session.snapshot()['computed']
     try:
+        timeline = metadata.get('source_metadata') or {}
+        frame_timestamps = timeline.get('_source_pts') if session.multiplier == 1 else None
+        timeline_options = ({'frame_timestamps': frame_timestamps,
+                             'timeline_end': timeline.get('_source_end')}
+                            if frame_timestamps is not None else {})
         writer = FFmpegVideoWriter(temporary, metadata['width'], metadata['height'], float(rate),
             audio_source=audio_source(session.source), use_nvenc=True, hdr_metadata=hdr,
             nvenc_preset=settings.get('nvenc_preset', 'p5'), rate_control=settings.get('rate_control', 'quality'),
-            quality_profile=settings.get('quality_profile', 'high'), video_bitrate_mbps=settings.get('video_bitrate_mbps', 20),cancel=cancel)
+            quality_profile=settings.get('quality_profile', 'high'), video_bitrate_mbps=settings.get('video_bitrate_mbps', 20),cancel=cancel,
+            **timeline_options)
         for i in range(total):
             if sequence:
                 sequence.check_frame(i // session.multiplier)

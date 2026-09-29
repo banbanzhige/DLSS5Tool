@@ -57,6 +57,10 @@ def eligible(width,height,*,use_nvenc=None,nvenc_preset='p5',hdr_metadata=None,
 
 def create_video_writer(output_path,width,height,fps,*args,gpu_options=None,cancel=None,**kwargs):
     from dlss5tool.video_export import FFmpegVideoWriter
+    if kwargs.get('frame_timestamps') is not None:
+        # The native packet writer has a CFR contract; FFmpeg encodes the
+        # frames and the video writer restores source PTS without re-encoding.
+        return FFmpegVideoWriter(output_path,width,height,fps,*args,cancel=cancel,**kwargs)
     # Positional legacy options stay on the original exact constructor path.
     if args or not eligible(width,height,**kwargs):
         return FFmpegVideoWriter(output_path,width,height,fps,*args,**kwargs)
