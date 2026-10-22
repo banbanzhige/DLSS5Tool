@@ -45,10 +45,6 @@ class TimingTests(unittest.TestCase):
 
     def test_inspect_source_reports_counted_timestamp_progress(self):
         lines = ''.join(f'{i / 24:.6f}\n' for i in range(24)).encode()
-        proc = mock.Mock()
-        proc.stdout = io.BytesIO(lines)
-        proc.poll.return_value = None
-        proc.wait.return_value = 0
         reports = []
         meta = {
             'r_frame_rate': '24/1', 'width': 64, 'height': 48,
@@ -57,7 +53,7 @@ class TimingTests(unittest.TestCase):
         with mock.patch.object(fg, 'find_ffmpeg', return_value='ffmpeg'), \
                 mock.patch.object(fg, 'find_ffprobe', return_value='ffprobe'), \
                 mock.patch.object(fg, 'probe_video_stream', return_value=meta), \
-                mock.patch.object(fg.subprocess, 'Popen', return_value=proc):
+                mock.patch.object(fg, 'iter_timestamps', return_value=iter(lines.decode().splitlines())):
             result = fg.inspect_source(
                 'clip.mp4', threading.Event(),
                 progress=lambda *args: reports.append(args),
@@ -74,16 +70,10 @@ class TimingTests(unittest.TestCase):
             'r_frame_rate': '60/1', 'avg_frame_rate': '30/1',
             'width': 128, 'height': 128, 'duration': '0.166667', 'frames': 4,
         }
-        def process():
-            proc = mock.Mock()
-            proc.stdout = io.BytesIO(lines)
-            proc.poll.return_value = None
-            proc.wait.return_value = 0
-            return proc
         with mock.patch.object(fg, 'find_ffmpeg', return_value='ffmpeg'), \
                 mock.patch.object(fg, 'find_ffprobe', return_value='ffprobe'), \
                 mock.patch.object(fg, 'probe_video_stream', return_value=meta), \
-                mock.patch.object(fg.subprocess, 'Popen', side_effect=lambda *args, **kwargs: process()):
+                mock.patch.object(fg, 'iter_timestamps', side_effect=lambda *args: iter(lines.decode().splitlines())):
             with self.assertRaisesRegex(ValueError, '变帧率'):
                 fg.inspect_source('clip.mp4', threading.Event())
             result, rate, _, _, count = fg.inspect_source(
@@ -166,6 +156,13 @@ class InlineControlTests(unittest.TestCase):
 
     def tearDown(self):
         self.root.destroy()
+
+    def test_cpu_decode_fallback_switch_defaults_off_and_collects_explicit_choice(self):
+        values = self.app._export_settings
+        self.assertFalse(values['v_decode_cpu_fallback'].get())
+        self.assertIn('w_decode_cpu_fallback', values)
+        values['v_decode_cpu_fallback'].set(True)
+        self.assertTrue(self.app._collect_export_settings()['decode_cpu_fallback'])
 
     def test_inline_row_after_upscale_and_shared_selection(self):
         fields = self.app._export_quick_fields
@@ -253,7 +250,7 @@ class InlineControlTests(unittest.TestCase):
         app = self.app
         app._collect_settings = lambda: {'output_view': 0, 'output_mix': .5}
         app._ensure_shared_cache_pool = lambda: types.SimpleNamespace(name='cache')
-        app._video_info = lambda _: (24, 24, 320, 180)
+        app._video_info = lambda *args: (24, 24, 320, 180)
         app._confirm_super_resolution_export = lambda *args, **kwargs: True
         app._wait_play_dlss = mock.Mock()
         app._close_super_resolution = mock.Mock()

@@ -1,0 +1,13 @@
+{
+  "hdr_high10": {
+    "frames": 24,
+    "backend": "CPU 解码兜底（可能较慢）",
+    "identical_rgba16f": true,
+    "sha256": "64ae7ca0af64e89c1ba54c40f02d02bf1c531b8a6bc10fd5100318b89b162ed1"
+  },
+  "timestamp_scan": {
+    "frames": 24,
+    "backend": "CPU 解码兜底（可能较慢）"
+  },
+  "compatible_input_kept_on_gpu": true
+}

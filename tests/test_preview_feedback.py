@@ -33,7 +33,7 @@ def test_real_frame_published_before_next_frame_is_requested(tmp_path):
     def gate(index):
         if index == 1:
             assert emitted == [0], 'first real frame was held for its neighbour'
-    with mock.patch.object(fg.cv2, 'VideoCapture', return_value=cap), \
+    with mock.patch.object(fg, 'open_capture', return_value=cap), \
             mock.patch('dlss5tool.super_resolution.query_gpu_memory', return_value=None):
         result = fg.export_video(source, None, multiplier=1, enhance=False,
             frame_sink=lambda i, *_: emitted.append(i), render_gate=gate,
@@ -116,7 +116,7 @@ def test_original_first_frame_does_not_need_render_session():
     pixels = np.zeros((8, 8, 3), np.uint8)
     cap = mock.Mock()
     cap.read.return_value = (True, pixels)
-    with mock.patch('dlss5tool.shared_render_preview.cv2.VideoCapture', return_value=cap):
+    with mock.patch('dlss5tool.shared_render_preview.open_capture', return_value=cap):
         app._shared_source_preview()
         app._shared_source_thread.join(1)
         assert app._shared_source_preview()

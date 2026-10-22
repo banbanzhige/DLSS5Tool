@@ -1653,5 +1653,7 @@
   "export.preflight.long_run": "这是一项较长的超分任务。当前环境下长时间导出的内存稳定性尚未确认；视频时长本身不代表一定会耗尽显存。",
   "export.preflight.unknown_resources": "未能完整取得系统内存或显存余量，暂时无法可靠评估资源风险。",
   "export.preflight.long_advice": "建议先用同一素材的短片段试导，观察实际速度和内存变化，再决定是否自行分割后逐段处理。缓存预算不是程序总内存上限，无需缓存整段视频。分段边界效果可能有差异；当前版本没有自动分段和断点续导。",
-  "export.preflight.continue": "以上为风险提示，不能保证本次导出一定成功或失败。是否继续导出？"
+  "export.preflight.continue": "以上为风险提示，不能保证本次导出一定成功或失败。是否继续导出？",
+  "label.decode_cpu_fallback": "允许 CPU 解码兜底（较慢）",
+  "tooltip.decode_cpu_fallback": "默认关闭。开启后，GPU 无法开始解码时可改用 CPU；增强和超分仍由 GPU 处理。CPU 解码可能较慢。关闭时会提示先转码。运行中的任务使用开始时的设置。"
 }

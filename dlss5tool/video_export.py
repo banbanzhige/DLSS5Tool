@@ -302,7 +302,7 @@ def probe_video_stream(ffmpeg, source):
                 [
                     ffprobe, "-v", "error", "-select_streams", "v:0",
                     "-show_entries",
-                    "stream=width,height,avg_frame_rate,r_frame_rate,nb_frames,duration,pix_fmt,color_space,color_primaries,color_transfer,color_range",
+                    "stream=codec_name,profile,width,height,avg_frame_rate,r_frame_rate,nb_frames,duration,pix_fmt,color_space,color_primaries,color_transfer,color_range",
                     "-of", "json", source,
                 ],
                 stdin=subprocess.DEVNULL, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
@@ -312,6 +312,7 @@ def probe_video_stream(ffmpeg, source):
             streams = payload.get("streams") or []
             if result.returncode == 0 and streams:
                 stream = dict(streams[0])
+                stream['codec_profile'] = stream.pop('profile', 'unknown')
                 stream["fps"] = _rate_value(
                     stream.get("avg_frame_rate") or stream.get("r_frame_rate")
                 )
@@ -541,7 +542,8 @@ def _zscale_decode_filter(color_info):
 class FFmpegHDRVideoReader:
     """Decode PQ/HLG media as RGBA16F; descriptors bypass FFmpeg entirely."""
 
-    def __init__(self, source, width, height, color_info, ffmpeg=None, *, start_frame=0):
+    def __init__(self, source, width, height, color_info, ffmpeg=None, *, start_frame=0,
+                 allow_cpu_fallback=False):
         self.source = os.path.abspath(source)
         self.width = int(width)
         self.height = int(height)
@@ -550,25 +552,60 @@ class FFmpegHDRVideoReader:
             raise ValueError("HDR reader requires a PQ or HLG source")
         from dlss5tool.image_sequence import is_sequence, HDRSequenceReader
         self._sequence_reader = None
+        self._pending_frames = []
+        self.backend = 'NVIDIA NVDEC'
         if is_sequence(source):
             self._sequence_reader = HDRSequenceReader(source, width, height, self.color_info, start_frame=start_frame)
             return
         self._check_memory()
         self.ffmpeg = ffmpeg or find_ffmpeg()
         start_frame = max(0, int(start_frame))
-        decode_filter = _zscale_decode_filter(self.color_info)
-        if start_frame:
-            # Decode/trim by frame index, not timestamp seeking (also exact on
-            # VFR inputs). Used for adjacent-frame guidance inspection.
-            decode_filter = f'trim=start_frame={start_frame},' + decode_filter
+        # Requiring hardware frames at hwdownload prevents FFmpeg from silently
+        # delivering software-decoded frames when a codec/profile is unsupported.
+        from dlss5tool.gpu_decode import decode_error, GPUDecodeError
+        pixel_format = self.color_info['pixel_format']
+        if pixel_format == 'unknown':
+            pixel_format = probe_video_stream(self.ffmpeg, source)['pixel_format']
+        hardware_formats = {
+            'yuv420p': 'nv12', 'yuvj420p': 'nv12', 'nv12': 'nv12',
+            'yuv420p10le': 'p010le', 'p010le': 'p010le',
+            'yuv420p12le': 'p016le', 'p016le': 'p016le',
+            'yuv444p': 'yuv444p', 'yuv444p10le': 'yuv444p16le',
+            'yuv444p12le': 'yuv444p16le', 'yuv444p16le': 'yuv444p16le',
+        }
+        color_filter = _zscale_decode_filter(self.color_info)
+        trim_filter = f'trim=start_frame={start_frame},' if start_frame else ''
+        self._cpu_filter = trim_filter + color_filter
+        gpu_format = hardware_formats.get(pixel_format)
+        self._gpu_filter = (trim_filter + 'hwdownload,format=' + gpu_format + ',' + color_filter
+                            if gpu_format else None)
+        if self._gpu_filter is None and not allow_cpu_fallback:
+            raise decode_error('HDR 素材像素格式不支持：' + pixel_format)
         self._frame_bytes = self.width * self.height * 8
+        self._start_decode(self._gpu_filter is not None)
+        if allow_cpu_fallback:
+            try:
+                first = self.read()
+            except GPUDecodeError as error:
+                self.close()
+                self.fallback_reason = str(error)
+                self._start_decode(False)
+                first = self.read()
+            self._pending_frames.append(first)
+
+    def _start_decode(self, gpu):
+        self._uses_gpu = gpu
+        self.backend = 'NVIDIA NVDEC' if gpu else 'CPU 解码兜底（可能较慢）'
         self._stderr = deque(maxlen=100)
         self._proc = subprocess.Popen(
             [
-                self.ffmpeg, "-hide_banner", "-loglevel", "warning", "-i", self.source,
-                "-map", "0:v:0", "-an", "-sn", "-dn", "-fps_mode", "passthrough",
-                "-vf", decode_filter,
-                "-f", "rawvideo", "-pix_fmt", "rgba64le", "pipe:1",
+                self.ffmpeg, '-hide_banner', '-nostdin', '-loglevel', 'warning',
+                '-threads', '1' if gpu else '4',
+                *(['-hwaccel', 'cuda', '-hwaccel_output_format', 'cuda'] if gpu else []),
+                '-i', self.source,
+                '-map', '0:v:0', '-an', '-sn', '-dn', '-fps_mode', 'passthrough',
+                '-vf', self._gpu_filter if gpu else self._cpu_filter,
+                '-f', 'rawvideo', '-pix_fmt', 'rgba64le', 'pipe:1',
             ],
             stdin=subprocess.DEVNULL, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
             bufsize=0, creationflags=_CREATE_NO_WINDOW,
@@ -589,6 +626,8 @@ class FFmpegHDRVideoReader:
         require_memory_headroom(self.width * self.height * 48)
 
     def read(self):
+        if getattr(self, '_pending_frames', None):
+            return self._pending_frames.pop(0)
         if self._sequence_reader is not None:
             reader = self._sequence_reader
             if reader.closed or reader.position >= len(reader.sequence.files):
@@ -608,7 +647,11 @@ class FFmpegHDRVideoReader:
             code = self._proc.wait()
             self._stderr_thread.join(timeout=2)
             if code != 0:
-                raise RuntimeError("FFmpeg HDR 解码失败：\n" + _tail_text(self._stderr))
+                detail = 'FFmpeg HDR：\n' + _tail_text(self._stderr)
+                if not self._uses_gpu:
+                    raise RuntimeError('CPU 解码兜底失败：' + detail)
+                from dlss5tool.gpu_decode import decode_error
+                raise decode_error(detail)
             return None
         if received != self._frame_bytes:
             raise RuntimeError(f"HDR 视频帧被截断：收到 {received}/{self._frame_bytes} 字节")
@@ -631,7 +674,10 @@ class FFmpegHDRVideoReader:
                 except OSError:
                     pass
         self._stderr_thread.join(timeout=2)
+        self._proc.stdout.close()
+        self._proc.stderr.close()
         self._proc = None
+        self._pending_frames.clear()
 
 
 def probe_audio_codecs(ffmpeg, source):

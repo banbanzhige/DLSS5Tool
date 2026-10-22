@@ -505,8 +505,11 @@ class SequenceCapture:
         self.opened = False
 
 
-def open_capture(source):
-    return SequenceCapture(source) if is_sequence(source) else cv2.VideoCapture(str(source))
+def open_capture(source, *, allow_cpu_fallback=False):
+    if is_sequence(source):
+        return SequenceCapture(source)
+    from dlss5tool.gpu_decode import open_video_capture
+    return open_video_capture(source, allow_cpu_fallback=allow_cpu_fallback)
 
 
 def source_bytes(source):

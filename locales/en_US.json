@@ -1653,5 +1653,7 @@
   "export.preflight.long_run": "This is a long upscaling task. Long-run memory stability has not been confirmed in this environment; duration alone does not imply video memory exhaustion.",
   "export.preflight.unknown_resources": "System or video memory headroom could not be fully queried, so resource risk cannot be assessed reliably.",
   "export.preflight.long_advice": "Test a short clip from the same source and observe speed and memory before deciding whether to split and process it sequentially. The cache budget is not a process-wide memory limit; the whole video need not be cached. Segment boundaries may differ visually. Automatic segmentation and resume are not available.",
-  "export.preflight.continue": "This advice does not guarantee success or failure. Continue exporting?"
+  "export.preflight.continue": "This advice does not guarantee success or failure. Continue exporting?",
+  "label.decode_cpu_fallback": "Allow CPU decode fallback (slower)",
+  "tooltip.decode_cpu_fallback": "Off by default. If GPU decoding cannot start, allow CPU decoding; enhancement and upscaling still use the GPU. CPU decoding may be slower. With this disabled, unsupported input prompts you to transcode first. Running jobs keep their starting settings."
 }

@@ -19,6 +19,7 @@ import numpy as np
 
 from dlss5tool import i18n
 from dlss5tool import paths
+from dlss5tool.gpu_decode import iter_timestamps, decode_options, BACKEND as DECODE_BACKEND
 from dlss5tool.image_sequence import ImageSequence, is_sequence, open_capture, source_bytes, audio_source
 from dlss5tool.guidance_color import analysis_rgba8
 from dlss5tool.video_export import (
@@ -237,7 +238,7 @@ def _emit_progress(progress, text, fraction, counts=None):
         progress(text, fraction)
 
 
-def inspect_source(source, cancel, progress=None, *, allow_vfr=False):
+def inspect_source(source, cancel, progress=None, *, allow_vfr=False, allow_cpu_fallback=False):
     if is_sequence(source):
         sequence = ImageSequence.load(source)
         sequence.validate(lambda: check_cancel(cancel))
@@ -276,48 +277,13 @@ def inspect_source(source, cancel, progress=None, *, allow_vfr=False):
                 progress, i18n.tr('status.inspect_timestamps_unknown', done=done), 0,
             )
     emit(0)
-    proc = subprocess.Popen([probe, '-v', 'error', '-select_streams', 'v:0', '-show_entries',
-                             'frame=best_effort_timestamp_time', '-of', 'csv=p=0', str(source)],
-                            stdout=subprocess.PIPE, stderr=subprocess.DEVNULL,
-                            creationflags=getattr(subprocess, 'CREATE_NO_WINDOW', 0))
-    events = queue.Queue(maxsize=128)
-    stop = threading.Event()
-    def reader():
-        try:
-            for line in proc.stdout:
-                while not stop.is_set():
-                    try:
-                        events.put(line, timeout=.1)
-                        break
-                    except queue.Full:
-                        pass
-                if stop.is_set():
-                    break
-        finally:
-            while not stop.is_set():
-                try:
-                    events.put(None, timeout=.1)
-                    break
-                except queue.Full:
-                    pass
-    thread = threading.Thread(target=reader, daemon=True)
-    thread.start()
+    actual_backends = []
+    timestamp_options = ({'allow_cpu_fallback': True, 'backend_sink': actual_backends.append}
+                         if allow_cpu_fallback else {})
     def timestamps():
-        deadline = time.monotonic() + 60
         last_report = 0.0
         count = 0
-        while True:
-            check_cancel(cancel)
-            if time.monotonic() > deadline:
-                raise RuntimeError('时间戳扫描无响应')
-            try:
-                line = events.get(timeout=.1)
-            except queue.Empty:
-                continue
-            if line is None:
-                break
-            deadline = time.monotonic() + 60
-            field = line.decode().strip().split(',')[0]
+        for field in iter_timestamps(source, lambda: check_cancel(cancel), **timestamp_options):
             if field:
                 count += 1
                 now = time.monotonic()
@@ -325,9 +291,10 @@ def inspect_source(source, cancel, progress=None, *, allow_vfr=False):
                     last_report = now
                     emit(count)
                 yield field
+    scan = timestamps()
     try:
         if allow_vfr:
-            stamps = list(timestamps())
+            stamps = list(scan)
             count = len(stamps)
             if not count:
                 raise ValueError('视频没有可解码画面')
@@ -349,16 +316,10 @@ def inspect_source(source, cancel, progress=None, *, allow_vfr=False):
                     end = values[-1] + (values[-1] - values[-2] if count > 1 else 1 / rate)
                 meta['_source_end'] = str(end)
         else:
-            count = validate_timestamps(timestamps(), rate)
-        if proc.wait(timeout=10):
-            raise RuntimeError('ffprobe 时间戳扫描失败')
+            count = validate_timestamps(scan, rate)
     finally:
-        stop.set()
-        if proc.poll() is None:
-            proc.kill()
-        proc.wait(timeout=5)
-        thread.join(timeout=2)
-        proc.stdout.close()
+        scan.close()
+    meta['decode_backend'] = actual_backends[-1] if actual_backends else DECODE_BACKEND
     emit(count, expected or count)
     return meta, rate, width, height, count
 
@@ -409,7 +370,7 @@ def export_video(source, output, *, multiplier=2, scale=1, enhance=False, settin
             try:
                 if source_inspector is None:
                     meta, rate, w, h, total = inspect(
-                        source, cancel, progress=progress, allow_vfr=multiplier == 1,
+                        source, cancel, progress=progress, allow_vfr=multiplier == 1, **decode_options(settings),
                     )
                 else:
                     meta, rate, w, h, total = inspect(source, cancel, progress=progress)
@@ -503,7 +464,11 @@ def export_video(source, output, *, multiplier=2, scale=1, enhance=False, settin
             if getattr(nr, 'adapter_info', None):
                 config['_composition_adapter'] = dict(nr.adapter_info)
         if input_session is None:
-            capture = FFmpegHDRVideoReader(source, w, h, meta) if meta['is_hdr'] else open_capture(source)
+            capture = (FFmpegHDRVideoReader(source, w, h, meta, **decode_options(config))
+                       if meta['is_hdr'] else open_capture(source, **decode_options(config)))
+            backend = getattr(capture, 'backend', None)
+            report['decode_backend'] = backend if isinstance(backend, str) else meta.get('decode_backend', 'unknown')
+            meta['decode_backend'] = report['decode_backend']
         writer_class=FFmpegVideoWriter
         writer_options={}
         if meta.get('_is_vfr') and not render_only:

@@ -13,6 +13,9 @@ import time
 
 import cv2
 
+from dlss5tool.image_sequence import open_capture
+from dlss5tool.gpu_decode import decode_options
+
 from dlss5tool.video_export import (
     concat_video_segments,
     find_ffmpeg,
@@ -85,7 +88,7 @@ def export_parallel(
     """Export contiguous segments concurrently and losslessly concatenate them."""
     source = os.path.abspath(source)
     output = os.path.abspath(output)
-    cap = cv2.VideoCapture(source)
+    cap = open_capture(source, **decode_options(settings))
     if not cap.isOpened():
         raise RuntimeError("无法打开输入视频")
     frame_count = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))

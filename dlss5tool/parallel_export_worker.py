@@ -10,6 +10,9 @@ import traceback
 
 import cv2
 
+from dlss5tool.image_sequence import open_capture
+from dlss5tool.gpu_decode import decode_options
+
 from dlss5tool import dlss_engine
 from dlss5tool.video_export import compose_output_frame
 from dlss5tool.gpu_export_runtime import create_video_writer as FFmpegVideoWriter
@@ -75,6 +78,7 @@ def main():
     mix = float(settings.get("output_mix", 1.0))
     writer = None
     live = None
+    cap = None
     started = time.perf_counter()
     payload = {
         "worker_id": args.worker_id,
@@ -84,7 +88,7 @@ def main():
     }
     try:
         dlss_engine.LOG_PATH = os.path.splitext(result_path)[0] + ".ngx.log"
-        cap = cv2.VideoCapture(source)
+        cap = open_capture(source, **decode_options(settings))
         if not cap.isOpened():
             raise RuntimeError("无法打开输入视频")
         fps = cap.get(cv2.CAP_PROP_FPS) or 30.0
@@ -173,6 +177,7 @@ def main():
         while pending:
             consume_one()
         cap.release()
+        cap = None
         writer.finish()
         payload.update({
             "ok": True,
@@ -194,6 +199,9 @@ def main():
             "traceback": traceback.format_exc(),
             "wall_seconds": time.perf_counter() - started,
         })
+    finally:
+        if cap is not None:
+            cap.release()
     _write_json(result_path, payload, required=True)
     if live is not None:
         live.close_guidance()

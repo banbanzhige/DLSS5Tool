@@ -6,6 +6,7 @@ import tempfile
 
 import cv2
 from dlss5tool.image_sequence import open_capture
+from dlss5tool.gpu_decode import decode_options
 
 from dlss5tool.guidance_client import GuidanceSession
 from dlss5tool.guidance_visualization import guidance_images
@@ -50,7 +51,7 @@ def export_guidance(source, destination, settings, target, *, frame=None,
     try:
         check_cancel()
         if still is None:
-            capture = open_capture(source_path)
+            capture = open_capture(source_path, **decode_options(settings))
             if not capture.isOpened():
                 raise RuntimeError('Cannot decode source video')
             total = int(capture.get(cv2.CAP_PROP_FRAME_COUNT))
@@ -59,7 +60,7 @@ def export_guidance(source, destination, settings, target, *, frame=None,
                 raise ValueError('Invalid source frame rate')
             first = 0 if video else max(int(frame) - 1, 0)
             if (color_info or {}).get('is_hdr'):
-                hdr_reader = HDRAnalysisReader(str(source_path), color_info, start_frame=first)
+                hdr_reader = HDRAnalysisReader(str(source_path), color_info, start_frame=first, **decode_options(settings))
                 image = hdr_reader.read()
             else:
                 if first:

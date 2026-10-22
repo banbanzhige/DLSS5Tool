@@ -55,12 +55,13 @@ def analysis_rgba8(frame, settings):
 
 class HDRAnalysisReader:
     """Decode an HDR video to fixed SDR BGR analysis copies, never for export color."""
-    def __init__(self, source, color_info, *, start_frame=0):
+    def __init__(self, source, color_info, *, start_frame=0, allow_cpu_fallback=False):
         from dlss5tool.video_export import FFmpegHDRVideoReader
         self.settings = {'frame_format': 'rgba16f', 'color_profile': color_info['profile'],
                          'color_primaries': color_info.get('color_primaries', 'bt2020')}
         self.reader = FFmpegHDRVideoReader(source, int(color_info['width']), int(color_info['height']),
-                                          color_info, start_frame=start_frame)
+                                          color_info, start_frame=start_frame,
+                                          **({'allow_cpu_fallback': True} if allow_cpu_fallback else {}))
 
     def read(self):
         frame = self.reader.read()

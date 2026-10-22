@@ -99,7 +99,7 @@ class ColorProxyTests(unittest.TestCase):
         with mock.patch.object(video_export.subprocess, 'Popen') as process, \
                 mock.patch.object(video_export.threading, 'Thread'):
             reader = video_export.FFmpegHDRVideoReader('test.mp4', 32, 24,
-                {'color_transfer': 'smpte2084'}, ffmpeg='ffmpeg', start_frame=7)
+                {'color_transfer': 'smpte2084', 'pix_fmt': 'yuv420p10le'}, ffmpeg='ffmpeg', start_frame=7)
             command = process.call_args.args[0]
             self.assertTrue(command[command.index('-vf') + 1].startswith('trim=start_frame=7,'))
             self.assertNotIn('-ss', command)
@@ -115,7 +115,7 @@ class ColorProxyTests(unittest.TestCase):
         reader.read.side_effect = [np.zeros((24, 32, 3), np.uint8), np.full((24, 32, 3), 80, np.uint8)]
         info = {'is_hdr': True, 'profile': 'hdr10_pq', 'width': 32, 'height': 24}
         with tempfile.TemporaryDirectory() as temporary, \
-                mock.patch.object(guidance_export.cv2, 'VideoCapture', return_value=capture), \
+                mock.patch.object(guidance_export, 'open_capture', return_value=capture), \
                 mock.patch.object(guidance_export, 'HDRAnalysisReader', return_value=reader) as factory:
             destination = Path(temporary) / 'flow.png'
             count = guidance_export.export_guidance(Path(temporary) / 'hdr.mp4', destination,
@@ -156,7 +156,8 @@ class LimitPolicyTests(unittest.TestCase):
         with self.assertRaises(super_resolution.SuperResolutionError):
             super_resolution.validate_dimensions(16385, 512, 1)
 
-    def test_large_hdr_queue_is_bounded_by_preference_and_available_memory(self):
+    @mock.patch.object(super_resolution, 'bounded_frame_count', side_effect=lambda count, *_: count)
+    def test_large_hdr_queue_is_bounded_by_preference_and_available_memory(self, _bounded):
         select = super_resolution.select_in_flight
         self.assertEqual(select(3840, 2160, 2, 3, is_hdr=True), 1)
         self.assertEqual(select(3840, 2160, 2, 3, is_hdr=True, gpu_memory={'free_bytes': 1024 ** 3}), 1)

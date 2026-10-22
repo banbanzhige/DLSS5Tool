@@ -1,0 +1,10 @@
+{
+  "task": "F:\\project\\DLSS5Tool\\tmp\\gpu-decode-20261022",
+  "removed_file_bytes": 3619498,
+  "free_bytes_before": 48284835840,
+  "free_bytes_after": 48288526336,
+  "observed_free_delta_bytes": 3690496,
+  "remaining_bytes": 1212,
+  "remaining_reason": "Task registration only; reports verified in docs/development/gpu-decode-20261022",
+  "review_date": "2026-10-29"
+}

@@ -208,7 +208,7 @@ def test_cancel_cleanup_failure_still_finishes_export_ui():
     export = dict(app_settings.DEFAULTS, mode='single', frame_generation_multiplier=1)
     app._collect_export_settings = lambda: export
     app._ensure_shared_cache_pool = lambda: mock.Mock(name='fixture-pool')
-    app._video_info = lambda path: (24, 24, 320, 180)
+    app._video_info = lambda *args: (24, 24, 320, 180)
     app._confirm_super_resolution_export = lambda *args, **kwargs: True
     app._live_lock = threading.RLock()
     live = mock.Mock(max_in_flight=1, supports_async=False, backend='v2', adapter_info={})

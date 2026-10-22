@@ -42,7 +42,10 @@ binaries.append((sr_source, '.'))
 datas.append((os.path.join(project_root, 'licenses', 'DLSS5Tool-original-MIT.txt'), 'licenses'))
 
 # Frozen builds require full FFmpeg + ffprobe below; source fallback is unused.
-for package in ("tkinterdnd2",):
+import av
+if av.__version__ != '18.1.0':
+    raise SystemExit('GPU video decoding requires verified PyAV 18.1.0')
+for package in ("tkinterdnd2", "av"):
     package_datas, package_binaries, package_hiddenimports = collect_all(package)
     datas += package_datas
     binaries += package_binaries
@@ -66,13 +69,6 @@ if gpu_components:
             os.path.join(project_root, 'runtime', 'gpu-export', 'licenses'),
             importlib.metadata.distribution('av').locate_file('av.libs'))
         print('LOCAL CANDIDATE: materials verified; distribution review remains pending:', candidate_status['unresolved'])
-    import av
-    if av.__version__ != '18.1.0':
-        raise SystemExit('GPU export requires verified PyAV 18.1.0')
-    av_datas, av_binaries, av_imports = collect_all('av')
-    datas += av_datas
-    binaries += av_binaries
-    hiddenimports += av_imports
     gpu_root = os.path.join(project_root, 'runtime', 'gpu-export')
     datas.append((os.path.join(gpu_root, 'manifest.json'), 'gpu-export'))
     for field, filename in GPU_EXPORT_FILES.items():

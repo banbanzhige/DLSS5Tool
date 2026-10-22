@@ -48,6 +48,7 @@ DEFAULTS = {
     "parallel_workers": 4,
     "warmup_frames": 8,
     "decode_buffer": 4,
+    "decode_cpu_fallback": False,
     "nvenc_preset": "p5",
     "output_container": "mp4",
     "output_resolution": "source",
@@ -267,7 +268,7 @@ def validate(values):
     for name in (
         "use_intensity", "use_local_tone", "use_local_struct",
         "use_output_mix", "use_auto_mask",
-        "hdr_mode",
+        "hdr_mode", "decode_cpu_fallback",
         "preview_super_resolution", "preview_frame_generation",
         "preview_auto_prerender",
         "guidance_skip_still_flow",

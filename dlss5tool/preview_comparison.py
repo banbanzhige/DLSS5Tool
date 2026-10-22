@@ -7,6 +7,7 @@ from tkinter import messagebox
 
 import cv2
 from dlss5tool.image_sequence import open_capture
+from dlss5tool.gpu_decode import decode_options
 
 from dlss5tool import ui_theme
 from dlss5tool.parameter_contract import comparison_command
@@ -24,12 +25,12 @@ def guidance_input_pair(source, frame, still, settings, color_info=None):
         if still is not None:
             original = still
         elif (color_info or {}).get('is_hdr'):
-            hdr_reader = HDRAnalysisReader(source, color_info, start_frame=max(frame - 1, 0))
+            hdr_reader = HDRAnalysisReader(source, color_info, start_frame=max(frame - 1, 0), **decode_options(settings))
             original = hdr_reader.read()
             if original is None:
                 raise RuntimeError(tr('status.frame_read_failed', frame=frame))
         else:
-            capture = open_capture(source)
+            capture = open_capture(source, **decode_options(settings))
             capture.set(cv2.CAP_PROP_POS_FRAMES, max(frame - 1, 0))
             ok, original = capture.read()
             if not ok:

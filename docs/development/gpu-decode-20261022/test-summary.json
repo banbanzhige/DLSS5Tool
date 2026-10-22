@@ -1,0 +1,1920 @@
+{
+  "scope": "targeted modules and associated checks only",
+  "results": [
+    {
+      "classname": "tests.test_gpu_decode",
+      "name": "test_nvdec_explicitly_disables_software_fallback",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_gpu_decode",
+      "name": "test_open_failure_closes_container_and_never_opens_opencv",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_gpu_decode",
+      "name": "test_runtime_software_decoder_is_rejected",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_gpu_decode",
+      "name": "test_factory_propagates_gpu_failure_without_cpu_retry",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_gpu_decode",
+      "name": "test_vfr_seek_is_by_frame_index_and_reuses_verified_checkpoints",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_gpu_decode",
+      "name": "test_unvisited_vfr_interval_is_counted_without_average_fps_guess",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_gpu_decode",
+      "name": "test_timestamp_cancellation_releases_gpu_container",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_gpu_decode",
+      "name": "test_timestamp_inspection_does_not_convert_or_retain_pixels",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_gpu_decode",
+      "name": "test_decode_open_error_reaches_export_consumer_instead_of_hanging",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_gpu_decode",
+      "name": "test_hdr_requires_gpu_frames_before_unchanged_color_conversion",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_frame_generation.TimingTests",
+      "name": "test_cancel_is_explicit",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_frame_generation.TimingTests",
+      "name": "test_cfr_decimal_timestamp_quantization",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_frame_generation.TimingTests",
+      "name": "test_cut_and_still",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_frame_generation.TimingTests",
+      "name": "test_exact_pipe_and_truncated_output",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_frame_generation.TimingTests",
+      "name": "test_existing_output_rejected_before_gpu_or_filesystem_writes",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_frame_generation.TimingTests",
+      "name": "test_inspect_source_allows_vfr_only_when_requested",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_frame_generation.TimingTests",
+      "name": "test_inspect_source_reports_counted_timestamp_progress",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_frame_generation.TimingTests",
+      "name": "test_vfr_missing_repeated_or_offset_timestamps_rejected",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_image_sequence",
+      "name": "test_order_metadata_reader_and_descriptor_roundtrip",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_image_sequence",
+      "name": "test_invalid_rates[0]",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_image_sequence",
+      "name": "test_invalid_rates[-1]",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_image_sequence",
+      "name": "test_invalid_rates[nan]",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_image_sequence",
+      "name": "test_invalid_rates[inf]",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_image_sequence",
+      "name": "test_invalid_rates[1/0]",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_image_sequence",
+      "name": "test_invalid_rates[241]",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_image_sequence",
+      "name": "test_invalid_rates[]",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_image_sequence",
+      "name": "test_invalid_rates[None]",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_image_sequence",
+      "name": "test_invalid_rates[0.5]",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_image_sequence",
+      "name": "test_missing_duplicate_and_single_frames[names0]",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_image_sequence",
+      "name": "test_missing_duplicate_and_single_frames[names1]",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_image_sequence",
+      "name": "test_missing_duplicate_and_single_frames[names2]",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_image_sequence",
+      "name": "test_select_one_family_and_numeric_suffix",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_image_sequence",
+      "name": "test_display_name_and_output_duration",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_image_sequence",
+      "name": "test_scan_files_keeps_a_selected_range",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_image_sequence",
+      "name": "test_propose_expands_one_frame_and_lists_other_runs",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_image_sequence",
+      "name": "test_propose_reports_gaps_without_blocking_other_runs",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_image_sequence",
+      "name": "test_propose_classifies_hdr_and_rejects_incompatible_frames",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_image_sequence",
+      "name": "test_reject_size_alpha_gray_and_high_depth[shape0-uint8]",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_image_sequence",
+      "name": "test_reject_size_alpha_gray_and_high_depth[shape1-uint8]",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_image_sequence",
+      "name": "test_reject_size_alpha_gray_and_high_depth[shape2-uint8]",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_image_sequence",
+      "name": "test_reject_size_alpha_gray_and_high_depth[shape3-uint16]",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_image_sequence",
+      "name": "test_corrupt_and_changed_source",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_image_sequence",
+      "name": "test_cancellation_and_fps_identity",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_image_sequence",
+      "name": "test_queue_persistence_and_import_classification",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_image_sequence",
+      "name": "test_inspect_and_render_real_sequence_without_video_decoder",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_image_sequence",
+      "name": "test_preview_decoder_seek",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_image_sequence",
+      "name": "test_cached_export_no_audio_and_reject_modified_inputs",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_image_sequence",
+      "name": "test_gui_export_routes_sequences_through_shared_renderer[1-1]",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_image_sequence",
+      "name": "test_gui_export_routes_sequences_through_shared_renderer[2-1]",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_image_sequence",
+      "name": "test_gui_export_routes_sequences_through_shared_renderer[1-2]",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_image_sequence",
+      "name": "test_gui_export_routes_sequences_through_shared_renderer[2-2]",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_image_sequence",
+      "name": "test_import_dialog_validates_and_saves_on_worker[light]",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_image_sequence",
+      "name": "test_import_dialog_validates_and_saves_on_worker[dark]",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_image_sequence",
+      "name": "test_dialog_imports_a_checked_recommendation",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_image_sequence",
+      "name": "test_dialog_remembers_rate_and_keeps_sdr_when_hdr_is_chosen",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_image_sequence",
+      "name": "test_cancel_import_keeps_records_unwritten",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_image_sequence",
+      "name": "test_queue_sequence_entry_adds_job_without_replacing_preview[selected0-manifests0]",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_image_sequence",
+      "name": "test_queue_sequence_entry_adds_job_without_replacing_preview[selected1-manifests1]",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_image_sequence",
+      "name": "test_queue_sequence_entry_adds_job_without_replacing_preview[selected2-manifests2]",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_image_sequence",
+      "name": "test_queue_sequence_entry_ignores_busy_state[_exporting]",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_image_sequence",
+      "name": "test_queue_sequence_entry_ignores_busy_state[_queue_running]",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_image_sequence",
+      "name": "test_queue_sequence_entry_ignores_busy_state[_diagnosing]",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_image_sequence",
+      "name": "test_queue_sequence_entry_ignores_busy_state[_switching_backend]",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_image_sequence",
+      "name": "test_real_sequence_added_as_one_job_and_loaded_on_request",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_image_sequence",
+      "name": "test_queue_import_buttons_fit_the_sidebar[zh_CN-360-light]",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_image_sequence",
+      "name": "test_queue_import_buttons_fit_the_sidebar[zh_CN-360-dark]",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_image_sequence",
+      "name": "test_queue_import_buttons_fit_the_sidebar[en_US-420-light]",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_image_sequence",
+      "name": "test_queue_import_buttons_fit_the_sidebar[en_US-420-dark]",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_hdr_image_sequence",
+      "name": "test_manifest_metadata_and_color_identity[hdr10_pq]",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_hdr_image_sequence",
+      "name": "test_manifest_metadata_and_color_identity[hdr10_hlg]",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_hdr_image_sequence",
+      "name": "test_reader_preserves_precision_seek_eof_and_close[hdr10_pq]",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_hdr_image_sequence",
+      "name": "test_reader_preserves_precision_seek_eof_and_close[hdr10_hlg]",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_hdr_image_sequence",
+      "name": "test_known_sequence_end_needs_no_frame_memory[hdr10_pq-eof]",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_hdr_image_sequence",
+      "name": "test_known_sequence_end_needs_no_frame_memory[hdr10_pq-closed]",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_hdr_image_sequence",
+      "name": "test_known_sequence_end_needs_no_frame_memory[hdr10_pq-seek-past-end]",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_hdr_image_sequence",
+      "name": "test_known_sequence_end_needs_no_frame_memory[hdr10_hlg-eof]",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_hdr_image_sequence",
+      "name": "test_known_sequence_end_needs_no_frame_memory[hdr10_hlg-closed]",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_hdr_image_sequence",
+      "name": "test_known_sequence_end_needs_no_frame_memory[hdr10_hlg-seek-past-end]",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_hdr_image_sequence",
+      "name": "test_hdr_export_finishes_when_pressure_arrives_after_last_frame[hdr10_pq]",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_hdr_image_sequence",
+      "name": "test_hdr_export_finishes_when_pressure_arrives_after_last_frame[hdr10_hlg]",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_hdr_image_sequence",
+      "name": "test_preview_tonemaps_uint16_without_modifying_input[hdr10_pq]",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_hdr_image_sequence",
+      "name": "test_preview_tonemaps_uint16_without_modifying_input[hdr10_hlg]",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_hdr_image_sequence",
+      "name": "test_analysis_proxy_uses_hdr_reader_and_never_changes_source[hdr10_pq]",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_hdr_image_sequence",
+      "name": "test_analysis_proxy_uses_hdr_reader_and_never_changes_source[hdr10_hlg]",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_hdr_image_sequence",
+      "name": "test_production_renderer_precision_and_explicit_sdr_conversion[hdr10_pq-True]",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_hdr_image_sequence",
+      "name": "test_production_renderer_precision_and_explicit_sdr_conversion[hdr10_pq-False]",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_hdr_image_sequence",
+      "name": "test_production_renderer_precision_and_explicit_sdr_conversion[hdr10_hlg-True]",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_hdr_image_sequence",
+      "name": "test_production_renderer_precision_and_explicit_sdr_conversion[hdr10_hlg-False]",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_hdr_image_sequence",
+      "name": "test_async_preview_seek[hdr10_pq]",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_hdr_image_sequence",
+      "name": "test_async_preview_seek[hdr10_hlg]",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_hdr_image_sequence",
+      "name": "test_changed_source_and_wrong_color_contract_rejected[hdr10_pq]",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_hdr_image_sequence",
+      "name": "test_changed_source_and_wrong_color_contract_rejected[hdr10_hlg]",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_hdr_image_sequence",
+      "name": "test_unknown_profile_rejected[linear]",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_hdr_image_sequence",
+      "name": "test_unknown_profile_rejected[scrgb]",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_hdr_image_sequence",
+      "name": "test_unknown_profile_rejected[auto]",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_hdr_image_sequence",
+      "name": "test_unknown_profile_rejected[None]",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_hdr_image_sequence",
+      "name": "test_hdr_mixed_depth_alpha_gray_and_size_rejected[shape0-uint8]",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_hdr_image_sequence",
+      "name": "test_hdr_mixed_depth_alpha_gray_and_size_rejected[shape1-uint16]",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_hdr_image_sequence",
+      "name": "test_hdr_mixed_depth_alpha_gray_and_size_rejected[shape2-uint16]",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_hdr_image_sequence",
+      "name": "test_hdr_mixed_depth_alpha_gray_and_size_rejected[shape3-uint16]",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_hdr_image_sequence",
+      "name": "test_invalid_hdr_manifest_rejected[hdr10_pq-change0]",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_hdr_image_sequence",
+      "name": "test_invalid_hdr_manifest_rejected[hdr10_pq-change1]",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_hdr_image_sequence",
+      "name": "test_invalid_hdr_manifest_rejected[hdr10_pq-change2]",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_hdr_image_sequence",
+      "name": "test_invalid_hdr_manifest_rejected[hdr10_pq-change3]",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_hdr_image_sequence",
+      "name": "test_invalid_hdr_manifest_rejected[hdr10_hlg-change0]",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_hdr_image_sequence",
+      "name": "test_invalid_hdr_manifest_rejected[hdr10_hlg-change1]",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_hdr_image_sequence",
+      "name": "test_invalid_hdr_manifest_rejected[hdr10_hlg-change2]",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_hdr_image_sequence",
+      "name": "test_invalid_hdr_manifest_rejected[hdr10_hlg-change3]",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_hdr_image_sequence",
+      "name": "test_queue_preserves_hdr_contract[hdr10_pq]",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_hdr_image_sequence",
+      "name": "test_queue_preserves_hdr_contract[hdr10_hlg]",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_hdr_image_sequence",
+      "name": "test_render_cancellation_closes_hdr_reader[hdr10_pq]",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_hdr_image_sequence",
+      "name": "test_render_cancellation_closes_hdr_reader[hdr10_hlg]",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_hdr_image_sequence",
+      "name": "test_import_dialog_recovers_from_sdr_error_and_imports_hdr[hdr10_pq-light-zh_CN]",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_hdr_image_sequence",
+      "name": "test_import_dialog_recovers_from_sdr_error_and_imports_hdr[hdr10_pq-dark-en_US]",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_hdr_image_sequence",
+      "name": "test_import_dialog_recovers_from_sdr_error_and_imports_hdr[hdr10_hlg-light-zh_CN]",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_hdr_image_sequence",
+      "name": "test_import_dialog_recovers_from_sdr_error_and_imports_hdr[hdr10_hlg-dark-en_US]",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_processing_limits.ColorProxyTests",
+      "name": "test_bad_profile_and_nonfinite_fail_explicitly",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_processing_limits.ColorProxyTests",
+      "name": "test_color_change_invalidates_guidance_contract",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_processing_limits.ColorProxyTests",
+      "name": "test_hdr_decoder_uses_exact_frame_trim_not_fps_seek",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_processing_limits.ColorProxyTests",
+      "name": "test_hdr_export_uses_proxy_and_releases_reader",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_processing_limits.ColorProxyTests",
+      "name": "test_hdr_preview_decodes_real_adjacent_pair_and_closes_reader",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_processing_limits.ColorProxyTests",
+      "name": "test_hdr_profiles_preserve_original_and_have_monotonic_proxy",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_processing_limits.ColorProxyTests",
+      "name": "test_hdr_validation_accepts_explicit_profile_but_never_tiled",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_processing_limits.ColorProxyTests",
+      "name": "test_proxy_reaches_worker_native_receives_original_for_sync_and_async",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_processing_limits.ColorProxyTests",
+      "name": "test_sdr_is_identity",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_processing_limits.LimitPolicyTests",
+      "name": "test_custom_output_above_8k_persists_but_stays_within_texture_limit",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_processing_limits.LimitPolicyTests",
+      "name": "test_large_hdr_queue_is_bounded_by_preference_and_available_memory",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_processing_limits.LimitPolicyTests",
+      "name": "test_low_vram_and_long_thin_stills_tile_early",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_processing_limits.LimitPolicyTests",
+      "name": "test_still_flow_skip_preserves_preferences_and_needs_no_component",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_preview_feedback",
+      "name": "test_real_frame_published_before_next_frame_is_requested",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_preview_feedback",
+      "name": "test_strength_preserves_spatial_mix_preserves_enhancement",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_preview_feedback",
+      "name": "test_inspection_is_cached_by_source_not_effect_settings",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_preview_feedback",
+      "name": "test_metadata_lookup_does_not_seek_producer_back_to_zero",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_preview_feedback",
+      "name": "test_original_first_frame_does_not_need_render_session",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_preview_feedback",
+      "name": "test_stale_source_decode_cannot_paint_new_video",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_preview_feedback",
+      "name": "test_compare_source_preview_keeps_split_instead_of_fit",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_preview_feedback",
+      "name": "test_compare_source_preview_pending_when_split_missing",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_preview_feedback",
+      "name": "test_compare_source_preview_does_not_overwrite_ready_paint",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_preview_feedback",
+      "name": "test_held_original_still_uses_source_fit",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_preview_feedback",
+      "name": "test_rapid_changes_acknowledge_immediately_and_debounce_setup",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_preview_feedback",
+      "name": "test_stale_configuration_cannot_start_new_pipeline",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_preview_feedback",
+      "name": "test_output_mix_repaints_real_frame_without_recomputing_or_retargeting",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_preview_feedback.CompareSharedSourceTests",
+      "name": "test_compare_source_preview_does_not_overwrite_ready_paint",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_preview_feedback.CompareSharedSourceTests",
+      "name": "test_compare_source_preview_keeps_split_instead_of_fit",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_preview_feedback.CompareSharedSourceTests",
+      "name": "test_compare_source_preview_pending_when_split_missing",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_preview_feedback.CompareSharedSourceTests",
+      "name": "test_held_original_still_uses_source_fit",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_preview_feedback.CompareSharedSourceTests",
+      "name": "test_original_first_frame_does_not_need_render_session",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_preview_feedback.CompareSharedSourceTests",
+      "name": "test_stale_source_decode_cannot_paint_new_video",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_original_comparison",
+      "name": "test_real_pipeline_keeps_source_and_mix_separate[1-False-1]",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_original_comparison",
+      "name": "test_real_pipeline_keeps_source_and_mix_separate[1-False-2]",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_original_comparison",
+      "name": "test_real_pipeline_keeps_source_and_mix_separate[1-False-4]",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_original_comparison",
+      "name": "test_real_pipeline_keeps_source_and_mix_separate[1-True-1]",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_original_comparison",
+      "name": "test_real_pipeline_keeps_source_and_mix_separate[1-True-2]",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_original_comparison",
+      "name": "test_real_pipeline_keeps_source_and_mix_separate[1-True-4]",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_original_comparison",
+      "name": "test_real_pipeline_keeps_source_and_mix_separate[0.4-False-1]",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_original_comparison",
+      "name": "test_real_pipeline_keeps_source_and_mix_separate[0.4-False-2]",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_original_comparison",
+      "name": "test_real_pipeline_keeps_source_and_mix_separate[0.4-False-4]",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_original_comparison",
+      "name": "test_real_pipeline_keeps_source_and_mix_separate[0.4-True-1]",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_original_comparison",
+      "name": "test_real_pipeline_keeps_source_and_mix_separate[0.4-True-2]",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_original_comparison",
+      "name": "test_real_pipeline_keeps_source_and_mix_separate[0.4-True-4]",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_original_comparison",
+      "name": "test_generated_timestamps_hold_real_original[2]",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_original_comparison",
+      "name": "test_generated_timestamps_hold_real_original[3]",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_original_comparison",
+      "name": "test_generated_timestamps_hold_real_original[4]",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_original_comparison",
+      "name": "test_shared_display_uses_original_side[compare-False]",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_original_comparison",
+      "name": "test_shared_display_uses_original_side[original-False]",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_original_comparison",
+      "name": "test_shared_display_uses_original_side[dlss-True]",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_original_comparison",
+      "name": "test_cache_accounts_for_mix_buffer_and_releases_it",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_original_comparison",
+      "name": "test_resize_original_is_identity_at_source_size[uint8]",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_original_comparison",
+      "name": "test_resize_original_is_identity_at_source_size[float16]",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_enhancement_bypass",
+      "name": "test_source_identity_skips_native_and_transfer_functions[look0-srgb]",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_enhancement_bypass",
+      "name": "test_source_identity_skips_native_and_transfer_functions[look0-hdr10_pq]",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_enhancement_bypass",
+      "name": "test_source_identity_skips_native_and_transfer_functions[look0-hdr10_hlg]",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_enhancement_bypass",
+      "name": "test_source_identity_skips_native_and_transfer_functions[look0-scrgb]",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_enhancement_bypass",
+      "name": "test_source_identity_skips_native_and_transfer_functions[look1-srgb]",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_enhancement_bypass",
+      "name": "test_source_identity_skips_native_and_transfer_functions[look1-hdr10_pq]",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_enhancement_bypass",
+      "name": "test_source_identity_skips_native_and_transfer_functions[look1-hdr10_hlg]",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_enhancement_bypass",
+      "name": "test_source_identity_skips_native_and_transfer_functions[look1-scrgb]",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_enhancement_bypass",
+      "name": "test_source_identity_skips_native_and_transfer_functions[look2-srgb]",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_enhancement_bypass",
+      "name": "test_source_identity_skips_native_and_transfer_functions[look2-hdr10_pq]",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_enhancement_bypass",
+      "name": "test_source_identity_skips_native_and_transfer_functions[look2-hdr10_hlg]",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_enhancement_bypass",
+      "name": "test_source_identity_skips_native_and_transfer_functions[look2-scrgb]",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_enhancement_bypass",
+      "name": "test_zero_mix_does_not_hide_comparison_or_difference[0-srgb]",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_enhancement_bypass",
+      "name": "test_zero_mix_does_not_hide_comparison_or_difference[0-hdr10_pq]",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_enhancement_bypass",
+      "name": "test_zero_mix_does_not_hide_comparison_or_difference[0-hdr10_hlg]",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_enhancement_bypass",
+      "name": "test_zero_mix_does_not_hide_comparison_or_difference[0-scrgb]",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_enhancement_bypass",
+      "name": "test_zero_mix_does_not_hide_comparison_or_difference[1-srgb]",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_enhancement_bypass",
+      "name": "test_zero_mix_does_not_hide_comparison_or_difference[1-hdr10_pq]",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_enhancement_bypass",
+      "name": "test_zero_mix_does_not_hide_comparison_or_difference[1-hdr10_hlg]",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_enhancement_bypass",
+      "name": "test_zero_mix_does_not_hide_comparison_or_difference[1-scrgb]",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_enhancement_bypass",
+      "name": "test_zero_mix_does_not_hide_comparison_or_difference[2-srgb]",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_enhancement_bypass",
+      "name": "test_zero_mix_does_not_hide_comparison_or_difference[2-hdr10_pq]",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_enhancement_bypass",
+      "name": "test_zero_mix_does_not_hide_comparison_or_difference[2-hdr10_hlg]",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_enhancement_bypass",
+      "name": "test_zero_mix_does_not_hide_comparison_or_difference[2-scrgb]",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_enhancement_bypass",
+      "name": "test_policy_is_exact_validates_unused_fields_and_preserves_nonzero_work",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_enhancement_bypass",
+      "name": "test_raw_stage_policy_is_shared_with_interim_preview_identity",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_enhancement_bypass",
+      "name": "test_bypass_session_owns_output_without_host_or_guidance[source-srgb]",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_enhancement_bypass",
+      "name": "test_bypass_session_owns_output_without_host_or_guidance[source-hdr10_pq]",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_enhancement_bypass",
+      "name": "test_bypass_session_owns_output_without_host_or_guidance[source-hdr10_hlg]",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_enhancement_bypass",
+      "name": "test_bypass_session_owns_output_without_host_or_guidance[source-scrgb]",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_enhancement_bypass",
+      "name": "test_bypass_session_owns_output_without_host_or_guidance[native-zero-srgb]",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_enhancement_bypass",
+      "name": "test_bypass_session_owns_output_without_host_or_guidance[native-zero-hdr10_pq]",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_enhancement_bypass",
+      "name": "test_bypass_session_owns_output_without_host_or_guidance[native-zero-hdr10_hlg]",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_enhancement_bypass",
+      "name": "test_bypass_session_owns_output_without_host_or_guidance[native-zero-scrgb]",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_enhancement_bypass",
+      "name": "test_restoring_nr_replaces_source_cache_and_resets_first_frame[srgb]",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_enhancement_bypass",
+      "name": "test_restoring_nr_replaces_source_cache_and_resets_first_frame[hdr10_pq]",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_enhancement_bypass",
+      "name": "test_restoring_nr_replaces_source_cache_and_resets_first_frame[hdr10_hlg]",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_enhancement_bypass",
+      "name": "test_restoring_nr_replaces_source_cache_and_resets_first_frame[scrgb]",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_enhancement_bypass",
+      "name": "test_failed_restore_keeps_bypass_usable_and_pending_frames_block_switch",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_enhancement_bypass",
+      "name": "test_guidance_inspection_during_bypass_is_explicit_and_temporary",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_enhancement_bypass",
+      "name": "test_preview_hash_only_invalidates_raw_cache_at_bypass_boundaries",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_enhancement_bypass",
+      "name": "test_preview_crossing_bypass_uses_model_refresh_but_regular_look_does_not",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_enhancement_bypass",
+      "name": "test_real_cache_pipeline_zero_keeps_sr_source_and_restores_nr[1-srgb]",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_enhancement_bypass",
+      "name": "test_real_cache_pipeline_zero_keeps_sr_source_and_restores_nr[1-hdr10_pq]",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_enhancement_bypass",
+      "name": "test_real_cache_pipeline_zero_keeps_sr_source_and_restores_nr[1-hdr10_hlg]",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_enhancement_bypass",
+      "name": "test_real_cache_pipeline_zero_keeps_sr_source_and_restores_nr[1-scrgb]",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_enhancement_bypass",
+      "name": "test_real_cache_pipeline_zero_keeps_sr_source_and_restores_nr[2-srgb]",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_enhancement_bypass",
+      "name": "test_real_cache_pipeline_zero_keeps_sr_source_and_restores_nr[2-hdr10_pq]",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_enhancement_bypass",
+      "name": "test_real_cache_pipeline_zero_keeps_sr_source_and_restores_nr[2-hdr10_hlg]",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_enhancement_bypass",
+      "name": "test_real_cache_pipeline_zero_keeps_sr_source_and_restores_nr[2-scrgb]",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_enhancement_bypass",
+      "name": "test_direct_render_still_composes_native_zero_hdr_residuals[source-srgb]",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_enhancement_bypass",
+      "name": "test_direct_render_still_composes_native_zero_hdr_residuals[source-hdr10_pq]",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_enhancement_bypass",
+      "name": "test_direct_render_still_composes_native_zero_hdr_residuals[source-hdr10_hlg]",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_enhancement_bypass",
+      "name": "test_direct_render_still_composes_native_zero_hdr_residuals[source-scrgb]",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_enhancement_bypass",
+      "name": "test_direct_render_still_composes_native_zero_hdr_residuals[native-zero-srgb]",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_enhancement_bypass",
+      "name": "test_direct_render_still_composes_native_zero_hdr_residuals[native-zero-hdr10_pq]",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_enhancement_bypass",
+      "name": "test_direct_render_still_composes_native_zero_hdr_residuals[native-zero-hdr10_hlg]",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_enhancement_bypass",
+      "name": "test_direct_render_still_composes_native_zero_hdr_residuals[native-zero-scrgb]",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_enhancement_bypass",
+      "name": "test_gui_hdr_export_uses_bypass_without_changing_half_precision[hdr10_pq]",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_enhancement_bypass",
+      "name": "test_gui_hdr_export_uses_bypass_without_changing_half_precision[hdr10_hlg]",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_enhancement_bypass",
+      "name": "test_parallel_worker_skips_native_host_for_source_only",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_memory_budget.MemoryBudgetTests",
+      "name": "test_commit_pressure_also_limits_despite_free_physical_ram",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_memory_budget.MemoryBudgetTests",
+      "name": "test_decoder_caps_queue_and_stops_cleanly_when_one_frame_will_not_fit",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_memory_budget.MemoryBudgetTests",
+      "name": "test_existing_cache_is_credited_once_and_shrinks_by_headroom_deficit",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_memory_budget.MemoryBudgetTests",
+      "name": "test_frame_queue_reduces_by_actual_entry_bytes_and_can_deny_one",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_memory_budget.MemoryBudgetTests",
+      "name": "test_legacy_gui_cache_evicts_under_pressure_without_saving_new_budget",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_memory_budget.MemoryBudgetTests",
+      "name": "test_pressure_can_recover_without_changing_preference",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_memory_budget.MemoryBudgetTests",
+      "name": "test_shared_pool_credits_all_leases_once_and_preserves_configured_limit",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_memory_budget.MemoryBudgetTests",
+      "name": "test_small_ram_caps_large_saved_budget_and_keeps_user_upper_bound",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_memory_budget.MemoryBudgetTests",
+      "name": "test_unavailable_snapshot_preserves_existing_upper_bound",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_memory_budget.MemoryBudgetTests",
+      "name": "test_unpooled_raw_cache_releases_under_pressure_and_can_fill_again",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_memory_budget.MemoryBudgetTests",
+      "name": "test_unpooled_render_cache_trims_with_safe_memory_allowance",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_video_encoder_selection.EncoderSelectionTests",
+      "name": "test_all_failures_are_reported_before_touching_output",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_video_encoder_selection.EncoderSelectionTests",
+      "name": "test_auto_codec_uses_both_final_dimensions",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_video_encoder_selection.EncoderSelectionTests",
+      "name": "test_cpu_only_and_hdr_selection",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_video_encoder_selection.EncoderSelectionTests",
+      "name": "test_explicit_gpu_is_strict_for_parallel_segment_consistency",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_video_encoder_selection.EncoderSelectionTests",
+      "name": "test_gpu_failure_falls_back_to_same_codec_with_cpu_parameters",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_video_encoder_selection.EncoderSelectionTests",
+      "name": "test_hevc_sdr_preserves_eight_bit_policy_and_hdr_stays_main10",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_video_encoder_selection.EncoderSelectionTests",
+      "name": "test_parallel_parent_pins_resolved_codec_and_device_for_all_workers",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_video_encoder_selection.EncoderSelectionTests",
+      "name": "test_probe_timeout_and_stderr_are_actionable",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_video_encoder_selection.EncoderSelectionTests",
+      "name": "test_probe_uses_actual_size_rate_format_and_options",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_video_encoder_selection.EncoderSelectionTests",
+      "name": "test_writer_selects_after_scaling_and_padding",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_p0_memory_boundaries",
+      "name": "test_vsr_partial_construction_releases_resources_with_traceback_retained[input_memory]",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_p0_memory_boundaries",
+      "name": "test_vsr_partial_construction_releases_resources_with_traceback_retained[output_memory]",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_p0_memory_boundaries",
+      "name": "test_vsr_partial_construction_releases_resources_with_traceback_retained[input_view]",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_p0_memory_boundaries",
+      "name": "test_vsr_partial_construction_releases_resources_with_traceback_retained[output_view]",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_p0_memory_boundaries",
+      "name": "test_vsr_partial_construction_releases_resources_with_traceback_retained[pipe]",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_p0_memory_boundaries",
+      "name": "test_vsr_partial_construction_releases_resources_with_traceback_retained[process]",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_p0_memory_boundaries",
+      "name": "test_vsr_partial_construction_releases_resources_with_traceback_retained[start]",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_p0_memory_boundaries",
+      "name": "test_vsr_partial_construction_releases_resources_with_traceback_retained[handshake]",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_p0_memory_boundaries",
+      "name": "test_vsr_validation_failure_can_be_closed_without_allocations",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_p0_memory_boundaries",
+      "name": "test_nr_partial_creation_releases_buffers_and_pipe_before_process_start[output_memory]",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_p0_memory_boundaries",
+      "name": "test_nr_partial_creation_releases_buffers_and_pipe_before_process_start[process]",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_p0_memory_boundaries",
+      "name": "test_nr_partial_creation_releases_buffers_and_pipe_before_process_start[start]",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_p0_memory_boundaries",
+      "name": "test_vsr_broken_pipe_reaps_process_and_keeps_live_buffers[False]",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_p0_memory_boundaries",
+      "name": "test_vsr_broken_pipe_reaps_process_and_keeps_live_buffers[True]",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_p0_memory_boundaries",
+      "name": "test_vsr_real_spawn_and_shared_memory_reaped_across_repeated_tasks[False]",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_p0_memory_boundaries",
+      "name": "test_vsr_real_spawn_and_shared_memory_reaped_across_repeated_tasks[True]",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_p0_memory_boundaries",
+      "name": "test_error_snapshot_retains_diagnostic_text_without_frames_or_causes",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_p0_memory_boundaries",
+      "name": "test_render_failure_releases_worker_and_repeated_consumer_frames",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_p0_memory_boundaries",
+      "name": "test_persistent_preview_errors_do_not_keep_frames_across_repeated_requests",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_p0_memory_boundaries",
+      "name": "test_shared_preview_setup_releases_error_frames_and_consumed_mailbox",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_p0_memory_boundaries",
+      "name": "test_zero_frame_capacity_is_preserved_at_all_sizes[1920-1080-1]",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_p0_memory_boundaries",
+      "name": "test_zero_frame_capacity_is_preserved_at_all_sizes[1920-1080-2]",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_p0_memory_boundaries",
+      "name": "test_zero_frame_capacity_is_preserved_at_all_sizes[3840-2160-2]",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_p0_memory_boundaries",
+      "name": "test_admission_obeys_physical_and_commit_reserve[0-21474836480]",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_p0_memory_boundaries",
+      "name": "test_admission_obeys_physical_and_commit_reserve[21474836480-0]",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_p0_memory_boundaries",
+      "name": "test_admission_obeys_physical_and_commit_reserve[4294967296-21474836480]",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_p0_memory_boundaries",
+      "name": "test_unknown_snapshot_preserves_existing_admission_policy",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_p0_memory_boundaries",
+      "name": "test_nr_rejects_pressure_before_shared_memory_and_process_creation[rgba8]",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_p0_memory_boundaries",
+      "name": "test_nr_rejects_pressure_before_shared_memory_and_process_creation[rgba16f]",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_p0_memory_boundaries",
+      "name": "test_memory_failure_does_not_retry_another_backend",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_p0_memory_boundaries",
+      "name": "test_gui_export_rejects_before_reader_writer_or_host_creation[hdr-1]",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_p0_memory_boundaries",
+      "name": "test_gui_export_rejects_before_reader_writer_or_host_creation[hdr-2]",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_p0_memory_boundaries",
+      "name": "test_gui_export_rejects_before_reader_writer_or_host_creation[sdr-2]",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_p0_memory_boundaries",
+      "name": "test_gui_hdr_does_not_turn_denied_queue_into_one_slot",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_p0_memory_boundaries",
+      "name": "test_generic_export_rejects_before_gpu_workers_or_decode[1]",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_p0_memory_boundaries",
+      "name": "test_generic_export_rejects_before_gpu_workers_or_decode[2]",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_p0_memory_boundaries",
+      "name": "test_hdr_reader_rejects_before_start_and_each_frame",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_p0_memory_boundaries",
+      "name": "test_gpu_encoder_rejects_before_temp_or_shared_allocation",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_export_gui",
+      "name": "test_normalized_bar_is_never_counted_as_video_frames",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_export_gui",
+      "name": "test_preflight_advises_long_sr_once_and_rechecks_new_resource_pressure",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_export_gui",
+      "name": "test_cancelled_preflight_does_not_start_export_worker",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_export_gui",
+      "name": "test_queue_checks_long_video_before_starting_jobs",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_gui_player.PlayerHelperTests",
+      "name": "test_audio_timestamp_roundtrip",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_gui_player.PlayerHelperTests",
+      "name": "test_canvas_wheel_zooms_around_pointer_but_timeline_wheel_steps",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_gui_player.PlayerHelperTests",
+      "name": "test_chip_group_separates_stable_values_from_localized_labels",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_gui_player.PlayerHelperTests",
+      "name": "test_chrome_button_centers_when_hidden_tab_is_shown",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_gui_player.PlayerHelperTests",
+      "name": "test_clamp_frame",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_gui_player.PlayerHelperTests",
+      "name": "test_decode_plan_prefers_sequential_reads",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_gui_player.PlayerHelperTests",
+      "name": "test_detached_window_geometry_stays_on_virtual_desktop",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_gui_player.PlayerHelperTests",
+      "name": "test_dlss_feature_not_supported_has_actionable_release_guidance",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_gui_player.PlayerHelperTests",
+      "name": "test_first_image_does_not_evaluate_numpy_truth",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_gui_player.PlayerHelperTests",
+      "name": "test_fit_and_fullscreen_icons_are_distinct",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_gui_player.PlayerHelperTests",
+      "name": "test_format_duration",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_gui_player.PlayerHelperTests",
+      "name": "test_format_timecode",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_gui_player.PlayerHelperTests",
+      "name": "test_frame_ranges_compacts_non_contiguous_cache",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_gui_player.PlayerHelperTests",
+      "name": "test_icon_only_buttons_use_larger_optical_size",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_gui_player.PlayerHelperTests",
+      "name": "test_impossible_upscale_plan_rejected_before_gpu_query",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_gui_player.PlayerHelperTests",
+      "name": "test_large_still_images_use_v2_feature_subrects",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_gui_player.PlayerHelperTests",
+      "name": "test_play_target_skips_ahead_and_stops_at_last",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_gui_player.PlayerHelperTests",
+      "name": "test_preview_controls_wrap_at_narrow_widths",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_gui_player.PlayerHelperTests",
+      "name": "test_preview_viewport_clamps_pan_and_allows_zooming_out",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_gui_player.PlayerHelperTests",
+      "name": "test_preview_viewport_fits_and_crops_before_zooming",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_gui_player.PlayerHelperTests",
+      "name": "test_progress_rule_stays_idle_until_value",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_gui_player.PlayerHelperTests",
+      "name": "test_queue_output_name_avoids_reserved_and_existing_targets",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_gui_player.PlayerHelperTests",
+      "name": "test_realtime_preview_size_downscales_4k_but_preserves_smaller_sources",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_gui_player.PlayerHelperTests",
+      "name": "test_rounded_chrome_live_images_remain_bounded_across_redraws",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_gui_player.PlayerHelperTests",
+      "name": "test_studio_window_layout_stays_inside_work_area",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_gui_player.PlayerHelperTests",
+      "name": "test_variable_traces_are_removed_when_custom_widgets_are_destroyed",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_gui_player.ChromeComboboxTests",
+      "name": "test_focus_out_clears_inverted_selection",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_gui_player.ChromeComboboxTests",
+      "name": "test_mousewheel_does_not_change_value",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_gui_player.ChromeComboboxTests",
+      "name": "test_readonly_select_colors_match_the_field",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_gui_player.ChromeComboboxTests",
+      "name": "test_selecting_an_item_commits_without_leaving_selection",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_gui_player.ImageIoTests",
+      "name": "test_path_kind",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_gui_player.ImageIoTests",
+      "name": "test_unique_image_output_path",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_gui_player.ImageIoTests",
+      "name": "test_write_and_read_png_roundtrip",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_gui_player.SettingsPanelPersistenceTests",
+      "name": "test_preview_cache_settings_roundtrip",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_gui_player.SettingsPanelPersistenceTests",
+      "name": "test_release_defaults_match_recommended_profile",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_gui_player.SettingsPanelPersistenceTests",
+      "name": "test_slider_toggles_default_on_and_roundtrip",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_gui_player.SettingsPanelPersistenceTests",
+      "name": "test_ui_panel_flags_roundtrip",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_gui_player.EffectiveSliderTests",
+      "name": "test_closed_is_zero_open_keeps_value",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_gui_player.EffectiveSliderTests",
+      "name": "test_persisted_high_values_open_extended_range_without_losing_memory",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_gui_player.EffectiveSliderTests",
+      "name": "test_slider_input_requires_5x_permission_above_one_hundred_percent",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_gui_player.EffectiveSliderTests",
+      "name": "test_zero_skin_strength_does_not_enable_auto_mask",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_gui_player.OutputViewTests",
+      "name": "test_diff_x10_is_midgray_when_identical",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_gui_player.OutputViewTests",
+      "name": "test_lr_compare_keeps_original_on_the_left",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_gui_player.OutputViewTests",
+      "name": "test_output_mix_above_one_amplifies_the_processed_residual",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_gui_player.OutputViewTests",
+      "name": "test_preview_applies_output_mix_for_processed_view",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_gui_player.OutputViewTests",
+      "name": "test_preview_ignores_mix_for_export_only_views",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_gui_player.OutputViewTests",
+      "name": "test_preview_resizes_original_to_proxy_before_mixing",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_gui_player.OutputViewTests",
+      "name": "test_processed_uses_dlss_when_mix_is_one",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_gui_player.PreviewCacheTests",
+      "name": "test_cache_separates_proxy_and_exact_frames",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_gui_player.PreviewCacheTests",
+      "name": "test_combined_source_and_dlss_cache_respects_ram_budget",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_gui_player.PreviewCacheTests",
+      "name": "test_large_ram_budget_extends_prerender_beyond_startup_buffer",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_gui_player.PreviewCacheTests",
+      "name": "test_live_preview_processes_the_requested_proxy_size",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_gui_player.PreviewCacheTests",
+      "name": "test_pending_preview_preserves_source_colors_for_wait_hud",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_gui_player.PreviewCacheTests",
+      "name": "test_shadow_text_draws_offset_shadow_then_foreground",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_gui_player.PreviewQueueTests",
+      "name": "test_begin_source_load_freezes_without_joining_worker",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_gui_player.PreviewQueueTests",
+      "name": "test_canvas_configure_only_redraws_the_active_pane_without_freezing",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_gui_player.PreviewQueueTests",
+      "name": "test_canvas_pan_click_preserves_cache_in_compare_view",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_gui_player.PreviewQueueTests",
+      "name": "test_finished_exact_frame_hands_the_forward_window_back_to_playback",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_gui_player.PreviewQueueTests",
+      "name": "test_full_preview_stays_idle_while_cache_is_frozen",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_gui_player.PreviewQueueTests",
+      "name": "test_idle_freeze_does_not_resume_a_held_interaction",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_gui_player.PreviewQueueTests",
+      "name": "test_interaction_freeze_invalidates_cache_without_joining_worker",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_gui_player.PreviewQueueTests",
+      "name": "test_paused_background_decode_yields_between_frames",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_gui_player.PreviewQueueTests",
+      "name": "test_paused_prerender_can_start_without_playback",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_gui_player.PreviewQueueTests",
+      "name": "test_playback_retires_exact_worker_instead_of_sharing_its_session",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_gui_player.PreviewQueueTests",
+      "name": "test_precise_prerender_keeps_only_the_current_frame",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_gui_player.PreviewQueueTests",
+      "name": "test_preview_timeline_status_skips_work_while_frozen",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_gui_player.PreviewQueueTests",
+      "name": "test_preview_worker_consumes_frames_without_a_second_decoder",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_gui_player.PreviewQueueTests",
+      "name": "test_preview_worker_uses_async_in_flight_order",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_gui_player.PreviewQueueTests",
+      "name": "test_resume_closes_live_after_worker_exits_when_source_cleared",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_gui_player.PreviewQueueTests",
+      "name": "test_resume_waits_for_live_worker_without_joining",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_gui_player.PreviewQueueTests",
+      "name": "test_scrub_delay_queues_exact_preview_without_blocking_ui",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_gui_player.PreviewQueueTests",
+      "name": "test_timeline_seek_keeps_cache_frozen_until_release",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_gui_player.PreviewQueueTests",
+      "name": "test_worker_rebinds_session_when_host_rejects_frame_size",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_gui_player.WidgetSmokeTests",
+      "name": "test_app_and_timeline_construct",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_gui_player.WidgetSmokeTests",
+      "name": "test_automatic_update_check_only_prompts_for_a_newer_release",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_gui_player.WidgetSmokeTests",
+      "name": "test_closed_switch_sends_zero_and_remembers",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_gui_player.WidgetSmokeTests",
+      "name": "test_one_click_diagnostic_exports_in_background",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_gui_player.WidgetSmokeTests",
+      "name": "test_queue_resume_after_stop_and_stable_export_chrome",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_stability.SwitchStabilityTests",
+      "name": "test_failed_warm_session_closes_and_does_not_commit_mode",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_stability.SwitchStabilityTests",
+      "name": "test_paused_analysis_refreshes_after_switch",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_stability.SwitchStabilityTests",
+      "name": "test_warm_activation_reuses_real_session_without_disposable_probe",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_stability.StillPreviewTests",
+      "name": "test_paused_worker_failure_stops_buffering_and_remains_visible",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_stability.StillPreviewTests",
+      "name": "test_still_full_preview_queues_instead_of_waiting_on_tk",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_stability.StillPreviewTests",
+      "name": "test_still_pair_is_bounded_and_has_no_false_motion",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_stability.StillPreviewTests",
+      "name": "test_warm_still_exercises_temporal_kernels_then_resets",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_stability.PlatformErrorTests",
+      "name": "test_error_codes_are_case_insensitive_and_distinct",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_stability.PlatformErrorTests",
+      "name": "test_reported_4060_error_is_platform_not_unknown_or_unsupported",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_gpu_decode",
+      "name": "test_av1_default_decoder_is_replaced_by_explicit_gpu_decoder",
+      "status": "passed"
+    },
+    {
+      "classname": "tests.test_gpu_decode",
+      "name": "test_checkpoint_memory_is_bounded_and_keeps_beginning",
+      "status": "passed"
+    }
+  ],
+  "counts": {
+    "passed": 382,
+    "failed": 0,
+    "skipped": 0
+  }
+}

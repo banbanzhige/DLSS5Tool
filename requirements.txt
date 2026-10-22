@@ -3,3 +3,4 @@ opencv-python>=4.8
 imageio-ffmpeg>=0.4.9
 tkinterdnd2>=0.4
 Pillow>=10.0
+av==18.1.0

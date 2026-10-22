@@ -117,7 +117,7 @@ class StillPreviewTests(unittest.TestCase):
 
     def test_still_pair_is_bounded_and_has_no_false_motion(self):
         still = np.zeros((600, 1200, 3), np.uint8)
-        with mock.patch('dlss5tool.preview_comparison.cv2.VideoCapture') as capture:
+        with mock.patch('dlss5tool.preview_comparison.open_capture') as capture:
             current, previous = guidance_input_pair('image.png', 0, still,
                                                     {'guidance_mode': 1, 'guidance_flow_edge': 512})
         capture.assert_not_called()

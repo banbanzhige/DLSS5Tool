@@ -1,0 +1,23 @@
+{
+  "pyav": "18.1.0",
+  "ffmpeg": "C:\\Users\\PC\\ffmpeg-7.1.1-full_build\\bin\\ffmpeg.EXE",
+  "cases": [
+    {
+      "name": "h264-high10",
+      "gpu_supported": false,
+      "strict_error": "GPU 视频解码失败，任务已停止，未回退 CPU 解码。若素材规格不受显卡支持，请先转码后重新导入：8-bit SDR 可转 H.264 8-bit、4:2:0；10-bit 素材可转 H.265 Main10、4:2:0，保留原色彩、分辨率与帧率。也可在导出设置中开启“允许 CPU 解码兜底（较慢）”。若已使用兼容规格，请检查显卡驱动与解码组件。\n[Errno 1094995529] Invalid data found when processing input: 'avcodec_send_packet()'",
+      "fallback_enabled_backend": "CPU 解码兜底（可能较慢）",
+      "fallback_frames": 24,
+      "identical_bgr": true,
+      "exact_seek_indices": [
+        0,
+        10,
+        3,
+        23,
+        1
+      ]
+    }
+  ],
+  "scope": "short synthetic clips; CPU reference is test-only; no long-video stability claim",
+  "status": "passed"
+}

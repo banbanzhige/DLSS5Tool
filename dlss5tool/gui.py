@@ -61,6 +61,7 @@ from dlss5tool import paths
 from dlss5tool.host_queue import MAX_IN_FLIGHT, clamp_in_flight
 from dlss5tool import performance_profiles
 from dlss5tool.preview_decoder import PreviewDecoder
+from dlss5tool.gpu_decode import decode_options
 from dlss5tool.dlss_host_process import ProcessLive
 from dlss5tool.deferred_error import ErrorSnapshot
 from dlss5tool.parallel_export import export_parallel
@@ -2896,7 +2897,7 @@ class App(GpuResourceGuard, SharedRenderPreview, LocalPreviewComposition, Previe
         )
 
     def _probe_queue_video(self, path):
-        cap = open_capture(path)
+        cap = open_capture(path, **decode_options(self._decode_settings()))
         try:
             if not cap.isOpened():
                 raise RuntimeError(tr("message.video_unreadable"))
@@ -4077,6 +4078,7 @@ class App(GpuResourceGuard, SharedRenderPreview, LocalPreviewComposition, Previe
             'v_workers': tk.IntVar(value=saved['parallel_workers']),
             'v_warmup': tk.IntVar(value=saved['warmup_frames']),
             'v_decode_buffer': tk.IntVar(value=saved['decode_buffer']),
+            'v_decode_cpu_fallback': tk.BooleanVar(value=saved.get('decode_cpu_fallback', False)),
             'v_nvenc_preset': tk.StringVar(
                 value=NVENC_PRESET_NAMES.get(saved['nvenc_preset'], tr("preset.p5"))
             ),
@@ -4221,12 +4223,20 @@ class App(GpuResourceGuard, SharedRenderPreview, LocalPreviewComposition, Previe
         )
         ttk.Label(performance_group, text=tr("label.decode_buffer")).grid(row=4, column=0, sticky="w", pady=3)
         decode.grid(row=4, column=1, sticky="w", pady=3)
+        decode_fallback = CheckToggle(
+            performance_group, tr('label.decode_cpu_fallback'), d['v_decode_cpu_fallback'],
+            command=self._on_decode_policy_change, ui=self._ui,
+        )
+        decode_fallback.grid(row=5, column=0, columnspan=2, sticky='w', pady=(6, 2))
+        self._theme_widgets.append(decode_fallback)
+        Tooltip(decode_fallback, tr('tooltip.decode_cpu_fallback'))
         d.update({
             'w_output_container': container,
             'w_mode': mode,
             'w_workers': workers,
             'w_warmup': warmup,
             'w_decode_buffer': decode,
+            'w_decode_cpu_fallback': decode_fallback,
             'w_nvenc_preset': preset,
             'w_output_resolution': resolution,
             'w_super_resolution': super_resolution,
@@ -5392,6 +5402,7 @@ class App(GpuResourceGuard, SharedRenderPreview, LocalPreviewComposition, Previe
         if include_cache_pool:
             result['guidance_cache_pool'] = self._ensure_shared_cache_pool().name
         if hasattr(self, "_export_settings"):
+            result.update(self._decode_settings())
             result['super_resolution_scale'] = self._collect_export_settings()[
                 'super_resolution_scale'
             ]
@@ -5414,6 +5425,7 @@ class App(GpuResourceGuard, SharedRenderPreview, LocalPreviewComposition, Previe
             'workers': max(2, min(4, integer(d['v_workers'], 2))),
             'warmup': max(0, min(120, integer(d['v_warmup'], 8))),
             'decode_buffer': max(1, min(8, integer(d['v_decode_buffer'], 4))),
+            'decode_cpu_fallback': bool(d.get('v_decode_cpu_fallback') and d['v_decode_cpu_fallback'].get()),
             'nvenc_preset': NVENC_PRESET_CHOICES.get(d['v_nvenc_preset'].get(), 'p5'),
             'output_container': OUTPUT_CONTAINER_CHOICES.get(
                 d['v_output_container'].get(), 'mp4'
@@ -5635,6 +5647,36 @@ class App(GpuResourceGuard, SharedRenderPreview, LocalPreviewComposition, Previe
             self.display_view(quality="fast")
             self._schedule_preview_cache_resume()
 
+    def _decode_settings(self):
+        variable = getattr(self, '_export_settings', {}).get('v_decode_cpu_fallback')
+        allowed = bool(variable.get()) if variable is not None else bool(
+            getattr(self, '_saved_settings', {}).get('decode_cpu_fallback', False))
+        return {'decode_cpu_fallback': allowed}
+
+    def _on_decode_policy_change(self):
+        self._decode_revision = getattr(self, '_decode_revision', 0) + 1
+        self._schedule_settings_save()
+        if getattr(self, '_exporting', False) or getattr(self, '_queue_running', False):
+            return  # The running job owns its captured policy.
+        self.pause()
+        decoder = getattr(self, '_background_preview_decoder', None)
+        if decoder is not None:
+            decoder.invalidate()
+        cap = getattr(self, '_cap', None)
+        if cap is not None:
+            cap.release()
+            self._cap = None
+        self._cap_next = None
+        self._shared_source_error = self._shared_source_result = None
+        if getattr(self, 'video', None) and not getattr(self, '_is_image', False):
+            try:
+                self._cap = open_capture(self.video, **decode_options(self._decode_settings()))
+                self.logln('[解码] ' + self._cap.backend)
+            except RuntimeError as error:
+                self.logln(str(error))
+                self.set_status(str(error).splitlines()[0])
+        self._on_effect_preview_change()
+
     def _on_export_settings_change(self):
         previous = getattr(self, '_last_export_preview_key', None)
         self._update_export_control_states()
@@ -5676,6 +5718,7 @@ class App(GpuResourceGuard, SharedRenderPreview, LocalPreviewComposition, Previe
             "parallel_workers": export['workers'],
             "warmup_frames": export['warmup'],
             "decode_buffer": export['decode_buffer'],
+            "decode_cpu_fallback": export['decode_cpu_fallback'],
             "nvenc_preset": export['nvenc_preset'],
             "output_container": export['output_container'],
             "output_resolution": export['output_resolution'],
@@ -8190,7 +8233,8 @@ class App(GpuResourceGuard, SharedRenderPreview, LocalPreviewComposition, Previe
                     if decoder is None:
                         decoder = self._background_preview_decoder = PreviewDecoder()
                     try:
-                        source = decoder.get(self.video, next_frame, self._video_color_info)
+                        source = decoder.get(self.video, next_frame,
+                                             dict(self._video_color_info or {}, **self._decode_settings()))
                     except Exception as exc:
                         self._preview_worker_error = str(exc)
                         self._schedule_preview_decode(20)
@@ -9477,6 +9521,7 @@ class App(GpuResourceGuard, SharedRenderPreview, LocalPreviewComposition, Previe
         self._shared_revision = getattr(self, '_shared_revision', 0)+1
         self._shared_painted_position = None
         self._shared_source_result = None
+        self._shared_source_error = None
         self._shared_not_before = 0
         self._shared_output_index = 0
         self._shared_clock = None
@@ -9688,8 +9733,8 @@ class App(GpuResourceGuard, SharedRenderPreview, LocalPreviewComposition, Previe
         try:
             if is_sequence(path):
                 ImageSequence.load(path).validate()
-            new_cap = open_capture(path)
-        except (OSError, ValueError) as error:
+            new_cap = open_capture(path, **decode_options(self._decode_settings()))
+        except (OSError, ValueError, RuntimeError) as error:
             messagebox.showerror(tr('dialog.import_failed'), str(error))
             return False
         if not new_cap.isOpened():
@@ -9751,6 +9796,8 @@ class App(GpuResourceGuard, SharedRenderPreview, LocalPreviewComposition, Previe
             primaries=color_info.get('color_primaries', 'unknown'),
             transfer=color_info.get('color_transfer', 'unknown'),
         ))
+        if not is_sequence(path):
+            self.logln('[解码] ' + new_cap.backend)
         duration = n / max(float(fps) or 30.0, 1.0)
         if not is_sequence(path):
             self._audio.prepare(path, duration, callback=self._audio_ready_cb)
@@ -9789,8 +9836,8 @@ class App(GpuResourceGuard, SharedRenderPreview, LocalPreviewComposition, Previe
             self._audio.play(self._frame, self.fps)
 
     @staticmethod
-    def _video_info(path):
-        cap = open_capture(path)
+    def _video_info(path, decode_settings=None):
+        cap = open_capture(path, **decode_options(decode_settings))
         n = int(cap.get(cv2.CAP_PROP_FRAME_COUNT)) or 0
         fps = cap.get(cv2.CAP_PROP_FPS) or 30.0
         w = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH)); h = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
@@ -10247,7 +10294,7 @@ class App(GpuResourceGuard, SharedRenderPreview, LocalPreviewComposition, Previe
             for index, frame in self._iter_frames(
                 decode_buffer,
                 tone_map_hdr=bool((color_info or {}).get('is_hdr')),
-                source_path=source_path, color_info=color_info,
+                source_path=source_path, color_info=color_info, decode_settings=export_settings,
             ):
                 self._raise_if_export_cancelled()
                 rgba = cv2.cvtColor(frame, cv2.COLOR_BGR2RGBA)
@@ -10337,8 +10384,9 @@ class App(GpuResourceGuard, SharedRenderPreview, LocalPreviewComposition, Previe
         try:
             ffmpeg = find_ffmpeg()
             reader = FFmpegHDRVideoReader(
-                source_path, width, height, color_info, ffmpeg=ffmpeg,
+                source_path, width, height, color_info, ffmpeg=ffmpeg, **decode_options(export_settings),
             )
+            self.logln('[解码] ' + str(getattr(reader, 'backend', 'unknown')))
             writer = FFmpegVideoWriter(
                 out_path, process_width, process_height, fps, audio_source=source_path,
                 nvenc_preset=export_settings['nvenc_preset'], hdr_metadata=color_info,
@@ -10526,6 +10574,9 @@ class App(GpuResourceGuard, SharedRenderPreview, LocalPreviewComposition, Previe
             else:
                 thread.join(timeout=1)
                 profile = getattr(self, '_last_export_profile', None) or {}
+                backend = value.get('decode_backend') or value.get('source_metadata', {}).get('decode_backend')
+                if backend:
+                    self.logln('[解码] ' + str(backend))
                 self.logln('[导出性能] ' + json.dumps({
                     'encoding': (profile.get('encoding') or {}).get('stages', {}),
                     'render_sessions': [{
@@ -10561,7 +10612,7 @@ class App(GpuResourceGuard, SharedRenderPreview, LocalPreviewComposition, Previe
         )
         export_settings["resolved_container"] = resolved_container
         output_extension = output_container_extension(resolved_container)
-        n, fps, w, h = self._video_info(source_path)
+        n, fps, w, h = self._video_info(source_path, export_settings)
         if w <= 0 or h <= 0:
             error = tr("message.input_video_dimensions_failed")
             self.logln(tr("log.export_error", error=error))
@@ -10798,7 +10849,7 @@ class App(GpuResourceGuard, SharedRenderPreview, LocalPreviewComposition, Previe
 
                     for i, fr in self._iter_frames(
                         decode_buffer, tone_map_hdr=bool(color_info.get('is_hdr')),
-                        source_path=source_path, color_info=color_info,
+                        source_path=source_path, color_info=color_info, decode_settings=export_settings,
                     ):
                         self._raise_if_export_cancelled()
                         hh, ww = fr.shape[:2]
@@ -10904,13 +10955,17 @@ class App(GpuResourceGuard, SharedRenderPreview, LocalPreviewComposition, Previe
 
     def _iter_frames(
         self, buffer_size=4, tone_map_hdr=False, source_path=None, color_info=None,
+        decode_settings=None,
     ):
-        """Decode ahead on a worker so CPU decode overlaps the ordered DLSS stage."""
+        """Decode ahead on a worker so frame decoding overlaps the ordered DLSS stage."""
         frame_queue = queue.Queue(maxsize=max(int(buffer_size), 1))
         stop_event = threading.Event()
         decode_errors = []
+        decode_backends = []
+        backend_logged = False
         video_path = source_path or self.video
         color_info = color_info if color_info is not None else self._video_color_info
+        options = decode_options(decode_settings)
 
         def put_with_stop(item):
             while not stop_event.is_set():
@@ -10922,8 +10977,10 @@ class App(GpuResourceGuard, SharedRenderPreview, LocalPreviewComposition, Previe
             return False
 
         def decode_worker():
-            cap = open_capture(video_path)
+            cap = None
             try:
+                cap = open_capture(video_path, **options)
+                decode_backends.append(str(getattr(cap, 'backend', 'unknown')))
                 if not cap.isOpened():
                     raise RuntimeError(tr("message.export_decode_failed"))
                 index = 0
@@ -10945,7 +11002,8 @@ class App(GpuResourceGuard, SharedRenderPreview, LocalPreviewComposition, Previe
             except Exception as ex:
                 decode_errors.append(ex)
             finally:
-                cap.release()
+                if cap is not None:
+                    cap.release()
                 put_with_stop(_FRAME_STREAM_END)
 
         decode_thread = threading.Thread(
@@ -10955,6 +11013,10 @@ class App(GpuResourceGuard, SharedRenderPreview, LocalPreviewComposition, Previe
         try:
             while True:
                 item = frame_queue.get()
+                if decode_backends and not backend_logged:
+                    backend_logged = True
+                    if hasattr(self, 'logln'):
+                        self.logln('[解码] ' + decode_backends[0])
                 if item is _FRAME_STREAM_END:
                     if decode_errors:
                         raise decode_errors[0]

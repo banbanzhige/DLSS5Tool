@@ -23,6 +23,7 @@ from dlss5tool.export_metrics import ExportTelemetry
 from dlss5tool.parameter_contract import COMPOSITION_VERSION
 from dlss5tool.image_sequence import ImageSequence, is_sequence, source_bytes, audio_source
 from dlss5tool.frame_generation import Cancelled, check_cancel, export_video, runtime_files, inspect_source
+from dlss5tool.gpu_decode import decode_options
 
 # Shared preview should keep a short, responsive look-ahead.  Export still
 # consumes frames sequentially and therefore does not need the old 120-frame
@@ -33,7 +34,7 @@ DEFAULT_PREFETCH_AHEAD = 120
 MAX_PREFETCH_AHEAD = 48
 
 PIXEL_KEYS = (
-    '_nr_bypass',
+    '_nr_bypass', 'decode_cpu_fallback',
     'nr_quality', 'nr_residual',
     'style', 'preset', 'intensity', 'local_tone', 'local_struct', 'skin_struct', 'use_auto_mask',
     'ui_correction', 'output_mix', 'guidance_mode', 'guidance_edge', 'guidance_flow_direction',
@@ -104,7 +105,7 @@ def file_identity(path):
 def render_identity(source, settings):
     if settings.get('_render_stage') == 'spatial':
         payload = [2, file_identity(source), {k: settings.get(k) for k in
-            ('hdr_mode', 'super_resolution_scale', 'render_gpu')},
+            ('hdr_mode', 'super_resolution_scale', 'render_gpu', 'decode_cpu_fallback')},
             [file_identity(paths.runtime_root()/name) for name in ('vsr_host.dll', 'nvngx_vsr.dll')]]
         return hashlib.sha256(json.dumps(payload, sort_keys=True, default=str).encode()).hexdigest()
     # Include all inference-specific settings, but never the pool name, budget,
@@ -472,10 +473,11 @@ class RenderCache:
         self.inspection = None
         self.lock = threading.RLock()
 
-    def inspect(self, source, cancel, progress=None):
-        identity = file_identity(source)
+    def inspect(self, source, cancel, progress=None, *, allow_cpu_fallback=False):
+        identity = (file_identity(source), allow_cpu_fallback)
         if self.inspection is None or self.inspection[0] != identity:
-            result = inspect_source(source, cancel, progress=progress, allow_vfr=True)
+            result = inspect_source(source, cancel, progress=progress, allow_vfr=True,
+                                    **({'allow_cpu_fallback': True} if allow_cpu_fallback else {}))
             check_cancel(cancel)
             self.inspection = (identity, result)
         return self.inspection[1]
@@ -515,7 +517,7 @@ class RenderCache:
                 return None
             layers = 3 if multiplier > 1 or settings.get('output_mix', 1) != 1 or settings.get('output_size') or appearance.active(settings) else 2
             base_limit = self.limit//layers
-            spatial_settings = {k: settings[k] for k in ('hdr_mode', 'super_resolution_scale', 'render_gpu') if k in settings}
+            spatial_settings = {k: settings[k] for k in ('hdr_mode', 'super_resolution_scale', 'render_gpu', 'decode_cpu_fallback') if k in settings}
             spatial_settings.update(frame_generation_multiplier=1, guidance_mode=0, output_size=None,
                                     _render_stage='spatial')
             spatial_key = render_identity(source, spatial_settings)
@@ -529,7 +531,9 @@ class RenderCache:
                 latest()
                 def spatial_renderer(*args, **kwargs):
                     kwargs['enhance'] = False
-                    return export_video(*args, **kwargs, source_inspector=self.inspect)
+                    def inspect_policy(*values, **options):
+                        return self.inspect(*values, **options, **decode_options(spatial_settings))
+                    return export_video(*args, **kwargs, source_inspector=inspect_policy)
                 self.spatial = RenderSession(source, spatial_settings, base_limit,
                                              pool=lease(), renderer=spatial_renderer)
             else:

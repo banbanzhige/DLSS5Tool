@@ -4,6 +4,7 @@ import threading
 
 import cv2
 from dlss5tool.image_sequence import open_capture
+from dlss5tool.gpu_decode import decode_options
 from dlss5tool.video_export import tone_map_hdr_preview
 
 
@@ -78,13 +79,14 @@ class PreviewDecoder:
                     self._active = request
                 generation, source, first, color = request
                 try:
-                    if opened != source:
+                    identity = (source, color.get('decode_cpu_fallback', False))
+                    if opened != identity:
                         if capture is not None:
                             capture.release()
-                        capture = open_capture(source)
+                        capture = open_capture(source, **decode_options(color))
                         if not capture.isOpened():
                             raise RuntimeError('Cannot open preview video')
-                        opened, next_frame = source, 0
+                        opened, next_frame = identity, 0
                     if next_frame != first:
                         capture.set(cv2.CAP_PROP_POS_FRAMES, first)
                     for index in range(first, first + self.capacity):

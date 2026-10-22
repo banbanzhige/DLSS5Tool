@@ -51,7 +51,7 @@ def test_real_pipeline_keeps_source_and_mix_separate(tmp_path, monkeypatch, scal
     capture = mock.Mock()
     capture.read.side_effect = ([pixels.copy(), None] if hdr else
         [(True, cv2.cvtColor(pixels, cv2.COLOR_RGBA2BGR)), (False, None)])
-    monkeypatch.setattr(fg.cv2, 'VideoCapture', lambda *args: capture)
+    monkeypatch.setattr(fg, 'open_capture', lambda *args: capture)
     monkeypatch.setattr(fg, 'FFmpegHDRVideoReader', lambda *args: capture)
     monkeypatch.setattr('dlss5tool.super_resolution.ProcessSuperResolution', SR)
     monkeypatch.setattr('dlss5tool.super_resolution.query_gpu_memory', lambda **kwargs: None)

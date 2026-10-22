@@ -364,7 +364,7 @@ def test_parallel_worker_skips_native_host_for_source_only(monkeypatch, tmp_path
     cap.get.side_effect = lambda key: {cv2.CAP_PROP_FPS:24, cv2.CAP_PROP_FRAME_WIDTH:128,
         cv2.CAP_PROP_FRAME_HEIGHT:128, cv2.CAP_PROP_POS_FRAMES:0}[key]
     cap.read.side_effect = [(True, frame.copy()) for frame in frames]
-    monkeypatch.setattr(worker.cv2, 'VideoCapture', lambda *_: cap)
+    monkeypatch.setattr(worker, 'open_capture', lambda *_: cap)
     native = mock.Mock(side_effect=AssertionError('no host'))
     monkeypatch.setattr(worker.dlss_engine, 'Live', native)
     monkeypatch.setattr(worker.dlss_engine, 'LOG_PATH', worker.dlss_engine.LOG_PATH)

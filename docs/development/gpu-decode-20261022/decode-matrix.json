@@ -1,0 +1,91 @@
+{
+  "pyav": "18.1.0",
+  "ffmpeg": "C:\\Users\\PC\\ffmpeg-7.1.1-full_build\\bin\\ffmpeg.EXE",
+  "cases": [
+    {
+      "name": "h264",
+      "frames": 24,
+      "identical_bgr": true,
+      "exact_seek_indices": [
+        0,
+        10,
+        3,
+        23,
+        1
+      ],
+      "inspected_frames": 24,
+      "vfr": false,
+      "sha256": "42c812b2583d62d466cbdf41534af984f61b32163c6b46b72ffd2741defc6664",
+      "seconds_with_reference": 2.5822518000059063
+    },
+    {
+      "name": "hevc",
+      "frames": 24,
+      "identical_bgr": true,
+      "exact_seek_indices": [
+        0,
+        10,
+        3,
+        23,
+        1
+      ],
+      "inspected_frames": 24,
+      "vfr": false,
+      "sha256": "6d0ac497011fe7f2ffdb0bf437b437442c88a63631f1a6d8cb9d665d93af0c62",
+      "seconds_with_reference": 2.06620649999968
+    },
+    {
+      "name": "av1",
+      "frames": 24,
+      "identical_bgr": true,
+      "exact_seek_indices": [
+        0,
+        10,
+        3,
+        23,
+        1
+      ],
+      "inspected_frames": 24,
+      "vfr": false,
+      "sha256": "70e610725a835afc95e0c13127145d34def19396e5236087d2a4bbf7c1ea7453",
+      "seconds_with_reference": 2.1480985000016517
+    },
+    {
+      "name": "pq",
+      "frames": 24,
+      "identical_rgba16f": true,
+      "sha256": "3825e0defbdee06aaa2c51dcfcb1dab5c6716524b7b951aa690e426c6bd4f8fa",
+      "seconds_with_reference": 1.128661299997475
+    },
+    {
+      "name": "hlg",
+      "frames": 24,
+      "identical_rgba16f": true,
+      "sha256": "3825e0defbdee06aaa2c51dcfcb1dab5c6716524b7b951aa690e426c6bd4f8fa",
+      "seconds_with_reference": 1.110876200000348
+    },
+    {
+      "name": "vfr",
+      "frames": 24,
+      "identical_bgr": true,
+      "exact_seek_indices": [
+        0,
+        10,
+        3,
+        23,
+        1
+      ],
+      "inspected_frames": 24,
+      "vfr": true,
+      "sha256": "9ba93c96cd3ebe50dbf6dd99ae674d03222ced7f23b94833f860f85824e2465b",
+      "seconds_with_reference": 1.9984935999964364
+    },
+    {
+      "name": "unsupported",
+      "rejected": true,
+      "error": "GPU 视频解码失败，任务已停止，未回退 CPU 解码。请检查显卡驱动及素材的编码、位深和色度格式；可先将素材转为显卡支持的 H.264 / H.265 / AV1 规格后重新导入。\n[Errno 1094995529] Invalid data found when processing input: 'avcodec_send_packet()'"
+    }
+  ],
+  "scope": "short synthetic clips; CPU reference is test-only; no long-video stability claim",
+  "status": "passed"
+}

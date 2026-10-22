@@ -1,0 +1,8 @@
+{
+  "pyav": "18.1.0",
+  "ffmpeg": "C:\\Users\\PC\\ffmpeg-7.1.1-full_build\\bin\\ffmpeg.EXE",
+  "cases": [],
+  "scope": "short synthetic clips; CPU reference is test-only; no long-video stability claim",
+  "status": "failed",
+  "error": "AssertionError(('h264-high10', 0))"
+}

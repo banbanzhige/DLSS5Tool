@@ -11,6 +11,7 @@ from dlss5tool.render_cache import RenderCache, render_identity, file_identity
 from dlss5tool.video_export import compose_hdr_frame, compose_output_frame, compose_sdr_rgba, tone_map_hdr_preview
 from dlss5tool.i18n import tr
 from dlss5tool.image_sequence import open_capture
+from dlss5tool.gpu_decode import decode_options
 from dlss5tool.preview_feedback import PreviewFeedback
 from dlss5tool.preview_jobs import LatestPreviewJob
 from dlss5tool.deferred_error import ErrorSnapshot
@@ -177,6 +178,10 @@ class SharedRenderPreview(PreviewFeedback):
                 and getattr(self, '_split_frame', -1) == int(self._frame)):
             self._present_shared_source(self._split_orig)
             return True
+        error = getattr(self, '_shared_source_error', None)
+        if error and error[0] == position:
+            self.set_status(error[1])
+            return False
         result = getattr(self, '_shared_source_result', None)
         if result and result[0] == position:
             if result[1] is not None:
@@ -188,17 +193,26 @@ class SharedRenderPreview(PreviewFeedback):
             return False
         source, frame = str(self.video), int(self._frame)
         color = dict(getattr(self, '_video_color_info', None) or {})
+        policy = self._decode_settings() if hasattr(self, '_decode_settings') else {}
+        decode_revision = getattr(self, '_decode_revision', 0)
         def decode():
-            cap = open_capture(source)
+            cap = None
             try:
+                cap = open_capture(source, **decode_options(policy))
                 if frame:
                     cap.set(cv2.CAP_PROP_POS_FRAMES, frame)
                 ok, image = cap.read()
                 if ok and color.get('is_hdr'):
                     image = tone_map_hdr_preview(image, color)
-                self._shared_source_result = (position, image if ok else None)
+                if decode_revision == getattr(self, '_decode_revision', 0):
+                    self._shared_source_result = (position, image if ok else None)
+            except Exception as error:
+                if decode_revision == getattr(self, '_decode_revision', 0):
+                    self._shared_source_result = (position, None)
+                    self._shared_source_error = (position, str(error))
             finally:
-                cap.release()
+                if cap is not None:
+                    cap.release()
         self._shared_source_thread = threading.Thread(target=decode, name='preview-first-frame', daemon=True)
         self._shared_source_thread.start()
         return False
