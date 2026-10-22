@@ -1638,5 +1638,20 @@
   "realtime.preview.error.size": "来源尺寸过大，已跳过截图；仍可使用增强。",
   "realtime.preview.error.timeout": "截图超时，任务已停止；可重试，不影响增强。",
   "realtime.preview.error.changed": "截图期间来源位置或尺寸变化，请刷新重试。",
-  "realtime.preview.error.blank": "未取得可辨认画面（可能为黑屏或不支持此截图方式）；可刷新重试，增强仍可用。"
+  "realtime.preview.error.blank": "未取得可辨认画面（可能为黑屏或不支持此截图方式）；可刷新重试，增强仍可用。",
+  "export.progress.measuring": "正在测量实际处理速度 · 已用 {elapsed}",
+  "export.progress.rate": "{fps} 帧/秒 · 已用 {elapsed}",
+  "export.progress.remaining": " · 预计剩余 {remaining}",
+  "export.progress.finish_at": " · 预计完成 {clock}",
+  "export.progress.finalizing": " · 正在完成封装与音频处理",
+  "export.preflight.title": "导出前资源提示",
+  "export.preflight.summary": "视频时长 {duration}；处理尺寸 {width}×{height}；缓存预算 {cache}。",
+  "export.preflight.ram_peak": "当前系统内存余量低于处理所需的估算。建议降低缓存预算、关闭其他任务，必要时降低输出尺寸。仅分割视频时长不能降低单帧所需内存。",
+  "export.preflight.vram_peak": "当前显存余量低于处理所需的估算。建议降低超分倍率或输出尺寸，或关闭其他显卡任务。仅分割时长不能降低单帧显存需求。",
+  "export.preflight.vram_margin": "当前显存余量偏紧；模型及驱动还可能申请额外资源，建议先用相同设置试导短片段。",
+  "export.preflight.large_output": "处理尺寸超过 4K，整帧数据搬运、推理耗时和资源峰值可能明显增加；建议先用相同设置试导短片段。",
+  "export.preflight.long_run": "这是一项较长的超分任务。当前环境下长时间导出的内存稳定性尚未确认；视频时长本身不代表一定会耗尽显存。",
+  "export.preflight.unknown_resources": "未能完整取得系统内存或显存余量，暂时无法可靠评估资源风险。",
+  "export.preflight.long_advice": "建议先用同一素材的短片段试导，观察实际速度和内存变化，再决定是否自行分割后逐段处理。缓存预算不是程序总内存上限，无需缓存整段视频。分段边界效果可能有差异；当前版本没有自动分段和断点续导。",
+  "export.preflight.continue": "以上为风险提示，不能保证本次导出一定成功或失败。是否继续导出？"
 }

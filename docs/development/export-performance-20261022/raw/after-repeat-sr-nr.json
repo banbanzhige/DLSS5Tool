@@ -1,0 +1,677 @@
+{
+  "case": "sr-nr",
+  "settings": {
+    "nr_quality": {
+      "total": 0.75,
+      "darken": 1.0,
+      "brighten": 1.0,
+      "color": 1.0,
+      "luminance": 1.0,
+      "protection": false,
+      "feather": 12.0,
+      "regions": []
+    },
+    "nr_residual": {
+      "residualMultiplier": 1.0,
+      "shadowStructureMultiplier": 1.0,
+      "reflectionGlowMultiplier": 1.0,
+      "residualSaturation": 1.0,
+      "residualLightness": 1.0
+    },
+    "guidance_flow_edge": 512,
+    "guidance_depth_edge": 512,
+    "guidance_flow_updates": 6,
+    "guidance_depth_smoothing": 0.9,
+    "guidance_depth_low": 1.0,
+    "guidance_depth_high": 99.0,
+    "guidance_flow_range": 5.0,
+    "guidance_depth_palette": "gray",
+    "guidance_depth_invert": false,
+    "preview_view": "compare",
+    "preview_compare_layout": "wipe",
+    "guidance_preview_view": "flow",
+    "guidance_compare_target": "flow",
+    "style": 0,
+    "enable_5x": false,
+    "intensity": 1.0,
+    "use_intensity": true,
+    "local_tone": 1.0,
+    "use_local_tone": true,
+    "local_struct": 1.0,
+    "use_local_struct": true,
+    "use_auto_mask": true,
+    "skin_struct": 1.0,
+    "output_view": 0,
+    "output_mix": 1.0,
+    "use_output_mix": true,
+    "export_mode": "single",
+    "parallel_workers": 4,
+    "warmup_frames": 8,
+    "decode_buffer": 4,
+    "nvenc_preset": "p5",
+    "output_container": "mp4",
+    "output_resolution": "source",
+    "super_resolution_scale": 2,
+    "frame_generation_multiplier": 1,
+    "preview_super_resolution": true,
+    "preview_frame_generation": true,
+    "custom_output_width": 1920,
+    "custom_output_height": 1080,
+    "rate_control": "quality",
+    "quality_profile": "high",
+    "video_bitrate_mbps": 20.0,
+    "hdr_mode": false,
+    "host_backend": "v2",
+    "render_gpu": "dxgi:10DE:2783:27831ED3:000000A1:00000002EDD00000:P000001000",
+    "dlss_runtime": "",
+    "mods_directory": "",
+    "guidance_flow_weights": "",
+    "guidance_depth_weights": "",
+    "ui_modules_open": false,
+    "guidance_mode": 0,
+    "guidance_skip_still_flow": true,
+    "guidance_flow_backend": "raft",
+    "guidance_gpu_transport": "auto",
+    "guidance_flow_grid": 1,
+    "guidance_edge": 720,
+    "guidance_flow_direction": "backward",
+    "guidance_depth_encoder": "vitl",
+    "guidance_device": "auto",
+    "guidance_depth_profile": "sdpa_fp16",
+    "guidance_execution": "raft_streams",
+    "host_zero_fast_path": true,
+    "host_persistent_buffers": true,
+    "host_submission": "merged",
+    "host_in_flight": 1,
+    "host_auto_fallback": false,
+    "host_mode_profiles": {
+      "zero": {
+        "host_submission": "merged",
+        "host_in_flight": 1,
+        "host_persistent_buffers": true,
+        "host_zero_fast_path": true
+      },
+      "guidance": {
+        "host_submission": "merged",
+        "host_in_flight": 6,
+        "host_persistent_buffers": true,
+        "host_zero_fast_path": false
+      }
+    },
+    "ui_export_open": false,
+    "ui_host_open": false,
+    "ui_preview_open": false,
+    "ui_log_open": true,
+    "ui_theme": "light",
+    "workbench_mode": "local",
+    "ui_language": "zh_CN",
+    "inspector_width": 360,
+    "preview_detached": false,
+    "preview_window_geometry": "",
+    "queue_output_dir": "",
+    "preview_quality": "auto",
+    "preview_auto_prerender": false,
+    "preview_prefetch": 120,
+    "preview_cache": 400,
+    "preview_cache_mb": 8192,
+    "preview_scrub_ms": 40
+  },
+  "adapters": [
+    {
+      "id": "dxgi:10DE:2783:27831ED3:000000A1:00000002EDD00000:P000001000",
+      "name": "NVIDIA GeForce RTX 4070 SUPER",
+      "preference_index": 0,
+      "vendor_id": 4318,
+      "device_id": 10115,
+      "subsys_id": 662904531,
+      "revision": 161,
+      "dedicated_video_memory": 12579766272,
+      "luid_high": 0,
+      "luid_low": 80454,
+      "d3d12_feature_level": "12_0",
+      "cuda_index": 0,
+      "pci_bus_id": "0000:01:00.0"
+    }
+  ],
+  "scope": "GUI shared cache + encode_cached; frame hashes add equal probe overhead",
+  "result": {
+    "experimental": true,
+    "warning": "实验功能：普通视频采用 NVOFA 估计光流及平面深度；遮挡/字幕/HDR 画质未完整验收。3×/4×目前仅限本机 RTX 4070 SUPER 与固定运行库，已知部分生成帧时间位置偏差。不会自动降倍率或位深；正常帧对生成无效时停止。",
+    "source": "F:\\project\\DLSS5Tool\\tmp\\export-performance-20261022\\synthetic-960x540-48.mp4",
+    "output": "F:\\project\\DLSS5Tool\\tmp\\export-performance-20261022\\after-repeat-sr-nr.mp4",
+    "multiplier": 1,
+    "spatial_scale": 2,
+    "enhance": true,
+    "status": "complete",
+    "real_frames": 48,
+    "generated_frames": 0,
+    "cut_holds": 0,
+    "endpoint_holds": 0,
+    "width": 1920,
+    "height": 1080,
+    "source_rate": "30",
+    "output_rate": "30",
+    "enhancement_bypassed": false,
+    "enhancement_bypass": null,
+    "appearance_version": 1,
+    "composition_backend": "cpu-reference",
+    "color": "srgb",
+    "output_view": 0,
+    "runtime_sha256": null,
+    "log_dir": "F:\\project\\DLSS5Tool\\tmp\\export-performance-20261022\\native-logs\\445c0ca4507a4fc2a30f78b36313368c",
+    "source_frames": 48,
+    "source_metadata": {
+      "width": 960,
+      "height": 540,
+      "pix_fmt": "yuv420p",
+      "r_frame_rate": "30/1",
+      "avg_frame_rate": "30/1",
+      "duration": "1.600000",
+      "nb_frames": "48",
+      "fps": 30.0,
+      "frames": 48,
+      "color_primaries": "bt709",
+      "color_space": "bt709",
+      "color_transfer": "unknown",
+      "color_range": "tv",
+      "pixel_format": "yuv420p",
+      "profile": "srgb",
+      "is_hdr": false,
+      "label": "SDR / sRGB"
+    },
+    "scene_cuts": [],
+    "hdr_metadata": null,
+    "cache_hits": 3,
+    "cache_misses": 45,
+    "new_frames": 48,
+    "performance": {
+      "scope": "wall-time; overlapping stages are not additive",
+      "elapsed_seconds": 2.9232019999999466,
+      "stages": {
+        "render_wait": {
+          "calls": 48,
+          "seconds": 1.5476925000020856,
+          "max_seconds": 0.06212050000067393,
+          "warm_calls": 44,
+          "warm_seconds": 1.5156631000027119
+        },
+        "encode_conversion": {
+          "calls": 48,
+          "seconds": 0.10894979999466159,
+          "max_seconds": 0.004533499999524793,
+          "warm_calls": 44,
+          "warm_seconds": 0.09687569999368861
+        },
+        "encode_write": {
+          "calls": 48,
+          "seconds": 0.2716422999983479,
+          "max_seconds": 0.07892879999963043,
+          "warm_calls": 44,
+          "warm_seconds": 0.17659930000081658
+        },
+        "encode_finish": {
+          "calls": 1,
+          "seconds": 0.3338359000008495,
+          "max_seconds": 0.3338359000008495,
+          "warm_calls": 0,
+          "warm_seconds": 0.0
+        }
+      },
+      "system_memory_samples": [
+        {
+          "seconds": 0.6540222999992693,
+          "free_physical_bytes": 41866174464,
+          "free_commit_bytes": 34062360576
+        },
+        {
+          "seconds": 2.9203990000005433,
+          "free_physical_bytes": 42619478016,
+          "free_commit_bytes": 35623424000
+        }
+      ]
+    }
+  },
+  "cache": {
+    "spatial": {
+      "frames": 21,
+      "bytes": 348364800,
+      "computed": 48,
+      "replayed": 0,
+      "complete": false,
+      "snapshot_copied_bytes": 796262400,
+      "snapshot_borrowed_bytes": 0,
+      "performance": {
+        "scope": "wall-time; overlapping stages are not additive",
+        "elapsed_seconds": 14.014785299999858,
+        "stages": {
+          "decode": {
+            "calls": 49,
+            "seconds": 0.06418839999059855,
+            "max_seconds": 0.011310500000035972,
+            "warm_calls": 45,
+            "warm_seconds": 0.05007479999039788
+          },
+          "super_resolution": {
+            "calls": 48,
+            "seconds": 0.4393609000053402,
+            "max_seconds": 0.04892470000049798,
+            "warm_calls": 44,
+            "warm_seconds": 0.37389680000342196
+          },
+          "cache_snapshot": {
+            "calls": 48,
+            "seconds": 0.1943061999991187,
+            "max_seconds": 0.01278439999987313,
+            "warm_calls": 44,
+            "warm_seconds": 0.18392370000037772
+          }
+        },
+        "system_memory_samples": [
+          {
+            "seconds": 3.416508399999657,
+            "free_physical_bytes": 43365883904,
+            "free_commit_bytes": 36459966464
+          },
+          {
+            "seconds": 11.005724499998905,
+            "free_physical_bytes": 42283450368,
+            "free_commit_bytes": 34716114944
+          }
+        ]
+      },
+      "ranges": [
+        27,
+        28,
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47
+      ]
+    },
+    "base": {
+      "frames": 14,
+      "bytes": 348364800,
+      "computed": 48,
+      "replayed": 0,
+      "complete": true,
+      "snapshot_copied_bytes": 398131200,
+      "snapshot_borrowed_bytes": 796262400,
+      "performance": {
+        "scope": "wall-time; overlapping stages are not additive",
+        "elapsed_seconds": 14.00740070000029,
+        "stages": {
+          "upstream_wait": {
+            "calls": 48,
+            "seconds": 0.0037160000083531486,
+            "max_seconds": 0.0004907000002276618,
+            "warm_calls": 44,
+            "warm_seconds": 0.0034554000085336156
+          },
+          "enhancement": {
+            "calls": 48,
+            "seconds": 1.1858091999893077,
+            "max_seconds": 0.03598079999937909,
+            "warm_calls": 44,
+            "warm_seconds": 1.0795049999869661
+          },
+          "composition": {
+            "calls": 48,
+            "seconds": 0.10202129999743192,
+            "max_seconds": 0.00543189999916649,
+            "warm_calls": 44,
+            "warm_seconds": 0.09468169999854581
+          },
+          "cache_snapshot": {
+            "calls": 48,
+            "seconds": 0.10000760000002629,
+            "max_seconds": 0.003360200000315672,
+            "warm_calls": 44,
+            "warm_seconds": 0.09299469999859866
+          }
+        },
+        "system_memory_samples": [
+          {
+            "seconds": 10.951994699998977,
+            "free_physical_bytes": 42311716864,
+            "free_commit_bytes": 35202416640
+          },
+          {
+            "seconds": 12.957200900000316,
+            "free_physical_bytes": 41462304768,
+            "free_commit_bytes": 33512845312
+          }
+        ]
+      },
+      "ranges": [
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47
+      ]
+    }
+  },
+  "status": "complete",
+  "elapsed_seconds": 15.491111399998772,
+  "worker_processes_still_alive": [],
+  "memory_samples": [
+    {
+      "seconds": 11.76833219999935,
+      "private_bytes": {
+        "14176": 1010966528,
+        "44980": 1005596672,
+        "42116": 436920320
+      },
+      "system": {
+        "total_physical_bytes": 68498677760,
+        "free_physical_bytes": 41866174464,
+        "free_commit_bytes": 34062360576
+      }
+    },
+    {
+      "seconds": 12.803471199998967,
+      "private_bytes": {
+        "14176": 1110999040,
+        "44980": 991100928,
+        "42116": 422526976
+      },
+      "system": {
+        "total_physical_bytes": 68498677760,
+        "free_physical_bytes": 41422893056,
+        "free_commit_bytes": 33477677056
+      }
+    }
+  ],
+  "frame_hashes": [
+    "09e7dde27692e68f3b8582317fd50116982635cbb9838397376d5174548e641b",
+    "a48950205a52f8865c6372402a2b9e511aaff60e1fba96992aabd9843e1bc632",
+    "27069033d83945e6d915509490f228aae7c35848c9d1b3f73cafd49999bfe24d",
+    "fc1c8df4f6a38194b92bfdf69d93c964ee1bcc5b306162cc0e3a0a236b149231",
+    "30abc2140829ea3eaf980b6b0801f137d21142745cfce868416af1ac2f26b840",
+    "39aa7804ed45ce5652add7d3311323ac5bb4de6267cd2dd8bd4f4525c850020e",
+    "83d0838feec7c18635a16519ff4b26f54ea5036d33ae8f679b0895902fc7eef4",
+    "50e613999e447ddfbd66bafecca993c6f6a80800af23f9bf59dc27030613028e",
+    "480eac035d2c3bf42eb94964972a729753560a96ad574f5b0f9c422496145df0",
+    "475d4fc7265761f217c7241ec96e0ead61b4318b3f2bf0d216dcf5ebf424f2c7",
+    "a84abc1380466c4c0fcac260285d87aff53650b602a8da6282ca584f81c743d0",
+    "055ca8589bcad61b0467f4b7964240cd6daaf34b9f282f22030e4e9366f797fb",
+    "927182326d9e70dcde2385c3e928bb3e878ab58115be9e2f8f0b388182322ef6",
+    "bf2d225dc9212268f0ea5922ccde82697094fb8faa152b6541bc093dd8d64abf",
+    "5ea4b3da570171461b8ee114f47e1f0e4a204add8810013d4893970523c5164d",
+    "88c05f86089bb44de4c2c789865ab5cefc7e89f7977cbe0681bfbc441e87e989",
+    "b6dd58f9146dd3fb111ad7992c17f6cac4cc5a28cfc741c54031b1b36fe6d920",
+    "bf31911329b68a4e73fabf47b9a18c229c388ff841adb052580ef429327719f5",
+    "e104053123673a704b5e9758bcc3f6ddc73d64ca5c288ea771f03f330da50dd9",
+    "913b1c5496f70e0512c8206c96c90f399bdba2bea114894be41a3c0bd91febd1",
+    "9b4a7b584caa499c2686424a58cf2b49e42f0dabf30b868992e3760bfd143eed",
+    "14b7e6ffa554b43bd971c5c619edcc7407222446b84e1b581a8d15779586d80e",
+    "e61d06d80a10fa4e8f6cb5b63eade9888abdcfbfa9a0b2816ec01235ac3da322",
+    "aafc91b49eccef621499dca768f22112f77ada9af811119e8e49ae118335854b",
+    "188bf218a7e8859ade736a705bf9a79bdfe3aeb7e6733a34a1451cb6caee49fa",
+    "ea01fa4de897f3be0f6db2bde46807e47ba7470d05c4890f2db6c92951282393",
+    "7981a6df0c7b500c44176054f02c8b3ada8f25c2b5c68a3a9b1d6c0c0bc44e69",
+    "26013813efacf1b2d79ee7d1214ac7e6aca586085cefaa1f35612905a7f75b73",
+    "e0ff898dc0eb6fe5ac676ec789a5408868ccf617b12d4b0e9ba3c8dcae31f558",
+    "67429aa58857b4bc9567d178af2a8e6ab28840a1d92596447989f8cd3bb2f642",
+    "b0aa02fafaa42f536c26eab7a83b39724fe8295e95ec954d24301b6eeed693c3",
+    "3a128a1e6a822d8b49d6b40001126c6436db6acf39b9c6018dd79f0b7cb7eb1b",
+    "ce3c540f62f40bee091ce8f0447e2308c8e09ca61df4e75a62ae644a206eeb24",
+    "51d2a7f82a2ded1a5600a3c31cf273ccefe39d59af2b40dfc09d85a0061499ad",
+    "32c9ddcbf337f75535d5b24b29ff417a8dd0199bf29864e7d48da56da28dc350",
+    "f0ca0f878b994dd294b0c0582427c12d739950e8f70fe2f019e68c0dc72db6eb",
+    "fe3a4071b288560da1ad90bfeec0c96ce9c73147e5bbd216f8c179673dae410e",
+    "6d364509bdc663ae19d20e9c219e43b535c1d6fa64edbbae978ee3710f792162",
+    "07eabbe8b78759f4fd6a3b88fc9686b4b8f198dae48d6b6f75617eff72997795",
+    "a3b49b050114e5ae71c7d13d3617e84cf342aab5936babb8d92d4db739b3c1e6",
+    "1bbd64d578574dc171416e55ca8a1d8aa027f39c6f50729788022b60392b3cc3",
+    "7ca637f9089e77ee375183a3179ef5f853a83ea4b505206244648bc41d6fd572",
+    "c064026f2ab7c6169d5f0503ce53bdbe31357779e80cc807f36a4fe3da731e83",
+    "17cd1d7b8a676477cd89d4f87a19869e8d928b31876d71742be0a40f3d095d19",
+    "5b6b4bef308cae1009b6275f871953156884558597d1f5f51d9214b5b22817fb",
+    "b0435ca7ffd66f72a3257b32a91057e4ad1b3f26a331cd750a938fccbb38aa33",
+    "530df9a3939b34719ee45f0fb51cda2573e0790f329537084a75dfa456898e7c",
+    "af198841bda8ca2bbe4de640ad5a31e982f82c38d3ee09754f46b26fdd9a6af6"
+  ],
+  "nr_hashes": [
+    {
+      "input": "072e2a6649d5445b20830ccb6e32b532dad9de01ec5cd2da5edbbe72d4c0890b",
+      "output": "83574d6452fdc50f940458059fa54b31d2a2f29e290da2fd332ce5f802ac0feb"
+    },
+    {
+      "input": "357400e40119c346f927ba12faa9e2c5a0399f2ef6abd65c4044cea724991812",
+      "output": "c30d25d79371874ff0459d3889e9dddd4edb93ef2661f369b82c3ef4fe7a7822"
+    },
+    {
+      "input": "9ae15b7b4ed9730f276c73d0d6012b54d170fad3b8fd9ddcbf5b4e538ab8f0aa",
+      "output": "21766225915b189086ad08b7cf752a04efe252e62cc1b3db626176a9b60ac6d7"
+    },
+    {
+      "input": "6783950878f6344b6c525eef7cd1155c514759a32fd59bab887ee31d846d007c",
+      "output": "8e06c33e0def98961cb42fb4471c317caee6f868a3632ab2e63c3b86dcfa7811"
+    },
+    {
+      "input": "41bdb33c97bd9e847e0ccd1e16f67bfea8a1f25b942becbb401b6cb59dfd683c",
+      "output": "c6b5d5423f20b7eb97c746a81cc66a9f1b47bc75ba21acaf448ac02165ed0bb3"
+    },
+    {
+      "input": "aed4716bf1ffc4f196c9d1a924457812d479eca008f854571869a03a79d7b32b",
+      "output": "15d5c185d19acc996261ebed80317ebb0c538bdbf5d2c580a022b3c445b18ff9"
+    },
+    {
+      "input": "498e2998ebb7403ab42cdea868c4c2b33b7f4e97fa0bdd7452ebaf186ae4d2eb",
+      "output": "d7f50bc87035a8ace44a32cfb0c41834135b0eb989a7c721a88bcb6c073f5fe7"
+    },
+    {
+      "input": "cf1dfe05b9e61c9b6cbd604fb65885c7e2254e4cf1da0aa6739866cfb40d5533",
+      "output": "a1602c7fbdaa961f1e8a4b95a69ac04a37f082e4601a2ca042aeb6ab88caabd7"
+    },
+    {
+      "input": "7d61d62656ca5e19701bec9f6792da0650bfd07fc55b7366d68fdf693c180e39",
+      "output": "3545c3f1d0ae3bcc776e8795db27e2f691c40466310c2e9572a4aff38a6dee61"
+    },
+    {
+      "input": "bb12fe65245cd167a5835a2cee146dbe9ba7c39443c2e059d998d9d325e0f2b8",
+      "output": "102b758de108f1d056590bb249b55e34873708f2380d8ca88ce0e83779667a0a"
+    },
+    {
+      "input": "dcc707d71867859ee7cf86f6c097a24746316a3cbaaecc2b12dd06ad4c3922e9",
+      "output": "5e3a59eac7b0eaaf5d9133fc103d5b9e0afe09e00c609b604d8858d9e1a2264e"
+    },
+    {
+      "input": "d3d414c02dab06e01092da3361e687b18a2e880f0b10863561e5bdb30b197a6a",
+      "output": "922aa3a70b99b5f93745191d0a680649085f38902d1201b1a3103be66edb3051"
+    },
+    {
+      "input": "166fe0824d234a990b19278f7bb7c3c57c290c3944a933b7d980d00c5ef54397",
+      "output": "eb903cb01dcb51657fa1d285fc46f6e609a8c66fc964d9b5289192a60392297d"
+    },
+    {
+      "input": "e15359b2b289deba0c75d0ff2a7d9131bf3cf2ed063815e5f4c0f0a8861f60fc",
+      "output": "a7591455b4725610b6aa98480a2c102f14b04307120826e8edc159608cca2f57"
+    },
+    {
+      "input": "58f79d63346c7200677c1ab9c38af361fe351388f5a0b9c54cabce3251bdcf8f",
+      "output": "f2e1e8fd70fdee728b42f0d2b8c0405c70bb2654c8cec3bf08591b9dad14b18b"
+    },
+    {
+      "input": "949150d9cfec9d5fd37ee13461e9d2a0ff2f92ed12d3cd55eca675392376481a",
+      "output": "8df5704993e693df0a90b26265275ef378e958679a20a81fe250db5df1a66924"
+    },
+    {
+      "input": "1f1520bd5dc8a08dfb166b1c2e012f13c8b0b2c9233d897397e2c7a494f13b99",
+      "output": "890b55ca2fed2a10710ac81e27cd1af45718073408b0d3eafd13a803d29b5920"
+    },
+    {
+      "input": "1cbd8095bddc2ebb03c7d183389c465db6287c917d69b5a3033d1f77cae2f1df",
+      "output": "2512381717171693ef7cd11fc86da01a3d5b9bd2d7f8a5319442408bf9dfc9a5"
+    },
+    {
+      "input": "a8a0a9780d2be4677aafd494eb4fe028b9a866a6a20275b19e1563fea13e827c",
+      "output": "75477c1652a2ba0ed12be24b2c293ad59b42497ad785c8d55fdc362c189308b0"
+    },
+    {
+      "input": "6bb28e5beb7fc450baebbd0e16fb9010a4b38b7be8b34992e6cffbd676306da8",
+      "output": "b5489669ac15f2c3039a4f468ed8cc82c0458e09da4f57d937526d6a5f203ee0"
+    },
+    {
+      "input": "c0278d70ec9d5d9feae1a49c467a86b3b9393e310c608aa44eab0254df7c0a7a",
+      "output": "e9db389a16894002d20525c6b6e0782e7a70f2cfaad869ea26b8aa2f17484936"
+    },
+    {
+      "input": "4b6af7a417d3dc05630cd8a00029c32177ca641a16a0103915985c3663800c37",
+      "output": "bd72fee3d0b74254fce0ea3425818aca47dbc7fd30d3b9ea3508ffe6fe38f6d2"
+    },
+    {
+      "input": "1e46ef1195fd15aff4fae27e0fd64f8bcd656589b6cdf0fda6644e8eadaa5e14",
+      "output": "c9595ad1bcdd6716ae471b3f1ae6874ac33b128c0232eee0d054317329694907"
+    },
+    {
+      "input": "20d72c6f99c278aea592c4f43c7333f21205bdef425ad97dbce4e22eabc6dd65",
+      "output": "e028255866b0050dbeee31d75c23bbca91b5eb1013d4b75d2a03b6a9cfd8ad78"
+    },
+    {
+      "input": "739011e4884304fb3563394beb3a5e5d30df88b77bf0e8ef468c66b899ba4aba",
+      "output": "f42f28d9b74eef49573243738110bd20ec2129ed6803c3989867ef49063a6eb2"
+    },
+    {
+      "input": "609628352d80ae8b9815f5b9186eb49792a99342cd0ae37c14d28bc92663d4bb",
+      "output": "a37d8418a87cd3ba8f2044839620dd59d559573a8856ebfa98f67590a6e4cda5"
+    },
+    {
+      "input": "33853e43d7c001db4629a01ff93f1ecc592968d14a952dbe14be294974bf9889",
+      "output": "8e299fde8a9af95161127ab5920d51721c26daa21cffa75f244142868d9ec303"
+    },
+    {
+      "input": "8ece50dac5a5aaef01227a5b5db54710589f8ec90b43e357cb9fb17fa45261cf",
+      "output": "b95063ba1096a23c930ee90ef777b5a638d92122e4ae4e8ed661523224371216"
+    },
+    {
+      "input": "772a039f42e7a62b02e57f49b44b15f47a793875a67fcc17a5088e28a4bcb349",
+      "output": "0af4a90deb3c90f6da1f26d9a72965218323a33d4b76ebe18dbbb85ee1ad95ad"
+    },
+    {
+      "input": "13852f4d498d1b6cc2afc4db6e48aa1a4060526f81f1778bd5b014598516ba51",
+      "output": "1af397b5457a54c16ef790f180ae60013de0c737452208cd8552db0e63b03a9a"
+    },
+    {
+      "input": "083bcac5eb070f060b4b9ed2664b94e3f56617fc6f264c24f6ef7141bf37122a",
+      "output": "2e1acab63e96331a4f3efc57f60400800f37c48dcb26c730235057ca53edd0f0"
+    },
+    {
+      "input": "397a037fc597e6166fabe54efe2aa2af4986cc831a4be5d041527206e6a1bdb3",
+      "output": "3e9bafde4138c97bf2b0611a766e34dfda0bb5f67514b5dfa2dab70566c22728"
+    },
+    {
+      "input": "5d1a6e972eae5d8ded1357bdf1df96b10021a2e301151d9fd4229b679ad9a855",
+      "output": "fd0f6ffe24012cf5c000c12ad516adb5bbbb980d7334ff0371a49fd9745079b1"
+    },
+    {
+      "input": "2134a8d2171aae458b5ab8ab751e6670302fdd95eb53cd7c4783a4518e5fa77f",
+      "output": "cec1f4faacb41b3e7b1c2654d1643af3b3a0a6a84839f2aeb12909d9623b7e40"
+    },
+    {
+      "input": "034ed477093d43c85cacef80cf75304305004f0a6081ca9c2c4b3f41c269c768",
+      "output": "34292431cb5725fe8cf7fa86abafe081ac9fba96ddb9f1f3a2a2a0dcbe0ade92"
+    },
+    {
+      "input": "aeb14372e16dbb0dbb1b25fdd85a3786ca1b34e0ff6fb454045f3b9647357dae",
+      "output": "1744ee229f76ce20b63de2fed60e39bc0f68d91d3a799ba4ab0fc9f5191cd324"
+    },
+    {
+      "input": "8756ae061b6469c365ae5c7fab32f14a290a9ec32c8c1b3de42904fb8508d9b5",
+      "output": "facdc65e39e98097747053a8f82ee6ab86942687653e2e90afc9805bbf205a5f"
+    },
+    {
+      "input": "3433d65655d305698f3100bdb7b08c8fc2ab73cc19bd58c23304a7f9ef7a36c1",
+      "output": "aadb5801cb9af8b69c5d67628cdf056b16e5894fa41bba393d2edb5597a04baf"
+    },
+    {
+      "input": "1e5416efbc3be3a26bfe825294410faf71f519fb1652c3d039fcc9411b1712b5",
+      "output": "933662241232503159d00e9d7e3a72fd317154a21bde76ce90216b707023f896"
+    },
+    {
+      "input": "38e4a1b7144f76146ee96c7aee2728364e1090a841ddc3632cfaadf5827cf693",
+      "output": "1d2b67520c83fc21cb99dc31d1197bbce6a5f9926d24023d579225c88c4ed2d1"
+    },
+    {
+      "input": "cda0ddf2a55d302bfe7a93efb7c31e7472ff1bf085003ecb8c0b2032e1a1d766",
+      "output": "4f038394be57702d5e7d9e13db093644882e419b1ef47376f9ededab556ad2b2"
+    },
+    {
+      "input": "a6d42924e19f528d9f157bb010a20852292907148ead99d77548e58116df6d41",
+      "output": "bd623adbe763388c7e60d9d51ed75787fd4e998d5784943e3679cbf107e7586c"
+    },
+    {
+      "input": "8e297147408d3502d69bc7f21a5b746fa8920dc4b8e7dc35ec017001f86e5ef0",
+      "output": "90031b950b501efbf0ec8d183299c2bb5e49f13c59fe01f976ff5ceb34a26b04"
+    },
+    {
+      "input": "b7ec19746da45c4b01ddf75f0be582024806e1cdaa53be2a82402ea6df9557e5",
+      "output": "d5047862ffc5c8fd2260456ab7611e9e456770602730a2e5725240c77e446625"
+    },
+    {
+      "input": "0fc8dbdbcc85840fb553a0be97fbfbd8f1d73992dcaa519391dc5e6bb0edce4f",
+      "output": "55b72200f20125d2d28588e5e2e7ffcea6ae3084b0ceffb420473200a8c6d382"
+    },
+    {
+      "input": "d1800589440a8b3b95ff80c3791e3670f1d9f46ec0545c4165cc8847a723713d",
+      "output": "1322f5cc270afc5a8bdbdecfb114ce0bc46b65575e64cc3b511263db01881168"
+    },
+    {
+      "input": "525d50f802a170cec7fbfd73360ec13f5b100c6f60ba536d0cb602dadc8144d2",
+      "output": "2f7316458f167d027869856738dad90d867bfa1ea6cf22a988ccedc0214e1a2c"
+    },
+    {
+      "input": "9bcf02f45be3fbe6f9c47d63712178219d2f3a4af27fc5dfc734c0095fb21542",
+      "output": "e748d5b3401875d9715479677703925892244267297042b8f750790816c238ae"
+    }
+  ],
+  "baseline_from_git_head": false,
+  "steady_output_fps": 24.74689252406525,
+  "stages": {
+    "vsr": {
+      "calls": 48,
+      "total_ms": 438.9458999994531,
+      "after_first_4_median_ms": 9.335300000202551
+    },
+    "cache_wait": {
+      "calls": 144,
+      "total_ms": 1554.5631000040885,
+      "after_first_4_median_ms": 0.06819999998697313
+    },
+    "nr": {
+      "calls": 48,
+      "total_ms": 1185.3302999879816,
+      "after_first_4_median_ms": 23.458549999304523
+    },
+    "encode_write": {
+      "calls": 48,
+      "total_ms": 271.21700000134297,
+      "after_first_4_median_ms": 3.888549999828683
+    }
+  }
+}

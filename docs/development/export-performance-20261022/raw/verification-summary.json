@@ -1,0 +1,73 @@
+{
+  "source_revision": "7835104bfab3e66d9fb08c3fd5171bc97b9aba9a",
+  "date": "2026-10-22",
+  "unique_tests_with_pass": 268,
+  "initial_failures_and_retests": [
+    {
+      "report": "color-workflow-tests.xml",
+      "test": "tests.test_enhancement_bypass::test_gui_hdr_export_uses_bypass_without_changing_half_precision[hdr10_pq]",
+      "message": "AttributeError: 'types.SimpleNamespace' object has no attribute '_cleanup_video_export'"
+    },
+    {
+      "report": "color-workflow-tests.xml",
+      "test": "tests.test_enhancement_bypass::test_gui_hdr_export_uses_bypass_without_changing_half_precision[hdr10_hlg]",
+      "message": "AttributeError: 'types.SimpleNamespace' object has no attribute '_cleanup_video_export'"
+    },
+    {
+      "report": "related-tests.xml",
+      "test": "tests.test_frame_generation.InlineControlTests::test_light_and_dark_layout",
+      "message": "_tkinter.TclError: Can't find a usable init.tcl in the following directories: \n    {C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\tcl\\tcl8.6}\n\nC:/Users/PC/AppData/Local/Programs/Python/Python313/tcl/tcl8.6/init.tcl: couldn't read file \"C:/Users/PC/AppData/Local/Programs/Python/Python313/tcl/tcl8.6/init.tcl\": No error\ncouldn't read file \"C:/Users/PC/AppData/Local/Programs/Python/Python313/tcl/tcl8.6/init.tcl\": No error\n    while executing\n\"s"
+    }
+  ],
+  "comparisons": [
+    {
+      "before": "before2-sr",
+      "after": "after-sr",
+      "frames": 48,
+      "all_frame_hashes_equal": true,
+      "before_fps": 32.88041454402383,
+      "after_fps": 53.908288211331254
+    },
+    {
+      "before": "before4k-sr",
+      "after": "after4k-sr",
+      "frames": 24,
+      "all_frame_hashes_equal": true,
+      "before_fps": 7.375633809563877,
+      "after_fps": 8.870876962286406
+    },
+    {
+      "before": "baseline4k-repeat-sr",
+      "after": "after4k-repeat-sr",
+      "frames": 24,
+      "all_frame_hashes_equal": true,
+      "before_fps": 7.324346180674745,
+      "after_fps": 10.210425037423398
+    },
+    {
+      "before": "before2-sr-nr",
+      "after": "baseline-repeat-sr-nr",
+      "frames": 48,
+      "all_frame_hashes_equal": false,
+      "before_fps": 24.765214250202295,
+      "after_fps": 20.298976544487736
+    }
+  ],
+  "nr_inputs_equal": true,
+  "nr_cross_run_outputs_equal": false,
+  "files_sha256": {
+    "dlss5tool/export_metrics.py": "b58abba73162a3cbb827ce3fe699a5acc7eb77f0777143352efd430a7f91e2f4",
+    "dlss5tool/export_preflight.py": "098f9e88590078f80c1d9d5cbde30985b6255dd24393991e612dcc50a3c84ef6",
+    "dlss5tool/gui.py": "f78e0c058c574f83694930cf433ab0065d7b485127457e3973a598383305d176",
+    "dlss5tool/render_cache.py": "a07951eaf977a37579d74a472c6db54a5c920320fe4a21fceb0a02111aaa62e4",
+    "dlss5tool/frame_generation.py": "7337093acd52e5b2db1729305a7958ee61d69bcc55c3857f14d895cd8fb141de",
+    "scripts/profile_cached_export.py": "7f84197a2d4df821fac80f761429138b8bd472d2a7795c2c36ef3cbf638f8642",
+    "locales/zh_CN.json": "c5c7310ff682582281554979526a902f07cd203c7fea3c5d8ab633390d96fcde",
+    "locales/en_US.json": "c6f5b39cd6427160490b82140595c67861c9195f9e109348cc4b61037c037493",
+    "runtime/vsr_host.dll": "5e66ddc8b4c56f2b77daed782cc8429b607d32bba358efb488fbd4c03ae515b7",
+    "runtime/nvngx_vsr.dll": "c3d88eea5ff7a548edefa66414cf6e77464d0947277c904f324dd23abf58a1ed",
+    "runtime/dlssnr_host_v2.dll": "c8ad631f8f78b2dedec6aec418c7a570d6fc5bf1b9ffa9f3514bcb0edd58fc13",
+    "runtime/dlss5_quality.dll": "238b763e7481e8bcfabd5313a73b4901edeeebe6265ed9ded81f4eee24ba97be"
+  },
+  "scope": "short synthetic SDR probes, RTX 4070 SUPER; no claim of user workload reproduction, full GPU utilization measurement, or long-term memory stability"
+}

@@ -1,0 +1,47 @@
+[
+  {
+    "folder": "F:\\project\\DLSS5Tool\\var\\fg-experiments\\0325f113b126454eb3e2820a41cf6b0e",
+    "source": "F:\\project\\DLSS5Tool\\tmp\\export-performance-20261022\\synthetic-960x540-48.mp4",
+    "result_sha256": "3fdcf6cf588148459eaed5d44930c27fe0ac1b7830d7c539215ba42a657a2d9a"
+  },
+  {
+    "folder": "F:\\project\\DLSS5Tool\\var\\fg-experiments\\6bf44aa831dc455e82b9002ef3429bf6",
+    "source": "F:\\project\\DLSS5Tool\\tmp\\export-performance-20261022\\synthetic-1920x1080-24.mp4",
+    "result_sha256": "8d2ab060f107c78abc66ae902c823b401732da52118d4f5ebbcd105e34e41d7a"
+  },
+  {
+    "folder": "F:\\project\\DLSS5Tool\\var\\fg-experiments\\89d1f8d10d2743979f99c3d5ed05aff9",
+    "source": "F:\\project\\DLSS5Tool\\tmp\\export-performance-20261022\\synthetic-1920x1080-24.mp4",
+    "result_sha256": "9b9e627c27fc3d52ce15f98008b5bda85b1d7975e4ab5db8de3f10c3c8e11a59"
+  },
+  {
+    "folder": "F:\\project\\DLSS5Tool\\var\\fg-experiments\\9394f51a44fa4351ab1346ad2c296430",
+    "source": "F:\\project\\DLSS5Tool\\tmp\\export-performance-20261022\\synthetic-1920x1080-24.mp4",
+    "result_sha256": "04194ca473a7afc4911cbce27cc1a5aea33eff4690e5ac96320c238b3c8aa919"
+  },
+  {
+    "folder": "F:\\project\\DLSS5Tool\\var\\fg-experiments\\a4528898ca4a42e69006fe6e89945a23",
+    "source": "F:\\project\\DLSS5Tool\\tmp\\export-performance-20261022\\synthetic-960x540-48.mp4",
+    "result_sha256": "981d63c39eb23a8bdbbbb20afedd3b747345386468a6f970f9c461a3fab8ef1c"
+  },
+  {
+    "folder": "F:\\project\\DLSS5Tool\\var\\fg-experiments\\b6eb0868be9f4981b42d39acaf0f23ea",
+    "source": "F:\\project\\DLSS5Tool\\tmp\\export-performance-20261022\\synthetic-960x540-48.mp4",
+    "result_sha256": "53ec8123bdce73bf7c4128a8402454dc452214d22f70d3bc6c2f86b0a750c6ee"
+  },
+  {
+    "folder": "F:\\project\\DLSS5Tool\\var\\fg-experiments\\bb8cd1b9f4f349e480995d26e6ccd1a6",
+    "source": "F:\\project\\DLSS5Tool\\tmp\\export-performance-20261022\\synthetic-960x540-48.mp4",
+    "result_sha256": "9dce4d5cba41b28796b9173435a197503d9ce73c4c51291e449910570311ca0b"
+  },
+  {
+    "folder": "F:\\project\\DLSS5Tool\\var\\fg-experiments\\e18ff42cee184c7ea24a55b285888fa1",
+    "source": "F:\\project\\DLSS5Tool\\tmp\\export-performance-20261022\\synthetic-960x540-48.mp4",
+    "result_sha256": "4a9c97273ee5b08a10b15aa01fbe09314df03758c7b1bf9e79970d764a1358f3"
+  },
+  {
+    "folder": "F:\\project\\DLSS5Tool\\var\\fg-experiments\\ef55f996728b4eda945191e270b5fd84",
+    "source": "F:\\project\\DLSS5Tool\\tmp\\export-performance-20261022\\synthetic-960x540-48.mp4",
+    "result_sha256": "4178b7b8d7d19e9b751a5d944ca508dcb2d100f9f6b643b30bcd4e3b0ca06596"
+  }
+]

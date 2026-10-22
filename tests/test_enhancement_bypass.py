@@ -343,6 +343,7 @@ def test_gui_hdr_export_uses_bypass_without_changing_half_precision(tmp_path, mo
     monkeypatch.setattr(gui, 'query_gpu_memory', lambda **k: None)
     app = SimpleNamespace(_guidance_started=mock.Mock(), logln=lambda *a: None,
                           _raise_if_export_cancelled=lambda: None)
+    app._cleanup_video_export = lambda actions=(), **kwargs: App._cleanup_video_export(app, actions, **kwargs)
     values = dict(nvenc_preset='p5', rate_control='quality', quality_profile='high', video_bitrate_mbps=20)
     with mock.patch.object(host, '_HostSession', side_effect=AssertionError('no host')):
         result = App._export_hdr_video(app, 'synthetic', {'is_hdr':True, 'profile':profile},

@@ -10,6 +10,7 @@ gui.py — 简约 DLSS5 实时预览 + 导出 (test4)
 运行： python gui.py
 """
 import ctypes
+import json
 import math
 import os
 import multiprocessing
@@ -48,6 +49,8 @@ from dlss5tool.image_alpha import (
 )
 from dlss5tool.shared_cache_budget import SharedCacheBudget
 from dlss5tool.memory_budget import bounded_frame_count, cache_limit_bytes, system_memory, require_memory_headroom
+from dlss5tool.export_metrics import FrameRate
+from dlss5tool.export_preflight import assess_video_export
 from dlss5tool.residual_composition import release_native_composer
 from dlss5tool import mod_paths
 from dlss5tool import export_queue as export_queue_state
@@ -110,6 +113,7 @@ OUTVIEW_CHOICES = {
     tr("output_view.difference"): 1,
     tr("output_view.side_by_side"): 2,
 }
+_PROGRESS_FRAME_COUNTS = object()
 STYLE_NAMES = {value: name for name, value in STYLE_CHOICES.items()}
 OUTVIEW_NAMES = {value: name for name, value in OUTVIEW_CHOICES.items()}
 EXPORT_MODE_CHOICES = {
@@ -3158,6 +3162,7 @@ class App(GpuResourceGuard, SharedRenderPreview, LocalPreviewComposition, Previe
             self.logln("[队列] 没有等待处理的任务")
             return
         plans = []
+        video_plans = []
         risk_order = {"low": 0, "unknown": 1, "medium": 2, "high": 3, "extreme": 4}
         gpu_memory = query_gpu_memory(cache_seconds=0)
         for job in self._queue_jobs:
@@ -3182,6 +3187,12 @@ class App(GpuResourceGuard, SharedRenderPreview, LocalPreviewComposition, Previe
                 job.media_kind == "video" and export.get("hdr_mode")
                 and (job.color_info or {}).get("is_hdr")
             )
+            if job.media_kind == 'video':
+                video_plans.append((width, height, scale, is_hdr, {
+                    'frames': metadata.get('frames', 0), 'fps': metadata.get('fps', 0),
+                    'settings': {**settings, **export},
+                }))
+                continue
             estimate = estimate_resources(width, height, scale, is_hdr=is_hdr)
             risk = classify_resource_risk(estimate, gpu_memory)
             plans.append((risk_order.get(risk, 1), width, height, scale, is_hdr))
@@ -3195,6 +3206,10 @@ class App(GpuResourceGuard, SharedRenderPreview, LocalPreviewComposition, Previe
                 self._confirmed_super_resolution_plans.add(
                     (plan_width, plan_height, plan_scale, plan_hdr)
                 )
+        for width, height, scale, is_hdr, plan in video_plans:
+            if not self._confirm_super_resolution_export(width, height, scale,
+                    is_hdr=is_hdr, notify=True, video_plan=plan):
+                return
         # Confirmation dialogs pump Tk; recheck before reserving the queue.
         if not self._gpu_admit('queue'):
             return
@@ -3362,7 +3377,7 @@ class App(GpuResourceGuard, SharedRenderPreview, LocalPreviewComposition, Previe
         except Exception:
             pass
 
-    def set_progress(self, i, total, extra=""):
+    def set_progress(self, i, total, extra="", *, frame_counts=_PROGRESS_FRAME_COUNTS):
         try:
             if not total:
                 self.root.update_idletasks()
@@ -3373,27 +3388,29 @@ class App(GpuResourceGuard, SharedRenderPreview, LocalPreviewComposition, Previe
             elapsed = 0.0
             if self._export_t0:
                 elapsed = max(0.0, time.perf_counter() - self._export_t0)
-            inst_fps = (i / elapsed) if elapsed >= 0.25 and i > 0 else 0.0
-            if inst_fps > 0:
-                if self._export_ema_fps is None:
-                    self._export_ema_fps = inst_fps
-                else:
-                    self._export_ema_fps = 0.85 * self._export_ema_fps + 0.15 * inst_fps
-            fps = self._export_ema_fps or inst_fps
-            remain = ((total - i) / fps) if fps > 0 and i < total else 0.0
+            counts = (i, total) if frame_counts is _PROGRESS_FRAME_COUNTS else frame_counts
+            rate = getattr(self, '_export_rate', None)
+            if rate is None:
+                rate = self._export_rate = FrameRate()
+            measured = rate.update(*counts) if counts is not None else {}
+            fps, remain = measured.get('fps'), measured.get('remaining_seconds')
             pct = (100.0 * i / total) if total else 0.0
-            stats = f"{fps:.1f} fps    已用 {_format_duration(elapsed)}    剩余 {_format_duration(remain)}"
-            if fps > 0 and i < total:
+            stats = tr('export.progress.measuring', elapsed=_format_duration(elapsed))
+            if fps is not None:
+                stats = tr('export.progress.rate', fps=f'{fps:.1f}', elapsed=_format_duration(elapsed))
+            if fps and remain is not None and remain > 0:
+                stats += tr('export.progress.remaining', remaining=_format_duration(remain))
                 done_at = time.localtime(time.time() + remain)
-                stats += time.strftime("    完成 %H:%M:%S", done_at)
-            elif i >= total and elapsed > 0:
-                stats = f"{fps:.1f} fps    用时 {_format_duration(elapsed)}    已完成"
+                stats += tr('export.progress.finish_at', clock=time.strftime('%H:%M:%S', done_at))
+            elif counts and counts[1] and counts[0] >= counts[1]:
+                stats += tr('export.progress.finalizing')
             label = (extra or "").strip()
             if label:
+                position = f'{int(counts[0])}/{int(counts[1])}' if counts else f'{pct:.0f}%'
                 stats = (
-                    f"{label}  {i}/{total} ({pct:.0f}%)    {stats}"
+                    f"{label}  {position} ({pct:.0f}%)    {stats}"
                     if stats else
-                    f"{label}  {i}/{total} ({pct:.0f}%)"
+                    f"{label}  {position} ({pct:.0f}%)"
                 )
             self._update_active_queue_progress(i, total, label)
             try:
@@ -9252,6 +9269,8 @@ class App(GpuResourceGuard, SharedRenderPreview, LocalPreviewComposition, Previe
             'workbench_mode': self._workbench_mode,
             'gpu_resources': self._gpu_resource_snapshot(),
             'system_memory': system_memory(),
+            'export_performance': getattr(self, '_last_export_profile', None),
+            'export_preflight': getattr(self, '_last_export_preflight', None),
             "settings": self._collect_settings(include_cache_pool=deep),
             "export_settings": self._collect_export_settings(),
             "preview_super_resolution": self._preview_effect_enabled("super_resolution"),
@@ -9822,6 +9841,8 @@ class App(GpuResourceGuard, SharedRenderPreview, LocalPreviewComposition, Previe
         self._update_queue_action_states()
         self._export_t0 = time.perf_counter()
         self._export_ema_fps = None
+        self._export_rate = FrameRate()
+        self._last_export_profile = None
         self.set_status(status_text)
 
     def _end_export_ui(
@@ -9907,7 +9928,11 @@ class App(GpuResourceGuard, SharedRenderPreview, LocalPreviewComposition, Previe
         if self._export_cancel_event.is_set():
             raise _ExportCancelled()
 
-    def _confirm_super_resolution_export(self, width, height, scale, is_hdr=False, notify=True):
+    def _confirm_super_resolution_export(self, width, height, scale, is_hdr=False, notify=True,
+                                         video_plan=None):
+        if video_plan is not None:
+            return self._confirm_video_export_resources(
+                width, height, scale, is_hdr, notify, video_plan)
         scale = normalize_scale(scale)
         if scale == 1:
             return True
@@ -9961,6 +9986,43 @@ class App(GpuResourceGuard, SharedRenderPreview, LocalPreviewComposition, Previe
         if confirmed:
             self._confirmed_super_resolution_plans.add(plan_key)
         return confirmed
+
+    def _confirm_video_export_resources(self, width, height, scale, is_hdr, notify, plan):
+        scale = normalize_scale(scale)
+        if scale > 1 and not self._confirm_super_resolution_export(
+                width, height, scale, is_hdr=is_hdr, notify=False):
+            return False
+        settings = dict(plan.get('settings') or {}, super_resolution_scale=scale,
+                        _source_is_hdr=is_hdr, hdr_mode=is_hdr)
+        assessment = assess_video_export(width, height, plan.get('frames', 0), plan.get('fps', 0),
+            settings, memory=system_memory(), gpu_memory=query_gpu_memory(),
+            cache_bytes=self._preview_cache_bytes())
+        self._last_export_preflight = assessment
+        self.logln('[导出预检] ' + json.dumps(assessment, ensure_ascii=False))
+        warnings = assessment['warnings']
+        if not warnings or not notify:
+            return True
+        key = (width, height, scale, is_hdr, tuple(warnings),
+               bool(settings.get('guidance_mode')), assessment['cache_budget_bytes'])
+        confirmed = getattr(self, '_confirmed_video_export_plans', None)
+        if confirmed is None:
+            confirmed = self._confirmed_video_export_plans = set()
+        if key in confirmed:
+            return True
+        estimate = assessment['estimate']
+        duration = assessment['duration_seconds']
+        message = tr('export.preflight.summary', width=estimate['output_width'],
+            height=estimate['output_height'], duration=_format_duration(duration) if duration else '—',
+            cache=format_bytes(assessment['cache_budget_bytes']))
+        message += '\n\n' + '\n\n'.join(tr('export.preflight.' + item) for item in warnings)
+        if 'long_run' in warnings:
+            message += '\n\n' + tr('export.preflight.long_advice')
+        message += '\n\n' + tr('export.preflight.continue')
+        accepted = messagebox.askyesno(tr('export.preflight.title'), message,
+                                      icon='warning', parent=self.root)
+        if accepted:
+            confirmed.add(key)
+        return accepted
 
     def _export_image(self):
         settings = self._collect_settings()
@@ -10412,7 +10474,13 @@ class App(GpuResourceGuard, SharedRenderPreview, LocalPreviewComposition, Previe
         manager = self._shared_manager()
         setup = getattr(self, '_shared_setup_thread', None)
         retiring = getattr(self, '_shared_retiring', None)
+        latest_counts = [None]
+        encoding_profile = [None]
+        def on_frames(done, total):
+            latest_counts[0] = (done, total)
         def worker():
+            session = None
+            outcome = 'failed'
             try:
                 for pending in (setup, retiring):
                     if pending:
@@ -10420,12 +10488,24 @@ class App(GpuResourceGuard, SharedRenderPreview, LocalPreviewComposition, Previe
                 session = manager.session(source_path, config)
                 result = encode_cached(
                     session, out_path, config, self._export_cancel_event, on_progress,
+                    frame_progress=on_frames, performance_sink=lambda value: encoding_profile.__setitem__(0, value),
                 )
+                outcome = 'complete'
                 events.put(('done', result))
             except BaseException as error:
+                outcome = 'cancelled' if isinstance(error, Cancelled) else 'failed'
                 events.put(('error', error))
+            finally:
+                from dlss5tool.render_cache import RenderSession
+                snapshots = []
+                while isinstance(session, RenderSession) and len(snapshots) < 3:
+                    snapshots.append({'stage': session.settings.get('_render_stage', 'output'),
+                                      **session.snapshot()})
+                    session = session.upstream
+                self._last_export_profile = {'status': outcome, 'encoded_frames': latest_counts[0],
+                    'encoding': encoding_profile[0], 'render_session_lifetime': snapshots}
         def on_progress(message, fraction, counts=None):
-            events.put(('progress', (message, fraction, counts)))
+            events.put(('progress', (message, fraction, counts or latest_counts[0])))
         thread = threading.Thread(target=worker, name='dlss-fg-export', daemon=True)
         thread.start()
         while True:
@@ -10436,10 +10516,8 @@ class App(GpuResourceGuard, SharedRenderPreview, LocalPreviewComposition, Previe
                 continue
             if kind == 'progress':
                 message, fraction, counts = value
-                if counts and counts[1]:
-                    self.set_progress(int(counts[0]), int(counts[1]), message)
-                else:
-                    self.set_progress(round(float(fraction or 0) * 1000), 1000, message)
+                self.set_progress(round(float(fraction or 0) * 1000), 1000, message,
+                                  frame_counts=counts)
             elif kind == 'error':
                 thread.join(timeout=1)
                 if isinstance(value, Cancelled):
@@ -10447,6 +10525,15 @@ class App(GpuResourceGuard, SharedRenderPreview, LocalPreviewComposition, Previe
                 raise value
             else:
                 thread.join(timeout=1)
+                profile = getattr(self, '_last_export_profile', None) or {}
+                self.logln('[导出性能] ' + json.dumps({
+                    'encoding': (profile.get('encoding') or {}).get('stages', {}),
+                    'render_sessions': [{
+                        **{k: v for k, v in item.items() if k in {'stage', 'computed', 'replayed',
+                            'snapshot_copied_bytes', 'snapshot_borrowed_bytes'}},
+                        'timings': item.get('performance', {}).get('stages', {}),
+                    } for item in profile.get('render_session_lifetime', [])],
+                }, ensure_ascii=False))
                 return value
 
     def _export_video_source(
@@ -10521,6 +10608,7 @@ class App(GpuResourceGuard, SharedRenderPreview, LocalPreviewComposition, Previe
                     'output_path': out_path or '', 'frames': 0}
         if not self._confirm_super_resolution_export(
             w, h, super_resolution_scale, is_hdr=hdr_active, notify=notify,
+            video_plan={'frames': n, 'fps': fps, 'settings': settings},
         ):
             result = {
                 "success": False, "cancelled": True, "error": "用户取消超分导出",

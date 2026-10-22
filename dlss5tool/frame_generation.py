@@ -372,7 +372,13 @@ def is_cut(previous, current):
 
 def export_video(source, output, *, multiplier=2, scale=1, enhance=False, settings=None,
                  cancel=None, progress=None, log_dir=None, frame_sink=None, render_gate=None,
-                 metadata_sink=None, input_session=None, source_inspector=None, gpu_export=None):
+                 metadata_sink=None, input_session=None, source_inspector=None, gpu_export=None,
+                 telemetry=None):
+    from dlss5tool.export_metrics import ExportTelemetry
+    telemetry = telemetry or ExportTelemetry()
+    def measured(name, function, *args, **kwargs):
+        with telemetry.measure(name):
+            return function(*args, **kwargs)
     cancel = cancel or threading.Event()
     progress = progress or (lambda text, value: None)
     source = Path(source).resolve(strict=True)
@@ -489,11 +495,11 @@ def export_video(source, output, *, multiplier=2, scale=1, enhance=False, settin
         if scale > 1 and input_session is None:
             from dlss5tool.super_resolution import ProcessSuperResolution
             _emit_progress(progress, i18n.tr('status.init_super_resolution'), 0)
-            sr = ProcessSuperResolution(w, h, scale, is_hdr=hdr)
+            sr = measured('super_resolution_init', ProcessSuperResolution, w, h, scale, is_hdr=hdr)
         if creates_nr:
             from dlss5tool.dlss_host_process import ProcessLive
             _emit_progress(progress, i18n.tr('status.init_enhancement'), 0)
-            nr = ProcessLive(process_w, process_h, config)
+            nr = measured('enhancement_init', ProcessLive, process_w, process_h, config)
             if getattr(nr, 'adapter_info', None):
                 config['_composition_adapter'] = dict(nr.adapter_info)
         if input_session is None:
@@ -537,16 +543,17 @@ def export_video(source, output, *, multiplier=2, scale=1, enhance=False, settin
         publish_metadata()
         previous = previous_proxy = previous_scene_proxy = None
         previous_reference = None
+        input_pair = None
         index = 0
         output_index = 0
         def write(rgba, reference=None, mix_source=None):
             nonlocal output_index
             check_cancel(cancel)
             if render_only:
-                if mix_source is None:
-                    frame_sink(output_index, rgba, reference)
-                else:
-                    frame_sink(output_index, rgba, reference, mix_source=mix_source)
+                options = {} if mix_source is None else {'mix_source': mix_source}
+                if getattr(frame_sink, 'accepts_source_pair', False):
+                    options['source_pair'] = input_pair
+                frame_sink(output_index, rgba, reference, **options)
                 output_index += 1
                 return
             if view:
@@ -579,18 +586,19 @@ def export_video(source, output, *, multiplier=2, scale=1, enhance=False, settin
             if input_session is not None:
                 if index >= total:
                     break
-                pair = input_session.wait(index, cancel)
+                pair = measured('upstream_wait', input_session.wait, index, cancel)
+                input_pair = pair
                 rgba, reference = pair
                 mix_source = getattr(pair, 'mix_source', reference)
             elif meta['is_hdr']:
-                rgba = capture.read()
+                rgba = measured('decode', capture.read)
                 if rgba is None:
                     break
                 if not hdr:
                     coded_bgr = np.ascontiguousarray(rgba[..., 2::-1])
                     rgba = cv2.cvtColor(tone_map_hdr_preview(coded_bgr, meta), cv2.COLOR_BGR2RGBA)
             else:
-                ok, bgr = capture.read()
+                ok, bgr = measured('decode', capture.read)
                 if not ok:
                     break
                 rgba = cv2.cvtColor(bgr, cv2.COLOR_BGR2RGBA)
@@ -601,7 +609,8 @@ def export_video(source, output, *, multiplier=2, scale=1, enhance=False, settin
                 reference = resize_original(rgba, (ow, oh)).copy()
             if sr:
                 _emit_progress(progress, i18n.tr('status.super_resolution_frame', frame=index+1), index/max(total, 1))
-                rgba = sr.process(rgba).copy()
+                # ProcessSuperResolution returns an owned snapshot already.
+                rgba = measured('super_resolution', sr.process, rgba)
             scene_proxy = analysis_rgba8(rgba, config)
             cut = previous_scene_proxy is not None and is_cut(previous_scene_proxy, scene_proxy)
             if input_session is not None:
@@ -623,7 +632,7 @@ def export_video(source, output, *, multiplier=2, scale=1, enhance=False, settin
                 mix_source = rgba
                 if nr:
                     _emit_progress(progress, i18n.tr('status.enhancement_frame', frame=index+1), index/max(total, 1))
-                    processed = nr.process(rgba, reset=index == 0 or cut)
+                    processed = measured('enhancement', nr.process, rgba, reset=index == 0 or cut)
                 else:
                     processed = appearance.bypass_frame(rgba, bypass)
                 if processed is None:
@@ -639,23 +648,26 @@ def export_video(source, output, *, multiplier=2, scale=1, enhance=False, settin
                 if composition_encoded:
                     rgba = processed  # No FG or CPU consumer; only scene-source bookkeeping remains.
                 elif hdr:
-                    rgba = compose_hdr_frame(rgba, processed, view=0, mix=1 if view else config.get('output_mix', 1), profile=meta['profile'], settings=config)
+                    rgba = measured('composition', compose_hdr_frame, rgba, processed, view=0,
+                        mix=1 if view else config.get('output_mix', 1), profile=meta['profile'], settings=config)
                 else:
                     from dlss5tool.video_export import compose_sdr_rgba
-                    rgba = compose_sdr_rgba(rgba,processed,mix=1 if view else config.get('output_mix',1),settings=config)
+                    rgba = measured('composition', compose_sdr_rgba, rgba, processed,
+                        mix=1 if view else config.get('output_mix',1), settings=config)
             elif input_session is not None and config.get('_render_stage') == 'output':
                 if appearance.enhancement_bypass(config) == 'source':
                     rgba = mix_source
                 elif hdr:
-                    rgba = compose_hdr_frame(mix_source, rgba, view=0,
+                    rgba = measured('composition', compose_hdr_frame, mix_source, rgba, view=0,
                         mix=config.get('output_mix', 1), profile=meta['profile'], settings=config)
                 else:
                     from dlss5tool.video_export import compose_sdr_rgba
-                    rgba = compose_sdr_rgba(mix_source,rgba,mix=config.get('output_mix',1),settings=config)
+                    rgba = measured('composition', compose_sdr_rgba, mix_source, rgba,
+                        mix=config.get('output_mix',1), settings=config)
             rgba = final_size(rgba)
             if input_session is not None and config.get('_render_stage') == 'output' and reference is not None:
                 reference = final_size(reference)
-            proxy = analysis_rgba8(rgba, config)
+            proxy = analysis_rgba8(rgba, config) if native else None
             if shared_output:
                 motion=motion_for(proxy,previous_proxy,previous is None or cut)
                 def consume_generated(subframe,valid):
@@ -688,7 +700,10 @@ def export_video(source, output, *, multiplier=2, scale=1, enhance=False, settin
             if shared_enhancement is None and not composition_encoded:
                 write(rgba, reference, mix_source=(mix_source
                       if config.get('_render_stage') == 'base' and scale > 1 else None))
-            previous, previous_proxy = rgba.copy(), proxy.copy()
+            # Only FG needs independent previous-frame pixels. Ordinary SR/NR
+            # retains a frame for endpoint bookkeeping, without another copy.
+            previous = rgba.copy() if native else rgba
+            previous_proxy = proxy.copy() if native else None
             previous_reference = reference
             previous_scene_proxy = cv2.resize(scene_proxy, (64, 64), interpolation=cv2.INTER_AREA)
             index += 1
@@ -742,6 +757,7 @@ def export_video(source, output, *, multiplier=2, scale=1, enhance=False, settin
             except OSError as cleanup:
                 cleanup_errors.append(str(cleanup))
         report['cleanup_errors'] = cleanup_errors
+        report['performance'] = telemetry.snapshot()
         (log_dir / 'result.json').write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding='utf-8')
 
 

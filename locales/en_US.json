@@ -1638,5 +1638,20 @@
   "realtime.preview.error.size": "Source too large for a snapshot; enhancement remains available.",
   "realtime.preview.error.timeout": "Snapshot timed out and was stopped. Retry if needed; enhancement is unaffected.",
   "realtime.preview.error.changed": "The source moved or resized during capture. Refresh again.",
-  "realtime.preview.error.blank": "No recognizable image (possibly black or unsupported capture). Retry if needed; enhancement remains available."
+  "realtime.preview.error.blank": "No recognizable image (possibly black or unsupported capture). Retry if needed; enhancement remains available.",
+  "export.progress.measuring": "Measuring actual processing speed · elapsed {elapsed}",
+  "export.progress.rate": "{fps} frames/s · elapsed {elapsed}",
+  "export.progress.remaining": " · estimated remaining {remaining}",
+  "export.progress.finish_at": " · estimated finish {clock}",
+  "export.progress.finalizing": " · finalizing container and audio",
+  "export.preflight.title": "Export resource advice",
+  "export.preflight.summary": "Duration {duration}; processing size {width}×{height}; cache budget {cache}.",
+  "export.preflight.ram_peak": "Available system memory is below the processing estimate. Reduce the cache budget, close other tasks, or reduce the output size. Splitting the duration alone does not reduce per-frame memory requirements.",
+  "export.preflight.vram_peak": "Available video memory is below the processing estimate. Reduce the upscale factor or output size, or close other GPU tasks. Splitting the duration alone does not reduce per-frame video memory requirements.",
+  "export.preflight.vram_margin": "Video memory headroom is tight. Models and drivers may allocate additional resources; try a short clip with the same settings first.",
+  "export.preflight.large_output": "Processing above 4K may substantially increase full-frame transfers, processing time and resource peaks. Try a short clip with the same settings first.",
+  "export.preflight.long_run": "This is a long upscaling task. Long-run memory stability has not been confirmed in this environment; duration alone does not imply video memory exhaustion.",
+  "export.preflight.unknown_resources": "System or video memory headroom could not be fully queried, so resource risk cannot be assessed reliably.",
+  "export.preflight.long_advice": "Test a short clip from the same source and observe speed and memory before deciding whether to split and process it sequentially. The cache budget is not a process-wide memory limit; the whole video need not be cached. Segment boundaries may differ visually. Automatic segmentation and resume are not available.",
+  "export.preflight.continue": "This advice does not guarantee success or failure. Continue exporting?"
 }

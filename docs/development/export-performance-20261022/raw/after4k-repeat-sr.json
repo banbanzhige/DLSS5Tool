@@ -1,0 +1,414 @@
+{
+  "case": "sr",
+  "settings": {
+    "nr_quality": {
+      "total": 0.0,
+      "darken": 1.0,
+      "brighten": 1.0,
+      "color": 1.0,
+      "luminance": 1.0,
+      "protection": false,
+      "feather": 12.0,
+      "regions": []
+    },
+    "nr_residual": {
+      "residualMultiplier": 1.0,
+      "shadowStructureMultiplier": 1.0,
+      "reflectionGlowMultiplier": 1.0,
+      "residualSaturation": 1.0,
+      "residualLightness": 1.0
+    },
+    "guidance_flow_edge": 512,
+    "guidance_depth_edge": 512,
+    "guidance_flow_updates": 6,
+    "guidance_depth_smoothing": 0.9,
+    "guidance_depth_low": 1.0,
+    "guidance_depth_high": 99.0,
+    "guidance_flow_range": 5.0,
+    "guidance_depth_palette": "gray",
+    "guidance_depth_invert": false,
+    "preview_view": "compare",
+    "preview_compare_layout": "wipe",
+    "guidance_preview_view": "flow",
+    "guidance_compare_target": "flow",
+    "style": 0,
+    "enable_5x": false,
+    "intensity": 1.0,
+    "use_intensity": true,
+    "local_tone": 1.0,
+    "use_local_tone": true,
+    "local_struct": 1.0,
+    "use_local_struct": true,
+    "use_auto_mask": true,
+    "skin_struct": 1.0,
+    "output_view": 0,
+    "output_mix": 1.0,
+    "use_output_mix": true,
+    "export_mode": "single",
+    "parallel_workers": 4,
+    "warmup_frames": 8,
+    "decode_buffer": 4,
+    "nvenc_preset": "p5",
+    "output_container": "mp4",
+    "output_resolution": "source",
+    "super_resolution_scale": 2,
+    "frame_generation_multiplier": 1,
+    "preview_super_resolution": true,
+    "preview_frame_generation": true,
+    "custom_output_width": 1920,
+    "custom_output_height": 1080,
+    "rate_control": "quality",
+    "quality_profile": "high",
+    "video_bitrate_mbps": 20.0,
+    "hdr_mode": false,
+    "host_backend": "v2",
+    "render_gpu": "dxgi:10DE:2783:27831ED3:000000A1:00000002EDD00000:P000001000",
+    "dlss_runtime": "",
+    "mods_directory": "",
+    "guidance_flow_weights": "",
+    "guidance_depth_weights": "",
+    "ui_modules_open": false,
+    "guidance_mode": 0,
+    "guidance_skip_still_flow": true,
+    "guidance_flow_backend": "raft",
+    "guidance_gpu_transport": "auto",
+    "guidance_flow_grid": 1,
+    "guidance_edge": 720,
+    "guidance_flow_direction": "backward",
+    "guidance_depth_encoder": "vitl",
+    "guidance_device": "auto",
+    "guidance_depth_profile": "sdpa_fp16",
+    "guidance_execution": "raft_streams",
+    "host_zero_fast_path": true,
+    "host_persistent_buffers": true,
+    "host_submission": "merged",
+    "host_in_flight": 1,
+    "host_auto_fallback": false,
+    "host_mode_profiles": {
+      "zero": {
+        "host_submission": "merged",
+        "host_in_flight": 1,
+        "host_persistent_buffers": true,
+        "host_zero_fast_path": true
+      },
+      "guidance": {
+        "host_submission": "merged",
+        "host_in_flight": 6,
+        "host_persistent_buffers": true,
+        "host_zero_fast_path": false
+      }
+    },
+    "ui_export_open": false,
+    "ui_host_open": false,
+    "ui_preview_open": false,
+    "ui_log_open": true,
+    "ui_theme": "light",
+    "workbench_mode": "local",
+    "ui_language": "zh_CN",
+    "inspector_width": 360,
+    "preview_detached": false,
+    "preview_window_geometry": "",
+    "queue_output_dir": "",
+    "preview_quality": "auto",
+    "preview_auto_prerender": false,
+    "preview_prefetch": 120,
+    "preview_cache": 400,
+    "preview_cache_mb": 8192,
+    "preview_scrub_ms": 40
+  },
+  "adapters": [
+    {
+      "id": "dxgi:10DE:2783:27831ED3:000000A1:00000002EDD00000:P000001000",
+      "name": "NVIDIA GeForce RTX 4070 SUPER",
+      "preference_index": 0,
+      "vendor_id": 4318,
+      "device_id": 10115,
+      "subsys_id": 662904531,
+      "revision": 161,
+      "dedicated_video_memory": 12579766272,
+      "luid_high": 0,
+      "luid_low": 80454,
+      "d3d12_feature_level": "12_0",
+      "cuda_index": 0,
+      "pci_bus_id": "0000:01:00.0"
+    }
+  ],
+  "scope": "GUI shared cache + encode_cached; frame hashes add equal probe overhead",
+  "result": {
+    "experimental": true,
+    "warning": "实验功能：普通视频采用 NVOFA 估计光流及平面深度；遮挡/字幕/HDR 画质未完整验收。3×/4×目前仅限本机 RTX 4070 SUPER 与固定运行库，已知部分生成帧时间位置偏差。不会自动降倍率或位深；正常帧对生成无效时停止。",
+    "source": "F:\\project\\DLSS5Tool\\tmp\\export-performance-20261022\\synthetic-1920x1080-24.mp4",
+    "output": "F:\\project\\DLSS5Tool\\tmp\\export-performance-20261022\\after4k-repeat-sr.mp4",
+    "multiplier": 1,
+    "spatial_scale": 2,
+    "enhance": true,
+    "status": "complete",
+    "real_frames": 24,
+    "generated_frames": 0,
+    "cut_holds": 0,
+    "endpoint_holds": 0,
+    "width": 3840,
+    "height": 2160,
+    "source_rate": "30",
+    "output_rate": "30",
+    "enhancement_bypassed": true,
+    "enhancement_bypass": "source",
+    "appearance_version": 1,
+    "composition_backend": "cpu-reference",
+    "color": "srgb",
+    "output_view": 0,
+    "runtime_sha256": null,
+    "log_dir": "F:\\project\\DLSS5Tool\\tmp\\export-performance-20261022\\native-logs\\a7a6879e9ba44b0bac9424f9dba7eeba",
+    "source_frames": 24,
+    "source_metadata": {
+      "width": 1920,
+      "height": 1080,
+      "pix_fmt": "yuv420p",
+      "r_frame_rate": "30/1",
+      "avg_frame_rate": "30/1",
+      "duration": "0.800000",
+      "nb_frames": "24",
+      "fps": 30.0,
+      "frames": 24,
+      "color_primaries": "bt709",
+      "color_space": "bt709",
+      "color_transfer": "unknown",
+      "color_range": "tv",
+      "pixel_format": "yuv420p",
+      "profile": "srgb",
+      "is_hdr": false,
+      "label": "SDR / sRGB"
+    },
+    "scene_cuts": [],
+    "hdr_metadata": null,
+    "cache_hits": 7,
+    "cache_misses": 17,
+    "new_frames": 23,
+    "performance": {
+      "scope": "wall-time; overlapping stages are not additive",
+      "elapsed_seconds": 2.9492850999995426,
+      "stages": {
+        "render_wait": {
+          "calls": 24,
+          "seconds": 1.4764901000053214,
+          "max_seconds": 0.09363309999935154,
+          "warm_calls": 20,
+          "warm_seconds": 1.476157900004182
+        },
+        "encode_conversion": {
+          "calls": 24,
+          "seconds": 0.14846399999987625,
+          "max_seconds": 0.009353900000860449,
+          "warm_calls": 20,
+          "warm_seconds": 0.12228479999976116
+        },
+        "encode_write": {
+          "calls": 24,
+          "seconds": 0.3740490000000136,
+          "max_seconds": 0.04765689999840106,
+          "warm_calls": 20,
+          "warm_seconds": 0.2778180000022985
+        },
+        "encode_finish": {
+          "calls": 1,
+          "seconds": 0.39367440000023635,
+          "max_seconds": 0.39367440000023635,
+          "warm_calls": 0,
+          "warm_seconds": 0.0
+        }
+      },
+      "system_memory_samples": [
+        {
+          "seconds": 0.5514063000009628,
+          "free_physical_bytes": 42928119808,
+          "free_commit_bytes": 34942144512
+        },
+        {
+          "seconds": 2.5528345000002446,
+          "free_physical_bytes": 42086830080,
+          "free_commit_bytes": 33847685120
+        }
+      ]
+    }
+  },
+  "cache": {
+    "spatial": {
+      "frames": 5,
+      "bytes": 331776000,
+      "computed": 24,
+      "replayed": 0,
+      "complete": false,
+      "snapshot_copied_bytes": 1592524800,
+      "snapshot_borrowed_bytes": 0,
+      "performance": {
+        "scope": "wall-time; overlapping stages are not additive",
+        "elapsed_seconds": 6.490941699999894,
+        "stages": {
+          "decode": {
+            "calls": 25,
+            "seconds": 0.0939879000034125,
+            "max_seconds": 0.02603860000090208,
+            "warm_calls": 21,
+            "warm_seconds": 0.059481300002516946
+          },
+          "super_resolution": {
+            "calls": 24,
+            "seconds": 0.5502444999983709,
+            "max_seconds": 0.08398769999985234,
+            "warm_calls": 20,
+            "warm_seconds": 0.4099915000006149
+          },
+          "cache_snapshot": {
+            "calls": 24,
+            "seconds": 0.26802419999694393,
+            "max_seconds": 0.014908099999956903,
+            "warm_calls": 20,
+            "warm_seconds": 0.2305177999951411
+          }
+        },
+        "system_memory_samples": [
+          {
+            "seconds": 3.385813799999596,
+            "free_physical_bytes": 43623796736,
+            "free_commit_bytes": 36445765632
+          },
+          {
+            "seconds": 5.4030191999991075,
+            "free_physical_bytes": 42177413120,
+            "free_commit_bytes": 33972686848
+          }
+        ]
+      },
+      "ranges": [
+        19,
+        20,
+        21,
+        22,
+        23
+      ]
+    },
+    "base": {
+      "frames": 5,
+      "bytes": 331776000,
+      "computed": 24,
+      "replayed": 0,
+      "complete": true,
+      "snapshot_copied_bytes": 0,
+      "snapshot_borrowed_bytes": 1592524800,
+      "performance": {
+        "scope": "wall-time; overlapping stages are not additive",
+        "elapsed_seconds": 6.48264779999954,
+        "stages": {
+          "upstream_wait": {
+            "calls": 24,
+            "seconds": 1.3488481999938813,
+            "max_seconds": 0.08604949999971723,
+            "warm_calls": 20,
+            "warm_seconds": 1.0819330999929662
+          },
+          "cache_snapshot": {
+            "calls": 24,
+            "seconds": 0.0002672000009624753,
+            "max_seconds": 1.650000012887176e-05,
+            "warm_calls": 20,
+            "warm_seconds": 0.00021689999994123355
+          }
+        },
+        "system_memory_samples": [
+          {
+            "seconds": 3.5202661999992415,
+            "free_physical_bytes": 43623796736,
+            "free_commit_bytes": 36445765632
+          },
+          {
+            "seconds": 5.554373299999497,
+            "free_physical_bytes": 42105352192,
+            "free_commit_bytes": 33905819648
+          }
+        ]
+      },
+      "ranges": [
+        19,
+        20,
+        21,
+        22,
+        23
+      ]
+    }
+  },
+  "status": "complete",
+  "elapsed_seconds": 9.108731400001489,
+  "worker_processes_still_alive": [],
+  "memory_samples": [
+    {
+      "seconds": 4.1231494000003295,
+      "private_bytes": {
+        "38588": 812982272,
+        "6244": 791912448
+      },
+      "system": {
+        "total_physical_bytes": 68498677760,
+        "free_physical_bytes": 42928119808,
+        "free_commit_bytes": 34942144512
+      }
+    },
+    {
+      "seconds": 5.143899300001067,
+      "private_bytes": {
+        "38588": 808169472,
+        "6244": 717750272
+      },
+      "system": {
+        "total_physical_bytes": 68498677760,
+        "free_physical_bytes": 42103169024,
+        "free_commit_bytes": 33904754688
+      }
+    }
+  ],
+  "frame_hashes": [
+    "f502d785536b391c14d8323c7bc60187843b2cfa4e499c9f75d826eaf58d2572",
+    "f8b57ae0deac9be418a752f5e4733bbabec7e56558cc9441ed3ee5f6a0347d34",
+    "ab892ac8b6ecec81aa3741bc11ebaabe80b4fcfe68ac8ac53da84f80e1a7aa1f",
+    "be4cdfa9d8ecba9dec0c5dc25776cebfedc35ae27a901c1b061c53f40c30784f",
+    "f94f3780923e13728d4470a9981543bd3209a3b94bdff769f0abed02d1dea569",
+    "243cd1d03cfb968a82ffbf3fa2fe87a6b21b6c0edb5902476af481b1683bf88c",
+    "baf3c6a4d8c7ebd764a9aa1af83a4f8616f889e17a9e277461c146ed1cec523f",
+    "a86103e4baa53bcd200e342dc47d8a038aa51c25df8ac1b722d396052f5d25d0",
+    "23017121c0a256881af52ea46bc89d520cabf777cefd67a93492f12ceac3546e",
+    "40383a2747f7a9f7fa970127cf5fe7d49c47f832528bc1361b09eaa6eefeff00",
+    "a6672391359c7cd04c4751c749706e31e47a1c9b8e52825be2c1af4b820881bc",
+    "a8f47f8e39b5132011c9606c0c508772af8e09687b1550ecb1a61a2f8ff05f84",
+    "528a05be14f7dbb893dfe2eee87b281a2499b954ecc918d1653d7dd1444cd894",
+    "9623212208f59e9bcedc45d1fbddd70522499b0b4dd654e1c6ade3328abac745",
+    "20d19ec2f60c187acb872bffbf6a5c63a4b85e3301688d9dca1923026c1f159f",
+    "d02bc5310d6a54bd5e0589ab91e443ce8d8ccec7f8d4647bde02dc796753d33e",
+    "b2ce54265591698a4e77b538534326cc5c1624bbfec8fe2d76587087f429c415",
+    "619a316fa342786ca8af51b7fccf409f5232149ae796c87a240ce0071dc46033",
+    "4b09fd839410f4d17dfd1eff3e58f7ba05d8b53cda6504fd1327cc303fd77b56",
+    "c90db3885855cce4ea1fef6b9fa1b845ec736f3971e0c80724619a1f28e4934a",
+    "1a9d81feb78f0248dd8f7e33c7019f3b4e40cbb11751da9446c04f57de114645",
+    "323068a497dbae96ab572864632c1eeef6389a01530f0c064540d0fc04b6eb40",
+    "84b6a4a29fbc2b19f2d7665f3273a36e35293a83f35017609dbe739f0f32d69b",
+    "12b86e5c095b411f349120f8b1d74cd8d29209a4fe1c39b64004ab695a749613"
+  ],
+  "nr_hashes": [],
+  "baseline_from_git_head": false,
+  "steady_output_fps": 10.210425037423398,
+  "stages": {
+    "vsr": {
+      "calls": 24,
+      "total_ms": 550.032100001772,
+      "after_first_4_median_ms": 19.328499999573978
+    },
+    "cache_wait": {
+      "calls": 72,
+      "total_ms": 4059.3155000024126,
+      "after_first_4_median_ms": 53.53174999982002
+    },
+    "encode_write": {
+      "calls": 24,
+      "total_ms": 373.8059000006615,
+      "after_first_4_median_ms": 13.18884999909642
+    }
+  }
+}

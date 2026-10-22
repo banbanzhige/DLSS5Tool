@@ -104,6 +104,25 @@ def test_budget_too_small_errors_without_quality_downgrade():
         session.close()
 
 
+@pytest.mark.parametrize('dtype', [np.uint8, np.float16, np.float32])
+def test_snapshot_shares_only_upstream_owned_immutable_pixels(dtype):
+    pixels = np.full((8, 8, 4), 10, dtype)
+    reference = np.zeros_like(pixels)
+    owned, _, _ = rc._snapshot_pair(pixels, reference, pixels)
+    shared, copied, borrowed = rc._snapshot_pair(*owned, owned.mix_source, source_pair=owned)
+    assert shared[0] is owned[0] and shared[1] is owned[1]
+    assert copied == 0 and borrowed == owned.nbytes
+    pixels.fill(99)
+    assert np.all(shared[0] == 10)
+    del owned
+    assert np.all(shared[0] == 10) and not shared[0].flags.writeable
+    # External read-only arrays do not receive the cache's ownership promise.
+    pixels.flags.writeable = False
+    external, copied, _ = rc._snapshot_pair(pixels, pixels)
+    assert external[0] is external[1] and external[0] is not pixels
+    assert copied == pixels.nbytes and external.nbytes == pixels.nbytes
+
+
 def test_cancel_wait_does_not_destroy_cache():
     session = rc.RenderSession('source', {}, 512, renderer=renderer)
     try:
@@ -253,7 +272,12 @@ def test_warm_encoding_zero_compute_and_safe_cancellation(tmp_path):
         wait_complete(session)
         with mock.patch('dlss5tool.video_export.FFmpegVideoWriter', Writer):
             session.set_prefetch(False)
-            report = rc.encode_cached(session, tmp_path/'output.mp4', {}, threading.Event(), lambda *args: None)
+            counts, measurements = [], []
+            report = rc.encode_cached(session, tmp_path/'output.mp4', {}, threading.Event(), lambda *args: None,
+                frame_progress=lambda done, total: counts.append((done, total)),
+                performance_sink=measurements.append)
+            assert counts == [(i, 24) for i in range(25)]
+            assert measurements[0]['stages']['encode_write']['calls'] == 24
             assert session.prefetch, 'export restores buffering after a paused preview'
             assert report['cache_hits'] == 24
             assert report['new_frames'] == 0

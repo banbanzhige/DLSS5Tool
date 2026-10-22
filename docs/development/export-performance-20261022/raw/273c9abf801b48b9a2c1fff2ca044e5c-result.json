@@ -1,0 +1,66 @@
+{
+  "experimental": true,
+  "warning": "实验功能：普通视频采用 NVOFA 估计光流及平面深度；遮挡/字幕/HDR 画质未完整验收。3×/4×目前仅限本机 RTX 4070 SUPER 与固定运行库，已知部分生成帧时间位置偏差。不会自动降倍率或位深；正常帧对生成无效时停止。",
+  "source": "F:\\project\\DLSS5Tool\\tmp\\export-performance-20261022\\synthetic-1920x1080-24.mp4",
+  "output": "None",
+  "multiplier": 1,
+  "spatial_scale": 2,
+  "enhance": false,
+  "status": "complete",
+  "real_frames": 24,
+  "generated_frames": 0,
+  "cut_holds": 0,
+  "endpoint_holds": 0,
+  "width": 3840,
+  "height": 2160,
+  "source_rate": "30",
+  "output_rate": "30",
+  "enhancement_bypassed": false,
+  "enhancement_bypass": null,
+  "appearance_version": 1,
+  "composition_backend": "neutral-bypass",
+  "color": "srgb",
+  "output_view": 0,
+  "runtime_sha256": null,
+  "log_dir": "F:\\project\\DLSS5Tool\\tmp\\export-performance-20261022\\native-logs\\273c9abf801b48b9a2c1fff2ca044e5c",
+  "cleanup_errors": [],
+  "performance": {
+    "scope": "wall-time; overlapping stages are not additive",
+    "elapsed_seconds": 9.07625150000058,
+    "stages": {
+      "decode": {
+        "calls": 25,
+        "seconds": 0.0939879000034125,
+        "max_seconds": 0.02603860000090208,
+        "warm_calls": 21,
+        "warm_seconds": 0.059481300002516946
+      },
+      "super_resolution": {
+        "calls": 24,
+        "seconds": 0.5502444999983709,
+        "max_seconds": 0.08398769999985234,
+        "warm_calls": 20,
+        "warm_seconds": 0.4099915000006149
+      },
+      "cache_snapshot": {
+        "calls": 24,
+        "seconds": 0.26802419999694393,
+        "max_seconds": 0.014908099999956903,
+        "warm_calls": 20,
+        "warm_seconds": 0.2305177999951411
+      }
+    },
+    "system_memory_samples": [
+      {
+        "seconds": 3.385813799999596,
+        "free_physical_bytes": 43623796736,
+        "free_commit_bytes": 36445765632
+      },
+      {
+        "seconds": 5.4030191999991075,
+        "free_physical_bytes": 42177413120,
+        "free_commit_bytes": 33972686848
+      }
+    ]
+  }
+}

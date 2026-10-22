@@ -19,6 +19,7 @@ from dlss5tool import paths
 from dlss5tool import appearance
 from dlss5tool.deferred_error import ErrorSnapshot
 from dlss5tool.memory_budget import cache_limit_bytes
+from dlss5tool.export_metrics import ExportTelemetry
 from dlss5tool.parameter_contract import COMPOSITION_VERSION
 from dlss5tool.image_sequence import ImageSequence, is_sequence, source_bytes, audio_source
 from dlss5tool.frame_generation import Cancelled, check_cancel, export_video, runtime_files, inspect_source
@@ -62,6 +63,33 @@ class RenderPair(tuple):
 
 def _pair_bytes(pair):
     return pair.nbytes if isinstance(pair, RenderPair) else sum(x.nbytes for x in pair)
+
+
+def _snapshot_pair(processed, reference, mix_source=None, *, source_pair=None):
+    """Borrow only exact immutable snapshots owned by an upstream cache.
+
+    Arbitrary renderer arrays and worker IPC buffers are always copied. A
+    retained ndarray keeps its storage alive even after upstream eviction.
+    """
+    owned = {id(frame): frame for frame in (*source_pair, source_pair.mix_source)} \
+        if isinstance(source_pair, RenderPair) else {}
+    snapshots, copied, borrowed = {}, 0, 0
+    def snapshot(frame):
+        nonlocal copied, borrowed
+        key = id(frame)
+        if key not in snapshots:
+            if owned.get(key) is frame and not frame.flags.writeable and frame.flags.c_contiguous:
+                result = frame
+                borrowed += frame.nbytes
+            else:
+                result = np.array(frame, copy=True)
+                result.flags.writeable = False
+                copied += result.nbytes
+            snapshots[key] = result
+        return snapshots[key]
+    a, b = snapshot(processed), snapshot(reference)
+    blend = b if mix_source is None else snapshot(mix_source)
+    return RenderPair(a, b, blend), copied, borrowed
 
 
 def file_identity(path):
@@ -136,6 +164,8 @@ class RenderSession:
         self.thread = None
         self.stop = threading.Event()
         self.hits = self.new_frames = self.replayed_frames = 0
+        self.telemetry = ExportTelemetry()
+        self.snapshot_copied_bytes = self.snapshot_borrowed_bytes = 0
 
     @property
     def error(self):
@@ -326,13 +356,12 @@ class RenderSession:
                             break
                         self.condition.wait(.1)
                     check_cancel(stop)
-            def sink(index, processed, reference, *, mix_source=None):
+            def sink(index, processed, reference, *, mix_source=None, source_pair=None):
                 check_cancel(stop)
                 if reference is None:
                     reference = processed
-                size = processed.nbytes + reference.nbytes
-                if mix_source is not None and mix_source is not reference and mix_source is not processed:
-                    size += mix_source.nbytes
+                size = sum(frame.nbytes for frame in {id(f): f for f in
+                    (processed, reference, mix_source) if f is not None}.values())
                 with self.condition:
                     if self.closed or stop.is_set():
                         raise Cancelled('缓存任务已撤销')
@@ -366,21 +395,22 @@ class RenderSession:
                     allowance = self._trim(size)
                     if size > allowance:
                         raise RuntimeError('缓存预算或系统内存余量不足一个全精度帧对，请释放内存或调整缓存预算；未降低分辨率')
-                    a, b = np.array(processed, copy=True), np.array(reference, copy=True)
-                    a.flags.writeable = b.flags.writeable = False
-                    blend = (b if mix_source is None or mix_source is reference else
-                             a if mix_source is processed else np.array(mix_source, copy=True))
-                    blend.flags.writeable = False
-                    self.cache[index] = RenderPair(a, b, blend)
+                    with self.telemetry.measure('cache_snapshot'):
+                        pair, copied, borrowed = _snapshot_pair(
+                            processed, reference, mix_source, source_pair=source_pair)
+                    self.cache[index] = pair
+                    self.snapshot_copied_bytes += copied
+                    self.snapshot_borrowed_bytes += borrowed
                     self.produced = index
                     self.bytes += size
                     self._publish()
                     self.condition.notify_all()
+            sink.accepts_source_pair = True
             try:
                 result = self.renderer(self.source, None, multiplier=self.multiplier,
                     scale=int(self.settings.get('super_resolution_scale', 1)), enhance=True,
                     settings=self.settings, cancel=stop, frame_sink=sink, render_gate=gate,
-                    metadata_sink=metadata, progress=self._report_progress)
+                    metadata_sink=metadata, progress=self._report_progress, telemetry=self.telemetry)
                 with self.condition:
                     self.result = result
                     self.complete = True
@@ -399,6 +429,9 @@ class RenderSession:
         with self.condition:
             return {'frames': len(self.cache), 'bytes': self.bytes, 'computed': self.new_frames,
                     'replayed': self.replayed_frames, 'complete': self.complete,
+                    'snapshot_copied_bytes': self.snapshot_copied_bytes,
+                    'snapshot_borrowed_bytes': self.snapshot_borrowed_bytes,
+                    'performance': self.telemetry.snapshot(),
                     'ranges': sorted({i//self.multiplier for i in self.cache
                         if all((i//self.multiplier)*self.multiplier+j in self.cache
                                for j in range(self.multiplier))})}
@@ -565,7 +598,8 @@ class RenderCache:
                 raise failure.exception()
 
 
-def encode_cached(session, output, settings, cancel, progress):
+def encode_cached(session, output, settings, cancel, progress, *, frame_progress=None,
+                  performance_sink=None):
     from dlss5tool.video_export import compose_hdr_frame, compose_output_frame
     from dlss5tool.gpu_export_runtime import create_video_writer as FFmpegVideoWriter
     import cv2
@@ -620,7 +654,9 @@ def encode_cached(session, output, settings, cancel, progress):
 
     session.set_prefetch(True)
     session.set_progress(report_render)
-    metadata = session.wait_metadata(cancel)
+    telemetry = ExportTelemetry()
+    with telemetry.measure('metadata_wait'):
+        metadata = session.wait_metadata(cancel)
     hdr = metadata['hdr_metadata']
     rate = Fraction(metadata['output_rate'])
     total = metadata['source_frames'] * session.multiplier
@@ -630,6 +666,8 @@ def encode_cached(session, output, settings, cancel, progress):
     if shutil.disk_usage(destination.parent).free < disk_need + 15*1024**3:
         raise ValueError('输出盘余量不足预计峰值＋15 GiB')
     hit = calculated = 0
+    if frame_progress:
+        frame_progress(0, total)
     temporary = destination.with_name(f'.{destination.stem}.cache-{uuid.uuid4().hex}{destination.suffix}')
     writer = None
     success = False
@@ -640,36 +678,43 @@ def encode_cached(session, output, settings, cancel, progress):
         timeline_options = ({'frame_timestamps': frame_timestamps,
                              'timeline_end': timeline.get('_source_end')}
                             if frame_timestamps is not None else {})
-        writer = FFmpegVideoWriter(temporary, metadata['width'], metadata['height'], float(rate),
-            audio_source=audio_source(session.source), use_nvenc=True, hdr_metadata=hdr,
-            nvenc_preset=settings.get('nvenc_preset', 'p5'), rate_control=settings.get('rate_control', 'quality'),
-            quality_profile=settings.get('quality_profile', 'high'), video_bitrate_mbps=settings.get('video_bitrate_mbps', 20),cancel=cancel,
-            **timeline_options)
+        with telemetry.measure('encoder_init'):
+            writer = FFmpegVideoWriter(temporary, metadata['width'], metadata['height'], float(rate),
+                audio_source=audio_source(session.source), use_nvenc=True, hdr_metadata=hdr,
+                nvenc_preset=settings.get('nvenc_preset', 'p5'), rate_control=settings.get('rate_control', 'quality'),
+                quality_profile=settings.get('quality_profile', 'high'), video_bitrate_mbps=settings.get('video_bitrate_mbps', 20),cancel=cancel,
+                **timeline_options)
         for i in range(total):
             if sequence:
                 sequence.check_frame(i // session.multiplier)
             with session.condition:
                 cached = i in session.cache
-            processed, reference = session.wait(i, cancel)
+            with telemetry.measure('render_wait'):
+                processed, reference = session.wait(i, cancel)
             check_cancel(cancel)
             if cached:
                 hit += 1
             else:
                 calculated += 1
             view = int(settings.get('output_view', 0))
-            if hdr:
-                result = compose_hdr_frame(reference, processed, view=view, mix=1, profile=hdr['profile']) if view else processed
-            else:
-                result = cv2.cvtColor(processed, cv2.COLOR_RGBA2BGR)
-                if view:
-                    result = compose_output_frame(cv2.cvtColor(reference, cv2.COLOR_RGBA2BGR), result, view=view, mix=1)
-            writer.write(result)
+            with telemetry.measure('encode_conversion'):
+                if hdr:
+                    result = compose_hdr_frame(reference, processed, view=view, mix=1, profile=hdr['profile']) if view else processed
+                else:
+                    result = cv2.cvtColor(processed, cv2.COLOR_RGBA2BGR)
+                    if view:
+                        result = compose_output_frame(cv2.cvtColor(reference, cv2.COLOR_RGBA2BGR), result, view=view, mix=1)
+            with telemetry.measure('encode_write'):
+                writer.write(result)
+            if frame_progress:
+                frame_progress(i+1, total)
             from dlss5tool.i18n import tr
             report_encode(
                 tr('status.shared_export', hit=hit, done=i+1, total=total),
                 (i+1) / total,
             )
-        writer.finish()
+        with telemetry.measure('encode_finish'):
+            writer.finish()
         check_cancel(cancel)
         if sequence:
             sequence.validate(lambda: check_cancel(cancel))
@@ -681,8 +726,14 @@ def encode_cached(session, output, settings, cancel, progress):
                     (metadata['source_frames']-1-cuts)*(session.multiplier-1)),
                 'cut_holds': cuts*(session.multiplier-1), 'endpoint_holds': session.multiplier-1,
                 'cache_hits': hit, 'cache_misses': calculated,
-                'new_frames': session.snapshot()['computed']-computed_before, 'output': str(destination)}
+                'new_frames': session.snapshot()['computed']-computed_before, 'output': str(destination),
+                'performance': telemetry.snapshot()}
     finally:
+        if performance_sink:
+            try:
+                performance_sink(telemetry.snapshot())
+            except Exception:
+                pass  # Telemetry subscribers cannot bypass writer cleanup.
         if not success:
             session.suspend()
         if writer and not success:
