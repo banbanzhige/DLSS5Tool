@@ -1,0 +1,218 @@
+{
+  "version": "v3.0.4",
+  "source_commit": "71d2d7b93534f9befda4f70cb0fd7cd68bd3cf0c",
+  "ui_commit": "2a92c12",
+  "output": "E:/dist/DLSS5Tool/v3.0.4/editions",
+  "baseline": "v3.0.3",
+  "official_baseline_verified": true,
+  "targeted_tests": {
+    "unittest": 61,
+    "pytest": 14
+  },
+  "frozen_source_modules_exact": 8,
+  "build_inputs_unchanged": 22,
+  "overlay_exact": true,
+  "frozen_diagnostics_passed": true,
+  "release_notes_three_copies_exact": true,
+  "upload_gate_passed": true,
+  "registered_next_baseline": "v3.0.4",
+  "local_candidate": true,
+  "pushed": false,
+  "uploaded": false,
+  "editions": {
+    "lite": {
+      "name": "DLSS5Tool-v3.0.4-win64-lite.zip",
+      "size": 588200689,
+      "sha256": "099643079f4b17b7efe266cb51b2863e62f1d87427dd11083ee0bf9ebeeca704",
+      "unpacked_bytes": 1032351550,
+      "file_count": 1866,
+      "crc_verified": true,
+      "volumes": [],
+      "github_name": "DLSS5Tool-v3.0.4-win64.zip"
+    },
+    "addon": {
+      "name": "DLSS5Tool-v3.0.4-win64-addon.zip",
+      "size": 3053866457,
+      "sha256": "8498113f478bae7da5f090bad8eae066e88e3b5b2962bdb40418a1cffc896aa7",
+      "unpacked_bytes": 4781669865,
+      "file_count": 2415,
+      "crc_verified": true,
+      "volumes": [
+        {
+          "name": "DLSS5Tool-v3.0.4-win64-addon.zip.001",
+          "size": 1992294400,
+          "sha256": "0d5429d68e9f02a33aae0af427cc748eec5810e54356a3c5c59e5715971d01f2"
+        },
+        {
+          "name": "DLSS5Tool-v3.0.4-win64-addon.zip.002",
+          "size": 1061572057,
+          "sha256": "568e695e67d75801448f3e0fecd754b0da41d84c5c84289a8aaa7fb7f0d5cf32"
+        }
+      ]
+    },
+    "full": {
+      "name": "DLSS5Tool-v3.0.4-win64-full.zip",
+      "size": 3642064635,
+      "sha256": "6b36e2de56a303c416b2d717e6bd36fb0a37a3a8eff7df7571f48646cf164bfc",
+      "unpacked_bytes": 5814017294,
+      "file_count": 4280,
+      "crc_verified": true,
+      "volumes": [
+        {
+          "name": "DLSS5Tool-v3.0.4-win64-full.zip.001",
+          "size": 1992294400,
+          "sha256": "1cef494527909290dc5692b7e791dbe4699e8b0ef12c912dfe1907cdae5e2f62"
+        },
+        {
+          "name": "DLSS5Tool-v3.0.4-win64-full.zip.002",
+          "size": 1649770235,
+          "sha256": "d675fe1236f231d08d83c55f776c45e847d736a8531cf38a7014f205876eec2e"
+        }
+      ]
+    }
+  },
+  "updates": [
+    {
+      "changed_files": 10,
+      "edition": "lite",
+      "from": "v3.0.3",
+      "payload_bytes": 17970911,
+      "published": false,
+      "removed_files": 0,
+      "sha256": "76a07bd542df2a403e55c4fecbfc131afe2da771613cd1e22ce763bcf9284190",
+      "size": 16426054,
+      "to": "v3.0.4",
+      "name": "DLSS5Tool-v3.0.3-to-v3.0.4-win64-lite.dlssupdate"
+    },
+    {
+      "changed_files": 11,
+      "edition": "full",
+      "from": "v3.0.3",
+      "payload_bytes": 17971543,
+      "published": false,
+      "removed_files": 0,
+      "sha256": "3c19fbd4c71e1711879e8fb20d149c1c0e831e7f5deeada0baac7387a4d97c32",
+      "size": 16676435,
+      "to": "v3.0.4",
+      "name": "DLSS5Tool-v3.0.3-to-v3.0.4-win64-full.dlssupdate"
+    }
+  ],
+  "real_upgrades": {
+    "lite": {
+      "asset_sha256": "76a07bd542df2a403e55c4fecbfc131afe2da771613cd1e22ce763bcf9284190",
+      "changed_files": 10,
+      "clean_machine_verified": false,
+      "edition": "lite",
+      "exit_code": 0,
+      "from": "v3.0.3",
+      "helper_temp": "C:\\Users\\PC\\AppData\\Local\\Temp",
+      "managed_target_files_verified": 1866,
+      "method": "streamed actual payload plus unchanged baseline bytes; no install mutation",
+      "old_frozen_helper": {
+        "sha256": "eb3682d4388467299a293057b6eac0df5c2c038a385e9877272b25d6d6919e8d",
+        "size": 9517117
+      },
+      "overlay_verified": true,
+      "resumed_ready_transaction": false,
+      "rollback_backup_files_verified": 10,
+      "scope": "Real version-pair delta installed by old frozen helper; no public upload or GPU certification",
+      "state": {
+        "phase": "complete",
+        "target": "v3.0.4"
+      },
+      "to": "v3.0.4",
+      "user_files_preserved": [
+        "dlss5_settings.json",
+        "dlss5_queue.json",
+        "mods/nvngx_dlssnr.dll",
+        "mods/custom-verification.txt"
+      ],
+      "verification_install": "E:\\dist\\DLSS5Tool\\tmp\\release-v3.0.4-20261023\\upgrade-lite\\installed"
+    },
+    "full": {
+      "asset_sha256": "3c19fbd4c71e1711879e8fb20d149c1c0e831e7f5deeada0baac7387a4d97c32",
+      "changed_files": 11,
+      "clean_machine_verified": false,
+      "edition": "full",
+      "exit_code": 0,
+      "from": "v3.0.3",
+      "helper_temp": "C:\\Users\\PC\\AppData\\Local\\Temp",
+      "managed_target_files_verified": 4280,
+      "method": "streamed actual payload plus unchanged baseline bytes; no install mutation",
+      "old_frozen_helper": {
+        "sha256": "eb3682d4388467299a293057b6eac0df5c2c038a385e9877272b25d6d6919e8d",
+        "size": 9517117
+      },
+      "overlay_verified": true,
+      "resumed_ready_transaction": false,
+      "rollback_backup_files_verified": 11,
+      "scope": "Real version-pair delta installed by old frozen helper; no public upload or GPU certification",
+      "state": {
+        "phase": "complete",
+        "target": "v3.0.4"
+      },
+      "to": "v3.0.4",
+      "user_files_preserved": [
+        "dlss5_settings.json",
+        "dlss5_queue.json",
+        "mods/nvngx_dlssnr.dll",
+        "mods/custom-verification.txt"
+      ],
+      "verification_install": "E:\\dist\\DLSS5Tool\\tmp\\release-v3.0.4-20261023\\upgrade-full\\installed"
+    }
+  },
+  "cleanup_external": {
+    "version": "v3.0.4",
+    "remaining_external_temporary_bytes": 0,
+    "measurement_note": "Observed drive free-space deltas may include concurrent system activity",
+    "records": [
+      {
+        "observed_free_delta_bytes": 1627373568,
+        "remaining_bytes": 0,
+        "path": "E:\\dist\\DLSS5Tool\\v3.0.4\\base",
+        "logical_bytes": 1624543871.0
+      },
+      {
+        "observed_free_delta_bytes": 4786683904,
+        "remaining_bytes": 0,
+        "path": "E:\\dist\\DLSS5Tool\\v3.0.4\\editions\\DLSS5Tool-v3.0.4-win64-addon",
+        "logical_bytes": 4781669865.0
+      },
+      {
+        "observed_free_delta_bytes": 35389440,
+        "remaining_bytes": 0,
+        "path": "E:\\dist\\DLSS5Tool\\tmp\\release-v3.0.4-20261023",
+        "logical_bytes": 35263858.0
+      },
+      {
+        "process": "Verifier and old helper completed with exit 0",
+        "recovery": "Official old and new baselines and verified transaction evidence retained",
+        "logical_bytes": 1094732479.0,
+        "observed_free_delta_bytes": 1098186752,
+        "path": "E:\\dist\\DLSS5Tool\\tmp\\release-v3.0.4-20261023\\upgrade-lite",
+        "remaining_bytes": 0
+      },
+      {
+        "observed_free_delta_bytes": 5885386752,
+        "path": "E:\\dist\\DLSS5Tool\\tmp\\release-v3.0.4-20261023\\upgrade-full",
+        "process": "Verifier and old helper completed with exit 0",
+        "recovery": "Official old and new baselines and verified transaction evidence retained",
+        "remaining_bytes": 0,
+        "logical_bytes": 5877436970.0
+      }
+    ],
+    "observed_e_free_increase_bytes": 13433020416.0,
+    "process_audit": "All owned build, packaging, diagnostics and upgrade commands returned; both old frozen helpers exited 0",
+    "logical_bytes_removed": 13413647043.0,
+    "preserved": "Verified lite/full baselines, original ZIPs, upload volumes and all small evidence; all previous releases untouched"
+  },
+  "cleanup_source": {
+    "logical_bytes": 43395.0,
+    "remaining_temporary_bytes": 0,
+    "global_pytest_temp": "Default system pytest directory was not cleaned; unrelated contents untouched",
+    "path": "F:\\project\\DLSS5Tool\\tmp\\release-v304-20261023",
+    "observed_free_delta_bytes": 114688,
+    "recovery": "Verified source evidence, task guards and staging patch archived; test fixtures reconstructible",
+    "cleanup_context": "Ordinary task context used; elevated context could not traverse pytest directory; no ACL changes"
+  }
+}

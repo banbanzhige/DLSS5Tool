@@ -38,6 +38,10 @@
     {
       "version": "v3.0.3",
       "packages": "E:/dist/DLSS5Tool/v3.0.3/editions"
+    },
+    {
+      "version": "v3.0.4",
+      "packages": "E:/dist/DLSS5Tool/v3.0.4/editions"
     }
   ]
 }

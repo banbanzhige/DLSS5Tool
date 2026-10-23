@@ -1,0 +1,9 @@
+{
+  "logical_bytes": 43395.0,
+  "remaining_temporary_bytes": 0,
+  "global_pytest_temp": "Default system pytest directory was not cleaned; unrelated contents untouched",
+  "path": "F:\\project\\DLSS5Tool\\tmp\\release-v304-20261023",
+  "observed_free_delta_bytes": 114688,
+  "recovery": "Verified source evidence, task guards and staging patch archived; test fixtures reconstructible",
+  "cleanup_context": "Ordinary task context used; elevated context could not traverse pytest directory; no ACL changes"
+}
