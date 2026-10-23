@@ -40,6 +40,7 @@ def queue_ui(tk_root):
     app._on_queue_tree_select = mock.Mock()
     app.load_selected_queue_job = mock.Mock()
     app.apply_current_settings_to_queue = mock.Mock()
+    app.change_selected_queue_output_dir = mock.Mock()
     app.add_queue_files = app.add_queue_folder = app.add_queue_image_sequence = mock.Mock()
     controller = app._queue_list = QueueList(app)
     for job in app._queue_jobs:
@@ -182,15 +183,20 @@ def test_menu_enablement_and_busy_dispatch(queue_ui):
     actions = {key: enabled for key, _, _, enabled in c.menu_actions()}
     assert not actions['preview'] and not actions['location'] and not actions['apply']
     assert actions['retry'] and actions['remove']
+    assert actions['output_dir']
     for flag in ('_queue_running', '_exporting', '_diagnosing', '_switching_backend'):
         setattr(app, flag, True)
         actions = {key: enabled for key, _, _, enabled in c.menu_actions()}
         assert not actions['remove'] and not actions['retry']
+        assert not actions['output_dir']
         assert actions['copy']
-        c.command('remove'); c.command('apply'); c.command('retry')
+        c.command('remove'); c.command('apply'); c.command('retry'); c.command('output_dir')
+        app.change_selected_queue_output_dir.assert_not_called()
         assert len(app._queue_jobs) == 40
         assert app._queue_jobs[1].state == 'failed'
         setattr(app, flag, False)
+    c.command('output_dir')
+    app.change_selected_queue_output_dir.assert_called_once()
     c.command('retry')
     assert app._queue_jobs[1].state == 'pending'
     assert app._queue_jobs[0].state == 'completed'
@@ -262,6 +268,7 @@ def test_actual_menu_and_tooltip_cleanup(queue_ui):
     c._show_tip(row, 10, 20)
     text = c.tip.winfo_children()[0].cget('text')
     assert app._queue_jobs[0].source_path in text
+    assert app._queue_jobs[0].output_path in text
     c.blur()
     assert c.tip is None and c.hover_timer is None
     with mock.patch.object(c, '_show_tip') as show:

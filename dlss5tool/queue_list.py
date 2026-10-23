@@ -285,6 +285,7 @@ class QueueList:
         return [
             ('preview', tr('action.load_preview'), 'Enter', editable and count == 1),
             ('apply', tr('queue.apply_selected', count=count), '', editable and all(j.state != 'completed' for j in selected)),
+            ('output_dir', tr('queue.change_output_dir'), '', editable and any(j.state not in {'running', 'completed'} for j in selected)),
             ('retry', tr('queue.retry_selected'), '', editable and any(j.state in {'failed', 'cancelled', 'interrupted'} for j in selected)),
             ('copy', tr('queue.copy_paths'), 'Ctrl+C', True),
             ('location', tr('queue.open_source_location'), '', count == 1),
@@ -317,6 +318,7 @@ class QueueList:
         elif self.app._queue_editable():
             callbacks = {'remove': self.app.remove_selected_queue_jobs, 'undo': self.app.undo_queue_remove,
                 'preview': self.app.load_selected_queue_job, 'apply': self.app.apply_current_settings_to_queue,
+                'output_dir': self.app.change_selected_queue_output_dir,
                 'retry': self.app.retry_selected_queue_jobs, 'add_files': self.app.add_queue_files,
                 'add_folder': self.app.add_queue_folder, 'add_sequence': self.app.add_queue_image_sequence}
             if key == 'preview' and len(selected) != 1:

@@ -2329,22 +2329,40 @@ class App(GpuResourceGuard, SharedRenderPreview, LocalPreviewComposition, Previe
 
     def _build_queue_tab(self, parent):
         imports = ttk.Frame(parent, style="Panel.TFrame")
-        imports.pack(fill="x", padx=12, pady=(10, 6))
+        imports.pack(fill="x", padx=12, pady=(10, 10))
         imports.columnconfigure((0, 1), weight=1, uniform='queue_imports')
+        output_row = ttk.Frame(imports, style="Panel.TFrame")
+        output_row.grid(row=0, column=0, columnspan=2, sticky="ew", pady=(0, 8))
+        output_row.columnconfigure(1, weight=1)
+        self.queue_output_label = ttk.Label(
+            output_row, text=tr("queue.default_output_dir"), style="Hint.TLabel",
+        )
+        self.queue_output_label.grid(row=0, column=0, sticky="w", padx=(0, 8))
+        self.queue_output_dir_var = tk.StringVar(
+            value=self._saved_settings.get("queue_output_dir", "")
+        )
+        self.queue_output_choice_var = tk.StringVar(value="")
+        self.queue_output_combo = self._chrome_combo(
+            output_row, self.queue_output_choice_var, (), width=1,
+        )
+        self.queue_output_combo.grid(row=0, column=1, sticky="ew")
+        self.queue_output_combo.bind("<<ComboboxSelected>>", self._on_queue_output_choice)
+        self._queue_output_tip = Tooltip(self.queue_output_combo, "")
+        self._sync_queue_output_choice()
         self.queue_add_files_btn = self._chrome_button(
             imports, tr("action.add_files"), self.add_queue_files, icon="file-plus",
         )
-        self.queue_add_files_btn.grid(row=0, column=0, sticky='ew', padx=(0, 4))
+        self.queue_add_files_btn.grid(row=1, column=0, sticky='ew', padx=(0, 4))
         Tooltip(self.queue_add_files_btn, tr("action.add_files"))
         self.queue_add_folder_btn = self._chrome_button(
             imports, tr("action.add_folder"), self.add_queue_folder, icon="folder-plus",
         )
-        self.queue_add_folder_btn.grid(row=0, column=1, sticky='ew', padx=(4, 0))
+        self.queue_add_folder_btn.grid(row=1, column=1, sticky='ew', padx=(4, 0))
         Tooltip(self.queue_add_folder_btn, tr('sequence.folder_help'))
         self.queue_add_sequence_btn = self._chrome_button(
             imports, tr('sequence.import'), self.add_queue_image_sequence,
         )
-        self.queue_add_sequence_btn.grid(row=1, column=0, columnspan=2, sticky='ew', pady=(6, 0))
+        self.queue_add_sequence_btn.grid(row=2, column=0, columnspan=2, sticky='ew', pady=(6, 0))
         Tooltip(self.queue_add_sequence_btn, tr('sequence.queue_help'))
         toolbar = ttk.Frame(parent, style="Panel.TFrame")
         toolbar.pack(fill="x", padx=12, pady=(0, 6))
@@ -2352,7 +2370,7 @@ class App(GpuResourceGuard, SharedRenderPreview, LocalPreviewComposition, Previe
             toolbar, tr("action.remove"), self.remove_selected_queue_jobs, variant="ghost", width=36,
             icon="trash", icon_only=True,
         )
-        self.queue_remove_btn.pack(side="left", padx=(8, 0))
+        self.queue_remove_btn.pack(side="left")
         Tooltip(self.queue_remove_btn, tr("tooltip.remove_jobs"))
         self.queue_clear_btn = self._chrome_button(
             toolbar, tr("action.clear_queue"), self.clear_queue_jobs, variant="ghost", width=36,
@@ -2385,32 +2403,9 @@ class App(GpuResourceGuard, SharedRenderPreview, LocalPreviewComposition, Previe
         self.queue_move_up_btn.pack(side="right", padx=(0, 4))
         Tooltip(self.queue_move_up_btn, tr("action.move_up"))
 
-        output_row = ttk.Frame(parent, style="Panel.TFrame")
-        output_row.pack(fill="x", padx=12, pady=(0, 6))
-        ttk.Label(output_row, text=tr("label.output_folder")).pack(side="left")
-        self.queue_output_dir_var = tk.StringVar(
-            value=self._saved_settings.get("queue_output_dir", "")
-        )
-        self.queue_output_entry = ChromeEntry(
-            output_row, ui=self._ui, textvariable=self.queue_output_dir_var,
-        )
-        self.queue_output_entry.pack(side="left", fill="x", expand=True, padx=(6, 6))
-        self._theme_widgets.append(self.queue_output_entry)
-        self.queue_output_entry.bind("<FocusOut>", self._on_queue_output_dir_change)
-        self.queue_output_entry.bind("<Return>", self._on_queue_output_dir_change)
-        self.queue_output_browse_btn = self._chrome_button(
-            output_row, tr("action.browse"), self.choose_queue_output_dir, variant="ghost",
-            width=36, icon="folder-open", icon_only=True,
-        )
-        self.queue_output_browse_btn.pack(side="left")
-        Tooltip(self.queue_output_browse_btn, tr("tooltip.choose_output"))
-        Tooltip(
-            self.queue_output_entry,
-            tr("tooltip.queue_output"),
-        )
-
         tree_frame = ttk.Frame(parent, style="Panel.TFrame")
         tree_frame.pack(fill="both", expand=True, padx=12, pady=(0, 6))
+        self._queue_tree_frame = tree_frame
         self._queue_tree_shell = tk.Frame(
             tree_frame, bg=self._ui.get("line", "#2a3540"), highlightthickness=0, bd=0,
         )
@@ -2449,27 +2444,30 @@ class App(GpuResourceGuard, SharedRenderPreview, LocalPreviewComposition, Previe
         self._queue_list = QueueList(self)
 
         details_row = ttk.Frame(parent, style="Panel.TFrame")
-        details_row.pack(fill="x", padx=12, pady=(0, 6))
+        details_row.pack(side="bottom", fill="x", padx=12, pady=(0, 6), before=tree_frame)
+        details_row.columnconfigure(0, weight=1)
+        self._queue_details_row = details_row
         self.queue_selection_label = ttk.Label(details_row, style='Hint.TLabel', anchor='w')
-        self.queue_selection_label.pack(fill='x', pady=(2, 0))
+        self.queue_selection_label.grid(row=0, column=0, sticky='ew', pady=(2, 0))
         self._queue_undo_row = ttk.Frame(details_row, style='Panel.TFrame')
+        self._queue_undo_row.grid(row=1, column=0, sticky='ew', pady=(4, 2))
+        self._queue_undo_row.grid_remove()
         self._queue_undo_label = ttk.Label(self._queue_undo_row, style='Hint.TLabel', wraplength=220)
         self._queue_undo_label.pack(side='left', fill='x', expand=True)
         self.queue_undo_btn = self._chrome_button(self._queue_undo_row, tr('queue.undo_remove'),
             self.undo_queue_remove, variant='ghost')
         self.queue_undo_btn.pack(side='right', padx=(6, 0))
         self.queue_details = ttk.Label(
-            details_row, text=tr("status.select_job"),
+            details_row, text="",
             anchor="w", justify="left", wraplength=280, style="Hint.TLabel",
         )
-        self.queue_details.pack(side="top", fill="x", pady=(4, 8))
+        self.queue_details.grid(row=2, column=0, sticky="ew", pady=(4, 8))
         details_row.bind(
             "<Configure>",
             lambda event: self.queue_details.config(wraplength=max(event.width - 12, 160)),
         )
-
         footer = ttk.Frame(parent, style="Panel.TFrame")
-        footer.pack(fill="x", padx=12, pady=(0, 10))
+        footer.pack(side="bottom", fill="x", padx=12, pady=(0, 10), before=details_row)
         actions = ttk.Frame(footer, style="Panel.TFrame")
         actions.pack(fill="x")
         for column in range(2):
@@ -2508,6 +2506,9 @@ class App(GpuResourceGuard, SharedRenderPreview, LocalPreviewComposition, Previe
         self.queue_cancel_btn.grid_remove()
         self.queue_start_btn.grid(row=0, column=0, columnspan=2, sticky="ew")
         self._queue_details_tip = Tooltip(self.queue_details, "")
+        self.queue_selection_label.grid_remove()
+        self.queue_details.grid_remove()
+        details_row.pack_forget()
         self._queue_run_layout = False
 
     def _save_queue_state(self):
@@ -2720,14 +2721,28 @@ class App(GpuResourceGuard, SharedRenderPreview, LocalPreviewComposition, Previe
             return
         selected = self._selected_queue_jobs()
         editable = self._queue_editable()
+        removed = getattr(self, '_queue_removed', ())
         if hasattr(self, 'queue_undo_btn'):
-            removed = getattr(self, '_queue_removed', ())
             self._set_ttk_enabled(self.queue_undo_btn, editable and bool(removed))
             if removed:
                 self._queue_undo_label.config(text=tr('queue.removed_notice', count=len(removed)))
-                self._queue_undo_row.pack(fill='x', before=self.queue_details, pady=(4, 2))
+                self._queue_undo_row.grid()
             else:
-                self._queue_undo_row.pack_forget()
+                self._queue_undo_row.grid_remove()
+        if hasattr(self, '_queue_details_row'):
+            if selected:
+                self.queue_selection_label.grid()
+                self.queue_details.grid()
+            else:
+                self.queue_selection_label.grid_remove()
+                self.queue_details.grid_remove()
+            if selected or removed:
+                self._queue_details_row.pack(
+                    side="bottom", fill="x", padx=12, pady=(0, 6),
+                    before=self._queue_tree_frame,
+                )
+            else:
+                self._queue_details_row.pack_forget()
         retryable = any(
             job.state in {"failed", "cancelled", "interrupted"} for job in selected
         )
@@ -2735,7 +2750,7 @@ class App(GpuResourceGuard, SharedRenderPreview, LocalPreviewComposition, Previe
         for widget in (
             self.queue_add_files_btn, self.queue_add_folder_btn,
             self.queue_add_sequence_btn,
-            self.queue_output_entry, self.queue_output_browse_btn,
+            self.queue_output_combo,
         ):
             self._set_ttk_enabled(widget, editable)
         self._set_ttk_enabled(self.queue_remove_btn, editable and bool(selected))
@@ -2792,13 +2807,12 @@ class App(GpuResourceGuard, SharedRenderPreview, LocalPreviewComposition, Previe
     def _on_queue_tree_select(self, event=None):
         selected = self._selected_queue_jobs()
         if hasattr(self, 'queue_selection_label'):
-            self.queue_selection_label.config(text=tr('queue.selection_count', selected=len(selected), total=len(self._queue_jobs)))
-        if not selected:
-            text = (
-                tr("status.add_media_prompt")
-                if not self._queue_jobs else
-                tr("status.select_job")
+            self.queue_selection_label.config(
+                text=tr('queue.selection_count', selected=len(selected), total=len(self._queue_jobs))
+                if selected else "",
             )
+        if not selected:
+            text = ""
         elif len(selected) > 1:
             text = tr("status.selected_jobs", count=len(selected))
         else:
@@ -2817,6 +2831,7 @@ class App(GpuResourceGuard, SharedRenderPreview, LocalPreviewComposition, Previe
         if not selected or len(selected) > 1:
             tip = getattr(self, "_queue_details_tip", None)
             if tip is not None:
+                tip._hide()
                 tip.text = ""
         if hasattr(self, "queue_details"):
             self.queue_details.config(text=text)
@@ -2826,16 +2841,89 @@ class App(GpuResourceGuard, SharedRenderPreview, LocalPreviewComposition, Previe
         value = self.queue_output_dir_var.get().strip()
         if value:
             value = os.path.abspath(os.path.normpath(value))
-            self.queue_output_dir_var.set(value)
+        self.queue_output_dir_var.set(value)
+        self._sync_queue_output_choice()
         self._schedule_settings_save()
         return "break" if event is not None and getattr(event, "keysym", "") == "Return" else None
 
+    def _sync_queue_output_choice(self):
+        if not hasattr(self, "queue_output_choice_var"):
+            return
+        directory = self.queue_output_dir_var.get().strip()
+        source_label = tr("queue.output_source_dir")
+        values = [source_label]
+        if directory:
+            values.append(directory)
+        values.append(tr("queue.choose_output_dir"))
+        self.queue_output_combo.config(values=values)
+        self.queue_output_choice_var.set(directory or source_label)
+        self.queue_output_combo.combo.xview_moveto(0)
+        self._queue_output_tip.text = (directory or source_label) + "\n" + tr("tooltip.queue_output")
+
+    def _on_queue_output_choice(self, event=None):
+        if not self._queue_editable():
+            self._sync_queue_output_choice()
+            return
+        choice = self.queue_output_choice_var.get()
+        if choice == tr("queue.choose_output_dir"):
+            self._sync_queue_output_choice()
+            self.choose_queue_output_dir()
+        elif choice == tr("queue.output_source_dir") and self.queue_output_dir_var.get().strip():
+            self.queue_output_dir_var.set("")
+            self._on_queue_output_dir_change()
+        else:
+            self._sync_queue_output_choice()
+
     def choose_queue_output_dir(self):
+        if not self._queue_editable():
+            self._sync_queue_output_choice()
+            return
         initial = self.queue_output_dir_var.get().strip() or os.getcwd()
-        path = filedialog.askdirectory(initialdir=initial)
-        if path:
-            self.queue_output_dir_var.set(os.path.abspath(os.path.normpath(path)))
-            self._schedule_settings_save()
+        path = filedialog.askdirectory(
+            parent=self.root, title=tr("queue.choose_output_dir"), initialdir=initial, mustexist=True,
+        )
+        if path and self._queue_editable():
+            self.queue_output_dir_var.set(path)
+            self._on_queue_output_dir_change()
+        else:
+            self._sync_queue_output_choice()
+
+    def change_selected_queue_output_dir(self):
+        if not self._queue_editable():
+            return
+        selected = [
+            job for job in self._selected_queue_jobs()
+            if job.state not in {"running", "completed"}
+        ]
+        if not selected:
+            return
+        selected_ids = {job.job_id for job in selected}
+        initial = os.path.dirname(selected[0].output_path) or os.getcwd()
+        path = filedialog.askdirectory(
+            parent=self.root, title=tr("queue.change_output_dir"),
+            initialdir=initial, mustexist=True,
+        )
+        # Native dialogs pump Tk; tasks may have changed while it was open.
+        if not path or not self._queue_editable():
+            return
+        output_dir = os.path.abspath(os.path.normpath(path))
+        reserved = [job.output_path for job in self._queue_jobs]
+        updates = []
+        for job in self._queue_jobs:
+            if job.job_id not in selected_ids or job.state in {"running", "completed"}:
+                continue
+            candidate = os.path.join(output_dir, os.path.basename(job.output_path))
+            if os.path.normcase(candidate) == os.path.normcase(os.path.abspath(job.output_path)):
+                continue
+            target = self._unique_target_path(candidate, reserved)
+            reserved.append(target)
+            updates.append((job, target))
+        if updates:
+            for job, target in updates:
+                job.output_path = target
+            self._save_queue_state()
+            self._refresh_queue_tree()
+            self.logln("[队列] " + tr("queue.output_dir_changed", count=len(updates), path=output_dir))
 
     @staticmethod
     def _unique_target_path(candidate, reserved=()):
@@ -3124,10 +3212,7 @@ class App(GpuResourceGuard, SharedRenderPreview, LocalPreviewComposition, Previe
                 job.export_settings["mode"] = "single"
             if job.media_kind == 'video' and job.export_settings.get('frame_generation_multiplier', 1) > 1:
                 job.export_settings['mode'] = 'single'
-            job.output_path = self._new_queue_output_path(
-                job.source_path, job.media_kind, job.export_settings,
-                exclude_job_id=job.job_id,
-            )
+            job.output_path = self._normalize_queue_output_path(job)
             changed = True
         if changed:
             self._save_queue_state()
