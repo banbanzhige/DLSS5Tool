@@ -1,0 +1,180 @@
+{
+  "version": "v3.0.3",
+  "overlay_exact": true,
+  "overlay_method": "streamed_archives_against_staged_full",
+  "fresh_extraction_verified": false,
+  "unmanaged_staged_files": [],
+  "frozen_app": [
+    {
+      "edition": "lite",
+      "mode": 0,
+      "backend_requested": "v2",
+      "ok": true,
+      "backend_actual": "v2",
+      "adapter_info": {
+        "id": "dxgi:10DE:2783:27831ED3:000000A1:00000002EDD00000:P000001000",
+        "name": "NVIDIA GeForce RTX 4070 SUPER",
+        "preference_index": 0,
+        "vendor_id": 4318,
+        "device_id": 10115,
+        "subsys_id": 662904531,
+        "revision": 161,
+        "dedicated_video_memory": 12579766272,
+        "luid_high": 0,
+        "luid_low": 79931,
+        "d3d12_feature_level": "12_0",
+        "cuda_index": 0,
+        "pci_bus_id": "0000:01:00.0"
+      },
+      "output_shape": [
+        360,
+        640,
+        4
+      ],
+      "output_sha256": "E5664B85EDD2AA3AA809BADD70943228571EDAC7B73F940EB3B146A0BE654D17",
+      "elapsed_seconds": 14.684
+    },
+    {
+      "edition": "lite",
+      "mode": 1,
+      "backend_requested": "v2",
+      "ok": false,
+      "error_type": "FileNotFoundError",
+      "error": "Enhancement component is missing. Extract the complete add-on beside the app (the archive includes mods), then refresh. No Python installation needed. Turn guidance off to continue normally.",
+      "traceback": "Traceback (most recent call last):\n  File \"dlss5tool\\diagnostics.py\", line 1378, in diagnostic_worker_main\n  File \"dlss5tool\\dlss_engine.py\", line 313, in __init__\n  File \"dlss5tool\\guidance_client.py\", line 67, in validate\n  File \"dlss5tool\\mod_paths.py\", line 212, in guidance_files\n  File \"dlss5tool\\mod_paths.py\", line 92, in enhancement_info\nFileNotFoundError: Enhancement component is missing. Extract the complete add-on beside the app (the archive includes mods), then refresh. No Python installation needed. Turn guidance off to continue normally.\n",
+      "elapsed_seconds": 0.011
+    },
+    {
+      "edition": "full",
+      "mode": 3,
+      "backend_requested": "v2",
+      "ok": true,
+      "backend_actual": "v2",
+      "adapter_info": {
+        "id": "dxgi:10DE:2783:27831ED3:000000A1:00000002EDD00000:P000001000",
+        "name": "NVIDIA GeForce RTX 4070 SUPER",
+        "preference_index": 0,
+        "vendor_id": 4318,
+        "device_id": 10115,
+        "subsys_id": 662904531,
+        "revision": 161,
+        "dedicated_video_memory": 12579766272,
+        "luid_high": 0,
+        "luid_low": 79931,
+        "d3d12_feature_level": "12_0",
+        "cuda_index": 0,
+        "pci_bus_id": "0000:01:00.0"
+      },
+      "output_shape": [
+        360,
+        640,
+        4
+      ],
+      "output_sha256": "E5664B85EDD2AA3AA809BADD70943228571EDAC7B73F940EB3B146A0BE654D17",
+      "elapsed_seconds": 26.976
+    },
+    {
+      "edition": "upgraded",
+      "mode": 3,
+      "backend_requested": "v2",
+      "ok": true,
+      "backend_actual": "v2",
+      "adapter_info": {
+        "id": "dxgi:10DE:2783:27831ED3:000000A1:00000002EDD00000:P000001000",
+        "name": "NVIDIA GeForce RTX 4070 SUPER",
+        "preference_index": 0,
+        "vendor_id": 4318,
+        "device_id": 10115,
+        "subsys_id": 662904531,
+        "revision": 161,
+        "dedicated_video_memory": 12579766272,
+        "luid_high": 0,
+        "luid_low": 79931,
+        "d3d12_feature_level": "12_0",
+        "cuda_index": 0,
+        "pci_bus_id": "0000:01:00.0"
+      },
+      "output_shape": [
+        360,
+        640,
+        4
+      ],
+      "output_sha256": "E5664B85EDD2AA3AA809BADD70943228571EDAC7B73F940EB3B146A0BE654D17",
+      "elapsed_seconds": 25.571
+    }
+  ],
+  "addon_modes": [
+    {
+      "mode": 1,
+      "info": {
+        "device": "cuda",
+        "device_name": "NVIDIA GeForce RTX 4070 SUPER",
+        "precision": "float32",
+        "load_ms": 9096.498500002781,
+        "depth_profile": "fp32",
+        "depth_precision": "float32",
+        "depth_attention": "original",
+        "execution": "serial",
+        "raft_output": "all",
+        "schedule": "serial",
+        "cache_version": "raw_lru_v2_shared",
+        "cache_limit_bytes": 0,
+        "analysis_parameters": {
+          "guidance_flow_edge": 512,
+          "guidance_flow_updates": 6
+        },
+        "model_runtime": "torch",
+        "torch_imported": true,
+        "transport": "shared_memory_flow_v2",
+        "output_layout": "flow_only_v2",
+        "flow_grid": null,
+        "flow_quality": null,
+        "flow_temporal_hints": false,
+        "flow_backend": "raft",
+        "gpu_flow_capability": "cuda_d3d12_flow_v1",
+        "gpu_flow_transport": null
+      },
+      "flow_nonzero": true,
+      "depth_nonzero": false
+    },
+    {
+      "requested_mode": 2,
+      "mode": 0
+    },
+    {
+      "mode": 1,
+      "info": {
+        "device": "cuda",
+        "device_name": "NVIDIA GeForce RTX 4070 SUPER",
+        "precision": "float32",
+        "load_ms": 9678.141600001254,
+        "depth_profile": "fp32",
+        "depth_precision": "float32",
+        "depth_attention": "original",
+        "execution": "serial",
+        "raft_output": "all",
+        "schedule": "serial",
+        "cache_version": "raw_lru_v2_shared",
+        "cache_limit_bytes": 0,
+        "analysis_parameters": {
+          "guidance_flow_edge": 512,
+          "guidance_flow_updates": 6
+        },
+        "model_runtime": "torch",
+        "torch_imported": true,
+        "transport": "shared_memory_flow_v2",
+        "output_layout": "flow_only_v2",
+        "flow_grid": null,
+        "flow_quality": null,
+        "flow_temporal_hints": false,
+        "flow_backend": "raft",
+        "gpu_flow_capability": "cuda_d3d12_flow_v1",
+        "gpu_flow_transport": null
+      },
+      "flow_nonzero": true,
+      "depth_nonzero": false
+    }
+  ],
+  "full_equals_upgraded_output": true,
+  "clean_machine_verified": false
+}

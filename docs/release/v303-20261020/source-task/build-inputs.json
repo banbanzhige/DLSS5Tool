@@ -1,0 +1,75 @@
+{
+  "files": [
+    {
+      "file": "runtime/dlss5_quality.dll",
+      "bytes": 155136,
+      "sha256": "238b763e7481e8bcfabd5313a73b4901edeeebe6265ed9ded81f4eee24ba97be"
+    },
+    {
+      "file": "runtime/dlssnr_host_v2.dll",
+      "bytes": 295424,
+      "sha256": "c8ad631f8f78b2dedec6aec418c7a570d6fc5bf1b9ffa9f3514bcb0edd58fc13"
+    },
+    {
+      "file": "runtime/vsr_host.dll",
+      "bytes": 231936,
+      "sha256": "5e66ddc8b4c56f2b77daed782cc8429b607d32bba358efb488fbd4c03ae515b7"
+    },
+    {
+      "file": "runtime/nvngx_dlssnr.dll",
+      "bytes": 165840496,
+      "sha256": "ceb6432f6fbdf44d886014bcd47241932bf8b67439feef9bbdd0961436662650"
+    },
+    {
+      "file": "runtime/nvngx_vsr.dll",
+      "bytes": 19140144,
+      "sha256": "c3d88eea5ff7a548edefa66414cf6e77464d0947277c904f324dd23abf58a1ed"
+    },
+    {
+      "file": "docs/release/RELEASE_NOTES_v3.0.3.md",
+      "bytes": 983,
+      "sha256": "33c47adfb3672a37c7ce894ac4e1c1dec81b01d28412b78a0d54ae477d4a58fb"
+    },
+    {
+      "file": "docs/release/RELEASE_NOTES_v3.0.1.md",
+      "bytes": 987,
+      "sha256": "81219f153105161f4f5ddf4f14cd29e658aac6f7c75c50f47e805bf2de95ae8c"
+    },
+    {
+      "file": "dlss5tool/app_version.py",
+      "bytes": 119,
+      "sha256": "df6cdffe5a46891c2ee76ed7bb1f1ac2edcec943ea46af7a28281d1000c77797"
+    },
+    {
+      "file": "packaging/DLSS5Tool.version.txt",
+      "bytes": 926,
+      "sha256": "7458efcedff70a910bfb334d1d6374797d1394fc4e8413c549f67e1dd362f657"
+    },
+    {
+      "file": "gui.py",
+      "bytes": 1884,
+      "sha256": "6bf1788de6e527c7d98c60b478564ff74134ff0f7c58f5b9d1e62ee159cb8157"
+    },
+    {
+      "file": "dlss5tool/adapter_probe.py",
+      "bytes": 16493,
+      "sha256": "f4ff543b3c4981b966f993db5c89ec70447bda111af2f298ab14fe22d08c6618"
+    },
+    {
+      "file": "dlss5tool/gui.py",
+      "bytes": 501506,
+      "sha256": "74852990a90b6126981e0cb40592db3d79d8a6533d6d99c2a67bcfe19b333d17"
+    },
+    {
+      "file": "dlss5tool/local_preview_composition.py",
+      "bytes": 6015,
+      "sha256": "b93b5a6d43b172b59cdbef9836791533b143bc0638f5fa8819dbb03ea86d2aa3"
+    }
+  ],
+  "reparse_checked_inputs": {
+    "F:\\project\\DLSS5Tool\\runtime": 458,
+    "E:\\dist\\DLSS5Tool\\v3.0.2\\editions\\DLSS5Tool-v3.0.2-win64-full\\mods\\enhancement": 2844,
+    "F:\\project\\DLSS5Tool\\mods\\models": 2,
+    "F:\\project\\DLSS5Tool\\tmp\\package-licenses-v2.1.1": 2
+  }
+}

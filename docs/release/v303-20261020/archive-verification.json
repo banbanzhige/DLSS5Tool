@@ -1,0 +1,246 @@
+{
+  "verified": true,
+  "items": [
+    {
+      "source": "E:\\dist\\DLSS5Tool\\tmp\\release-v3.0.3-20261020\\TASK.md",
+      "file": "work\\TASK.md",
+      "bytes": 1165,
+      "sha256": "df48403cda50e7349d05be1905cab27f29162bd02aecc2a9e52f58a5ff2a2fdc"
+    },
+    {
+      "source": "E:\\dist\\DLSS5Tool\\tmp\\release-v3.0.3-20261020\\base-build.log",
+      "file": "work\\base-build.log",
+      "bytes": 14647,
+      "sha256": "d8af52280ce261cf3d6377ca2545daf03f59cf590163526b020d0d9c63dcbdce"
+    },
+    {
+      "source": "E:\\dist\\DLSS5Tool\\tmp\\release-v3.0.3-20261020\\editions-build.log",
+      "file": "work\\editions-build.log",
+      "bytes": 1162,
+      "sha256": "5d0b4e627cdcc26aebd3eb8363e03f9e28b75e3c37f1bff5cda384f88a5487aa"
+    },
+    {
+      "source": "E:\\dist\\DLSS5Tool\\tmp\\release-v3.0.3-20261020\\edition-verification.log",
+      "file": "work\\edition-verification.log",
+      "bytes": 305,
+      "sha256": "9aaeb3e2c489803a8a3d7c54b75eafc72621fd7c0eaee67603ea64c18ce2d5e7"
+    },
+    {
+      "source": "E:\\dist\\DLSS5Tool\\tmp\\release-v3.0.3-20261020\\upgrade-lite.log",
+      "file": "work\\upgrade-lite.log",
+      "bytes": 1271,
+      "sha256": "9413e78a695ca53c1847fdcd9084f17ae3ebffa14239040cdb686af4d29fe928"
+    },
+    {
+      "source": "E:\\dist\\DLSS5Tool\\tmp\\release-v3.0.3-20261020\\edition-verification\\full-3-result.json",
+      "file": "work\\edition-verification\\full-3-result.json",
+      "bytes": 704,
+      "sha256": "40c4449954aef59a6c19ff6ac2b73ac5572899df8ed7800035de73da7e42df56"
+    },
+    {
+      "source": "E:\\dist\\DLSS5Tool\\tmp\\release-v3.0.3-20261020\\edition-verification\\full-3-settings.json",
+      "file": "work\\edition-verification\\full-3-settings.json",
+      "bytes": 2554,
+      "sha256": "4ec08a5824384435fe6fdc6ff606552b3ab942066d1ae59dae75dd8d259b131f"
+    },
+    {
+      "source": "E:\\dist\\DLSS5Tool\\tmp\\release-v3.0.3-20261020\\edition-verification\\lite-0-result.json",
+      "file": "work\\edition-verification\\lite-0-result.json",
+      "bytes": 704,
+      "sha256": "ce891ef5e57a921f0ab437142937456f427b25b0f9e267060a19c1d156bf6101"
+    },
+    {
+      "source": "E:\\dist\\DLSS5Tool\\tmp\\release-v3.0.3-20261020\\edition-verification\\lite-0-settings.json",
+      "file": "work\\edition-verification\\lite-0-settings.json",
+      "bytes": 2554,
+      "sha256": "6a0ec216cbd0b668cc2609a715f4b84aa898cd66266ed48e01ecfc22a924a58f"
+    },
+    {
+      "source": "E:\\dist\\DLSS5Tool\\tmp\\release-v3.0.3-20261020\\edition-verification\\lite-1-result.json",
+      "file": "work\\edition-verification\\lite-1-result.json",
+      "bytes": 921,
+      "sha256": "c4c9ac56da45863b69277075e1bbb7bdd29cd3577b3f94ec09035ffb5ea82ff6"
+    },
+    {
+      "source": "E:\\dist\\DLSS5Tool\\tmp\\release-v3.0.3-20261020\\edition-verification\\lite-1-settings.json",
+      "file": "work\\edition-verification\\lite-1-settings.json",
+      "bytes": 2554,
+      "sha256": "dcecb133af617a5b10b0e5d351edb74575dfa6fc63278c387f08f74d089d2fe6"
+    },
+    {
+      "source": "E:\\dist\\DLSS5Tool\\tmp\\release-v3.0.3-20261020\\edition-verification\\report.json",
+      "file": "work\\edition-verification\\report.json",
+      "bytes": 6077,
+      "sha256": "bdf285f024b3c90a19ff67a6c946bdb15fcb53b41c5c4172d764f8d2bf618b1d"
+    },
+    {
+      "source": "E:\\dist\\DLSS5Tool\\tmp\\release-v3.0.3-20261020\\edition-verification\\upgraded-3-result.json",
+      "file": "work\\edition-verification\\upgraded-3-result.json",
+      "bytes": 704,
+      "sha256": "6790a7da8b5195249c06ea353acf28caf93263bbd6339bfd813750f36b611f6c"
+    },
+    {
+      "source": "E:\\dist\\DLSS5Tool\\tmp\\release-v3.0.3-20261020\\edition-verification\\upgraded-3-settings.json",
+      "file": "work\\edition-verification\\upgraded-3-settings.json",
+      "bytes": 2554,
+      "sha256": "4ec08a5824384435fe6fdc6ff606552b3ab942066d1ae59dae75dd8d259b131f"
+    },
+    {
+      "source": "E:\\dist\\DLSS5Tool\\tmp\\release-v3.0.3-20261020\\edition-verification\\full-3-ngx.log",
+      "file": "work\\edition-verification\\full-3-ngx.log",
+      "bytes": 1347,
+      "sha256": "2d6c755ea51e44706a2c3241b3941a8a4df3e04251fca37f4fb4d063083d61e8"
+    },
+    {
+      "source": "E:\\dist\\DLSS5Tool\\tmp\\release-v3.0.3-20261020\\edition-verification\\lite-0-ngx.log",
+      "file": "work\\edition-verification\\lite-0-ngx.log",
+      "bytes": 1346,
+      "sha256": "99e8c1f9bd5e6df098c9828edd35410d1cf5f7bd3e4ca92cc4d39360c79167c3"
+    },
+    {
+      "source": "E:\\dist\\DLSS5Tool\\tmp\\release-v3.0.3-20261020\\edition-verification\\upgraded-3-ngx.log",
+      "file": "work\\edition-verification\\upgraded-3-ngx.log",
+      "bytes": 1346,
+      "sha256": "1a17cf5874ee06c26ac46daf5c42988038da55f93556e0a8ab5114d68132f7d0"
+    },
+    {
+      "source": "E:\\dist\\DLSS5Tool\\tmp\\release-v3.0.3-20261020\\upgrade-lite\\report.json",
+      "file": "work\\upgrade-lite\\report.json",
+      "bytes": 992,
+      "sha256": "616780d3f032065fc2c96660c813fcabb55f7cefb12d3fa7a19049b6e0dea174"
+    },
+    {
+      "source": "E:\\dist\\DLSS5Tool\\tmp\\release-v3.0.3-20261020\\upgrade-lite\\installed\\.dlss5-update\\journal.json",
+      "file": "work\\upgrade-lite\\installed\\.dlss5-update\\journal.json",
+      "bytes": 268,
+      "sha256": "8dfd6a04c39cf419a8c4425ded4549bc0996cda5c291a26c784fa301b799f3d6"
+    },
+    {
+      "source": "E:\\dist\\DLSS5Tool\\tmp\\release-v3.0.3-20261020\\upgrade-lite\\installed\\.dlss5-update\\manifest.json",
+      "file": "work\\upgrade-lite\\installed\\.dlss5-update\\manifest.json",
+      "bytes": 525929,
+      "sha256": "bc73a24abb26838353d370a02f1cce8362ecb5c2eae8286a4f847157536684e7"
+    },
+    {
+      "source": "E:\\dist\\DLSS5Tool\\tmp\\release-v3.0.3-20261020\\upgrade-lite\\installed\\.dlss5-update\\state.json",
+      "file": "work\\upgrade-lite\\installed\\.dlss5-update\\state.json",
+      "bytes": 41,
+      "sha256": "16dedf97f3aab63bf521ccb990fd8001ac519cc22b9e4988709d273ec029532c"
+    },
+    {
+      "source": "E:\\dist\\DLSS5Tool\\tmp\\release-v3.0.3-20261020\\upgrade-full\\report.json",
+      "file": "work\\upgrade-full\\report.json",
+      "bytes": 992,
+      "sha256": "d16ac8d2ed164531be1c4de1469e185ab5e437df104ca067c3881866540465db"
+    },
+    {
+      "source": "E:\\dist\\DLSS5Tool\\tmp\\release-v3.0.3-20261020\\upgrade-full.log",
+      "file": "work\\upgrade-full.log",
+      "bytes": 1271,
+      "sha256": "cf638114a2d27cc7ce3be2edd324c5791663d2183628c7f245f85fcd00d8b638"
+    },
+    {
+      "source": "E:\\dist\\DLSS5Tool\\tmp\\release-v3.0.3-20261020\\upgrade-full\\installed\\.dlss5-update\\journal.json",
+      "file": "work\\upgrade-full\\installed\\.dlss5-update\\journal.json",
+      "bytes": 294,
+      "sha256": "05ed7560db07b6620f3a437a00bcb0e722489c95572dbb8042fb983851126b47"
+    },
+    {
+      "source": "E:\\dist\\DLSS5Tool\\tmp\\release-v3.0.3-20261020\\upgrade-full\\installed\\.dlss5-update\\manifest.json",
+      "file": "work\\upgrade-full\\installed\\.dlss5-update\\manifest.json",
+      "bytes": 1313005,
+      "sha256": "30eadef067105b1c891c0a8531fd26e167fd8be91e4deffefd4cb46dbd887613"
+    },
+    {
+      "source": "E:\\dist\\DLSS5Tool\\tmp\\release-v3.0.3-20261020\\upgrade-full\\installed\\.dlss5-update\\state.json",
+      "file": "work\\upgrade-full\\installed\\.dlss5-update\\state.json",
+      "bytes": 41,
+      "sha256": "16dedf97f3aab63bf521ccb990fd8001ac519cc22b9e4988709d273ec029532c"
+    },
+    {
+      "source": "F:\\project\\DLSS5Tool\\tmp\\release-v303-20261020\\base-verification.json",
+      "file": "source-task\\base-verification.json",
+      "bytes": 262,
+      "sha256": "891b0483beab808cd1150407d80cefe60cbd831dfcbf5ce1dffa2fd141183f35"
+    },
+    {
+      "source": "F:\\project\\DLSS5Tool\\tmp\\release-v303-20261020\\budget-v303.json",
+      "file": "source-task\\budget-v303.json",
+      "bytes": 148,
+      "sha256": "47a25f49745d7621b99db342153596ea66dccb7964561a5d32746ed3f2b37443"
+    },
+    {
+      "source": "F:\\project\\DLSS5Tool\\tmp\\release-v303-20261020\\build-inputs.json",
+      "file": "source-task\\build-inputs.json",
+      "bytes": 2480,
+      "sha256": "f923b8bd310c366d666cf0ce0a977de1d889246d03adfb8a5f5563f413f8cad9"
+    },
+    {
+      "source": "F:\\project\\DLSS5Tool\\tmp\\release-v303-20261020\\component-reuse.json",
+      "file": "source-task\\component-reuse.json",
+      "bytes": 358,
+      "sha256": "d1081f1a9450569d87a1cdd882d17783f97c7335c59f4b675c4df7c689ceb45c"
+    },
+    {
+      "source": "F:\\project\\DLSS5Tool\\tmp\\release-v303-20261020\\initial-v302-plan.md",
+      "file": "source-task\\initial-v302-plan.md",
+      "bytes": 1264,
+      "sha256": "cd0df948cc1a2e48d5efde24534f12aed84a6a3cd6033e8f35a18d85691674db"
+    },
+    {
+      "source": "F:\\project\\DLSS5Tool\\tmp\\release-v303-20261020\\release-source-manifest.json",
+      "file": "source-task\\release-source-manifest.json",
+      "bytes": 1372,
+      "sha256": "995cd930baac5edaf40010b12b2c607d1f96fdf44beac896298e22b208c14b05"
+    },
+    {
+      "source": "F:\\project\\DLSS5Tool\\tmp\\release-v303-20261020\\release-unit.xml",
+      "file": "source-task\\release-unit.xml",
+      "bytes": 7088,
+      "sha256": "612d005c0904929b1d7758f1123800ba16ce215b10aa0b3a78cc7864e8044772"
+    },
+    {
+      "source": "F:\\project\\DLSS5Tool\\tmp\\release-v303-20261020\\start.json",
+      "file": "source-task\\start.json",
+      "bytes": 318,
+      "sha256": "cb9fbf35ae584ada9c906865fd28c7011d23298432e2f00f0373c7aac37dcb56"
+    },
+    {
+      "source": "F:\\project\\DLSS5Tool\\tmp\\release-v303-20261020\\TASK.md",
+      "file": "source-task\\TASK.md",
+      "bytes": 1165,
+      "sha256": "df48403cda50e7349d05be1905cab27f29162bd02aecc2a9e52f58a5ff2a2fdc"
+    },
+    {
+      "source": "F:\\project\\DLSS5Tool\\tmp\\release-v303-20261020\\upload-check.log",
+      "file": "source-task\\upload-check.log",
+      "bytes": 54,
+      "sha256": "883005229dfbf8d2a784f6a293b5321c7d9a0295fff78d68ba06dd9158814ef2"
+    },
+    {
+      "source": "F:\\project\\DLSS5Tool\\tmp\\release-v303-20261020\\v302-github-release.json",
+      "file": "source-task\\v302-github-release.json",
+      "bytes": 18853,
+      "sha256": "a6437145637b86afe7574ddf0b1395fecbcca4e543b88f70cd005ab5dd109f9f"
+    },
+    {
+      "source": "F:\\project\\DLSS5Tool\\tmp\\release-v303-20261020\\v302-official-baseline-check.json",
+      "file": "source-task\\v302-official-baseline-check.json",
+      "bytes": 4509,
+      "sha256": "cb0848b20298f2101d87891cfada8aa73033c4533f465d75336e9a36bc1b878d"
+    },
+    {
+      "source": "F:\\project\\DLSS5Tool\\tmp\\release-v303-20261020\\verification-progress.json",
+      "file": "source-task\\verification-progress.json",
+      "bytes": 499,
+      "sha256": "e9e031aae3d7d365971b0ab725fc164131d6b0a9eeef02a8bd893d5ecd21222e"
+    },
+    {
+      "source": "F:\\project\\DLSS5Tool\\tmp\\release-v303-20261020\\version-and-docs.patch",
+      "file": "source-task\\version-and-docs.patch",
+      "bytes": 10415,
+      "sha256": "1e7e16fe0666a289856d53f0c5bae49dca53dd24973f6c41e466e4cb3a4b6a3b"
+    }
+  ],
+  "full_upgrade_verified": true
+}

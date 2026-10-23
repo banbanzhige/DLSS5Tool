@@ -1,0 +1,43 @@
+{
+  "base_commit": "480b1d8",
+  "version": "v3.0.3",
+  "files": [
+    {
+      "file": "README.md",
+      "bytes": 17603,
+      "sha256": "da85034e12d08d42b157642345b079158388a8c0d2a56abd15c6f43c1d26ecb7"
+    },
+    {
+      "file": "README.en.md",
+      "bytes": 19405,
+      "sha256": "9b52a968b67de2da27e3d300cc4eaba13220fbde325630a8d1609a6c6b3982ac"
+    },
+    {
+      "file": "CHANGELOG.md",
+      "bytes": 42637,
+      "sha256": "9be8bb4603b356fd6f137e5b7f8a8c1befae4cc0c4889cd2705f9ff204839a4d"
+    },
+    {
+      "file": "docs/README.md",
+      "bytes": 6369,
+      "sha256": "03436444c3cadd8f6462f12330c5da5a8d82760745b40ef72fc82931f9fe9d0d"
+    },
+    {
+      "file": "docs/release/RELEASE_NOTES_v3.0.3.md",
+      "bytes": 983,
+      "sha256": "33c47adfb3672a37c7ce894ac4e1c1dec81b01d28412b78a0d54ae477d4a58fb"
+    },
+    {
+      "file": "dlss5tool/app_version.py",
+      "bytes": 119,
+      "sha256": "df6cdffe5a46891c2ee76ed7bb1f1ac2edcec943ea46af7a28281d1000c77797"
+    },
+    {
+      "file": "packaging/DLSS5Tool.version.txt",
+      "bytes": 926,
+      "sha256": "7458efcedff70a910bfb334d1d6374797d1394fc4e8413c549f67e1dd362f657"
+    }
+  ],
+  "known_p0_status": "partial; VSR/NR native growth and original user workload remain unresolved",
+  "remote_actions": "read-only GitHub release metadata; no upload/publish"
+}

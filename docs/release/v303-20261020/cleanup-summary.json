@@ -1,0 +1,39 @@
+{
+  "completed_at": "2026-10-20T14:39:10+08:00",
+  "logical_removed_bytes": 13414087941,
+  "measured_net_free_increase_bytes": 13432995840,
+  "measurement_note": "Sum of before/after disk free-space observations for these cleanup operations; concurrent system activity can affect the result.",
+  "per_drive": {
+    "E": {
+      "measured_net_free_increase_bytes": 13432872960,
+      "remaining_task_bytes": 1165,
+      "remaining_task_files": [
+        "E:\\dist\\DLSS5Tool\\tmp\\release-v3.0.3-20261020\\TASK.md"
+      ]
+    },
+    "F": {
+      "measured_net_free_increase_bytes": 122880,
+      "remaining_task_bytes": 1165,
+      "remaining_task_files": [
+        "F:\\project\\DLSS5Tool\\tmp\\release-v303-20261020\\TASK.md"
+      ]
+    }
+  },
+  "remaining_task_bytes": 2330,
+  "retained_reason": "Only TASK.md registrations remain in both temporary task directories; verified release artifacts, lite/full baselines and archived small reports remain in their dedicated locations.",
+  "review_on": "2026-10-27",
+  "protected_preserved": [
+    "Official v3.0.2 packages",
+    "Older D/F release baselines",
+    "v3.0.3 deliverables and lite/full baselines",
+    "Existing persistent dependencies",
+    "Previous rollback DLLs",
+    "User settings and source materials"
+  ],
+  "cleanup_reports": [
+    "cleanup-lite.json",
+    "cleanup-e.json",
+    "cleanup-f.json"
+  ],
+  "failed": []
+}

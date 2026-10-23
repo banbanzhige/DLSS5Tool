@@ -1,0 +1,10 @@
+4ed4764b887bdf913c319cedaf5261aca72c4bdd8931ac0bef9f02852fd5e0b6  DLSS5Tool-v3.0.3-win64.zip
+4ed4764b887bdf913c319cedaf5261aca72c4bdd8931ac0bef9f02852fd5e0b6  DLSS5Tool-v3.0.3-win64-lite.zip
+72f9260c0441564a551c741e45c339827b757320013bb6b6392234065fd14bc7  DLSS5Tool-v3.0.3-win64-addon.zip
+47136d276c73a1ec69de702f5184e42666e77edadd0335f80550ffd502064cce  github-assets/DLSS5Tool-v3.0.3-win64-addon.zip.001
+807ee417a75639aa646282d570e9cafbc3efcde38d530ddf2968bea511573679  github-assets/DLSS5Tool-v3.0.3-win64-addon.zip.002
+94c4dae5c12d5c9116b4e346795345a14813805996cbfdc5fd7c51e08b6508bc  DLSS5Tool-v3.0.3-win64-full.zip
+814ce4d17aec0dbedaa69927280c77f03e11b23acbcbc9e2afdcfeafd1580ce7  github-assets/DLSS5Tool-v3.0.3-win64-full.zip.001
+5b17dec3d861ec482403efe82c49be93bceafc985c5b4b199b387339045046b1  github-assets/DLSS5Tool-v3.0.3-win64-full.zip.002
+67761677a3e58bd7960ac46d45405d3f234826920a53412a6823d787723151ca  github-assets/DLSS5Tool-v3.0.2-to-v3.0.3-win64-lite.dlssupdate
+987b7fd01c64431505731dbbc03829488a24a68c3f07111439acb90410e4d3a6  github-assets/DLSS5Tool-v3.0.2-to-v3.0.3-win64-full.dlssupdate

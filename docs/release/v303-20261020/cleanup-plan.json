@@ -1,0 +1,50 @@
+{
+  "plans": {
+    "E": {
+      "targets": [
+        "E:\\dist\\DLSS5Tool\\tmp\\release-v3.0.3-20261020\\base-build.log",
+        "E:\\dist\\DLSS5Tool\\tmp\\release-v3.0.3-20261020\\build",
+        "E:\\dist\\DLSS5Tool\\tmp\\release-v3.0.3-20261020\\edition-verification",
+        "E:\\dist\\DLSS5Tool\\tmp\\release-v3.0.3-20261020\\edition-verification.log",
+        "E:\\dist\\DLSS5Tool\\tmp\\release-v3.0.3-20261020\\editions-build.log",
+        "E:\\dist\\DLSS5Tool\\tmp\\release-v3.0.3-20261020\\upgrade-full",
+        "E:\\dist\\DLSS5Tool\\tmp\\release-v3.0.3-20261020\\upgrade-full.log",
+        "E:\\dist\\DLSS5Tool\\tmp\\release-v3.0.3-20261020\\upgrade-lite",
+        "E:\\dist\\DLSS5Tool\\tmp\\release-v3.0.3-20261020\\upgrade-lite.log",
+        "E:\\dist\\DLSS5Tool\\v3.0.3\\base",
+        "E:\\dist\\DLSS5Tool\\v3.0.3\\editions\\DLSS5Tool-v3.0.3-win64-addon"
+      ],
+      "logical_bytes": 12319030599,
+      "files": 8645
+    },
+    "F": {
+      "targets": [
+        "F:\\project\\DLSS5Tool\\tmp\\release-v303-20261020\\base-verification.json",
+        "F:\\project\\DLSS5Tool\\tmp\\release-v303-20261020\\budget-v303.json",
+        "F:\\project\\DLSS5Tool\\tmp\\release-v303-20261020\\build-inputs.json",
+        "F:\\project\\DLSS5Tool\\tmp\\release-v303-20261020\\component-reuse.json",
+        "F:\\project\\DLSS5Tool\\tmp\\release-v303-20261020\\initial-v302-plan.md",
+        "F:\\project\\DLSS5Tool\\tmp\\release-v303-20261020\\pytest",
+        "F:\\project\\DLSS5Tool\\tmp\\release-v303-20261020\\pytest-cache",
+        "F:\\project\\DLSS5Tool\\tmp\\release-v303-20261020\\release-source-manifest.json",
+        "F:\\project\\DLSS5Tool\\tmp\\release-v303-20261020\\release-unit.xml",
+        "F:\\project\\DLSS5Tool\\tmp\\release-v303-20261020\\start.json",
+        "F:\\project\\DLSS5Tool\\tmp\\release-v303-20261020\\upload-check.log",
+        "F:\\project\\DLSS5Tool\\tmp\\release-v303-20261020\\v302-github-release.json",
+        "F:\\project\\DLSS5Tool\\tmp\\release-v303-20261020\\v302-official-baseline-check.json",
+        "F:\\project\\DLSS5Tool\\tmp\\release-v303-20261020\\verification-progress.json",
+        "F:\\project\\DLSS5Tool\\tmp\\release-v303-20261020\\version-and-docs.patch"
+      ],
+      "logical_bytes": 61385,
+      "files": 74
+    }
+  },
+  "protected": [
+    "E:\\dist\\DLSS5Tool\\v3.0.3\\editions\\DLSS5Tool-v3.0.3-win64-lite",
+    "E:\\dist\\DLSS5Tool\\v3.0.3\\editions\\DLSS5Tool-v3.0.3-win64-full",
+    "E:/dist/DLSS5Tool/v3.0.2",
+    "All older D/F baselines and previous rollback DLLs"
+  ],
+  "reports_verified": 40,
+  "process_audit_passed": true
+}

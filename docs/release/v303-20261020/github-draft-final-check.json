@@ -1,0 +1,18 @@
+{
+  "checked_at": "2026-10-20T15:13:42+08:00",
+  "release_id": 418086858,
+  "html_url": "https://github.com/banbanzhige/DLSS5Tool/releases/tag/untagged-caac535fdc23f2a06b91",
+  "tag": "v3.0.3",
+  "draft": true,
+  "published_at": null,
+  "assets_verified": 10,
+  "all_remote_sha256_sizes_states_matched": true,
+  "notes_matched": true,
+  "latest_public_tag": "v3.0.2",
+  "target_commitish": "6e3db90fff16fbacd35845ea272e394b62003f81",
+  "source_sync_required": true,
+  "local_source_commit": "480b1d854c2fb6c871dc274bfb7fdba5f780c402",
+  "source_pushed": false,
+  "user_v301_notes_preserved": true,
+  "new_local_large_files": false
+}

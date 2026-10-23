@@ -1,0 +1,27 @@
+{
+  "backend_requested": "v2",
+  "ok": true,
+  "backend_actual": "v2",
+  "adapter_info": {
+    "id": "dxgi:10DE:2783:27831ED3:000000A1:00000002EDD00000:P000001000",
+    "name": "NVIDIA GeForce RTX 4070 SUPER",
+    "preference_index": 0,
+    "vendor_id": 4318,
+    "device_id": 10115,
+    "subsys_id": 662904531,
+    "revision": 161,
+    "dedicated_video_memory": 12579766272,
+    "luid_high": 0,
+    "luid_low": 79931,
+    "d3d12_feature_level": "12_0",
+    "cuda_index": 0,
+    "pci_bus_id": "0000:01:00.0"
+  },
+  "output_shape": [
+    360,
+    640,
+    4
+  ],
+  "output_sha256": "E5664B85EDD2AA3AA809BADD70943228571EDAC7B73F940EB3B146A0BE654D17",
+  "elapsed_seconds": 26.976
+}

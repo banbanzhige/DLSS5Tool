@@ -1,0 +1,26 @@
+{
+  "removed": [
+    "E:\\dist\\DLSS5Tool\\tmp\\release-v3.0.3-20261020\\base-build.log",
+    "E:\\dist\\DLSS5Tool\\tmp\\release-v3.0.3-20261020\\build",
+    "E:\\dist\\DLSS5Tool\\tmp\\release-v3.0.3-20261020\\edition-verification",
+    "E:\\dist\\DLSS5Tool\\tmp\\release-v3.0.3-20261020\\edition-verification.log",
+    "E:\\dist\\DLSS5Tool\\tmp\\release-v3.0.3-20261020\\editions-build.log",
+    "E:\\dist\\DLSS5Tool\\tmp\\release-v3.0.3-20261020\\upgrade-full",
+    "E:\\dist\\DLSS5Tool\\tmp\\release-v3.0.3-20261020\\upgrade-full.log",
+    "E:\\dist\\DLSS5Tool\\tmp\\release-v3.0.3-20261020\\upgrade-lite",
+    "E:\\dist\\DLSS5Tool\\tmp\\release-v3.0.3-20261020\\upgrade-lite.log",
+    "E:\\dist\\DLSS5Tool\\v3.0.3\\base",
+    "E:\\dist\\DLSS5Tool\\v3.0.3\\editions\\DLSS5Tool-v3.0.3-win64-addon"
+  ],
+  "failed": [],
+  "logical_planned_bytes": 12319030599,
+  "files_planned": 8645,
+  "free_before_bytes": 1169490153472,
+  "free_after_bytes": 1181825105920,
+  "net_free_increase_bytes": 12334952448,
+  "remaining_task_bytes": 1165.0,
+  "remaining_task_files": [
+    "E:\\dist\\DLSS5Tool\\tmp\\release-v3.0.3-20261020\\TASK.md"
+  ],
+  "retained_reason": "Task registration; official deliverables and lite/full baselines retained outside the temporary task."
+}

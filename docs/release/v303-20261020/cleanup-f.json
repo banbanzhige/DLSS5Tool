@@ -1,0 +1,31 @@
+{
+  "removed": [
+    "F:\\project\\DLSS5Tool\\tmp\\release-v303-20261020\\base-verification.json",
+    "F:\\project\\DLSS5Tool\\tmp\\release-v303-20261020\\budget-v303.json",
+    "F:\\project\\DLSS5Tool\\tmp\\release-v303-20261020\\build-inputs.json",
+    "F:\\project\\DLSS5Tool\\tmp\\release-v303-20261020\\component-reuse.json",
+    "F:\\project\\DLSS5Tool\\tmp\\release-v303-20261020\\initial-v302-plan.md",
+    "F:\\project\\DLSS5Tool\\tmp\\release-v303-20261020\\pytest",
+    "F:\\project\\DLSS5Tool\\tmp\\release-v303-20261020\\pytest-cache",
+    "F:\\project\\DLSS5Tool\\tmp\\release-v303-20261020\\release-source-manifest.json",
+    "F:\\project\\DLSS5Tool\\tmp\\release-v303-20261020\\release-unit.xml",
+    "F:\\project\\DLSS5Tool\\tmp\\release-v303-20261020\\start.json",
+    "F:\\project\\DLSS5Tool\\tmp\\release-v303-20261020\\upload-check.log",
+    "F:\\project\\DLSS5Tool\\tmp\\release-v303-20261020\\v302-github-release.json",
+    "F:\\project\\DLSS5Tool\\tmp\\release-v303-20261020\\v302-official-baseline-check.json",
+    "F:\\project\\DLSS5Tool\\tmp\\release-v303-20261020\\verification-progress.json",
+    "F:\\project\\DLSS5Tool\\tmp\\release-v303-20261020\\version-and-docs.patch"
+  ],
+  "failed": [],
+  "logical_removed_bytes": 61385,
+  "files_removed": 74,
+  "free_before_bytes": 63758520320,
+  "free_after_bytes": 63758643200,
+  "net_free_increase_bytes": 122880,
+  "archives_verified": true,
+  "remaining_task_bytes": 1165.0,
+  "remaining_task_files": [
+    "F:\\project\\DLSS5Tool\\tmp\\release-v303-20261020\\TASK.md"
+  ],
+  "retained_reason": "Task registration retained; reports archived and verified in docs/release/v303-20261020."
+}

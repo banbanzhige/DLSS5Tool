@@ -1,0 +1,18 @@
+{
+  "version": "v3.0.3",
+  "source_commit": "480b1d8",
+  "baseline": "v3.0.2",
+  "baseline_official_verified": true,
+  "baseline_edition_files": {
+    "lite": 1866,
+    "full": 4280
+  },
+  "release_targeted_tests": 48,
+  "failed": [],
+  "base_frozen_build_complete": true,
+  "core_memory_fix_tested_before_packaging": true,
+  "full_editions_complete": false,
+  "real_upgrade_acceptance_pending": true,
+  "distribution_review_complete": false,
+  "public_actions_performed": false
+}

@@ -1,0 +1,244 @@
+{
+  "version": "v3.0.3",
+  "source_commit": "480b1d8",
+  "version_and_release_docs_uncommitted": true,
+  "completed_at": "2026-10-20T14:39:13+08:00",
+  "status": "local_candidate_verified",
+  "published": false,
+  "pushed": false,
+  "release_created": false,
+  "packages": "E:\\dist\\DLSS5Tool\\v3.0.3\\editions",
+  "upload_assets": "E:\\dist\\DLSS5Tool\\v3.0.3\\editions\\github-assets",
+  "editions": {
+    "lite": {
+      "name": "DLSS5Tool-v3.0.3-win64-lite.zip",
+      "size": 588172602,
+      "sha256": "4ed4764b887bdf913c319cedaf5261aca72c4bdd8931ac0bef9f02852fd5e0b6",
+      "unpacked_bytes": 1032320196,
+      "file_count": 1866,
+      "crc_verified": true,
+      "volumes": [],
+      "github_name": "DLSS5Tool-v3.0.3-win64.zip"
+    },
+    "addon": {
+      "name": "DLSS5Tool-v3.0.3-win64-addon.zip",
+      "size": 3053866457,
+      "sha256": "72f9260c0441564a551c741e45c339827b757320013bb6b6392234065fd14bc7",
+      "unpacked_bytes": 4781669865,
+      "file_count": 2415,
+      "crc_verified": true,
+      "volumes": [
+        {
+          "name": "DLSS5Tool-v3.0.3-win64-addon.zip.001",
+          "size": 1992294400,
+          "sha256": "47136d276c73a1ec69de702f5184e42666e77edadd0335f80550ffd502064cce"
+        },
+        {
+          "name": "DLSS5Tool-v3.0.3-win64-addon.zip.002",
+          "size": 1061572057,
+          "sha256": "807ee417a75639aa646282d570e9cafbc3efcde38d530ddf2968bea511573679"
+        }
+      ]
+    },
+    "full": {
+      "name": "DLSS5Tool-v3.0.3-win64-full.zip",
+      "size": 3642036548,
+      "sha256": "94c4dae5c12d5c9116b4e346795345a14813805996cbfdc5fd7c51e08b6508bc",
+      "unpacked_bytes": 5813985940,
+      "file_count": 4280,
+      "crc_verified": true,
+      "volumes": [
+        {
+          "name": "DLSS5Tool-v3.0.3-win64-full.zip.001",
+          "size": 1992294400,
+          "sha256": "814ce4d17aec0dbedaa69927280c77f03e11b23acbcbc9e2afdcfeafd1580ce7"
+        },
+        {
+          "name": "DLSS5Tool-v3.0.3-win64-full.zip.002",
+          "size": 1649742148,
+          "sha256": "5b17dec3d861ec482403efe82c49be93bceafc985c5b4b199b387339045046b1"
+        }
+      ]
+    }
+  },
+  "incremental_updates": {
+    "mode": "required",
+    "target": "v3.0.3",
+    "first_updater_version": "v2.2.0",
+    "required_baselines": [
+      "v3.0.2"
+    ],
+    "assets": [
+      {
+        "changed_files": 11,
+        "edition": "lite",
+        "from": "v3.0.2",
+        "payload_bytes": 18094693,
+        "published": false,
+        "removed_files": 0,
+        "sha256": "67761677a3e58bd7960ac46d45405d3f234826920a53412a6823d787723151ca",
+        "size": 16471124,
+        "to": "v3.0.3",
+        "name": "DLSS5Tool-v3.0.2-to-v3.0.3-win64-lite.dlssupdate"
+      },
+      {
+        "changed_files": 12,
+        "edition": "full",
+        "from": "v3.0.2",
+        "payload_bytes": 18095325,
+        "published": false,
+        "removed_files": 0,
+        "sha256": "987b7fd01c64431505731dbbc03829488a24a68c3f07111439acb90410e4d3a6",
+        "size": 16721506,
+        "to": "v3.0.3",
+        "name": "DLSS5Tool-v3.0.2-to-v3.0.3-win64-full.dlssupdate"
+      }
+    ]
+  },
+  "gates": {
+    "official_v302_assets_sha256_and_sizes": {
+      "passed": true,
+      "count": 10
+    },
+    "official_archive_manifest_and_baselines": true,
+    "archive_crc_and_split_reassembly": true,
+    "full_equals_lite_plus_addon": true,
+    "frozen_main_and_component_checks": true,
+    "real_upgrade_by_official_v302_frozen_helper": {
+      "lite": {
+        "phase": "complete",
+        "target": "v3.0.3"
+      },
+      "full": {
+        "phase": "complete",
+        "target": "v3.0.3"
+      }
+    },
+    "target_and_rollback_files_verified": {
+      "lite": {
+        "target": 1866,
+        "rollback": 11
+      },
+      "full": {
+        "target": 4280,
+        "rollback": 12
+      }
+    },
+    "release_checks": {
+      "passed": 52,
+      "failed": 0,
+      "full_suite_run": false
+    },
+    "release_notes_three_copies_identical": true,
+    "new_baseline_registered": true,
+    "final_upload_check": {
+      "passed": true,
+      "mode": "required",
+      "payloads": 2
+    },
+    "archived_reports_rehashed_after_cleanup": 40,
+    "post_cleanup_package_presence_sizes_and_baseline_counts": true,
+    "user_v301_notes_preserved": true,
+    "git_diff_check": true,
+    "task_cleanup_complete": true
+  },
+  "limitations": {
+    "p0": "partially_completed; sustained native VSR/NR growth in the current NVIDIA environment remains unresolved",
+    "original_user_32gib_long_load_verified": false,
+    "clean_machine_verified": false,
+    "local_candidate": true,
+    "gpu_export_distribution_review_complete": false,
+    "license_review": "Publisher review required; RAFT weights only; depth architecture retained"
+  },
+  "cleanup": {
+    "completed_at": "2026-10-20T14:39:10+08:00",
+    "logical_removed_bytes": 13414087941,
+    "measured_net_free_increase_bytes": 13432995840,
+    "measurement_note": "Sum of before/after disk free-space observations for these cleanup operations; concurrent system activity can affect the result.",
+    "per_drive": {
+      "E": {
+        "measured_net_free_increase_bytes": 13432872960,
+        "remaining_task_bytes": 1165,
+        "remaining_task_files": [
+          "E:\\dist\\DLSS5Tool\\tmp\\release-v3.0.3-20261020\\TASK.md"
+        ]
+      },
+      "F": {
+        "measured_net_free_increase_bytes": 122880,
+        "remaining_task_bytes": 1165,
+        "remaining_task_files": [
+          "F:\\project\\DLSS5Tool\\tmp\\release-v303-20261020\\TASK.md"
+        ]
+      }
+    },
+    "remaining_task_bytes": 2330,
+    "retained_reason": "Only TASK.md registrations remain in both temporary task directories; verified release artifacts, lite/full baselines and archived small reports remain in their dedicated locations.",
+    "review_on": "2026-10-27",
+    "protected_preserved": [
+      "Official v3.0.2 packages",
+      "Older D/F release baselines",
+      "v3.0.3 deliverables and lite/full baselines",
+      "Existing persistent dependencies",
+      "Previous rollback DLLs",
+      "User settings and source materials"
+    ],
+    "cleanup_reports": [
+      "cleanup-lite.json",
+      "cleanup-e.json",
+      "cleanup-f.json"
+    ],
+    "failed": []
+  },
+  "maintenance_report": "F:\\project\\DLSS5Tool\\docs\\release\\V303_PACKAGING_20261020.md",
+  "evidence_directory": "F:\\project\\DLSS5Tool\\docs\\release\\v303-20261020",
+  "asset_inventory": [
+    {
+      "name": "DLSS5Tool-v3.0.2-to-v3.0.3-win64-full.dlssupdate",
+      "bytes": 16721506
+    },
+    {
+      "name": "DLSS5Tool-v3.0.2-to-v3.0.3-win64-lite.dlssupdate",
+      "bytes": 16471124
+    },
+    {
+      "name": "DLSS5Tool-v3.0.3-win64-addon.zip.001",
+      "bytes": 1992294400
+    },
+    {
+      "name": "DLSS5Tool-v3.0.3-win64-addon.zip.002",
+      "bytes": 1061572057
+    },
+    {
+      "name": "DLSS5Tool-v3.0.3-win64-full.zip.001",
+      "bytes": 1992294400
+    },
+    {
+      "name": "DLSS5Tool-v3.0.3-win64-full.zip.002",
+      "bytes": 1649742148
+    },
+    {
+      "name": "DLSS5Tool-v3.0.3-win64.zip",
+      "bytes": 588172602
+    },
+    {
+      "name": "Join-ReleaseArchive.ps1",
+      "bytes": 2150
+    },
+    {
+      "name": "package-report.json",
+      "bytes": 3437
+    },
+    {
+      "name": "README-UPLOAD.txt",
+      "bytes": 593
+    },
+    {
+      "name": "RELEASE_NOTES_v3.0.3.md",
+      "bytes": 983
+    },
+    {
+      "name": "SHA256SUMS.txt",
+      "bytes": 740
+    }
+  ]
+}

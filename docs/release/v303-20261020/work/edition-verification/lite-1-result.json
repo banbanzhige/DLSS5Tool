@@ -1,0 +1,8 @@
+{
+  "backend_requested": "v2",
+  "ok": false,
+  "error_type": "FileNotFoundError",
+  "error": "Enhancement component is missing. Extract the complete add-on beside the app (the archive includes mods), then refresh. No Python installation needed. Turn guidance off to continue normally.",
+  "traceback": "Traceback (most recent call last):\n  File \"dlss5tool\\diagnostics.py\", line 1378, in diagnostic_worker_main\n  File \"dlss5tool\\dlss_engine.py\", line 313, in __init__\n  File \"dlss5tool\\guidance_client.py\", line 67, in validate\n  File \"dlss5tool\\mod_paths.py\", line 212, in guidance_files\n  File \"dlss5tool\\mod_paths.py\", line 92, in enhancement_info\nFileNotFoundError: Enhancement component is missing. Extract the complete add-on beside the app (the archive includes mods), then refresh. No Python installation needed. Turn guidance off to continue normally.\n",
+  "elapsed_seconds": 0.011
+}

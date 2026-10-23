@@ -1,0 +1,11 @@
+# v3.0.2 P0 修补后本地打包
+- 负责人：当前对话 Codex；2026-10-20 用户要求打包 v3.0.2。
+- 源码基点：480b1d8，另含本次 v3.0.2 发布文案修订；原 v3.0.1 用户文案改动不打包。
+- 正式输出：E:/dist/DLSS5Tool/v3.0.2/editions/；新候选在版本目录 .staging/p0-20261020/editions/。
+- 大文件工作目录：E:/dist/DLSS5Tool/tmp/release-v3.0.2-20261020/。
+- 峰值预算：E盘40 GiB，F盘1 GiB；保留至少15 GiB。复用 .venv、正式v3.0.1组件和既有模型，不复制开发环境。
+- 范围：lite/full/addon、v3.0.1到v3.0.2两种增量、原版旧助手真实升级及冻结程序验收。
+- 重建：scripts/build_release.ps1 -SkipInstall -SkipTests -LocalCandidate，指定任务目录；scripts/package_editions.py --local-candidate --allow-external-output（完整参数见报告）。
+- 保留：已验证旧v3.0.2放在同版本 .staging/before-p0-20261020/，替代品验收后仍保留作回滚；旧D/F基线不动。
+- 边界：P0仍部分完成，不继续系统排查；本次不推送、不改草稿、不上传或发布。
+- 收尾：脚本和小型报告归档docs/release/v302-20261020/，清理本任务可重建大临时文件；复核2026-10-27并非删除授权。

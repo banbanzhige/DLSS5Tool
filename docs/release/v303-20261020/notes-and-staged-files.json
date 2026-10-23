@@ -1,0 +1,33 @@
+{
+  "notes": [
+    {
+      "path": "F:\\project\\DLSS5Tool\\docs\\release\\RELEASE_NOTES_v3.0.3.md",
+      "bytes": 983,
+      "sha256": "33c47adfb3672a37c7ce894ac4e1c1dec81b01d28412b78a0d54ae477d4a58fb"
+    },
+    {
+      "path": "E:\\dist\\DLSS5Tool\\v3.0.3\\editions\\RELEASE_NOTES_v3.0.3.md",
+      "bytes": 983,
+      "sha256": "33c47adfb3672a37c7ce894ac4e1c1dec81b01d28412b78a0d54ae477d4a58fb"
+    },
+    {
+      "path": "E:\\dist\\DLSS5Tool\\v3.0.3\\editions\\github-assets\\RELEASE_NOTES_v3.0.3.md",
+      "bytes": 983,
+      "sha256": "33c47adfb3672a37c7ce894ac4e1c1dec81b01d28412b78a0d54ae477d4a58fb"
+    }
+  ],
+  "source_official_v302_notes_unchanged": true,
+  "staged": {
+    "lite": {
+      "file_set_exact": true,
+      "files": 1866,
+      "quality_sha256": "238b763e7481e8bcfabd5313a73b4901edeeebe6265ed9ded81f4eee24ba97be"
+    },
+    "full": {
+      "file_set_exact": true,
+      "files": 4280,
+      "quality_sha256": "238b763e7481e8bcfabd5313a73b4901edeeebe6265ed9ded81f4eee24ba97be"
+    }
+  },
+  "hashes_verified_by_real_update_overlay": true
+}

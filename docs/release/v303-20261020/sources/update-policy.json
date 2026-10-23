@@ -1,0 +1,43 @@
+{
+  "schema": 1,
+  "first_updater_version": "v2.2.0",
+  "support": "previous-release",
+  "baselines": [
+    {
+      "version": "v2.2.2",
+      "packages": "dist/v2.2.2-release-20260915/editions"
+    },
+    {
+      "version": "v2.3.0",
+      "packages": "dist/v2.3.0-release-20260919/editions"
+    },
+    {
+      "version": "v2.3.1",
+      "packages": "dist/v2.3.1-release-20260920/editions"
+    },
+    {
+      "version": "v2.3.2",
+      "packages": "dist/v2.3.2-release-20260923/official-baseline-20260924"
+    },
+    {
+      "version": "v2.3.3",
+      "packages": "dist/v2.3.3-release-20260924/official-baseline-20260924"
+    },
+    {
+      "version": "v3.0.0",
+      "packages": "dist/v3.0.0-changelog-20261011/editions"
+    },
+    {
+      "version": "v3.0.1",
+      "packages": "D:/DLSS5Tool/dist/v3.0.1-release-20261016/editions"
+    },
+    {
+      "version": "v3.0.2",
+      "packages": "E:/dist/DLSS5Tool/v3.0.2/editions"
+    },
+    {
+      "version": "v3.0.3",
+      "packages": "E:/dist/DLSS5Tool/v3.0.3/editions"
+    }
+  ]
+}

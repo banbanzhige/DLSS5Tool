@@ -1,0 +1,7 @@
+{
+  "worker": "E:\\dist\\DLSS5Tool\\v3.0.2\\editions\\DLSS5Tool-v3.0.2-win64-full\\mods\\enhancement\\guidance_worker.exe",
+  "sha256": "f376f68ddef901c23a5809336304d438c9dd30cc73fbfdeb5c17948808dd6b0d",
+  "verified": true,
+  "source": "Official v3.0.2 full baseline; no Torch/CUDA rebuild",
+  "models": "Existing RAFT-Large only; no depth weights"
+}

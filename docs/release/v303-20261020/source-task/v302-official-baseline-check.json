@@ -1,0 +1,115 @@
+{
+  "version": "v3.0.2",
+  "release_url": "https://api.github.com/repos/banbanzhige/DLSS5Tool/releases/416918005",
+  "assets": [
+    {
+      "name": "DLSS5Tool-v3.0.1-to-v3.0.2-win64-full.dlssupdate",
+      "local_sha256": "286205d6d18e4d1b4b927d659c2a9852befdb9e991fe3c7df2cc1a7a761d4eec",
+      "github_digest": "sha256:286205d6d18e4d1b4b927d659c2a9852befdb9e991fe3c7df2cc1a7a761d4eec",
+      "local_bytes": 17106915,
+      "github_bytes": 17106915,
+      "matched": true,
+      "historical_delta": true
+    },
+    {
+      "name": "DLSS5Tool-v3.0.1-to-v3.0.2-win64-lite.dlssupdate",
+      "local_sha256": "b978ebb19defa62cd02facdf3101ba8836c0468c76c716432ad31086acba204e",
+      "github_digest": "sha256:b978ebb19defa62cd02facdf3101ba8836c0468c76c716432ad31086acba204e",
+      "local_bytes": 16856530,
+      "github_bytes": 16856530,
+      "matched": true,
+      "historical_delta": true
+    },
+    {
+      "name": "DLSS5Tool-v3.0.2-win64-addon.zip.001",
+      "local_sha256": "56a273d37de135bdbc1f11634d02523059812a4ed532e2e126d3cd4ee57ccce9",
+      "github_digest": "sha256:56a273d37de135bdbc1f11634d02523059812a4ed532e2e126d3cd4ee57ccce9",
+      "local_bytes": 1992294400,
+      "github_bytes": 1992294400,
+      "matched": true,
+      "historical_delta": false
+    },
+    {
+      "name": "DLSS5Tool-v3.0.2-win64-addon.zip.002",
+      "local_sha256": "80de9145b753de7c483f48d3b2b3c4f1bcf7129df7a8e4642d5d5902d7f16b72",
+      "github_digest": "sha256:80de9145b753de7c483f48d3b2b3c4f1bcf7129df7a8e4642d5d5902d7f16b72",
+      "local_bytes": 1061572057,
+      "github_bytes": 1061572057,
+      "matched": true,
+      "historical_delta": false
+    },
+    {
+      "name": "DLSS5Tool-v3.0.2-win64-full.zip.001",
+      "local_sha256": "2bdabc74e0bf935018c0c63df78d27c1a624c1fdd4f7afc15a150acfaeb57902",
+      "github_digest": "sha256:2bdabc74e0bf935018c0c63df78d27c1a624c1fdd4f7afc15a150acfaeb57902",
+      "local_bytes": 1992294400,
+      "github_bytes": 1992294400,
+      "matched": true,
+      "historical_delta": false
+    },
+    {
+      "name": "DLSS5Tool-v3.0.2-win64-full.zip.002",
+      "local_sha256": "1c0e01c6909e052097ad09fda4969707380dcd423c83c715e51b817bde5d9317",
+      "github_digest": "sha256:1c0e01c6909e052097ad09fda4969707380dcd423c83c715e51b817bde5d9317",
+      "local_bytes": 1649716434,
+      "github_bytes": 1649716434,
+      "matched": true,
+      "historical_delta": false
+    },
+    {
+      "name": "DLSS5Tool-v3.0.2-win64.zip",
+      "local_sha256": "bc464b21627f98d07cb0c0f52a383ef63997731952126825da90b65fd0353611",
+      "github_digest": "sha256:bc464b21627f98d07cb0c0f52a383ef63997731952126825da90b65fd0353611",
+      "local_bytes": 588146888,
+      "github_bytes": 588146888,
+      "matched": true,
+      "historical_delta": false
+    },
+    {
+      "name": "Join-ReleaseArchive.ps1",
+      "local_sha256": "ac9c90296dc8378c931a203ce601c2bda1ad5c9e74817fd13ac85979f95339a5",
+      "github_digest": "sha256:ac9c90296dc8378c931a203ce601c2bda1ad5c9e74817fd13ac85979f95339a5",
+      "local_bytes": 2150,
+      "github_bytes": 2150,
+      "matched": true,
+      "historical_delta": false
+    },
+    {
+      "name": "RELEASE_NOTES_v3.0.2.md",
+      "local_sha256": "b2adf64358d6da08dec512cad2059e6b60453c8e30b5eebc1dd17298cc713a90",
+      "github_digest": "sha256:b2adf64358d6da08dec512cad2059e6b60453c8e30b5eebc1dd17298cc713a90",
+      "local_bytes": 1534,
+      "github_bytes": 1534,
+      "matched": true,
+      "historical_delta": false
+    },
+    {
+      "name": "SHA256SUMS.txt",
+      "local_sha256": "6e5d3a7cc3d85a0087d2bd795dcf5dd030b1130a6bef219c58e368c322285226",
+      "github_digest": "sha256:6e5d3a7cc3d85a0087d2bd795dcf5dd030b1130a6bef219c58e368c322285226",
+      "local_bytes": 740,
+      "github_bytes": 740,
+      "matched": true,
+      "historical_delta": false
+    }
+  ],
+  "directories": [
+    {
+      "edition": "lite",
+      "archive_sha256": "bc464b21627f98d07cb0c0f52a383ef63997731952126825da90b65fd0353611",
+      "files": 1866,
+      "archive_manifest_exact": true,
+      "extracted_baseline_exact": true
+    },
+    {
+      "edition": "full",
+      "archive_sha256": "5cf17c2f53aaac74ad58c25e73ca0b9e75f5e4861723cf52763ce7c6b3e00b1b",
+      "files": 4280,
+      "archive_manifest_exact": true,
+      "extracted_baseline_exact": true
+    }
+  ],
+  "historical_deltas_used": false,
+  "baseline_verified": true,
+  "historical_delta_warnings": []
+}

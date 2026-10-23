@@ -18,18 +18,18 @@
 
 维护者于 2026-09-19 将 `packaging/update-policy.json` 的支持策略定为 `previous-release`：
 **每次只为上一个正式版本生成 lite/full 两个增量包**，更早版本使用整包升级，不自动串联升级链。
-v3.0.2 的源版本是正式 v3.0.1，基线为 `D:/DLSS5Tool/dist/v3.0.1-release-20261016/editions`。
-该目录的 lite ZIP、full/addon 分卷已与 GitHub 正式 v3.0.1 附件 SHA256 对齐，并逐文件核验了归档、清单和解压目录。
+v3.0.3 的源版本是正式 v3.0.2，基线为 `E:/dist/DLSS5Tool/v3.0.2/editions`。
+该目录的 lite ZIP、full/addon 分卷已与 GitHub 正式 v3.0.2 附件 SHA256 对齐，并逐文件核验了归档、清单和解压目录，见 [v3.0.3 打包记录](V303_PACKAGING_20261020.md)。
 历史 v3.0.0 → v3.0.1 增量的本地字节与线上摘要不一致，不用作新基线；证据见
 [v3.0.1 正式基线核验](v302-20261019/v301-official-baseline-check.json)。不能仅凭这一差异认定旧升级失败的原因。
 v2.2.0/v2.2.1 已退出本次支持范围，不恢复其已删除目录；v2.2.0 仍是更新器首次引入版本。
 后续版本不允许缺少增量包却完成打包。此工作流在**本地三形态打包入口**执行，GitHub Actions 的测试发现机制会运行工作流单测，但不会自动发布。
 
 1. 更新目标版本资源和 Release notes，阅读卫生守则、检查容量、登记任务目录。
-2. 主程序构建前先做只读基线检查，例如准备 v2.2.2 时：
+2. 主程序构建前先做只读基线检查，例如准备 v3.0.3 时：
 
    ```powershell
-   .venv/Scripts/python.exe -B scripts/release_updates.py --preflight-version v2.2.2
+   .venv/Scripts/python.exe -B scripts/release_updates.py --preflight-version v3.0.3
    ```
 
 3. 通过 `scripts/build_release.ps1` 构建新基础包（复用 `.venv`，选择全新输出），然后使用

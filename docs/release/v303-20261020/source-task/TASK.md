@@ -1,0 +1,11 @@
+# v3.0.3 本地打包与升级验收
+- 负责人：当前对话 Codex；2026-10-20 用户确认从已发布v3.0.2改为v3.0.3。
+- 源码：480b1d8 加本次3.0.3版本资源/README/发布说明；原有3.0.1用户文案原样保留。
+- 输出：E:/dist/DLSS5Tool/v3.0.3/editions/；大文件临时任务E:/dist/DLSS5Tool/tmp/release-v3.0.3-20261020/。
+- 基线：正式v3.0.2，E:/dist/DLSS5Tool/v3.0.2/editions/；先核对线上附件SHA256、归档、清单与解压目录。
+- 范围：lite/full/addon、仅v3.0.2到v3.0.3两种增量、冻结主程序和旧冻结助手真实升级。
+- 预算：E盘40 GiB、F盘1 GiB；安全余量15 GiB。复用已验证只读组件、环境和模型。
+- 重建：scripts/build_release.ps1 -SkipInstall -SkipTests -LocalCandidate；scripts/package_editions.py --local-candidate；完整参数写入维护报告。
+- 约束：不改正式v3.0.2/旧D/F基线、不上传或发布、不继续P0系统排查；P0仍部分完成。
+- 收尾：小型报告归档docs/release/v303-20261020/，清理本任务明确创建且可重建的大临时文件。
+- 保留期限：2026-10-27复核，非自动删除授权。

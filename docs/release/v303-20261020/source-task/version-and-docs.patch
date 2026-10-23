@@ -1,0 +1,139 @@
+diff --git a/CHANGELOG.md b/CHANGELOG.md
+index 003c8d7..abe7912 100644
+--- a/CHANGELOG.md
++++ b/CHANGELOG.md
+@@ -2,7 +2,16 @@
+ 
+ 本文记录 DLSS5Tool 面向用户可见的版本变化。
+ 
+-## v3.0.2（本地打包版本）— 2026-10-19
++## v3.0.3（本地打包版本）— 2026-10-20
++
++- 改善反复预览及切换图片尺寸时的资源释放，减少连续使用时的内存累积。
++- 完善取消、清理缓存、退出和初始化失败时的回收，改善异常后的恢复。
++- 加强处理和暂停等待时的内存保护，余量不足时及时停止并提示。
++- 隔离显卡信息查询，减少对图像处理会话的额外影响。
++
++用户说明见 [v3.0.3 Release Notes](docs/release/RELEASE_NOTES_v3.0.3.md)。部分环境中的持续内存增长仍待解决，本地打包不等于已经发布。
++
++## v3.0.2（正式发布）— 2026-10-19
+ 
+ - 效果关闭或归零时跳过不需要的增强计算，超分、补帧及 HDR 处理仍按原设置执行。
+ - 统一本地 SDR/PQ/HLG/scRGB 大图合成，减少颜色转换和同显卡编码前的数据搬运。
+diff --git a/README.en.md b/README.en.md
+index edcc81f..06e14c5 100644
+--- a/README.en.md
++++ b/README.en.md
+@@ -15,13 +15,13 @@
+ </p>
+ 
+ <p align="center">
+-  <a href="CHANGELOG.md"><img src="https://img.shields.io/badge/source-v3.0.2-0E7490?style=flat&amp;labelColor=475569" alt="Source version v3.0.2" height="20"></a>
++  <a href="CHANGELOG.md"><img src="https://img.shields.io/badge/source-v3.0.3-0E7490?style=flat&amp;labelColor=475569" alt="Source version v3.0.3" height="20"></a>
+   <a href="#quick-start"><img src="https://img.shields.io/badge/platform-Windows_x64-0369A1?style=flat&amp;labelColor=475569" alt="Platform: Windows x64" height="20"></a>
+   <a href="#2-select-the-runtime-for-your-gpu"><img src="https://img.shields.io/badge/GPU-NVIDIA_RTX-0E7490?style=flat&amp;labelColor=475569" alt="GPU: NVIDIA RTX; select the runtime for your GPU generation" height="20"></a>
+   <a href="LICENSE"><img src="https://img.shields.io/badge/license-GPLv3-0369A1?style=flat&amp;labelColor=475569" alt="Combined source licensed under GPLv3" height="20"></a>
+ </p>
+ 
+-This README describes the **v3.0.2** local package, improving memory safeguards, zero-effect processing and SDR/HDR composition. Check the actual Release assets for public availability. See the [v3.0.2 release notes](docs/release/RELEASE_NOTES_v3.0.2.md) and the [redistribution restrictions](#license).
++This README describes the **v3.0.3** local package, improving preview resource release, error cleanup and memory safeguards. Sustained memory growth remains unresolved in some environments. Check the actual Release assets for public availability. See the [v3.0.3 release notes](docs/release/RELEASE_NOTES_v3.0.3.md) and the [redistribution restrictions](#license).
+ 
+ ## Features
+ 
+@@ -208,9 +208,9 @@ Lower playback quality, try smaller media or 2× scaling, and temporarily disabl
+ 
+ **How do I update?**
+ 
+-Use **About → Check for updates**, or download a Release. This build prepares lite/full incremental updates from v3.0.1 to v3.0.2; they become available through Releases and the updater only after official publication. Earlier versions should use complete archives; updates are not automatically chained across versions.
++Use **About → Check for updates**, or download a Release. This build prepares lite/full incremental updates from v3.0.2 to v3.0.3; they become available through Releases and the updater only after official publication. Earlier versions should use complete archives; updates are not automatically chained across versions.
+ 
+-Choose `lite` for Lite, or `full` when inference components are installed. Do not replace only the EXE or mix old components into v3.0.2. The [historical component-reuse guide](docs/release/UPGRADE_v2.3.1.md) applies only to the versions it lists.
++Choose `lite` for Lite, or `full` when inference components are installed. Do not replace only the EXE or mix old components into v3.0.3. The [historical component-reuse guide](docs/release/UPGRADE_v2.3.1.md) applies only to the versions it lists.
+ 
+ When a matching payload exists, the updater downloads changed files for the installed edition, verifies them, then asks again before exiting for the standalone helper to install it. Without a matching payload, Lite offers its complete archive; Full directs you to the release page for Full or Lite plus the matching add-on. Versions without the update helper must be upgraded by fully extracting the new release into a new folder. Incremental updates require the matching assets on the release page. See the [update guide](docs/USER_GUIDE.en.md).
+ 
+diff --git a/README.md b/README.md
+index 6b68930..2ddab6d 100644
+--- a/README.md
++++ b/README.md
+@@ -15,13 +15,13 @@
+ </p>
+ 
+ <p align="center">
+-  <a href="CHANGELOG.md"><img src="https://img.shields.io/badge/source-v3.0.2-0E7490?style=flat&amp;labelColor=475569" alt="源码版本 v3.0.2" height="20"></a>
++  <a href="CHANGELOG.md"><img src="https://img.shields.io/badge/source-v3.0.3-0E7490?style=flat&amp;labelColor=475569" alt="源码版本 v3.0.3" height="20"></a>
+   <a href="#快速开始"><img src="https://img.shields.io/badge/platform-Windows_x64-0369A1?style=flat&amp;labelColor=475569" alt="平台 Windows x64" height="20"></a>
+   <a href="#2-选择显卡运行库"><img src="https://img.shields.io/badge/GPU-NVIDIA_RTX-0E7490?style=flat&amp;labelColor=475569" alt="显卡 NVIDIA RTX；请按代际选择运行库" height="20"></a>
+   <a href="LICENSE"><img src="https://img.shields.io/badge/license-GPLv3-0369A1?style=flat&amp;labelColor=475569" alt="当前组合源码采用 GPLv3 许可证" height="20"></a>
+ </p>
+ 
+-本文介绍 **v3.0.2** 本地打包版本，优化内存保护、零效果计算及 SDR/HDR 合成。是否已公开下载以 Releases 实际附件为准。变化见 [更新说明](docs/release/RELEASE_NOTES_v3.0.2.md)，分发限制见[许可证](#许可证)。
++本文介绍 **v3.0.3** 本地打包版本，改善图片预览资源释放、异常回收和内存保护；部分环境下的持续内存增长仍待解决。是否已公开下载以 Releases 实际附件为准。变化见 [更新说明](docs/release/RELEASE_NOTES_v3.0.3.md)，分发限制见[许可证](#许可证)。
+ 
+ ## 功能概览
+ 
+@@ -208,9 +208,9 @@ mods\nvngx_dlssnr.dll
+ 
+ **如何更新？**
+ 
+-通过「关于 → 检查更新」，或直接下载 Release。本轮仅为 v3.0.1 准备到 v3.0.2 的轻量版／完整版增量；正式发布且附件齐全后，才可通过发布页或更新器获取。更早版本使用整包升级，不自动串联多个增量包。
++通过「关于 → 检查更新」，或直接下载 Release。本轮仅为 v3.0.2 准备到 v3.0.3 的轻量版／完整版增量；正式发布且附件齐全后，才可通过发布页或更新器获取。更早版本使用整包升级，不自动串联多个增量包。
+ 
+-轻量版对应 `lite` 更新包，已安装附加组件的版本对应 `full`。不要只替换 EXE，也不要把旧版本组件直接混入 v3.0.2；[历史省流量升级说明](docs/release/UPGRADE_v2.3.1.md)仅适用于其中明确列出的版本。
++轻量版对应 `lite` 更新包，已安装附加组件的版本对应 `full`。不要只替换 EXE，也不要把旧版本组件直接混入 v3.0.3；[历史省流量升级说明](docs/release/UPGRADE_v2.3.1.md)仅适用于其中明确列出的版本。
+ 
+ 有匹配包时，更新器只下载当前安装形态的变化文件，校验后再次确认退出，由独立助手安装。没有匹配包时，轻量版可下载整包，完整版引导到发布页选择完整版或同版本轻量版＋附加包。没有更新助手的旧版请手动将新版完整解压到新目录；增量更新需发布页提供对应附件。详见[更新说明](docs/USER_GUIDE.md)。
+ 
+diff --git a/dlss5tool/app_version.py b/dlss5tool/app_version.py
+index 6b6513f..5d3e705 100644
+--- a/dlss5tool/app_version.py
++++ b/dlss5tool/app_version.py
+@@ -1,4 +1,4 @@
+ """Single source of truth for the DLSS5Tool release version."""
+ 
+-__version__ = "3.0.2"
++__version__ = "3.0.3"
+ APP_VERSION = f"v{__version__}"
+diff --git a/docs/README.md b/docs/README.md
+index a27e730..7106629 100644
+--- a/docs/README.md
++++ b/docs/README.md
+@@ -61,7 +61,7 @@
+ 
+ - 仓库维护：[卫生守则与空间预算](development/REPOSITORY_HYGIENE.md)、[2026-09-11 临时目录盘点](development/TMP_AUDIT_20260911.md)
+ 
+-- 当前版本：[v3.0.2 更新说明](release/RELEASE_NOTES_v3.0.2.md)、[本地打包与发布状态](release/PACKAGING_INDEX.md)。当前准备本地 v3.0.2 打包验收，公开下载以正式 Release 为准；分发许可审查仍待完成。
++- 当前版本：[v3.0.3 更新说明](release/RELEASE_NOTES_v3.0.3.md)、[本地打包与发布状态](release/PACKAGING_INDEX.md)。当前准备本地 v3.0.3 打包验收，公开下载以正式 Release 为准；分发许可审查仍待完成。
+ - 既有功能与历史验证：[NVOFA 集成验证](experiments/NVOFA_INTEGRATION.md)、[深度下线状态](experiments/DEPTH_REFERENCE_STATUS.md)、[实施核对](development/IMPLEMENTATION_READINESS.md)
+ 
+ - 用户指南：[简体中文](USER_GUIDE.md)、[English](USER_GUIDE.en.md)
+diff --git a/packaging/DLSS5Tool.version.txt b/packaging/DLSS5Tool.version.txt
+index b5f9394..874a331 100644
+--- a/packaging/DLSS5Tool.version.txt
++++ b/packaging/DLSS5Tool.version.txt
+@@ -2,8 +2,8 @@
+ # Windows version resource consumed by PyInstaller.
+ VSVersionInfo(
+   ffi=FixedFileInfo(
+-    filevers=(3, 0, 2, 0),
+-    prodvers=(3, 0, 2, 0),
++    filevers=(3, 0, 3, 0),
++    prodvers=(3, 0, 3, 0),
+     mask=0x3f,
+     flags=0x0,
+     OS=0x40004,
+@@ -18,12 +18,12 @@ VSVersionInfo(
+         [
+           StringStruct(u'CompanyName', u'DLSS5Tool contributors'),
+           StringStruct(u'FileDescription', u'DLSS5Tool desktop application'),
+-          StringStruct(u'FileVersion', u'3.0.2'),
++          StringStruct(u'FileVersion', u'3.0.3'),
+           StringStruct(u'InternalName', u'DLSS5Tool'),
+           StringStruct(u'LegalCopyright', u'Copyright (c) DLSS5Tool contributors'),
+           StringStruct(u'OriginalFilename', u'DLSS5Tool.exe'),
+           StringStruct(u'ProductName', u'DLSS5Tool'),
+-          StringStruct(u'ProductVersion', u'3.0.2')
++          StringStruct(u'ProductVersion', u'3.0.3')
+         ]
+       )
+     ]),
