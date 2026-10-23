@@ -1,0 +1,16 @@
+{
+  "task_path": "F:\\project\\DLSS5Tool\\tmp\\region-protection-ui-20261023",
+  "temporary_logical_bytes": 138290.0,
+  "free_before_bytes": 48292630528,
+  "free_after_bytes": 48292786176,
+  "observed_free_delta_bytes": 155648,
+  "remaining_temporary_bytes": 0,
+  "process_check": "Both owned verification commands exited with code 0; no background process was launched.",
+  "retained_evidence": [
+    "region-protection-light.png",
+    "region-protection-dark.png",
+    "verification-zh_CN.json",
+    "verification-en_US.json"
+  ],
+  "reason": "Keep reviewed UI captures and interaction evidence."
+}

@@ -33,6 +33,7 @@
   "appearance.luminance": "Luminance change",
   "appearance.feather": "Protection feather (pixels)",
   "appearance.protection": "Enable protection",
+  "appearance.region_protection": "Region protection",
   "appearance.residual_hint": "Adjusts the per-pass NR residual before global composition. Shadows/reflections classify luminance changes, not semantic objects. SDR uses HSL; HDR uses linear luminance/chroma differences.",
   "appearance.quality_hint": "Controls NR changes before legacy output mix and frame generation. Regions do not disable upscaling or other effects.",
   "appearance.hdr_residual_unavailable": "The current realtime host has not confirmed HDR fine-control support. Update the host or restore the five values to 1. Output was not converted to SDR.",

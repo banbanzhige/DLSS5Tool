@@ -320,6 +320,9 @@ class LocalAdjustmentTests(unittest.TestCase):
                 styles={'Default': 0, 'Natural': 1, 'Cinematic': 2}, on_model=self.model,
                 on_output=self.output, on_copy=mock.Mock())
             self.editor.pack(fill='both', expand=True)
+            for section in self.editor.sections.values():
+                if section.collapsed:
+                    section.toggle()
             for theme in ('dark', 'light'):
                 self.editor.apply_theme(ui_theme.tokens(theme))
                 self.root.geometry(f'{width}x760')
@@ -335,8 +338,8 @@ class LocalAdjustmentTests(unittest.TestCase):
                 self.assertLessEqual(self.editor.undo_button.winfo_rootx() + self.editor.undo_button.winfo_width(),
                                      self.editor.more_button.winfo_rootx())
                 self.assertIs(self.editor.pack_slaves()[0], self.editor.actions)
-                self.assertLessEqual(self.editor.actions.winfo_y() + self.editor.actions.winfo_height(),
-                                     self.editor.rows['style'].winfo_y())
+                self.assertLessEqual(self.editor.actions.winfo_rooty() + self.editor.actions.winfo_height(),
+                                     self.editor.rows['style'].winfo_rooty())
                 self.assertEqual(self.editor.undo_button.pack_info()['side'], 'right')
                 self.assertLessEqual(self.editor.heading.winfo_rootx() + self.editor.heading.winfo_width(),
                                      self.editor.undo_button.winfo_rootx())

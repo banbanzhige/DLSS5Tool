@@ -243,7 +243,7 @@ class ParameterRow(ttk.Frame):
     """Keep native IDs/values; only user commits notify the controller."""
     def __init__(self, parent, descriptor, variable, *, ui, on_commit, on_change,
                  choices=None, chips=False, on_reset=None, label=None, hint='', enabled_variable=None,
-                 allow_percent=False, range_hint=False):
+                 allow_percent=False, range_hint=False, checkbox=False):
         super().__init__(parent, style='Panel.TFrame')
         self.descriptor = descriptor
         self._ui = dict(ui)
@@ -284,6 +284,7 @@ class ParameterRow(ttk.Frame):
         self._base_help_text = hint or full_label
         self.help_text = self._base_help_text
         self._tooltips.append(Tooltip(self.label, self.help_text))
+        left_toggle = checkbox or descriptor['name'].endswith('uiCorrection')
         if self.choices:
             self.display = tk.StringVar(self)
             labels = [effect_text(text) for _, text in self.choices]
@@ -301,10 +302,9 @@ class ParameterRow(ttk.Frame):
             self.choice.pack(fill='x', pady=(3, 0))
             self._widgets.append(self.choice)
         elif (descriptor['integer'] and descriptor['min'] == 0 and descriptor['max'] == 1
-              and (descriptor['name'].split('_')[-1].lower().startswith(('enable', 'use', 'disable'))
+              and (checkbox or descriptor['name'].split('_')[-1].lower().startswith(('enable', 'use', 'disable'))
                    or descriptor['name'].endswith('uiCorrection'))):
             self.display = tk.BooleanVar(self)
-            left_toggle = descriptor['name'].endswith('uiCorrection')
             self.toggle = CheckToggle(header, label if left_toggle else '', self.display, command=self._toggle, ui=ui)
             self.toggle.pack(side='left' if left_toggle else 'right', padx=0 if left_toggle else (8, 0))
             self._widgets.append(self.toggle)
@@ -327,7 +327,7 @@ class ParameterRow(ttk.Frame):
                 self.slider.pack(fill='x')
         # Reserve the numeric/toggle width before giving the title the rest.
         if enabled_variable is None:
-            if self.toggle is None or not descriptor['name'].endswith('uiCorrection'):
+            if self.toggle is None or not left_toggle:
                 self.label.pack(side='left', fill='x', expand=True)
         else:
             self.enable_display = tk.BooleanVar(self)

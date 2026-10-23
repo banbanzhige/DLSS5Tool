@@ -6,7 +6,7 @@ from tkinter import messagebox, ttk
 
 from dlss5tool import app_settings, ui_theme, appearance
 from dlss5tool.i18n import tr
-from dlss5tool.realtime_controls import ParameterRow
+from dlss5tool.realtime_controls import InspectorSection, ParameterRow
 from dlss5tool.parameter_contract import PARAMETERS, diagnostic, update_policy
 from dlss5tool.ui_widgets import ChromeButton, Tooltip
 
@@ -22,7 +22,8 @@ FIELDS = (
 
 
 class LocalAdjustments(ttk.Frame):
-    def __init__(self, parent, settings, *, ui, styles, on_model, on_output, on_copy, on_regions=None):
+    def __init__(self, parent, settings, *, ui, styles, on_model, on_output, on_copy, on_regions=None,
+                 on_toggle=None):
         super().__init__(parent, style='Panel.TFrame')
         self.settings = settings
         self.styles = dict(styles)
@@ -37,6 +38,9 @@ class LocalAdjustments(ttk.Frame):
         self._on_copy = on_copy
         self._menu = None
         self._region_editor = None
+        self.sections = {}
+        self._on_toggle = on_toggle
+        self._section_open = settings.get('_appearance', {}).get('ui_appearance_open', {})
         saved_look = appearance.settings(settings.get('_appearance', {}), strict=False)
         self._regions = deepcopy(saved_look['nr_quality']['regions'])
         self.actions = ttk.Frame(self, style='Panel.TFrame')
@@ -51,25 +55,29 @@ class LocalAdjustments(ttk.Frame):
         Tooltip(self.undo_button, tr('realtime.editor.undo_hint'))
         self.heading = ttk.Label(self.actions, text='DLSS NR', style='TLabel', font=ui_theme.UI_FONT_BOLD)
         self.heading.pack(side='left')
+        basic = self._add_section('basic', tr('realtime.editor.group.look'))
         style = tk.StringVar(self, value=str(self.styles.get(settings['v_style'].get(), 0)))
         desc = dict(PARAMETERS['style'].descriptor(), choices=[(n, text) for text, n in styles.items()])
-        self._add_row('style', desc, style, settings['v_style'], None, tr('parameter.hint.style'))
+        self._add_row(basic, 'style', desc, style, settings['v_style'], None, tr('parameter.hint.style'))
         for name, label, value_key, switch_key, widget_key in FIELDS:
             if name == 'output_mix':
-                ttk.Label(self, text=tr('parameter.composition'), style='Kicker.TLabel').pack(fill='x', pady=(8, 3))
+                output = self._add_section('output', tr('parameter.composition'))
             variable = tk.StringVar(self, value=str(settings[value_key].get()))
             enabled = tk.BooleanVar(self, value=settings[switch_key].get())
             desc = PARAMETERS[name].descriptor()
             hint = tr('tooltip.' + label) + '\n' + tr('parameter.switch_hint')
-            row = self._add_row(name, desc, variable, settings[value_key],
+            row = self._add_row(output if name == 'output_mix' else basic, name, desc, variable, settings[value_key],
                                 (enabled, settings[switch_key], app_settings.DEFAULTS[switch_key[2:].replace('outmix', 'output_mix')]
                                  if switch_key != 'v_auto_mask' else app_settings.DEFAULTS['use_auto_mask']), hint)
             settings[widget_key], settings[widget_key + '_value'] = row.slider, row.field
             if name == 'output_mix':
                 settings['w_use_output_mix'] = row.enable_toggle
-        for group, fields in (('nr_residual', appearance.RESIDUAL_FIELDS),
-                              ('nr_quality', (*appearance.QUALITY_FIELDS, 'feather', 'protection'))):
-            ttk.Label(self, text=tr('appearance.' + group), style='Kicker.TLabel').pack(fill='x', pady=(8, 3))
+        for section, group, title, fields in (
+            ('nr_residual', 'nr_residual', tr('appearance.nr_residual'), appearance.RESIDUAL_FIELDS),
+            ('nr_quality', 'nr_quality', tr('appearance.quality'), appearance.QUALITY_FIELDS),
+            ('regions', 'nr_quality', tr('appearance.region_protection'), ('protection', 'feather')),
+        ):
+            group_body = self._add_section(section, title)
             for key in fields:
                 name = group + '.' + key
                 value = saved_look[group][key]
@@ -77,15 +85,14 @@ class LocalAdjustments(ttk.Frame):
                 actual = tk.IntVar(self, value=int(value)) if integer else tk.DoubleVar(self, value=value)
                 settings['v_' + name] = actual
                 desc = PARAMETERS[name].descriptor()
-                if integer:
-                    desc.update(default=0, choices=[(0, tr('parameter.off')), (1, tr('parameter.on'))])
-                self._add_row(name, desc, tk.StringVar(self, value=str(int(value) if integer else value)), actual,
+                self._add_row(group_body, name, desc, tk.StringVar(self, value=str(int(value) if integer else value)), actual,
                               None, tr('appearance.residual_hint' if group == 'nr_residual' else 'appearance.quality_hint'))
         if on_regions:
-            button = ChromeButton(self, text=tr('realtime.preview.regions'), ui=ui, variant='tool', command=on_regions)
+            button = ChromeButton(self.sections['regions'].body, text=tr('realtime.preview.regions'),
+                                  ui=ui, variant='tool', command=on_regions)
             button.pack(anchor='w', pady=4)
             self.region_button = button
-        self.region_summary = ttk.Label(self, style='Hint.TLabel', wraplength=300)
+        self.region_summary = ttk.Label(self.sections['regions'].body, style='Hint.TLabel', wraplength=300)
         self.region_summary.pack(fill='x')
         self.operation_status = ttk.Label(self, style='Hint.TLabel', wraplength=300)
         self.operation_status.pack(fill='x')
@@ -97,14 +104,27 @@ class LocalAdjustments(ttk.Frame):
         self._applied_snapshot = self._snapshot
         self.set_limit(5 if settings['v_enable_5x'].get() else 1)
 
-    def _add_row(self, name, desc, raw, actual, switch, hint):
+    def _add_section(self, name, title):
+        expanded = self._section_open.get(name, app_settings.DEFAULTS['ui_appearance_open'][name])
+        section = InspectorSection(self, title, collapsed=not expanded, ui=self._ui,
+                                   on_toggle=self._on_toggle)
+        section.pack(fill='x', pady=(4, 0))
+        self.sections[name] = section
+        return section.body
+
+    def section_state(self):
+        return {name: not section.collapsed for name, section in self.sections.items()}
+
+    def _add_row(self, parent, name, desc, raw, actual, switch, hint):
         if switch:
             enabled, actual_enabled, default_enabled = switch
         else:
             enabled = actual_enabled = default_enabled = None
         self._bindings[name] = (actual, actual_enabled, default_enabled)
-        row = ParameterRow(self, desc, raw, ui=self._ui, chips=name == 'style' or name.endswith('.protection'),
-                           enabled_variable=enabled, allow_percent=name != 'style', hint=hint, range_hint=name != 'style',
+        numeric = name not in ('style', 'nr_quality.protection')
+        row = ParameterRow(parent, desc, raw, ui=self._ui, chips=name == 'style',
+                           checkbox=name == 'nr_quality.protection',
+                           enabled_variable=enabled, allow_percent=numeric, hint=hint, range_hint=numeric,
                            on_change=self.changed, on_commit=lambda n=name: self.commit(n))
         row.pack(fill='x', pady=(4, 8))
         self.rows[name] = row
@@ -370,6 +390,8 @@ class LocalAdjustments(ttk.Frame):
 
     def apply_theme(self, ui):
         self._ui = dict(ui)
+        for section in self.sections.values():
+            section.apply_theme(ui)
         for row in self.rows.values():
             row.apply_theme(ui)
         for button in (self.more_button, self.undo_button):

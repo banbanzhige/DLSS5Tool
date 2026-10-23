@@ -3568,13 +3568,14 @@ class App(GpuResourceGuard, SharedRenderPreview, LocalPreviewComposition, Previe
         self._local_adjustments = LocalAdjustments(
             body, d, ui=self._ui, styles=STYLE_CHOICES, on_model=self.on_settings_change,
             on_output=self.on_output_settings_change, on_copy=self._copy_from_realtime,
-            on_regions=self._edit_local_regions)
+            on_regions=self._edit_local_regions, on_toggle=self._on_panels_toggle)
         self._local_adjustments.pack(fill='x')
         self._theme_widgets.append(self._local_adjustments)
         self._slider_committers.append(lambda: self._local_adjustments.commit(notify=False))
 
+        basic = self._local_adjustments.sections['basic'].body
         enable_5x = CheckToggle(
-            body, tr("label.experimental_range"), d['v_enable_5x'],
+            basic, tr("label.experimental_range"), d['v_enable_5x'],
             command=self._on_5x_toggle, ui=self._ui,
         )
         enable_5x.pack(anchor="w", pady=(8, 0))
@@ -3585,17 +3586,18 @@ class App(GpuResourceGuard, SharedRenderPreview, LocalPreviewComposition, Previe
             tr("tooltip.experimental_range"),
         )
         range_hint = ttk.Label(
-            body, text="", style="Hint.TLabel", wraplength=320, justify="left",
+            basic, text="", style="Hint.TLabel", wraplength=320, justify="left",
         )
         d['w_range_hint'] = range_hint
 
         d['v_guidance'] = tk.StringVar(value=tr('guidance.mode.' + str(saved.get('guidance_mode', 0))))
 
-        ttk.Label(body, text=tr("label.output_preview"), style="Kicker.TLabel").pack(
+        output = self._local_adjustments.sections['output'].body
+        ttk.Label(output, text=tr("label.output_preview"), style="Kicker.TLabel").pack(
             fill="x", pady=(4, 6),
         )
         outview_chips = ChipGroup(
-            body, d['v_outview'], list(OUTVIEW_CHOICES),
+            output, d['v_outview'], list(OUTVIEW_CHOICES),
             command=self.on_output_settings_change, ui=self._ui,
         )
         outview_chips.pack(anchor="w")
@@ -4185,19 +4187,8 @@ class App(GpuResourceGuard, SharedRenderPreview, LocalPreviewComposition, Previe
         frame_generation.bind('<<ComboboxSelected>>', lambda e: self._on_export_settings_change())
         Tooltip(frame_generation, tr('tooltip.frame_generation'))
 
-        hdr = CheckToggle(
-            output_group, tr("label.hdr_precision"), d['v_hdr'],
-            command=self._on_export_settings_change, ui=self._ui,
-        )
-        hdr.grid(row=10, column=0, columnspan=2, sticky="w", pady=(6, 2))
-        self._theme_widgets.append(hdr)
-
         hint = ttk.Label(
             output_group, text="", style="Hint.TLabel", wraplength=320, justify="left",
-        )
-        Tooltip(
-            hdr,
-            tr("tooltip.hdr_precision"),
         )
 
         mode = self._chrome_combo(
@@ -4223,11 +4214,18 @@ class App(GpuResourceGuard, SharedRenderPreview, LocalPreviewComposition, Previe
         )
         ttk.Label(performance_group, text=tr("label.decode_buffer")).grid(row=4, column=0, sticky="w", pady=3)
         decode.grid(row=4, column=1, sticky="w", pady=3)
+        hdr = CheckToggle(
+            performance_group, tr("label.hdr_precision"), d['v_hdr'],
+            command=self._on_export_settings_change, ui=self._ui,
+        )
+        hdr.grid(row=5, column=0, columnspan=2, sticky="w", pady=(6, 2))
+        self._theme_widgets.append(hdr)
+        Tooltip(hdr, tr("tooltip.hdr_precision"))
         decode_fallback = CheckToggle(
             performance_group, tr('label.decode_cpu_fallback'), d['v_decode_cpu_fallback'],
             command=self._on_decode_policy_change, ui=self._ui,
         )
-        decode_fallback.grid(row=5, column=0, columnspan=2, sticky='w', pady=(6, 2))
+        decode_fallback.grid(row=6, column=0, columnspan=2, sticky='w', pady=(6, 2))
         self._theme_widgets.append(decode_fallback)
         Tooltip(decode_fallback, tr('tooltip.decode_cpu_fallback'))
         d.update({
@@ -5569,7 +5567,7 @@ class App(GpuResourceGuard, SharedRenderPreview, LocalPreviewComposition, Previe
         hint.config(text=" · ".join(part for part in parts if part))
         if hint.cget("text"):
             if not hint.winfo_manager():
-                hint.grid(row=11, column=0, columnspan=2, sticky="ew", pady=(2, 0))
+                hint.grid(row=10, column=0, columnspan=2, sticky="ew", pady=(2, 0))
         else:
             hint.grid_remove()
         if hasattr(self, "_export_summary"):
@@ -5742,6 +5740,7 @@ class App(GpuResourceGuard, SharedRenderPreview, LocalPreviewComposition, Previe
             "ui_preview_open": bool(
                 getattr(self, "_preview_section", None) and not self._preview_section.collapsed
             ),
+            "ui_appearance_open": self._local_adjustments.section_state(),
             "ui_theme": self._ui_theme_name,
             "ui_log_open": self._log_open,
             "workbench_mode": self._workbench_mode,

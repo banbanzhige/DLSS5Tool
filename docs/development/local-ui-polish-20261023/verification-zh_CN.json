@@ -1,0 +1,10 @@
+{
+  "language": "zh_CN",
+  "legacy_values_and_new_group_default_preserved": true,
+  "checkbox_and_region_controls_grouped_and_fit": true,
+  "toggle_preserves_regions_feather_and_output_only_callback": true,
+  "undo_reset_and_folding_preserve_checkbox_state": true,
+  "light_and_dark_layout": true,
+  "checkbox_values_and_group_state_survive_restart": true,
+  "callback_errors": []
+}

@@ -89,6 +89,10 @@ DEFAULTS = {
     "ui_export_open": False,
     "ui_host_open": False,
     "ui_preview_open": False,
+    "ui_appearance_open": {
+        "basic": True, "output": False, "nr_residual": False, "nr_quality": False,
+        "regions": False,
+    },
     "ui_log_open": True,
     "ui_theme": "light",
     "workbench_mode": "local",
@@ -276,6 +280,10 @@ def validate(values):
         "ui_export_open", "ui_host_open", "ui_preview_open", "ui_modules_open", "ui_log_open", "preview_detached",
     ):
         result[name] = _as_bool(source.get(name, result[name]), result[name])
+    appearance_open = source.get("ui_appearance_open")
+    if isinstance(appearance_open, dict):
+        for name, default in result["ui_appearance_open"].items():
+            result["ui_appearance_open"][name] = _as_bool(appearance_open.get(name), default)
     theme = str(source.get("ui_theme", result["ui_theme"])).strip().lower()
     result["ui_theme"] = "light" if theme == "light" else "dark"
     mode = str(source.get("workbench_mode", result["workbench_mode"])).strip().lower()

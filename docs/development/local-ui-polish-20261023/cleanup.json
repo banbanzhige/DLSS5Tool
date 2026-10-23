@@ -1,0 +1,10 @@
+{
+  "task_path": "F:\\project\\DLSS5Tool\\tmp\\ui-polish-20261023",
+  "temporary_logical_bytes": 335555.0,
+  "free_before_bytes": 48292573184,
+  "free_after_bytes": 48292925440,
+  "observed_free_delta_bytes": 352256,
+  "remaining_temporary_bytes": 0,
+  "retained_evidence": "F:\\project\\DLSS5Tool\\docs\\development\\local-ui-polish-20261023",
+  "reason": "Keep verified screenshots and interaction results as maintenance evidence."
+}

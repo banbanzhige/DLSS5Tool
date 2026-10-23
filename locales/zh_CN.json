@@ -32,6 +32,7 @@
   "appearance.luminance": "亮度变化",
   "appearance.feather": "保护区羽化（像素）",
   "appearance.protection": "启用保护区",
+  "appearance.region_protection": "区域保护",
   "appearance.residual_hint": "在全局合成之前调整单次 NR 残差；阴影和反射按亮度变化分类，并非语义识别。SDR 使用 HSL，HDR 使用线性亮度和颜色差值。",
   "appearance.quality_hint": "作用于 NR 的变化，之后才应用原有输出混合与插帧。保护区不会屏蔽超分或其他效果。",
   "appearance.hdr_residual_unavailable": "当前实时宿主尚未确认支持 HDR 残差细调。请更新宿主或将五项恢复为 1；未自动改成 SDR。",
