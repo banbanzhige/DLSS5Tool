@@ -1,0 +1,98 @@
+{
+  "tag": "v3.0.4",
+  "repo": "banbanzhige/DLSS5Tool",
+  "release_id": 421424708,
+  "html_url": "https://github.com/banbanzhige/DLSS5Tool/releases/tag/untagged-0bb5033e9ed11996e8b8",
+  "started_at": "2026-10-23T11:36:37+08:00",
+  "completed_at": "2026-10-23T11:59:27+08:00",
+  "status": "complete",
+  "draft": true,
+  "published_at": null,
+  "all_assets_sha256_and_size_verified": true,
+  "notes_match": true,
+  "remote_assets": [
+    {
+      "id": 667858833,
+      "name": "DLSS5Tool-v3.0.3-to-v3.0.4-win64-full.dlssupdate",
+      "size": 16676435,
+      "digest": "sha256:3c19fbd4c71e1711879e8fb20d149c1c0e831e7f5deeada0baac7387a4d97c32",
+      "state": "uploaded"
+    },
+    {
+      "id": 667858570,
+      "name": "DLSS5Tool-v3.0.3-to-v3.0.4-win64-lite.dlssupdate",
+      "size": 16426054,
+      "digest": "sha256:76a07bd542df2a403e55c4fecbfc131afe2da771613cd1e22ce763bcf9284190",
+      "state": "uploaded"
+    },
+    {
+      "id": 667870188,
+      "name": "DLSS5Tool-v3.0.4-win64-addon.zip.001",
+      "size": 1992294400,
+      "digest": "sha256:0d5429d68e9f02a33aae0af427cc748eec5810e54356a3c5c59e5715971d01f2",
+      "state": "uploaded"
+    },
+    {
+      "id": 667859133,
+      "name": "DLSS5Tool-v3.0.4-win64-addon.zip.002",
+      "size": 1061572057,
+      "digest": "sha256:568e695e67d75801448f3e0fecd754b0da41d84c5c84289a8aaa7fb7f0d5cf32",
+      "state": "uploaded"
+    },
+    {
+      "id": 667885187,
+      "name": "DLSS5Tool-v3.0.4-win64-full.zip.001",
+      "size": 1992294400,
+      "digest": "sha256:1cef494527909290dc5692b7e791dbe4699e8b0ef12c912dfe1907cdae5e2f62",
+      "state": "uploaded"
+    },
+    {
+      "id": 667866725,
+      "name": "DLSS5Tool-v3.0.4-win64-full.zip.002",
+      "size": 1649770235,
+      "digest": "sha256:d675fe1236f231d08d83c55f776c45e847d736a8531cf38a7014f205876eec2e",
+      "state": "uploaded"
+    },
+    {
+      "id": 667858855,
+      "name": "DLSS5Tool-v3.0.4-win64.zip",
+      "size": 588200689,
+      "digest": "sha256:099643079f4b17b7efe266cb51b2863e62f1d87427dd11083ee0bf9ebeeca704",
+      "state": "uploaded"
+    },
+    {
+      "id": 667858561,
+      "name": "Join-ReleaseArchive.ps1",
+      "size": 2150,
+      "digest": "sha256:ac9c90296dc8378c931a203ce601c2bda1ad5c9e74817fd13ac85979f95339a5",
+      "state": "uploaded"
+    },
+    {
+      "id": 667858409,
+      "name": "RELEASE_NOTES_v3.0.4.md",
+      "size": 1094,
+      "digest": "sha256:cd336e8a8d808e0d13934bddd2fe2a66abeef819b29db9dba9c72875d732e6d3",
+      "state": "uploaded"
+    },
+    {
+      "id": 667858410,
+      "name": "SHA256SUMS.txt",
+      "size": 740,
+      "digest": "sha256:3b8ff2bcde9555984d5bed95a81ec0c6b588e26496e8835ffe7fe53e2d92affd",
+      "state": "uploaded"
+    }
+  ],
+  "version": "v3.0.4",
+  "assets_verified": 10,
+  "uploaded": true,
+  "workspace_initial_push_commit": "2f949d77cf049f43edb52de9cbef6e8fa8a9ad0e",
+  "workspace_initial_push_verified": true,
+  "upload_target_commit": "2f949d77cf049f43edb52de9cbef6e8fa8a9ad0e",
+  "source_package_inputs_matched": 22,
+  "incremental_source": "v3.0.3",
+  "incremental_editions": [
+    "lite",
+    "full"
+  ],
+  "final_source_sync": "E:/dist/DLSS5Tool/v3.0.4/draft-upload-20261023/source-sync.json"
+}
