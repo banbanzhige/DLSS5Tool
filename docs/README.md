@@ -61,7 +61,7 @@
 
 - 仓库维护：[卫生守则与空间预算](development/REPOSITORY_HYGIENE.md)、[2026-09-11 临时目录盘点](development/TMP_AUDIT_20260911.md)
 
-- 当前版本：[v3.0.3 更新说明](release/RELEASE_NOTES_v3.0.3.md)、[本地打包与发布状态](release/PACKAGING_INDEX.md)。当前准备本地 v3.0.3 打包验收，公开下载以正式 Release 为准；分发许可审查仍待完成。
+- 当前版本：[v3.0.4 更新说明](release/RELEASE_NOTES_v3.0.4.md)、[本地打包与发布状态](release/PACKAGING_INDEX.md)。当前准备本地 v3.0.4 打包验收，公开下载以正式 Release 为准；分发许可审查仍待完成。
 - 既有功能与历史验证：[NVOFA 集成验证](experiments/NVOFA_INTEGRATION.md)、[深度下线状态](experiments/DEPTH_REFERENCE_STATUS.md)、[实施核对](development/IMPLEMENTATION_READINESS.md)
 
 - 用户指南：[简体中文](USER_GUIDE.md)、[English](USER_GUIDE.en.md)

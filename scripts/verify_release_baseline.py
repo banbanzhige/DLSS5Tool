@@ -7,18 +7,31 @@ import argparse
 import hashlib
 import json
 from pathlib import Path
+import re
 import sys
 import zipfile
 
 ROOT=Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(ROOT))
 from scripts.package_editions import inventory,sha
+from dlss5tool import delta_update as delta
+
+
+def official_version(release):
+    if release['draft'] or release['prerelease']:
+        raise ValueError('An official non-draft, non-prerelease baseline is required')
+    tag = release['tag_name']
+    # GitHub can retain a generated draft tag after publication. Keep the raw
+    # metadata and require an exact version title; asset digests remain required.
+    version = release.get('name') if re.fullmatch(r'untagged-[0-9a-f]+', tag) else tag
+    try:
+        return delta.version(version)
+    except delta.DeltaError as error:
+        raise ValueError(str(error)) from error
 
 
 def verify(packages,release):
-    version=release['tag_name']
-    if release['draft'] or release['prerelease']:
-        raise ValueError('An official non-draft, non-prerelease baseline is required')
+    version=official_version(release)
     report=json.loads((packages/'package-report.json').read_text(encoding='utf-8'))
     if report['version']!=version:raise ValueError('Baseline version mismatch')
     assets={a['name']:a for a in release['assets']}
@@ -64,7 +77,8 @@ def verify(packages,release):
         directories.append(dict(edition=edition,archive_sha256=archive_sha,files=len(expected),
                                 archive_manifest_exact=True,extracted_baseline_exact=True))
         print('PASS official archive and extracted baseline:',edition,flush=True)
-    return dict(version=version,release_url=release['url'],assets=results,directories=directories,
+    return dict(version=version,release_url=release['url'],release_tag=release['tag_name'],
+                release_name=release.get('name'),assets=results,directories=directories,
                 historical_deltas_used=False,baseline_verified=True,
                 historical_delta_warnings=[r for r in results if r['historical_delta'] and not r['matched']])
 
