@@ -2,7 +2,6 @@
   "tag": "v3.0.4",
   "repo": "banbanzhige/DLSS5Tool",
   "release_id": 421424708,
-  "html_url": "https://github.com/banbanzhige/DLSS5Tool/releases/tag/untagged-0bb5033e9ed11996e8b8",
   "started_at": "2026-10-23T11:36:37+08:00",
   "completed_at": "2026-10-23T11:59:27+08:00",
   "status": "complete",
@@ -94,5 +93,9 @@
     "lite",
     "full"
   ],
-  "final_source_sync": "E:/dist/DLSS5Tool/v3.0.4/draft-upload-20261023/source-sync.json"
+  "final_source_sync": "E:/dist/DLSS5Tool/v3.0.4/draft-upload-20261023/source-sync.json",
+  "html_url_at_upload": "https://github.com/banbanzhige/DLSS5Tool/releases/tag/untagged-0bb5033e9ed11996e8b8",
+  "release_api_url": "https://api.github.com/repos/banbanzhige/DLSS5Tool/releases/421424708",
+  "releases_page": "https://github.com/banbanzhige/DLSS5Tool/releases",
+  "draft_url_note": "GitHub draft temporary URLs may change after tag edits; final current URL and target are recorded in source-sync.json."
 }
