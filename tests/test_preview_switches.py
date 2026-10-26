@@ -67,6 +67,91 @@ class PreviewToggleTests(unittest.TestCase):
             session.close()
 
 
+class LegacyPreviewCacheTests(unittest.TestCase):
+    def make_app(self):
+        app = gui.App.__new__(gui.App)
+        app.video = 'source.mp4'
+        app._source_kind, app._image_bgr = 'video', None
+        app._video_color_info = {'is_hdr': False}
+        app._export_settings = {
+            'v_preview_super_resolution': SimpleNamespace(get=lambda: False),
+            'v_preview_frame_generation': SimpleNamespace(get=lambda: False),
+        }
+        export = {'super_resolution_scale': 2, 'frame_generation_multiplier': 2,
+                  'hdr_mode': False}
+        app._collect_export_settings = lambda: dict(export)
+        app._collect_settings = lambda: app_settings.validate(export)
+        app._local_gpu_allowed = lambda: True
+        app._preview_quality = lambda: 'original'
+        app._preview_cache_bytes = app._available_frame_cache_bytes = lambda: 1024
+        app._media_w, app._media_h = 8, 4
+        app._active_preview_size = (8, 4)
+        app._frame, app.nframes, app.fps = 0, 8, 1
+        app.playing = app._exporting = app._hold_original = False
+        app._preview_cache_frozen = False
+        app._pre_rendering = app._dlss_pending = True
+        app._prerender_frame_limit = 1
+        app._prefetch_gen, app._prefetch_stop = 0, threading.Event()
+        app._live_lock, app._cache_lock = threading.RLock(), threading.RLock()
+        app._queued_preview_frames = set()
+        app._source_frame_cache, app._dlss_frame_cache = {}, {}
+        app._source_cache_bytes = app._dlss_cache_bytes = 0
+        app._live_cache = app._last_shown_dlss = None
+        app._preview_processed_frames, app._preview_process_t0 = 0, None
+        app._evict_preview_cache_locked = mock.Mock()
+        app.view_var = SimpleNamespace(get=lambda: 'compare')
+        app.display_view = mock.Mock()
+        return app, export
+
+    def test_worker_result_is_presented_and_playback_buffer_becomes_ready(self):
+        for scale in (2, 4):
+            with self.subTest(export_scale=scale):
+                app, export = self.make_app()
+                export['super_resolution_scale'] = scale
+                source = np.full((4, 8, 3), 40, np.uint8)
+                app._source_cache_store(0, source)
+
+                class FakeLive:
+                    supports_async = False
+
+                    def process(self, rgba, reset=False):
+                        app._prefetch_stop.set()
+                        return rgba + 5
+
+                app._ensure_live = lambda *args: FakeLive()
+                with mock.patch('dlss5tool.gui.threading.Thread') as worker:
+                    self.assertTrue(app._start_prefetch())
+                    arguments = worker.call_args.kwargs['args']
+                app._preview_frame_queue.put_nowait((0, source))
+                app._prefetch_job(*arguments)
+
+                self.assertEqual(app._preview_processed_frames, 1)
+                self.assertIsNone(app._preview_worker_error)
+                self.assertTrue(app._present_current_cached_preview())
+                app.display_view.assert_called_once_with(quality='full')
+                np.testing.assert_array_equal(app._cached_dlss(0), source + 5)
+                self.assertEqual(app._buffer_is_ready(), (True, 1, 1))
+                self.assertEqual(app._collect_export_settings()['super_resolution_scale'], scale)
+
+    def test_export_only_scale_change_preserves_ready_preview(self):
+        app, export = self.make_app()
+        pixels = np.ones((4, 8, 3), np.uint8)
+        worker_settings = {**app._collect_settings(), 'super_resolution_scale': 1}
+        app._cache_store(0, app._hash_settings_dict(worker_settings), pixels)
+        for scale in (1, 2, 4):
+            export['super_resolution_scale'] = scale
+            self.assertIs(app._cached_dlss(0), pixels)
+
+    def test_image_worker_keeps_image_upscale_without_video_preview_switch(self):
+        app, _ = self.make_app()
+        app._source_kind, app._image_bgr = 'image', np.zeros((4, 8, 3), np.uint8)
+        with mock.patch('dlss5tool.gui.threading.Thread') as worker:
+            self.assertTrue(app._start_prefetch(preview_size=(16, 8)))
+            settings = worker.call_args.kwargs['args'][0]
+        self.assertEqual(settings['super_resolution_scale'], 2)
+        self.assertEqual(app._hash_settings_dict(settings), app._settings_hash())
+
+
 class ClockTests(unittest.TestCase):
     def setUp(self):
         self.app = SharedRenderPreview()

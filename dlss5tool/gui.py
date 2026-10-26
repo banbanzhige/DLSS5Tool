@@ -189,6 +189,7 @@ PREVIEW_MAX_EDGES = {"1080p": 1920, "1440p": 2560}
 PREVIEW_QUEUE_SIZE = 3
 PREVIEW_BUFFER_SECONDS = 1.0
 PREVIEW_BACKGROUND_TICK_MS = 16
+PREVIEW_BACKGROUND_IDLE_MS = 250
 PREVIEW_INTERACTION_IDLE_MS = 180
 PREVIEW_WORKER_POLL_MS = 20
 LARGE_IMAGE_TILE_THRESHOLD_PIXELS = 45_000_000
@@ -6027,8 +6028,16 @@ class App(GpuResourceGuard, SharedRenderPreview, LocalPreviewComposition, Previe
             enhancement_bypass(s),
         )
 
+    def _preview_render_settings(self, settings=None):
+        settings = dict(self._collect_settings() if settings is None else settings)
+        if not getattr(self, '_is_image', False):
+            # Export-only SR must not change the key used to find NR previews.
+            # The producer and display consumers need the same effective scale.
+            settings['super_resolution_scale'] = self._super_resolution_scale()
+        return settings
+
     def _settings_hash(self):
-        return self._hash_settings_dict(self._collect_settings())
+        return self._hash_settings_dict(self._preview_render_settings())
 
     def _super_resolution_scale(self, settings=None):
         if settings is not None and 'super_resolution_scale' in settings:
@@ -6193,10 +6202,10 @@ class App(GpuResourceGuard, SharedRenderPreview, LocalPreviewComposition, Previe
             return None
         if getattr(self, '_module_reload_thread', None) is not None:
             return None
-        settings = settings or self._collect_settings()
+        settings = self._preview_render_settings(settings)
         sk = self._hash_settings_dict(settings)
         source_size = self._source_size(source_bgr)
-        sr_scale = self._super_resolution_scale(settings) if getattr(self, '_is_image', False) else self._preview_effect_settings()['super_resolution_scale']
+        sr_scale = self._super_resolution_scale(settings)
         if target_size is None:
             target_size = (
                 super_resolution_target_size(*source_size, sr_scale)
@@ -8353,6 +8362,14 @@ class App(GpuResourceGuard, SharedRenderPreview, LocalPreviewComposition, Previe
             self._schedule_preview_decode(20)
             return
         if self._pre_rendering and not self.playing:
+            if (self._preview_auto_prerender()
+                    and getattr(self, '_prerender_frame_limit', None) != 1):
+                # A processing reservation can temporarily shrink this window
+                # to one cached frame. Keep watching for released memory and
+                # evicted pixels instead of treating that as completed work.
+                self._update_preview_timeline_and_status(force=True)
+                self._schedule_preview_decode(PREVIEW_BACKGROUND_IDLE_MS)
+                return
             handoff = (
                 getattr(self, "_prerender_frame_limit", None) == 1
                 and self._preview_auto_prerender()
@@ -8440,24 +8457,29 @@ class App(GpuResourceGuard, SharedRenderPreview, LocalPreviewComposition, Previe
         rendered_ahead = sum(
             1 for frame in rendered_frames if self._frame <= frame <= target_end
         )
+        fill_pending = rendered_ahead < target_total
+        memory_wait = bool(pool and getattr(pool, 'under_pressure', False))
         if self._buffering:
             _ready, available, required = self._buffer_is_ready()
             text = tr(
                 "status.buffering", frame=self._frame,
                 available=available, required=required,
             )
-        elif self._pre_rendering and not self.playing:
-            text = (tr("status.preview_current_rendering")
-                    if getattr(self, '_prerender_frame_limit', None) == 1 else
-                    tr("status.prerendering", rendered=rendered_ahead, total=target_total))
+        elif (self._pre_rendering and not self.playing
+              and getattr(self, '_prerender_frame_limit', None) == 1):
+            text = tr('status.preview_current_rendering')
         elif not self.playing:
-            text = (tr("status.prerendered", rendered=rendered_ahead, total=target_total)
-                    if self._preview_auto_prerender() else tr("status.auto_prerender_off"))
+            if self._preview_auto_prerender():
+                key = ('status.prerender_memory_wait' if memory_wait else
+                       'status.prerendering' if fill_pending else 'status.prerendered')
+                text = tr(key, rendered=rendered_ahead, total=target_total)
+            else:
+                text = tr('status.auto_prerender_off')
         else:
             text = tr("status.strict_preview", frames=len(rendered_frames))
-        if rate > 0:
+        if rate > 0 and (self.playing or (self._pre_rendering and fill_pending and not memory_wait)):
             text += f" · {rate:.1f} fps"
-            if rate + 0.5 < max(float(self.fps), 1.0):
+            if self.playing and fill_pending and rate + 0.5 < max(float(self.fps), 1.0):
                 text += tr("status.slower_than_video", fps=self.fps)
         text += f" · RAM {used_mib:.0f}/{self._preview_cache_bytes() / (1024 * 1024):.0f} MiB"
         try:
@@ -8665,8 +8687,7 @@ class App(GpuResourceGuard, SharedRenderPreview, LocalPreviewComposition, Previe
         stop = threading.Event()
         self._prefetch_stop = stop
         self._preview_worker_error = None
-        settings = self._collect_settings()
-        settings = {**settings, 'super_resolution_scale': self._preview_effect_settings()['super_resolution_scale']}
+        settings = self._preview_render_settings()
         preview_size = preview_size or self._playback_preview_size()
         self._active_preview_size = preview_size
         frame_queue = queue.Queue(

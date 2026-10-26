@@ -10,6 +10,7 @@ import numpy as np
 
 from dlss5tool import app_settings, render_cache
 from dlss5tool.gui import App
+from dlss5tool.i18n import tr
 
 
 def make_app(enabled=False, playing=False, proxy=(8, 4)):
@@ -24,6 +25,7 @@ def make_app(enabled=False, playing=False, proxy=(8, 4)):
     app._pre_rendering = False
     app._frame, app.nframes, app.fps = 2, 80, 24
     app._media_w, app._media_h = 8, 4
+    app._active_preview_size = None
     app._prefetch_gen = 10
     app._prefetch_stop = threading.Event()
     app._cache_lock = threading.RLock()
@@ -230,7 +232,10 @@ def check_shared_producer_stops_at_required_real_frame_and_can_resume(multiplier
 def check_shared_policy_reaches_spatial_and_enhancement_workers():
     from tests.test_render_cache import renderer
     manager = render_cache.RenderCache(200000)
-    with patch.object(render_cache, 'export_video', renderer):
+    # Exercise the separate spatial/NR layers, independently of installed GPU
+    # components that select a different producer and require a real source.
+    with (patch.object(render_cache, 'export_video', renderer),
+          patch('dlss5tool.resident_hdr_runtime.load_components', return_value=None)):
         try:
             session = manager.session('source', {'frame_generation_multiplier': 4, 'super_resolution_scale': 2})
             session.set_prefetch(False)
@@ -245,6 +250,99 @@ def check_shared_policy_reaches_spatial_and_enhancement_workers():
 
 
 class AutoPrerenderTests(unittest.TestCase):
+    def test_enabled_preview_starts_without_pressing_play(self):
+        app = make_app(enabled=True)
+        app._preview_cache_frozen = True
+        app._schedule_full_preview = Mock()
+        app._resume_preview_cache()
+        app._schedule_full_preview.assert_called_once_with()
+        app._apply_full_preview()
+        assert not app.playing and app._pre_rendering
+        app._start_prefetch.assert_called_once_with(preview_size=(8, 4))
+        app._queue_preview_frame.assert_called_once_with(2, app._source_cache_get(2))
+
+    def test_temporary_memory_reservation_does_not_finish_idle_prerender(self):
+        app = make_app(enabled=True)
+        app._pre_rendering = True
+        app._handle_preview_worker_error = lambda: False
+        pool = app._shared_cache_pool = SimpleNamespace(under_pressure=True)
+        app._preview_decode_tick()
+        assert app._pre_rendering
+        assert not app._prefetch_stop.is_set()
+        assert app._preview_frame_queue is not None
+        app._schedule_preview_decode.assert_called_once()
+        app._queue_preview_frame.assert_not_called()
+
+        pool.under_pressure = False
+        app._cached_dlss_sk = lambda frame, *_: object() if frame == 2 else None
+        app._background_preview_decoder = SimpleNamespace(get=lambda *_: app._source_cache_get(2))
+        app._video_color_info = {}
+        app._preview_decode_tick()
+        assert any(call.args[0] > 2 for call in app._queue_preview_frame.call_args_list)
+        assert not app.playing
+
+    def test_idle_prerender_fills_newly_available_capacity_without_play(self):
+        app = make_app(enabled=True)
+        app._pre_rendering = True
+        app._handle_preview_worker_error = lambda: False
+        capacity = [3]
+        app._cache_capacity_frames = lambda: capacity[0]
+        source = app._source_cache_get(2)
+        for frame in (3, 4):
+            app._source_cache_store(frame, source)
+        app._cached_dlss_sk = lambda frame, *_: source if frame <= 4 else None
+        app._preview_decode_tick()
+        assert app._pre_rendering
+        assert not app._prefetch_stop.is_set()
+        app._queue_preview_frame.assert_not_called()
+
+        capacity[0] = 16
+        app._background_preview_decoder = SimpleNamespace(get=lambda *_: source)
+        app._video_color_info = {}
+        app._preview_decode_tick()
+        assert any(call.args[0] == 5 for call in app._queue_preview_frame.call_args_list)
+        assert not app.playing
+
+    def status_app(self, *, complete=False, pressure=False):
+        import time
+        app = make_app(enabled=True)
+        app._pre_rendering = True
+        app._buffering = False
+        app._active_preview_size = (8, 4)
+        app._evict_preview_cache_locked = Mock()
+        source = app._source_cache_get(2)
+        frames = range(2, 15) if complete else (2,)
+        app._dlss_frame_cache = {(frame, 8, 4): (app._settings_hash(), source) for frame in frames}
+        app._dlss_cache_bytes = app._source_cache_bytes = 0
+        app._preview_process_t0 = time.perf_counter() - 10
+        app._preview_processed_frames = 1
+        app.timeline = SimpleNamespace(set_cache_ranges=Mock())
+        app.eta_label = Mock()
+        app._shared_cache_pool = SimpleNamespace(under_pressure=pressure, snapshot=lambda: {'used_bytes': 0})
+        app._update_preview_timeline_and_status = App._update_preview_timeline_and_status.__get__(app)
+        return app
+
+    def test_complete_idle_window_reports_ready_without_playback_warning(self):
+        app = self.status_app(complete=True)
+        app._update_preview_timeline_and_status(force=True)
+        text = app.eta_label.config.call_args.kwargs['text']
+        assert text.startswith(tr('status.prerendered', rendered=13, total=13))
+        assert 'fps' not in text
+
+    def test_temporary_pressure_reports_wait_instead_of_ready(self):
+        app = self.status_app(pressure=True)
+        app._update_preview_timeline_and_status(force=True)
+        text = app.eta_label.config.call_args.kwargs['text']
+        assert text.startswith(tr('status.prerender_memory_wait', rendered=1, total=13))
+        assert tr('status.slower_than_video', fps=app.fps) not in text
+
+    def test_partial_idle_cache_reports_rendering_without_playback_warning(self):
+        app = self.status_app()
+        app._update_preview_timeline_and_status(force=True)
+        text = app.eta_label.config.call_args.kwargs['text']
+        assert text.startswith(tr('status.prerendering', rendered=1, total=13))
+        assert tr('status.slower_than_video', fps=app.fps) not in text
+
     def test_default_and_saved_choice(self):
         with tempfile.TemporaryDirectory() as directory:
             check_default_and_saved_choice(Path(directory))
