@@ -523,6 +523,19 @@ class RenderCache:
             self.inspection = (identity, result)
         return self.inspection[1]
 
+    def has_complete_spatial(self, source, settings):
+        """Prefer already cached SR pixels over starting another full producer."""
+        values = {k: settings[k] for k in ('hdr_mode','super_resolution_scale','render_gpu','decode_cpu_fallback') if k in settings}
+        values.update(frame_generation_multiplier=1,guidance_mode=0,output_size=None,_render_stage='spatial')
+        key = render_identity(source, values)
+        with self.lock:
+            session = self.spatial
+            if session is None or session.key != key or session.closed or session.error:
+                return False
+            with session.condition:
+                count = (session.metadata or {}).get('source_frames', 0)
+                return count > 0 and len(session.cache) >= count and all(index in session.cache for index in range(count))
+
     def session(self, source, settings, is_current=None):
         def latest():
             if is_current and not is_current():

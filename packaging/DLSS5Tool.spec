@@ -20,7 +20,9 @@ datas.append((os.path.join(project_root, 'licenses', 'NVIDIA-Optical-Flow-Header
 datas.append((os.path.join(project_root, 'scripts', 'rtxmfg_temporal', 'LICENSE.txt'), 'licenses/RTX40MFG-Unlock'))
 datas.append((os.path.join(project_root, 'third_party', 'NVIDIA-DLSS', 'LICENSE.txt'), 'licenses/NVIDIA-DLSS'))
 binaries = []
-hiddenimports = ['dlss5tool.cuda_frame', 'dlss5tool.cuda_vsr', 'dlss5tool.cuda_vsr_runtime']
+hiddenimports = ['dlss5tool.cuda_frame', 'dlss5tool.cuda_vsr', 'dlss5tool.cuda_vsr_runtime',
+                 'dlss5tool.cuda_nv12', 'dlss5tool.resident_sr', 'dlss5tool.resident_sr_worker',
+                 'dlss5tool.resident_sr_runtime']
 
 # A source checkout with realtime must build and include it, or fail loudly.
 # GPL/proprietary combination clearance is independent of local GPU verification.
@@ -98,6 +100,14 @@ if cuda_vsr:
     if not os.path.isdir(cuda_vsr_licenses):
         raise SystemExit('CUDA VSR license directory missing')
     datas.append((cuda_vsr_licenses, 'licenses/CUDA-VSR'))
+
+from dlss5tool.resident_sr_runtime import load_components as load_resident_sr, FILES as RESIDENT_SR_FILES
+resident_sr = load_resident_sr()
+if resident_sr:
+    resident_root = os.path.join(project_root, 'runtime', 'resident-sr')
+    datas.append((os.path.join(resident_root, 'manifest.json'), 'resident-sr'))
+    for field in RESIDENT_SR_FILES:
+        datas.append((resident_sr[field], 'resident-sr'))
 
 for filename, required in (
     ("dlssnr_host_v2.dll", True),

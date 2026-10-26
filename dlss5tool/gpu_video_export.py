@@ -15,7 +15,7 @@ class NativeGpuVideoWriter:
                  hdr_ptx=None,
                  device_ordinal=0,use_nvenc=True,nvenc_preset='p5',hdr_metadata=None,
                  rate_control='quality',quality_profile='high',video_bitrate_mbps=20.0,
-                 output_size=None,codec='auto'):
+                 output_size=None,codec='auto',cuda_session=None,device_input=False):
         from dlss5tool.video_export import classify_color_info,resolve_encoder_size
         if use_nvenc is False:raise ValueError('GPU export was explicitly selected with software encoding')
         metadata=classify_color_info(hdr_metadata) if hdr_metadata else None
@@ -36,11 +36,17 @@ class NativeGpuVideoWriter:
         self.uses_nvenc=True;self.encoder_name='NVENC HEVC HDR GPU' if self.is_hdr else 'NVENC H.264 GPU'
         self._frames=0;self._finished=False;self._failed=False
         self._cuda=self._converter=self._encoder=self._mux=None
+        self._owns_cuda=cuda_session is None
+        self._upload=None
         self._interop=[]
         try:
-            self._cuda=CudaSession(device_ordinal)
+            self._cuda=cuda_session if cuda_session is not None else CudaSession(device_ordinal)
+            self._cuda._check()
+            if self._cuda.device.value!=device_ordinal:
+                raise ValueError('Encoder CUDA owner differs from requested device')
             self.adapter_luid=self._cuda.luid
-            self._upload=self._cuda.allocate(width*height*(16 if self.is_hdr else 4))
+            if not device_input:
+                self._upload=self._cuda.allocate(width*height*(16 if self.is_hdr else 4))
             with self._cuda.current():
                 if self.is_hdr:
                     from dlss5tool.cuda_hdr_yuv import CudaHdrConverter
@@ -52,6 +58,7 @@ class NativeGpuVideoWriter:
             self.abort();raise
 
     def write(self,frame):
+        if self._upload is None:raise RuntimeError('This encoder accepts owned device frames only')
         if self.is_hdr:
             if frame.dtype not in (np.float16,np.float32) or frame.shape!=(self.height,self.width,4):
                 raise ValueError('Expected HDR RGBA float16/32 input')
@@ -60,9 +67,22 @@ class NativeGpuVideoWriter:
         contiguous=np.ascontiguousarray(frame)
         try:
             self._cuda.upload(self._upload,contiguous)
+            self._cuda.synchronize()
             layout=('rgba16f' if frame.dtype==np.float16 else 'rgba32f') if self.is_hdr else 'bgr24'
             self.write_device(self._upload,contiguous.nbytes,layout,self.adapter_luid,strict_hdr=False)
         except BaseException:self.abort();raise
+
+    def write_cuda_frame(self,frame):
+        """Consume an SDR lease in the shared owner context before buffer reuse."""
+        from dlss5tool.cuda_frame import ReadyCudaFrame
+        if not isinstance(frame,ReadyCudaFrame):raise TypeError('Completed CUDA frame lease required')
+        frame._check()
+        if (self.is_hdr or frame.session is not self._cuda or frame.context!=self._cuda.context.value
+                or frame.adapter_luid!=self.adapter_luid or frame.layout!='rgba8'
+                or frame.color_profile!='srgb' or (frame.width,frame.height)!=(self.width,self.height)
+                or frame.timing.sequence!=self._frames):
+            raise ValueError('Encoder frame owner/format/geometry/sequence mismatch')
+        self.write_device(frame.pointer,frame.nbytes,'rgba',frame.adapter_luid,frame.row_pitch)
 
     def write_device(self,pointer,nbytes,layout,adapter_luid,row_pitch=None,*,strict_hdr=True):
         """Producer must wait its GPU fence and hold its resource until return."""
@@ -97,8 +117,11 @@ class NativeGpuVideoWriter:
                         try:item.close()
                         except Exception as error:errors.append(error)
             self._encoder=self._converter=None
-            try:self._cuda.close()
+            try:
+                if getattr(self,'_owns_cuda',True):self._cuda.close()
+                elif self._upload is not None:self._cuda.free(self._upload)
             except Exception as error:errors.append(error)
+            self._upload=None
             self._cuda=None
         if errors:raise RuntimeError(f'GPU export cleanup failed: {errors}')
 

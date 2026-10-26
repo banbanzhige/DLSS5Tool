@@ -10638,6 +10638,8 @@ class App(GpuResourceGuard, SharedRenderPreview, LocalPreviewComposition, Previe
         retiring = getattr(self, '_shared_retiring', None)
         latest_counts = [None]
         encoding_profile = [None]
+        progress_fraction = [0.0]
+        progress_lock = threading.Lock()
         def on_frames(done, total):
             latest_counts[0] = (done, total)
         def worker():
@@ -10647,11 +10649,17 @@ class App(GpuResourceGuard, SharedRenderPreview, LocalPreviewComposition, Previe
                 for pending in (setup, retiring):
                     if pending:
                         pending.join()
-                session = manager.session(source_path, config)
-                result = encode_cached(
-                    session, out_path, config, self._export_cancel_event, on_progress,
-                    frame_progress=on_frames, performance_sink=lambda value: encoding_profile.__setitem__(0, value),
-                )
+                from dlss5tool.resident_sr import try_export
+                result = try_export(manager, source_path, out_path, config,
+                    cancel=self._export_cancel_event, progress=on_progress, frame_progress=on_frames)
+                if result is None:
+                    session = manager.session(source_path, config)
+                    result = encode_cached(
+                        session, out_path, config, self._export_cancel_event, on_progress,
+                        frame_progress=on_frames, performance_sink=lambda value: encoding_profile.__setitem__(0, value),
+                    )
+                else:
+                    encoding_profile[0] = result['performance']
                 outcome = 'complete'
                 events.put(('done', result))
             except BaseException as error:
@@ -10667,6 +10675,9 @@ class App(GpuResourceGuard, SharedRenderPreview, LocalPreviewComposition, Previe
                 self._last_export_profile = {'status': outcome, 'encoded_frames': latest_counts[0],
                     'encoding': encoding_profile[0], 'render_session_lifetime': snapshots}
         def on_progress(message, fraction, counts=None):
+            with progress_lock:
+                progress_fraction[0] = max(progress_fraction[0], min(1.0, max(0.0, float(fraction or 0))))
+                fraction = progress_fraction[0]
             events.put(('progress', (message, fraction, counts or latest_counts[0])))
         thread = threading.Thread(target=worker, name='dlss-fg-export', daemon=True)
         thread.start()
@@ -10692,6 +10703,8 @@ class App(GpuResourceGuard, SharedRenderPreview, LocalPreviewComposition, Previe
                 if backend:
                     self.logln('[解码] ' + str(backend))
                 self.logln('[导出性能] ' + json.dumps({
+                    'route': value.get('route', 'shared-cache'),
+                    'worker_retirement': value.get('worker_retirement'),
                     'encoding': (profile.get('encoding') or {}).get('stages', {}),
                     'render_sessions': [{
                         **{k: v for k, v in item.items() if k in {'stage', 'computed', 'replayed',

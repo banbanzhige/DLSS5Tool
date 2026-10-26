@@ -48,3 +48,68 @@ class KillOnCloseJob:
             if not self._kernel.CloseHandle(self._handle):
                 raise C.WinError(C.get_last_error())
             self._handle=None
+
+
+def process_record(pid):
+    """Read one exact PID from Toolhelp, including native teardown remnants."""
+    from ctypes import wintypes as W
+    from dlss5tool.cuda_session import bind
+    class Entry(C.Structure):
+        _fields_ = [('size', W.DWORD), ('usage', W.DWORD), ('pid', W.DWORD),
+                    ('heap', C.c_size_t), ('module', W.DWORD), ('threads', W.DWORD),
+                    ('parent', W.DWORD), ('priority', W.LONG), ('flags', W.DWORD),
+                    ('name', W.WCHAR*260)]
+    kernel = C.WinDLL('kernel32', use_last_error=True)
+    snapshot = bind(kernel, 'CreateToolhelp32Snapshot', [W.DWORD, W.DWORD], W.HANDLE)(2, 0)
+    if snapshot == C.c_void_p(-1).value:
+        raise C.WinError(C.get_last_error())
+    try:
+        first = bind(kernel, 'Process32FirstW', [W.HANDLE, C.POINTER(Entry)])
+        next_entry = bind(kernel, 'Process32NextW', [W.HANDLE, C.POINTER(Entry)])
+        entry = Entry(); entry.size = C.sizeof(entry)
+        valid = first(snapshot, C.byref(entry))
+        while valid:
+            if entry.pid == pid:
+                return dict(present=True, pid=pid, threads=entry.threads, parent=entry.parent, name=entry.name)
+            valid = next_entry(snapshot, C.byref(entry))
+        return dict(present=False, pid=pid)
+    finally:
+        bind(kernel, 'CloseHandle', [W.HANDLE])(snapshot)
+
+
+def confirm_retired(process, *, timeout=2):
+    """Close our completed Popen handle, then bound the actual OS disappearance.
+
+    A signaled process handle alone is insufficient during native driver exit.
+    Never operates on another process or attempts a driver reset.
+    """
+    import time
+    if process.poll() is None:
+        raise RuntimeError('Owned process is still running')
+    handle = getattr(process, '_handle', None)
+    if handle is not None:
+        handle.Close()
+        process._handle = None
+    deadline = time.monotonic()+timeout
+    while True:
+        record = process_record(process.pid)
+        if not record['present'] or record.get('parent') != os.getpid():
+            return
+        if time.monotonic() >= deadline:
+            raise RuntimeError(f'Native worker PID {process.pid} still has an OS process record')
+        time.sleep(.05)
+
+
+def private_commit(process):
+    """Read memory from our retained Popen handle, with no PID/name lookup."""
+    class Counters(C.Structure):
+        _fields_ = [('size', C.c_uint32), ('faults', C.c_uint32)] + [
+            (name, C.c_size_t) for name in ('peak_working', 'working', 'peak_paged',
+                'paged', 'peak_nonpaged', 'nonpaged', 'commit', 'peak_commit', 'private')]
+    handle = getattr(process, '_handle', None)
+    if handle is None:
+        return None
+    function = C.WinDLL('psapi').GetProcessMemoryInfo
+    function.argtypes, function.restype = [C.c_void_p, C.POINTER(Counters), C.c_uint32], C.c_int
+    counters = Counters(); counters.size = C.sizeof(counters)
+    return counters.private if function(int(handle), C.byref(counters), counters.size) else None

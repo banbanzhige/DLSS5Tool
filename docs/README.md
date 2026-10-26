@@ -62,7 +62,8 @@
 - 超分升级路线：[实施方案、阶段依赖、验收与回滚](development/SR_UPGRADE_ROADMAP_20261024.md)；[流程、SDK、编解码依赖及关联功能清单](development/SR_UPGRADE_CHECKLIST_20261024.md)
 - 2026-10-26 状态：[超分升级 TODO 对账](development/SR_UPGRADE_RECONCILIATION_20261026.md)；[内存保护与缓存协调已完成项](development/RAM_HEADROOM_IMPLEMENTATION_20261026.md)
 - 超分 S0/S1 已实施：[场景复用、顺序导出、像素与性能验收](development/SR_SCENE_OPTIMIZATION_20261026.md)；[原始测量及验证汇总](development/sr-scene-optimization-20261026/verification-summary.json)
-- 超分 S2 已实施：[SDR CUDA VSR、设备帧与显式选卡](development/SR_CUDA_IMPLEMENTATION_20261026.md)；[组件／像素／退出与缓存导出证据](development/sr-cuda-20261026/verification-summary.json)。完整 GPU 帧链从 S3 继续。
+- 超分 S2 基础：[SDR CUDA VSR、设备帧与显式选卡](development/SR_CUDA_IMPLEMENTATION_20261026.md)；[组件／像素／退出证据](development/sr-cuda-20261026/verification-summary.json)。
+- 超分 S3 已接入源码：[NVDEC→CUDA VSR→NVENC、速度、像素与退出验收](development/SR_RESIDENT_IMPLEMENTATION_20261026.md)；[验收汇总](development/sr-resident-20261026/verification-final.json)。HDR／NR／FG 和更长任务继续验收。
 
 - 仓库维护：[卫生守则与空间预算](development/REPOSITORY_HYGIENE.md)、[2026-09-11 临时目录盘点](development/TMP_AUDIT_20260911.md)
 

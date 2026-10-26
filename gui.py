@@ -9,6 +9,9 @@ if __name__ == '__main__':
     from dlss5tool.adapter_probe import dispatch as dispatch_adapter_probe
     if dispatch_adapter_probe():
         raise SystemExit(0)
+    from dlss5tool.resident_sr_worker import dispatch as dispatch_resident_sr
+    if dispatch_resident_sr():
+        raise SystemExit(0)
     if '--nvofa-selftest' in sys.argv:
         from dlss5tool.nvofa_selftest import main
         main(sys.argv[sys.argv.index('--nvofa-selftest') + 1:])

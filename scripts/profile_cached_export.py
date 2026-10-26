@@ -63,6 +63,8 @@ def main():
     parser.add_argument('--multiplier', type=int, choices=(1, 2), default=1)
     parser.add_argument('--color-profile', choices=('srgb', 'hdr10_pq', 'hdr10_hlg'), default='srgb')
     parser.add_argument('--hard-cut', action='store_true', help='Black/white cut halfway through the synthetic cache source')
+    parser.add_argument('--source', type=Path, help='Existing registered-task media with matching geometry/frame count')
+    parser.add_argument('--quality', choices=('high','balanced'), default='high')
     parser.add_argument('--baseline', action='store_true', help='Read core modules from Git HEAD in this process only')
     parser.add_argument('--baseline-ref', help='Freeze core modules at this local Git commit/ref')
     parser.add_argument('--no-frame-hashes', action='store_true', help='Measure throughput without per-frame SHA256 audit overhead')
@@ -114,7 +116,9 @@ def main():
     suffix = f'-{args.color_profile}-vui' if hdr else ''
     if args.hard_cut:
         suffix += '-cut'
-    source = task/f'synthetic-{args.width}x{args.height}-{args.frames}{suffix}.mp4'
+    source = args.source.absolute() if args.source else task/f'synthetic-{args.width}x{args.height}-{args.frames}{suffix}.mp4'
+    if args.source and (not source.is_relative_to(task) or source.resolve()!=source or not source.is_file()):
+        raise ValueError('Custom source must be an existing file within this registered task')
     if not source.exists():
         transfer = 'smpte2084' if args.color_profile == 'hdr10_pq' else 'arib-std-b67'
         source_options = (['-c:v', 'libx265', '-preset', 'ultrafast', '-threads', '2',
@@ -142,7 +146,7 @@ def main():
         host_zero_fast_path=True, host_submission='merged', host_persistent_buffers=True,
         nr_quality={'total': 0.0 if args.case == 'sr' else 0.75}, output_mix=1.0,
         output_view=0, hdr_mode=hdr, nvenc_preset='p5', rate_control='quality',
-        quality_profile='high', video_bitrate_mbps=20))
+        quality_profile=args.quality, video_bitrate_mbps=20))
     source_info = video_export.probe_video_stream(video_export.find_ffmpeg(), source)
     if source_info['is_hdr'] != hdr or (hdr and source_info['profile'] != args.color_profile):
         raise ValueError('Synthetic source color tags do not match the requested profile')

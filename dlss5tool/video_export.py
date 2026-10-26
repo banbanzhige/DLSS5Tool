@@ -302,7 +302,7 @@ def probe_video_stream(ffmpeg, source):
                 [
                     ffprobe, "-v", "error", "-select_streams", "v:0",
                     "-show_entries",
-                    "stream=codec_name,profile,width,height,avg_frame_rate,r_frame_rate,nb_frames,duration,pix_fmt,color_space,color_primaries,color_transfer,color_range",
+                    "stream=codec_name,profile,width,height,avg_frame_rate,r_frame_rate,nb_frames,duration,pix_fmt,color_space,color_primaries,color_transfer,color_range,field_order:stream_side_data=rotation:stream_tags=rotate",
                     "-of", "json", source,
                 ],
                 stdin=subprocess.DEVNULL, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
