@@ -147,3 +147,34 @@ def test_private_memory_guard_retires_worker_before_publication(transaction,monk
     monkeypatch.setattr('dlss5tool.process_job.private_commit',lambda _:5*1024**3)
     with pytest.raises(MemoryError,match='4 GiB'):t['export']()
     assert t['retired'] and not t['destination'].exists()
+
+
+@pytest.mark.parametrize('multiplier', [2, 3, 4])
+def test_fg_disk_budget_rejects_before_worker_or_transaction(transaction,monkeypatch,multiplier):
+    t = transaction
+    t['plan']['multiplier'] = multiplier
+    pure_sr_need = t['source'].stat().st_size*t['plan']['scale']**2*3+15*1024**3
+    monkeypatch.setattr(sr.shutil, 'disk_usage', lambda _: SimpleNamespace(free=pure_sr_need))
+    with mock.patch.object(sr, '_spawn') as spawn, \
+            mock.patch('dlss5tool.memory_budget.require_memory_headroom') as memory:
+        with pytest.raises(ValueError, match='estimated peak'):
+            t['export']()
+    spawn.assert_not_called()
+    memory.assert_not_called()
+    assert not t['destination'].exists()
+    assert not (t['source'].parent/'logs').exists()
+    assert not list(t['source'].parent.glob('.sr-*'))
+
+
+@pytest.mark.parametrize('multiplier', [None, 1, 2, 3, 4])
+def test_disk_budget_exact_threshold_preserves_pure_sr_and_fg(transaction,monkeypatch,multiplier):
+    t = transaction
+    if multiplier is not None:
+        t['plan']['multiplier'] = multiplier
+    actual = multiplier or 1
+    required = t['source'].stat().st_size*actual*t['plan']['scale']**2*3+15*1024**3
+    monkeypatch.setattr(sr.shutil, 'disk_usage', lambda _: SimpleNamespace(free=required))
+    t['result']['output_rate'] = str(Fraction(t['plan']['rate'])*actual)
+    t['messages'] = [dict(kind='complete', result=t['result'])]
+    assert t['export']()['status'] == 'complete'
+    assert t['retired'] and t['destination'].exists()

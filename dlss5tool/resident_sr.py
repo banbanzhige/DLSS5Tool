@@ -168,7 +168,8 @@ def export_resident(source, output, plan, components, *, cancel, progress=None,
         raise FileExistsError(destination)
     if destination.suffix.lower() not in ('.mp4', '.mov', '.mkv') or not destination.parent.is_dir():
         raise ValueError('Existing output directory and MP4/MOV/MKV required')
-    if shutil.disk_usage(destination.parent).free < source.stat().st_size*plan['scale']**2*3+15*1024**3:
+    disk_need = source.stat().st_size*plan.get('multiplier', 1)*plan['scale']**2*3
+    if shutil.disk_usage(destination.parent).free < disk_need+15*1024**3:
         raise ValueError('Output disk needs estimated peak plus 15 GiB free')
     if audit and plan['frames'] > 256:
         raise ValueError('Per-frame audit is bounded to 256 frames')

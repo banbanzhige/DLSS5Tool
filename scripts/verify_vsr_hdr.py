@@ -13,6 +13,7 @@ sys.path.insert(0,str(ROOT))
 def main():
     from scripts.build_vsr_cuda import safe,digest
     from scripts.verify_resident_sr import decoded_md5,timeline
+    from scripts.probe_hdr_analysis import validate_analysis_evidence
     from dlss5tool.video_export import find_ffmpeg
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--task',type=Path,required=True)
@@ -23,6 +24,7 @@ def main():
     if not (task/'TASK.md').is_file() or proof.exists():raise ValueError('Fresh registered evidence required')
     read=lambda name:json.loads((task/(name+'.json')).read_text(encoding='utf-8-sig'))
     build=read('build-final');operators=read('operators-final');analysis=read('analysis-lut')
+    validate_analysis_evidence(analysis)
     assert operators['accepted'] and analysis['accepted']
     assert operators['library_sha256']==digest(task/'build/hdr_operators.dll')==build['outputs']['hdr_operators']
     assert analysis['candidate_sha256']==digest(ROOT/'dlss5tool/guidance_color.py')
