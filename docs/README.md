@@ -64,11 +64,11 @@
 - 超分 S0/S1 已实施：[场景复用、顺序导出、像素与性能验收](development/SR_SCENE_OPTIMIZATION_20261026.md)；[原始测量及验证汇总](development/sr-scene-optimization-20261026/verification-summary.json)
 - 超分 S2 基础：[SDR CUDA VSR、设备帧与显式选卡](development/SR_CUDA_IMPLEMENTATION_20261026.md)；[组件／像素／退出证据](development/sr-cuda-20261026/verification-summary.json)。
 - 超分 S3 已接入源码：[NVDEC→CUDA VSR→NVENC、速度、像素与退出验收](development/SR_RESIDENT_IMPLEMENTATION_20261026.md)；[验收汇总](development/sr-resident-20261026/verification-final.json)。HDR／NR／FG 的后续接入见 S4。
-- 超分 S4 本机已启用：[HDR 显存导出、NR／FG 与预览接入](development/SR_S4_IMPLEMENTATION_20261027.md)；[像素／时间线验收](development/sr-s4-20261027/s4-verification.json)。有界样本、261 项定向测试及安装后 GUI／缓存通过；S4a／S4 源码纳入本次提交，尚未打包，异步与长任务继续 S5。
+- 超分 S4 本机已启用：[HDR 显存导出、NR／FG 与预览接入](development/SR_S4_IMPLEMENTATION_20261027.md)；[像素／时间线验收](development/sr-s4-20261027/s4-verification.json)。有界样本、261 项定向测试及安装后 GUI／缓存通过；S4a／S4 已纳入本地 v3.1.0 打包，冻结程序的 SDR／HDR 超分补帧检查通过，异步与长任务继续 S5。
 
 - 仓库维护：[卫生守则与空间预算](development/REPOSITORY_HYGIENE.md)、[2026-09-11 临时目录盘点](development/TMP_AUDIT_20260911.md)
 
-- 当前版本：[v3.1.0 更新说明](release/RELEASE_NOTES_v3.1.0.md)、[本地打包与发布状态](release/PACKAGING_INDEX.md)。当前准备本地 v3.1.0 打包验收，公开下载以正式 Release 为准；分发许可审查仍待完成。
+- 当前版本：[v3.1.0 更新说明](release/RELEASE_NOTES_v3.1.0.md)、[本地打包与发布状态](release/PACKAGING_INDEX.md)。本地 v3.1.0 三形态打包与真实增量升级验收完成，尚未上传；公开下载以正式 Release 为准，分发许可审查仍待完成。
 - 既有功能与历史验证：[NVOFA 集成验证](experiments/NVOFA_INTEGRATION.md)、[深度下线状态](experiments/DEPTH_REFERENCE_STATUS.md)、[实施核对](development/IMPLEMENTATION_READINESS.md)
 
 - 用户指南：[简体中文](USER_GUIDE.md)、[English](USER_GUIDE.en.md)

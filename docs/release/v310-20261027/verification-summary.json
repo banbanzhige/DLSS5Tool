@@ -1,0 +1,540 @@
+{
+  "version": "v3.1.0",
+  "source_commit": "072f7a5b8c88ec7400cebfcfd6ca4b4151bc6714",
+  "output": "E:/dist/DLSS5Tool/v3.1.0/editions",
+  "official_baseline": "v3.0.4",
+  "official_baseline_verified": true,
+  "local_candidate": true,
+  "push_requested": true,
+  "uploaded": false,
+  "published": false,
+  "targeted_tests": {
+    "core_passed": 165,
+    "core_subtests_passed": 49,
+    "release_initial_passed": 70,
+    "release_initial_failed": 1,
+    "release_subtests_passed": 14,
+    "release_failed_case_fixed_and_rerun_passed": 1,
+    "release_rerun_subtests_passed": 4,
+    "full_regression_run": false
+  },
+  "frozen": {
+    "version": "v3.1.0",
+    "source_commit": "072f7a5b8c88ec7400cebfcfd6ca4b4151bc6714",
+    "inputs_unchanged": 137,
+    "modules_verified": [
+      "dlss5tool.gui",
+      "dlss5tool.app_version",
+      "dlss5tool.residual_composition",
+      "dlss5tool.shared_cache_budget",
+      "dlss5tool.video_export",
+      "dlss5tool.preview_decoder",
+      "dlss5tool.local_preview_composition",
+      "dlss5tool.memory_budget",
+      "dlss5tool.frame_generation",
+      "dlss5tool.render_cache",
+      "dlss5tool.device_cached",
+      "dlss5tool.resident_preview",
+      "dlss5tool.resident_hdr",
+      "dlss5tool.resident_sr",
+      "dlss5tool.cuda_vsr",
+      "dlss5tool.device_sr_plan"
+    ],
+    "launcher_verified": "gui.py",
+    "runtime_manifests_verified": [
+      "gpu-export/manifest.json",
+      "resident-hdr/manifest.json",
+      "resident-sr/manifest.json",
+      "vsr-cuda/manifest.json"
+    ],
+    "passed": true
+  },
+  "executable_sha256": "a99c39ba6a549f16f175818959d10c6cf14eedd7e797d61595faa1185920aa6e",
+  "file_version": "3.1.0",
+  "product_version": "3.1.0",
+  "full_equals_lite_plus_addon": true,
+  "frozen_diagnostics_passed": true,
+  "addon_continuous_frames_passed": true,
+  "release_notes_three_copies_exact": true,
+  "release_notes_sha256": "c7e215dea34ad0c996595c06d21ef3c781ebe47b19555ce1a9831e34d4073da9",
+  "upload_gate_passed": true,
+  "registered_next_baseline": "v3.1.0",
+  "editions": {
+    "lite": {
+      "name": "DLSS5Tool-v3.1.0-win64-lite.zip",
+      "size": 589568125,
+      "sha256": "15522e5dd397c385ee0396229fc71aa4d14850d474f4f95f350012cfbce9924c",
+      "unpacked_bytes": 1035853945,
+      "file_count": 1882,
+      "crc_verified": true,
+      "volumes": [],
+      "github_name": "DLSS5Tool-v3.1.0-win64.zip"
+    },
+    "addon": {
+      "name": "DLSS5Tool-v3.1.0-win64-addon.zip",
+      "size": 3053866457,
+      "sha256": "8a2c7f6058462abd12d7650c6d984fe8db0f9255c39fc2cc0b1e0eda295d2063",
+      "unpacked_bytes": 4781669865,
+      "file_count": 2415,
+      "crc_verified": true,
+      "volumes": [
+        {
+          "name": "DLSS5Tool-v3.1.0-win64-addon.zip.001",
+          "size": 1992294400,
+          "sha256": "7577ab7611f13f78676cd2de3744b9a867b2da963f133e9049ba9b2436d4050f"
+        },
+        {
+          "name": "DLSS5Tool-v3.1.0-win64-addon.zip.002",
+          "size": 1061572057,
+          "sha256": "38e9804e5eefa187c1c44af9969a611b312af9f3a50b42e199168075c8b9acdf"
+        }
+      ]
+    },
+    "full": {
+      "name": "DLSS5Tool-v3.1.0-win64-full.zip",
+      "size": 3643432071,
+      "sha256": "6a521c9c7f606dda2b0dd8d4766569fe152375290b694df5877d37b932497678",
+      "unpacked_bytes": 5817519689,
+      "file_count": 4296,
+      "crc_verified": true,
+      "volumes": [
+        {
+          "name": "DLSS5Tool-v3.1.0-win64-full.zip.001",
+          "size": 1992294400,
+          "sha256": "52bbddf76e1ccfc4f55af92fb92077d2615132b1328a31a10f9a53c12cda5187"
+        },
+        {
+          "name": "DLSS5Tool-v3.1.0-win64-full.zip.002",
+          "size": 1651137671,
+          "sha256": "5ed604ee479e8cf2914fea1b84016bc2d8597115f7c302ae21d3da3817a3e9ed"
+        }
+      ]
+    }
+  },
+  "updates": [
+    {
+      "changed_files": 27,
+      "edition": "lite",
+      "from": "v3.0.4",
+      "payload_bytes": 21705242,
+      "published": false,
+      "removed_files": 0,
+      "sha256": "3bad90eaa687f92ea8f36f659982231663f84cc105455af1abf9ee50573dde4d",
+      "size": 17915090,
+      "to": "v3.1.0",
+      "name": "DLSS5Tool-v3.0.4-to-v3.1.0-win64-lite.dlssupdate"
+    },
+    {
+      "changed_files": 28,
+      "edition": "full",
+      "from": "v3.0.4",
+      "payload_bytes": 21705874,
+      "published": false,
+      "removed_files": 0,
+      "sha256": "5862fddd5b3781969c67ef594994c488f97cf22eed469c071238ae00c11acbc5",
+      "size": 18165486,
+      "to": "v3.1.0",
+      "name": "DLSS5Tool-v3.0.4-to-v3.1.0-win64-full.dlssupdate"
+    }
+  ],
+  "real_upgrades": {
+    "lite": {
+      "asset_sha256": "3bad90eaa687f92ea8f36f659982231663f84cc105455af1abf9ee50573dde4d",
+      "changed_files": 27,
+      "clean_machine_verified": false,
+      "edition": "lite",
+      "exit_code": 0,
+      "from": "v3.0.4",
+      "helper_temp": "C:\\Users\\PC\\AppData\\Local\\Temp",
+      "managed_target_files_verified": 1882,
+      "method": "streamed actual payload plus unchanged baseline bytes; no install mutation",
+      "old_frozen_helper": {
+        "sha256": "463d5ebf2b2f62b6031a51aef8314e9deb10a8bf97ce30008e220a8d73191d8f",
+        "size": 9515199
+      },
+      "overlay_verified": true,
+      "resumed_ready_transaction": false,
+      "rollback_backup_files_verified": 11,
+      "scope": "Real version-pair delta installed by old frozen helper; no public upload or GPU certification",
+      "state": {
+        "phase": "complete",
+        "target": "v3.1.0"
+      },
+      "to": "v3.1.0",
+      "user_files_preserved": [
+        "dlss5_settings.json",
+        "dlss5_queue.json",
+        "mods/nvngx_dlssnr.dll",
+        "mods/custom-verification.txt"
+      ],
+      "verification_install": "E:\\dist\\DLSS5Tool\\tmp\\release-v3.1.0-20261027\\upgrade-lite\\installed"
+    },
+    "full": {
+      "asset_sha256": "5862fddd5b3781969c67ef594994c488f97cf22eed469c071238ae00c11acbc5",
+      "changed_files": 28,
+      "clean_machine_verified": false,
+      "edition": "full",
+      "exit_code": 0,
+      "from": "v3.0.4",
+      "helper_temp": "C:\\Users\\PC\\AppData\\Local\\Temp",
+      "managed_target_files_verified": 4296,
+      "method": "streamed actual payload plus unchanged baseline bytes; no install mutation",
+      "old_frozen_helper": {
+        "sha256": "463d5ebf2b2f62b6031a51aef8314e9deb10a8bf97ce30008e220a8d73191d8f",
+        "size": 9515199
+      },
+      "overlay_verified": true,
+      "resumed_ready_transaction": false,
+      "rollback_backup_files_verified": 12,
+      "scope": "Real version-pair delta installed by old frozen helper; no public upload or GPU certification",
+      "state": {
+        "phase": "complete",
+        "target": "v3.1.0"
+      },
+      "to": "v3.1.0",
+      "user_files_preserved": [
+        "dlss5_settings.json",
+        "dlss5_queue.json",
+        "mods/nvngx_dlssnr.dll",
+        "mods/custom-verification.txt"
+      ],
+      "verification_install": "E:\\dist\\DLSS5Tool\\tmp\\release-v3.1.0-20261027\\upgrade-full\\installed"
+    }
+  },
+  "frozen_video_smoke": {
+    "sdr": {
+      "status": "complete",
+      "color": "srgb",
+      "real_frames": 8,
+      "generated_frames": 7,
+      "output_frames": 16,
+      "width": 1920,
+      "height": 1080,
+      "codec": "h264",
+      "fps": "60/1",
+      "output_sha256": "c7d2275f10e1006858e8ad846afcb5f65ad0cafaa85dde21d04bc7f7ea609dcf"
+    },
+    "pq": {
+      "kind": "pq",
+      "passed": true,
+      "seconds": 24.902,
+      "source_frames": 8,
+      "output_frames": 16,
+      "width": 1920,
+      "height": 1080,
+      "route": null,
+      "color": "hdr10_pq",
+      "output_sha256": "fc6085d65d2dafe2b5fec549c8a7c82ec014eec7dcad10a83b72c9870e01815e",
+      "probe": {
+        "index": 0,
+        "codec_name": "hevc",
+        "codec_long_name": "H.265 / HEVC (High Efficiency Video Coding)",
+        "profile": "Main 10",
+        "codec_type": "video",
+        "codec_tag_string": "hvc1",
+        "codec_tag": "0x31637668",
+        "width": 1920,
+        "height": 1080,
+        "coded_width": 1920,
+        "coded_height": 1088,
+        "closed_captions": 0,
+        "film_grain": 0,
+        "has_b_frames": 2,
+        "sample_aspect_ratio": "1:1",
+        "display_aspect_ratio": "16:9",
+        "pix_fmt": "yuv420p10le",
+        "level": 123,
+        "color_range": "tv",
+        "color_space": "bt2020nc",
+        "color_transfer": "smpte2084",
+        "color_primaries": "bt2020",
+        "chroma_location": "left",
+        "refs": 1,
+        "view_ids_available": "",
+        "view_pos_available": "",
+        "id": "0x1",
+        "r_frame_rate": "60/1",
+        "avg_frame_rate": "60/1",
+        "time_base": "1/15360",
+        "start_pts": 0,
+        "start_time": "0.000000",
+        "duration_ts": 4096,
+        "duration": "0.266667",
+        "bit_rate": "17046150",
+        "nb_frames": "16",
+        "nb_read_frames": "16",
+        "extradata_size": 134,
+        "disposition": {
+          "default": 1,
+          "dub": 0,
+          "original": 0,
+          "comment": 0,
+          "lyrics": 0,
+          "karaoke": 0,
+          "forced": 0,
+          "hearing_impaired": 0,
+          "visual_impaired": 0,
+          "clean_effects": 0,
+          "attached_pic": 0,
+          "timed_thumbnails": 0,
+          "non_diegetic": 0,
+          "captions": 0,
+          "descriptions": 0,
+          "metadata": 0,
+          "dependent": 0,
+          "still_image": 0,
+          "multilayer": 0
+        },
+        "tags": {
+          "language": "und",
+          "handler_name": "VideoHandler",
+          "vendor_id": "[0][0][0][0]"
+        }
+      },
+      "result": {
+        "experimental": true,
+        "warning": "实验功能：普通视频采用 NVOFA 估计光流及平面深度；遮挡/字幕/HDR 画质未完整验收。3×/4×目前仅限本机 RTX 4070 SUPER 与固定运行库，已知部分生成帧时间位置偏差。不会自动降倍率或位深；正常帧对生成无效时停止。",
+        "source": "E:\\dist\\DLSS5Tool\\tmp\\release-v3.1.0-20261027\\video-smoke-hdr\\pq-source.mp4",
+        "output": "E:\\dist\\DLSS5Tool\\tmp\\release-v3.1.0-20261027\\video-smoke-hdr\\pq-output.mp4",
+        "multiplier": 2,
+        "spatial_scale": 2,
+        "enhance": true,
+        "status": "complete",
+        "real_frames": 8,
+        "generated_frames": 7,
+        "cut_holds": 0,
+        "endpoint_holds": 1,
+        "super_resolution_adapter": {
+          "id": "dxgi:10DE:2783:27831ED3:000000A1:00000002EDD00000:P000001000",
+          "name": "NVIDIA GeForce RTX 4070 SUPER",
+          "preference_index": 0,
+          "vendor_id": 4318,
+          "device_id": 10115,
+          "subsys_id": 662904531,
+          "revision": 161,
+          "dedicated_video_memory": 12579766272,
+          "luid_high": 0,
+          "luid_low": 80762,
+          "d3d12_feature_level": "12_0",
+          "cuda_index": 0,
+          "pci_bus_id": "0000:01:00.0",
+          "backend": "cuda",
+          "verified": true
+        },
+        "width": 1920,
+        "height": 1080,
+        "source_rate": "30",
+        "output_rate": "60",
+        "enhancement_bypassed": false,
+        "enhancement_bypass": null,
+        "appearance_version": 1,
+        "composition_backend": "neutral-bypass",
+        "color": "hdr10_pq",
+        "output_view": 0,
+        "runtime_sha256": "135eaf0733c1e37381a8c28abcf7a862404a54132b81787c04e35d09efc5e36f",
+        "log_dir": "E:\\dist\\DLSS5Tool\\tmp\\release-v3.1.0-20261027\\video-smoke-hdr\\fg\\f1376181f716423a85c5f2d9c22e1397",
+        "source_frames": 8,
+        "source_metadata": {
+          "codec_name": "hevc",
+          "width": 960,
+          "height": 540,
+          "pix_fmt": "yuv420p10le",
+          "color_range": "tv",
+          "color_space": "bt2020nc",
+          "color_transfer": "smpte2084",
+          "color_primaries": "bt2020",
+          "chroma_location": "left",
+          "field_order": "progressive",
+          "r_frame_rate": "30/1",
+          "avg_frame_rate": "30/1",
+          "duration": "0.266667",
+          "nb_frames": "8",
+          "tags": {},
+          "codec_profile": "Main 10",
+          "fps": 30.0,
+          "frames": 8,
+          "pixel_format": "yuv420p10le",
+          "profile": "hdr10_pq",
+          "is_hdr": true,
+          "label": "HDR10 / PQ",
+          "decode_backend": "NVIDIA NVDEC（强制 GPU 解码）"
+        },
+        "scene_cuts": [],
+        "hdr_metadata": {
+          "codec_name": "hevc",
+          "width": 960,
+          "height": 540,
+          "pix_fmt": "yuv420p10le",
+          "color_range": "tv",
+          "color_space": "bt2020nc",
+          "color_transfer": "smpte2084",
+          "color_primaries": "bt2020",
+          "chroma_location": "left",
+          "field_order": "progressive",
+          "r_frame_rate": "30/1",
+          "avg_frame_rate": "30/1",
+          "duration": "0.266667",
+          "nb_frames": "8",
+          "tags": {},
+          "codec_profile": "Main 10",
+          "fps": 30.0,
+          "frames": 8,
+          "pixel_format": "yuv420p10le",
+          "profile": "hdr10_pq",
+          "is_hdr": true,
+          "label": "HDR10 / PQ",
+          "decode_backend": "NVIDIA NVDEC（强制 GPU 解码）"
+        },
+        "cache_hits": 9,
+        "cache_misses": 7,
+        "new_frames": 16,
+        "performance": {
+          "scope": "wall-time; overlapping stages are not additive",
+          "elapsed_seconds": 9.374738099999377,
+          "stages": {
+            "metadata_wait": {
+              "calls": 1,
+              "seconds": 4.49999060947448e-06,
+              "max_seconds": 4.49999060947448e-06,
+              "warm_calls": 0,
+              "warm_seconds": 0.0
+            },
+            "encoder_init": {
+              "calls": 1,
+              "seconds": 0.7758999000070617,
+              "max_seconds": 0.7758999000070617,
+              "warm_calls": 0,
+              "warm_seconds": 0.0
+            },
+            "render_wait": {
+              "calls": 16,
+              "seconds": 7.607705700036604,
+              "max_seconds": 3.901575200012303,
+              "warm_calls": 12,
+              "warm_seconds": 2.677500500009046
+            },
+            "encode_conversion": {
+              "calls": 16,
+              "seconds": 0.002567699979408644,
+              "max_seconds": 0.00046629999997094274,
+              "warm_calls": 12,
+              "warm_seconds": 0.0013309999922057614
+            },
+            "encode_write": {
+              "calls": 16,
+              "seconds": 0.7206665000412613,
+              "max_seconds": 0.6004089000052772,
+              "warm_calls": 12,
+              "warm_seconds": 0.6698348000354599
+            },
+            "encode_finish": {
+              "calls": 1,
+              "seconds": 0.26639520000026096,
+              "max_seconds": 0.26639520000026096,
+              "warm_calls": 0,
+              "warm_seconds": 0.0
+            }
+          },
+          "system_memory_samples": [
+            {
+              "seconds": 1.7600003047846258e-05,
+              "free_physical_bytes": 41617842176,
+              "free_commit_bytes": 28087721984
+            },
+            {
+              "seconds": 4.677918699992006,
+              "free_physical_bytes": 41098194944,
+              "free_commit_bytes": 27200757760
+            },
+            {
+              "seconds": 6.893464699998731,
+              "free_physical_bytes": 41058058240,
+              "free_commit_bytes": 27039682560
+            },
+            {
+              "seconds": 9.07311949999712,
+              "free_physical_bytes": 41114972160,
+              "free_commit_bytes": 27113504768
+            }
+          ]
+        },
+        "runtime_files": [
+          "E:\\dist\\DLSS5Tool\\v3.1.0\\base\\DLSS5Tool-v3.1.0\\_internal\\dlssg_video_worker.exe",
+          "E:\\dist\\DLSS5Tool\\v3.1.0\\base\\DLSS5Tool-v3.1.0\\_internal\\nvngx_dlssg.dll"
+        ]
+      }
+    }
+  },
+  "initial_failures": [
+    "Initial additional video check returned an adapter inventory, then exceeded the one-second retirement wait. The standalone frozen probe exited 0 normally, and the same frozen video check passed on retry. No claim of a permanent fix to that transient failure.",
+    "Initial synthetic HEVC fixture lacked PQ/BT.2020 transfer and primaries tags. Input generation was corrected and prevalidated; the real HDR frozen check preserved 10-bit PQ/BT.2020."
+  ],
+  "clean_machine_verified": false,
+  "long_video_stability_verified": false,
+  "cleanup_external": {
+    "records": [
+      {
+        "path": "E:\\dist\\DLSS5Tool\\tmp\\release-v3.1.0-20261027\\upgrade-lite",
+        "logical_bytes": 1103722487.0,
+        "free_before_bytes": 1121870999552,
+        "free_after_bytes": 1122978246656,
+        "observed_free_delta_bytes": 1107247104,
+        "remaining_bytes": 0,
+        "reports_archived": true,
+        "process_references": 0,
+        "exclusive_open_verified": true
+      },
+      {
+        "path": "E:\\dist\\DLSS5Tool\\v3.1.0\\base",
+        "logical_bytes": 1629443288.0,
+        "free_before_bytes": 1117077053440,
+        "free_after_bytes": 1118709362688,
+        "observed_free_delta_bytes": 1632309248,
+        "remaining_bytes": 0,
+        "process_references": 0,
+        "exclusive_open_verified": true,
+        "reparse_points": 0,
+        "archived_evidence_verified": true
+      },
+      {
+        "path": "E:\\dist\\DLSS5Tool\\v3.1.0\\editions\\DLSS5Tool-v3.1.0-win64-addon",
+        "logical_bytes": 4781669865.0,
+        "free_before_bytes": 1118709358592,
+        "free_after_bytes": 1123496042496,
+        "observed_free_delta_bytes": 4786683904,
+        "remaining_bytes": 0,
+        "process_references": 0,
+        "exclusive_open_verified": true,
+        "reparse_points": 0,
+        "archived_evidence_verified": true
+      },
+      {
+        "path": "E:\\dist\\DLSS5Tool\\tmp\\release-v3.1.0-20261027",
+        "logical_bytes": 5924546882.0,
+        "free_before_bytes": 1123496042496,
+        "free_after_bytes": 1129428807680,
+        "observed_free_delta_bytes": 5932765184,
+        "remaining_bytes": 0,
+        "process_references": 0,
+        "exclusive_open_verified": true,
+        "reparse_points": 0,
+        "archived_evidence_verified": true
+      }
+    ],
+    "logical_bytes_removed": 13439382522,
+    "observed_free_delta_bytes": 13459005440,
+    "remaining_temporary_bytes": 0
+  },
+  "cleanup_source": {
+    "path": "F:\\project\\DLSS5Tool\\tmp\\release-v310-20261027",
+    "logical_bytes": 327952.0,
+    "free_before_bytes": 97559072768,
+    "free_after_bytes": 97559683072,
+    "observed_free_delta_bytes": 610304,
+    "remaining_bytes": 0,
+    "exclusive_open_verified": true,
+    "reparse_points": 0,
+    "reports_archived": true
+  },
+  "remaining_task_temporary_bytes": 0
+}

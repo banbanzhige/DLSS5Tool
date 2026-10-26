@@ -1,0 +1,11 @@
+{
+  "path": "F:\\project\\DLSS5Tool\\tmp\\release-v310-20261027",
+  "logical_bytes": 327952.0,
+  "free_before_bytes": 97559072768,
+  "free_after_bytes": 97559683072,
+  "observed_free_delta_bytes": 610304,
+  "remaining_bytes": 0,
+  "exclusive_open_verified": true,
+  "reparse_points": 0,
+  "reports_archived": true
+}
