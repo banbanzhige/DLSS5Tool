@@ -35,12 +35,14 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--task', required=True, type=Path)
     parser.add_argument('--sdk', type=Path, default=ROOT/'tmp/RTX_Video_SDK_v1.1.0')
+    parser.add_argument('--cuda-headers', type=Path, help='Reuse an existing CUDA include directory')
+    parser.add_argument('--cudart', type=Path, help='Reuse the verified runtime DLL without copying it')
     args = parser.parse_args()
     task = safe(args.task, ROOT/'tmp')
     sdk = safe(args.sdk)
     if not (task/'TASK.md').is_file() or shutil.disk_usage(task).free < 17*1024**3:
         raise ValueError('Registered task and >=17 GiB free required')
-    cuda = safe(task/'cuda-runtime-12.8/nvidia/cuda_runtime', task)
+    cuda = safe(args.cuda_headers) if args.cuda_headers else safe(task/'cuda-runtime-12.8/nvidia/cuda_runtime/include', task)
     build = safe(task/'build', task)
     build.mkdir(exist_ok=True)
     vswhere = Path(os.environ.get('ProgramFiles(x86)', r'C:\Program Files (x86)'))/'Microsoft Visual Studio/Installer/vswhere.exe'
@@ -49,7 +51,7 @@ def main():
         check=True, capture_output=True, text=True).stdout.strip()
     vcvars = safe(found)
     driver = safe(Path(os.environ['SystemRoot'])/'System32/nvcuda.dll')
-    runtime = safe(cuda/'bin/cudart64_12.dll', task)
+    runtime = safe(args.cudart) if args.cudart else safe(cuda.parent/'bin/cudart64_12.dll', task)
     # The wheel ships headers/DLL, no .lib. Generate ordinary import libraries
     # from their actual exports rather than shipping another CUDA installation.
     commands = [f'@call "{vcvars}" >nul', '@if errorlevel 1 exit /b 1']
@@ -73,7 +75,7 @@ def main():
     source = ROOT/'native/vsr_cuda/vsr_cuda.cpp'
     output = build/'vsr_cuda.dll'
     commands.extend((f'@cl /nologo /std:c++17 /O2 /EHsc /MT /LD '
-        f'/I"{sdk}/include" /I"{cuda}/include" /Fo"{build}/vsr_cuda.obj" "{source}" '
+        f'/I"{sdk}/include" /I"{cuda}" /Fo"{build}/vsr_cuda.obj" "{source}" '
         f'"{sdk}/lib/Windows/x64/nvsdk_ngx_s.lib" "{build}/nvcuda.lib" "{build}/cudart64_12.lib" '
         f'Advapi32.lib User32.lib /link /OUT:"{output}" /PDB:"{build}/vsr_cuda.pdb" '
         f'/IMPLIB:"{build}/vsr_cuda.lib"', '@exit /b %errorlevel%'))
@@ -86,7 +88,7 @@ def main():
     result.check_returncode()
     record = dict(output=str(output), source_sha256=digest(source), output_sha256=digest(output),
         ngx_library_sha256=digest(sdk/'lib/Windows/x64/nvsdk_ngx_s.lib'),
-        cuda_header_sha256=digest(cuda/'include/cuda.h'), cudart_sha256=digest(runtime),
+        cuda_header_sha256=digest(cuda/'cuda.h'), cudart_sha256=digest(runtime),
         driver_sha256=digest(driver), vcvars=str(vcvars), command=commands[-2])
     (task/'build.json').write_text(json.dumps(record, indent=2), encoding='utf-8')
     return 0

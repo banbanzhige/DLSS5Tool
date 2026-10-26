@@ -159,14 +159,20 @@ def estimate_resources(width, height, scale, is_hdr=False, *, in_flight=None,
 
     # VSR owns one packed RGB input/output texture. DLSS owns color/output per
     # slot plus one zero-motion and one zero-depth target-resolution texture.
-    vsr_gpu = (source_pixels + output_pixels) * 4 if use_super_resolution else 0
+    gpu_hdr_conversion = bool(is_hdr and 1920*1080 <= output_pixels <= 3840*2160)
+    # Up to 4K the HDR host may own raw input/output and packed scratch buffers
+    # in addition to its NGX textures. Admit this worst case before spawning.
+    vsr_gpu = (source_pixels + output_pixels) * (16 if gpu_hdr_conversion else 4) if use_super_resolution else 0
     dlss_gpu = output_pixels * (2 * in_flight * frame_bpp + 8) if use_enhancement else 0
     known_gpu = vsr_gpu + dlss_gpu
 
     # Shared VSR input/output + its upload/readback + DLSS shared input/output,
     # plus two application-side target frames used for compose/write overlap.
     shared = (source_pixels + output_pixels) * frame_bpp if use_super_resolution else 0
-    staging = (source_pixels + output_pixels) * 4 if use_super_resolution else 0
+    if use_super_resolution and gpu_hdr_conversion:
+        staging = ((width*8+255)//256*256)*height + ((output_width*8+255)//256*256)*output_height
+    else:
+        staging = (source_pixels + output_pixels) * 4 if use_super_resolution else 0
     # DLSS upload/readback staging is allocated per queue slot, unlike IPC.
     dlss_staging = output_pixels * frame_bpp * 2 * in_flight if use_enhancement else 0
     dlss_shared = output_pixels * frame_bpp * 2 if use_enhancement else 0
@@ -268,6 +274,9 @@ def _load_host(host_path=None):
         library.vsr_init_adapter.restype = ctypes.c_int
         library.vsr_adapter_luid.argtypes = [ctypes.POINTER(ctypes.c_int32), ctypes.POINTER(ctypes.c_uint32)]
         library.vsr_adapter_luid.restype = ctypes.c_int
+    if hasattr(library, 'vsr_hdr_gpu_conversion'):
+        library.vsr_hdr_gpu_conversion.argtypes = []
+        library.vsr_hdr_gpu_conversion.restype = ctypes.c_int
     library._dll_directory_handle = dll_directory
     return library
 
@@ -297,8 +306,10 @@ def _initialize_host(library, width, height, scale, is_hdr, log_path, render_gpu
                  (high.value, low.value) != (selected['luid_high'], selected['luid_low']))):
             invalidate_render_adapters()
             raise SuperResolutionError('超分实际显卡与所选显卡不一致，任务已停止，请刷新显卡列表')
+        conversion = ('gpu-rgb10a2' if hasattr(library, 'vsr_hdr_gpu_conversion') and
+                      library.vsr_hdr_gpu_conversion() == 1 else 'cpu-rgb10a2') if is_hdr else 'direct-rgba8'
         return dict(selected or {}, luid_high=high.value, luid_low=low.value,
-                    verified=True, backend='d3d12', auto_selection=render_gpu == 'auto')
+                    verified=True, backend='d3d12', auto_selection=render_gpu == 'auto',hdr_conversion=conversion)
     if render_gpu != 'auto':
         raise SuperResolutionError('当前超分宿主不支持显式选卡，请更新 vsr_host.dll')
     if not library.vsr_init(*arguments):

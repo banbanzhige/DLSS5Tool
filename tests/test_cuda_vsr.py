@@ -33,6 +33,37 @@ class FakeCuda:
     def download(self, pointer, size): return bytes(self.buffers[pointer][:size])
 
 
+@pytest.mark.parametrize('profile', ['hdr10_pq', 'hdr10_hlg', 'scrgb'])
+def test_hdr_frame_keeps_half_bits_color_timing_and_pitched_lease(profile):
+    cuda = FakeCuda()
+    values = np.arange(4*8*4, dtype=np.uint16).reshape(4, 8, 4)
+    timing = FrameTiming(9, 27, Fraction(1, 90), True)
+    with CudaImage(cuda, 8, 4, row_pitch=80, layout='rgba16f', color_profile=profile) as image:
+        with image.upload(values.view(np.float16), timing) as frame:
+            assert frame.layout == 'rgba16f' and frame.color_profile == profile
+            assert frame.timing is timing and frame.nbytes == 320
+            np.testing.assert_array_equal(image.download(frame).view(np.uint16), values)
+            with pytest.raises(RuntimeError, match='held'): image.begin_write()
+        with pytest.raises(RuntimeError, match='expired'): _ = frame.pointer
+    assert not cuda.buffers
+
+
+@pytest.mark.parametrize('arguments', [dict(layout='rgba8', color_profile='hdr10_pq'),
+    dict(layout='rgba16f', color_profile='srgb'), dict(layout='rgba16f', color_profile='hdr10_pq', row_pitch=65)])
+def test_hdr_color_or_pitch_mismatch_rejected_before_allocation(arguments):
+    cuda = FakeCuda()
+    with pytest.raises(ValueError): CudaImage(cuda, 8, 4, **arguments)
+    assert not cuda.buffers
+
+
+def test_hdr_vsr_cannot_load_without_packing_contract():
+    with mock.patch('dlss5tool.cuda_vsr.C.WinDLL') as load:
+        with pytest.raises(ValueError, match='packing PTX'):
+            CudaVSR(FakeCuda(), 8, 4, 2, library_path='unused', cudart_directory='unused',
+                    runtime_directory='unused', log_path='unused', color_profile='hdr10_pq')
+    load.assert_not_called()
+
+
 @pytest.mark.parametrize('values', [dict(sequence=True), dict(sequence=-1), dict(sequence=0, pts=2),
     dict(sequence=0, time_base=Fraction(1, 30)), dict(sequence=0, pts=0, time_base=0.1),
     dict(sequence=0, pts=0, time_base=Fraction(-1, 30)), dict(sequence=0, reset=1)])

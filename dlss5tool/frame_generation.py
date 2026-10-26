@@ -63,10 +63,18 @@ def _read_exact(pipe, size):
 
 
 class NativeStream:
-    def __init__(self, width, height, multiplier, hdr, log_dir, cancel, *, gpu_worker=None):
+    def __init__(self, width, height, multiplier, hdr, log_dir, cancel, *, gpu_worker=None,
+                 cuda_session=None, color_profile=None, validate_cuda_frame=None):
         worker, runtime = runtime_files()
         self.gpu_mode=gpu_worker is not None
         self.shared_descriptor=None
+        self._cuda_input=None
+        self._source_frames=0
+        self._cuda_color=color_profile if hdr else 'srgb'
+        self._validate_cuda_frame=validate_cuda_frame
+        if cuda_session is not None and (gpu_worker is None or hdr and (
+                color_profile not in ('hdr10_pq','hdr10_hlg') or validate_cuda_frame is None)):
+            raise ValueError('Device FG requires an explicit GPU worker, HDR color and validator')
         if self.gpu_mode:worker=Path(gpu_worker).resolve(strict=True)
         if not worker.is_file() or not runtime.is_file():
             raise RuntimeError('缺少插帧组件。源码环境请先运行 scripts\\build_dlssg_video.bat。')
@@ -83,11 +91,11 @@ class NativeStream:
         try:
             self.proc = subprocess.Popen(
                 [str(worker), str(runtime.parent), str(log_dir), str(width), str(height), str(multiplier),
-                 'hdr-coded' if hdr else 'sdr', *(['gpu'] if self.gpu_mode else [])], stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+                 'hdr-coded' if hdr else 'sdr', *(['gpu-device' if cuda_session is not None else 'gpu'] if self.gpu_mode else [])], stdin=subprocess.PIPE, stdout=subprocess.PIPE,
                 stderr=self.log, cwd=log_dir, creationflags=getattr(subprocess, 'CREATE_NO_WINDOW', 0), bufsize=0,
             )
             magic, low, high = struct.unpack('<III', self.call(lambda: _read_exact(self.proc.stdout, 12)))
-            if magic != (0x32474746 if self.gpu_mode else 0x31474746):
+            if magic != (0x33474746 if cuda_session is not None else 0x32474746 if self.gpu_mode else 0x31474746):
                 raise RuntimeError('插帧组件协议不匹配')
             self.luid = (high << 32) | low
             if self.gpu_mode:
@@ -97,6 +105,13 @@ class NativeStream:
                 self.shared_descriptor=dict(producer_pid=pid,handle=handle,allocation=allocation,
                     size=pitch*height,producer_luid=self.luid)
                 self.shared_pitch=pitch
+            if cuda_session is not None:
+                from dlss5tool.cuda_interop import SharedCudaBuffer
+                handle,allocation,pitch,pid=struct.unpack('<QQQQ',self.call(lambda:_read_exact(self.proc.stdout,32)))
+                if pid!=self.proc.pid or pitch<width*(8 if hdr else 4) or pitch*height>allocation or allocation>1024**3:
+                    raise RuntimeError('Invalid GPU input descriptor')
+                self._cuda_input=SharedCudaBuffer(cuda_session,pid,handle,allocation,pitch*height,self.luid)
+                self._cuda_input_pitch=pitch
         except BaseException:
             self.close()
             raise
@@ -128,6 +143,7 @@ class NativeStream:
                 continue
 
     def process(self, rgba, motion, reset):
+        if getattr(self,'_cuda_input',None) is not None:raise RuntimeError('Device FG input requires a CUDA frame')
         if rgba.shape != self.shape or rgba.dtype != self.dtype:
             raise ValueError('插帧颜色尺寸或位深不匹配')
         if motion.shape != self.shape[:2] + (2,) or not np.isfinite(motion).all():
@@ -165,6 +181,7 @@ class NativeStream:
         fence, including all 3x/4x subframes. Callback failure kills the worker.
         """
         if not self.gpu_mode:raise RuntimeError('GPU worker protocol not negotiated')
+        if getattr(self,'_cuda_input',None) is not None:raise RuntimeError('Device FG input requires a CUDA frame')
         if rgba.shape!=self.shape or rgba.dtype!=self.dtype:raise ValueError('Wrong GPU input dimensions/type')
         if motion.shape!=self.shape[:2]+(2,) or not np.isfinite(motion).all():raise ValueError('Invalid motion')
         if self.dtype==np.float16 and (not np.isfinite(rgba).all() or rgba.min()<0 or rgba.max()>1):
@@ -195,6 +212,41 @@ class NativeStream:
         if self.proc.stdin.write(struct.pack('<I',0xA11CE001))!=4:raise RuntimeError('GPU ACK failed')
         self.proc.stdin.flush()
 
+    def process_cuda_frame(self,frame,motion,reset,consume):
+        """D2D input and completed output callbacks, with no full-frame pipe IO."""
+        from dlss5tool.cuda_frame import ReadyCudaFrame
+        if not isinstance(frame,ReadyCudaFrame):raise TypeError('Completed CUDA frame lease required')
+        frame._check()
+        if (self._cuda_input is None or (frame.width,frame.height)!=self.shape[:2][::-1]
+                or frame.layout!=('rgba16f' if self.dtype==np.float16 else 'rgba8')
+                or frame.color_profile!=self._cuda_color or frame.timing.sequence!=self._source_frames):
+            raise ValueError('FG GPU input owner/geometry/color/sequence mismatch')
+        if motion.shape!=self.shape[:2]+(2,) or not np.isfinite(motion).all():raise ValueError('Invalid motion')
+        if self._validate_cuda_frame is not None:self._validate_cuda_frame(frame)
+        self._cuda_input.copy_from(frame,self._cuda_input_pitch)
+        def send():
+            for block in (struct.pack('<I',int(bool(reset))|4|8),
+                          memoryview(np.ascontiguousarray(motion,dtype=np.float32)).cast('B')):
+                view=memoryview(block)
+                while view:
+                    count=self.proc.stdin.write(view)
+                    if not count:raise RuntimeError('GPU FG motion pipe closed')
+                    view=view[count:]
+            self.proc.stdin.flush()
+        try:
+            self.call(send)
+            for index in range(self.multiplier-1):
+                flag=struct.unpack('<I',self.call(lambda:_read_exact(self.proc.stdout,4)))[0]
+                if flag not in (0,1):raise RuntimeError('Invalid GPU frame validity flag')
+                check_cancel(self.cancel)
+                consume(index,flag==1)
+                self.call(lambda:self._ack_device())
+            self._source_frames+=1
+        except BaseException:
+            if self.proc.poll() is None:
+                self.proc.kill();self.proc.wait(timeout=5)
+            raise
+
     def close(self):
         if self.proc:
             try:
@@ -209,6 +261,8 @@ class NativeStream:
             for pipe in (self.proc.stdin, self.proc.stdout):
                 if pipe:
                     pipe.close()
+        if getattr(self,'_cuda_input',None) is not None:
+            self._cuda_input.close();self._cuda_input=None
         self.log.close()
 
 
@@ -449,15 +503,30 @@ def export_video(source, output, *, multiplier=2, scale=1, enhance=False, settin
         if direct_enhancement:
             config['_gpu_export_host']=str(gpu_export['host_library'])
             config['host_backend']='v2'
+        cached_components=cached_adapter=None
+        cached_device_fg=False
+        if (render_only and input_session is not None and not view and (ow,oh)==(process_w,process_h)
+                and 1920*1080<=ow*oh<=3840*2160 and config['color_profile'] in ('srgb','hdr10_pq','hdr10_hlg')):
+            from dlss5tool.resident_hdr_runtime import load_components as cached_gpu_components
+            from dlss5tool.device_cached import adapter_for
+            cached_components=cached_gpu_components()
+            if cached_components is not None:
+                cached_adapter=adapter_for(config,cached_components)
+                if cached_adapter is None:cached_components=None
         if multiplier > 1:
             _emit_progress(progress, i18n.tr('status.init_dlssg'), 0)
-        native = (NativeStream(ow,oh,multiplier,hdr,log_dir,cancel,
+        if multiplier>1 and cached_components is not None and cached_adapter.get('cuda_index') == 0:
+            from dlss5tool.device_cached import DeviceFrameGeneration
+            native=DeviceFrameGeneration(ow,oh,multiplier,hdr,log_dir,cancel,config,cached_components,cached_adapter)
+            cached_device_fg=True
+        else:
+            native = (NativeStream(ow,oh,multiplier,hdr,log_dir,cancel,
                   **({'gpu_worker':gpu_export['worker']} if gpu_export is not None else {}))
                   if multiplier>1 else None)
         need_reference = bool(view or render_only)
         from dlss5tool.nvofa import OpticalFlow, align_size
         fw, fh = align_size(ow, oh)
-        if native:
+        if native and not cached_device_fg:
             flow = OpticalFlow(fw, fh, grid=1)
             raw_luid = ctypes.create_string_buffer(8)
             node = ctypes.c_uint32()
@@ -475,7 +544,13 @@ def export_video(source, output, *, multiplier=2, scale=1, enhance=False, settin
         if creates_nr:
             from dlss5tool.dlss_host_process import ProcessLive
             _emit_progress(progress, i18n.tr('status.init_enhancement'), 0)
-            nr = measured('enhancement_init', ProcessLive, process_w, process_h, config)
+            if (cached_components is not None and not config.get('guidance_mode')
+                    and config.get('host_backend','auto') in ('auto','v2') and not config.get('host_tiled_mode')
+                    and config.get('host_submission','merged')=='merged' and config.get('host_persistent_buffers',True)):
+                from dlss5tool.device_cached import DeviceEnhancement
+                nr=measured('enhancement_init',DeviceEnhancement,process_w,process_h,config,cached_components,cached_adapter)
+            else:
+                nr = measured('enhancement_init', ProcessLive, process_w, process_h, config)
             if getattr(nr, 'adapter_info', None):
                 config['_composition_adapter'] = dict(nr.adapter_info)
         if input_session is None:
@@ -654,8 +729,19 @@ def export_video(source, output, *, multiplier=2, scale=1, enhance=False, settin
             rgba = final_size(rgba)
             if input_session is not None and config.get('_render_stage') == 'output' and reference is not None:
                 reference = final_size(reference)
-            proxy = analysis_rgba8(rgba, config) if native else None
-            if shared_output:
+            proxy = analysis_rgba8(rgba, config) if native and not cached_device_fg else None
+            if cached_device_fg:
+                def consume_cached_generated(subframe,valid,pixels):
+                    if previous is None:return
+                    if cut:
+                        write(previous,previous_reference);report['cut_holds']+=1
+                    else:
+                        if not valid:raise RuntimeError(f'帧对 {index-1}→{index} 返回无效插帧')
+                        write(pixels._owner.download(pixels),previous_reference)
+                        report['generated_frames']+=1
+                native.process_cached(rgba,previous is None or cut,consume_cached_generated)
+                frames,valid=[],True
+            elif shared_output:
                 motion=motion_for(proxy,previous_proxy,previous is None or cut)
                 def consume_generated(subframe,valid):
                     if previous is None:return
@@ -674,7 +760,7 @@ def export_video(source, output, *, multiplier=2, scale=1, enhance=False, settin
                 frames, valid = native.process(rgba, motion, reset=previous is None or cut)
             else:
                 frames, valid = [], True
-            if previous is not None and shared_output is None:
+            if previous is not None and shared_output is None and not cached_device_fg:
                 if not cut and not valid:
                     raise RuntimeError(f'帧对 {index-1}→{index} 返回无效插帧，已停止，未补重复帧')
                 for interpolated in frames:
@@ -690,7 +776,7 @@ def export_video(source, output, *, multiplier=2, scale=1, enhance=False, settin
             # Only FG needs independent previous-frame pixels. Ordinary SR/NR
             # retains a frame for endpoint bookkeeping, without another copy.
             previous = rgba.copy() if native else rgba
-            previous_proxy = proxy.copy() if native else None
+            previous_proxy = proxy.copy() if proxy is not None else None
             previous_reference = reference
             previous_scene_proxy = scene_proxy
             index += 1

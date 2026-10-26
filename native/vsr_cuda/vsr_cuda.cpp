@@ -25,6 +25,7 @@ struct Session {
     int width = 0, height = 0, scale = 0, quality = 4;
     FILE* log = nullptr;
     bool initialized = false;
+    bool hdr = false;
 };
 Session* active = nullptr;
 std::mutex api_mutex;
@@ -79,7 +80,7 @@ bool arrays(Session* s) {
     CUDA_ARRAY3D_DESCRIPTOR descriptor{};
     descriptor.Width = s->width;
     descriptor.Height = s->height;
-    descriptor.Format = CU_AD_FORMAT_UNSIGNED_INT8;
+    descriptor.Format = s->hdr ? CU_AD_FORMAT_UNORM_INT_101010_2 : CU_AD_FORMAT_UNSIGNED_INT8;
     descriptor.NumChannels = 4;
     descriptor.Flags = CUDA_ARRAY3D_SURFACE_LDST;
     if (!driver(s, cuArray3DCreate(&s->input, &descriptor), "input array")) return false;
@@ -101,9 +102,9 @@ bool arrays(Session* s) {
 
 extern "C" __declspec(dllexport) unsigned vsr_cuda_abi() { return 1; }
 
-extern "C" __declspec(dllexport) int vsr_cuda_create(
+static int Create(
     void* context, void* stream, int width, int height, int scale, int quality,
-    const wchar_t* runtime_directory, const wchar_t* log_path, void** result) {
+    const wchar_t* runtime_directory, const wchar_t* log_path, void** result, bool hdr) {
     std::lock_guard<std::mutex> lock(api_mutex);
     if (!result) return 0;
     *result = nullptr;
@@ -116,6 +117,7 @@ extern "C" __declspec(dllexport) int vsr_cuda_create(
     s->context = static_cast<CUcontext>(context);
     s->stream = static_cast<CUstream>(stream);
     s->width = width; s->height = height; s->scale = scale; s->quality = quality;
+    s->hdr = hdr;
     if (log_path) _wfopen_s(&s->log, log_path, L"w");
     log(s, "CUDA VSR input=%dx%d scale=%d quality=%d context=%p stream=%p",
         width, height, scale, quality, context, stream);
@@ -143,6 +145,19 @@ extern "C" __declspec(dllexport) int vsr_cuda_create(
         !s->feature || !arrays(s)) { release(s); return 0; }
     *result = s;
     return 1;
+}
+
+// Additive capability: the original RGBA8 ABI and entry point are unchanged.
+extern "C" __declspec(dllexport) unsigned vsr_cuda_hdr_abi() { return 1; }
+extern "C" __declspec(dllexport) int vsr_cuda_create(
+    void* context, void* stream, int width, int height, int scale, int quality,
+    const wchar_t* runtime_directory, const wchar_t* log_path, void** result) {
+    return Create(context, stream, width, height, scale, quality, runtime_directory, log_path, result, false);
+}
+extern "C" __declspec(dllexport) int vsr_cuda_create_hdr(
+    void* context, void* stream, int width, int height, int scale, int quality,
+    const wchar_t* runtime_directory, const wchar_t* log_path, void** result) {
+    return Create(context, stream, width, height, scale, quality, runtime_directory, log_path, result, true);
 }
 
 extern "C" __declspec(dllexport) int vsr_cuda_process(

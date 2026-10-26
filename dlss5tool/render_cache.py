@@ -107,7 +107,8 @@ def render_identity(source, settings):
     if settings.get('_render_stage') == 'spatial':
         payload = [2, file_identity(source), {k: settings.get(k) for k in
             ('hdr_mode', 'super_resolution_scale', 'render_gpu', 'decode_cpu_fallback')},
-            [file_identity(paths.runtime_root()/name) for name in ('vsr_host.dll', 'nvngx_vsr.dll')]]
+            [file_identity(paths.runtime_root()/name) for name in ('vsr_host.dll', 'nvngx_vsr.dll',
+                'resident-hdr/manifest.json','vsr-cuda/manifest.json')]]
         return hashlib.sha256(json.dumps(payload, sort_keys=True, default=str).encode()).hexdigest()
     # Include all inference-specific settings, but never the pool name, budget,
     # preview window/view, encoder container/quality, progress, or UI language.
@@ -120,7 +121,8 @@ def render_identity(source, settings):
     dependencies.extend(file_identity(p) for p in mod_paths.guidance_candidates(settings).values())
     if settings.get('guidance_mode'):
         dependencies.append(file_identity(mod_paths.enhancement_path(settings) / 'enhancement.json'))
-    for name in ('dlssnr_host_v2.dll', 'nvngx_dlssnr.dll', 'vsr_host.dll', 'nvngx_vsr.dll'):
+    for name in ('dlssnr_host_v2.dll', 'nvngx_dlssnr.dll', 'vsr_host.dll', 'nvngx_vsr.dll',
+                 'resident-hdr/manifest.json', 'resident-sr/manifest.json', 'vsr-cuda/manifest.json'):
         dependencies.append(file_identity(paths.runtime_root() / name))
     for key, value in sorted(settings.items()):
         if (isinstance(value, str) and value.strip() and not key.startswith('guidance_')
@@ -398,6 +400,15 @@ class RenderSession:
                             break
                         self.condition.wait(.1)
                     check_cancel(stop)
+                    return self.target
+            def skipped(index):
+                check_cancel(stop)
+                with self.condition:
+                    self.new_frames += 1
+                    if replaying and index < self.target:
+                        self.replayed_frames += 1
+                    self.produced = index
+                    self.condition.notify_all()
             def sink(index, processed, reference, *, mix_source=None, source_pair=None):
                 check_cancel(stop)
                 if reference is None:
@@ -448,6 +459,7 @@ class RenderSession:
                     self._publish()
                     self.condition.notify_all()
             sink.accepts_source_pair = True
+            sink.skip = skipped
             try:
                 result = self.renderer(self.source, None, multiplier=self.multiplier,
                     scale=int(self.settings.get('super_resolution_scale', 1)), enhance=True,
@@ -529,6 +541,15 @@ class RenderCache:
         values.update(frame_generation_multiplier=1,guidance_mode=0,output_size=None,_render_stage='spatial')
         key = render_identity(source, values)
         with self.lock:
+            device = self.base
+            desired_base={**appearance.raw_settings(settings),'frame_generation_multiplier':1,
+                          'output_mix':1,'output_size':None,'_render_stage':'base'}
+            if (getattr(device, 'device_preview', False) and device.key == render_identity(source, desired_base)
+                    and device.multiplier == 1 and not device.closed and not device.error):
+                with device.condition:
+                    count = (device.metadata or {}).get('source_frames', 0)
+                    if count and all(index in device.cache for index in range(count)):
+                        return True
             session = self.spatial
             if session is None or session.key != key or session.closed or session.error:
                 return False
@@ -551,6 +572,65 @@ class RenderCache:
                 # A failed worker must never be handed back to a later preview
                 # or export request.  Retire it before rebuilding the same key.
                 current.close()
+            base_settings = {**appearance.raw_settings(settings), 'frame_generation_multiplier':1,
+                             'output_mix':1, 'output_size':None, '_render_stage':'base'}
+            base_key = render_identity(source, base_settings)
+            spatial_settings = {k:settings[k] for k in ('hdr_mode','super_resolution_scale','render_gpu','decode_cpu_fallback') if k in settings}
+            spatial_settings.update(frame_generation_multiplier=1,guidance_mode=0,output_size=None,_render_stage='spatial')
+            spatial_key = render_identity(source,spatial_settings)
+            reuse_device_base = bool(getattr(self.base,'device_preview',False) and self.base.key==base_key
+                and not self.base.closed and not self.base.error)
+            # GPU base snapshots retain raw SR alongside NR and the labelled
+            # original. Seed those immutable SR pixels when NR parameters change.
+            # Changing only FG continues the same base owner and temporal state.
+            if getattr(self.base,'device_preview',False) and not reuse_device_base:
+                old = self.base
+                old_spatial = {k:old.settings[k] for k in ('hdr_mode','super_resolution_scale','render_gpu','decode_cpu_fallback') if k in old.settings}
+                old_spatial.update(frame_generation_multiplier=1,guidance_mode=0,output_size=None,_render_stage='spatial')
+                seeds=[];seed_metadata=None;seed_target=0
+                if render_identity(old.source,old_spatial)==spatial_key:
+                    with old.condition:
+                        seeds=[(index,RenderPair(pair.mix_source,pair[1],pair.mix_source)) for index,pair in old.cache.items()]
+                        seed_metadata=dict(old.metadata) if old.metadata else None
+                        seed_target=old.target
+                old.close();self.base=None
+                if seeds:
+                    from dlss5tool.resident_preview import render_preview
+                    def seeded_spatial_renderer(*args,**kwargs):
+                        kwargs['enhance']=False
+                        return render_preview(*args,**kwargs,source_inspector=lambda *v,**o:self.inspect(*v,**o,**decode_options(spatial_settings)))
+                    pool=None
+                    if self.pool_name:
+                        from dlss5tool.shared_cache_budget import SharedCacheBudget
+                        pool=SharedCacheBudget(self.pool_name)
+                    self.spatial=RenderSession(source,spatial_settings,self.limit//3,pool=pool,renderer=seeded_spatial_renderer)
+                    with self.spatial.condition:
+                        self.spatial.cache=OrderedDict(seeds)
+                        self.spatial.bytes=sum(_pair_bytes(pair) for _,pair in seeds)
+                        self.spatial.metadata=seed_metadata
+                        self.spatial.produced=max(index for index,_ in seeds)
+                        self.spatial.target=seed_target
+                        count=(seed_metadata or {}).get('source_frames',0)
+                        self.spatial.complete=bool(count and all(index in self.spatial.cache for index in range(count)))
+                        self.spatial.restart=not self.spatial.complete
+                        self.spatial.frame_bytes=_pair_bytes(seeds[0][1])
+                        self.spatial._trim(protect_target=True)
+            from dlss5tool.device_sr_plan import eligible_settings as device_settings
+            from dlss5tool.resident_hdr_runtime import load_components as device_components
+            components = device_components() if device_settings(base_settings) and self.spatial is None and not reuse_device_base else None
+            if components is not None:
+                self.close();latest()
+                from dlss5tool.resident_preview import render_preview
+                def device_renderer(*args,**kwargs):
+                    return render_preview(*args,**kwargs,components=components,
+                        source_inspector=lambda *v,**o:self.inspect(*v,**o,**decode_options(base_settings)))
+                pool=None
+                if self.pool_name:
+                    from dlss5tool.shared_cache_budget import SharedCacheBudget
+                    pool=SharedCacheBudget(self.pool_name)
+                self.base=RenderSession(source,base_settings,self.limit,pool=pool,renderer=device_renderer)
+                self.base.device_preview=True
+                reuse_device_base=True
             # SR + NR and FG have separate identities. Changing only the FG
             # multiplier retires the FG worker, not the full-quality SR/NR cache.
             for old in self.sessions.values():
@@ -575,7 +655,7 @@ class RenderCache:
             spatial_settings.update(frame_generation_multiplier=1, guidance_mode=0, output_size=None,
                                     _render_stage='spatial')
             spatial_key = render_identity(source, spatial_settings)
-            if (self.spatial is None or self.spatial.key != spatial_key
+            if not reuse_device_base and (self.spatial is None or self.spatial.key != spatial_key
                     or self.spatial.closed or self.spatial.error):
                 if self.base:
                     self.base.close()
@@ -590,7 +670,7 @@ class RenderCache:
                     return export_video(*args, **kwargs, source_inspector=inspect_policy)
                 self.spatial = RenderSession(source, spatial_settings, base_limit,
                                              pool=lease(), renderer=spatial_renderer)
-            else:
+            elif self.spatial is not None:
                 self.spatial.set_limit(base_limit)
             if (self.base is None or self.base.key != base_key
                     or self.base.closed or self.base.error):
@@ -604,7 +684,7 @@ class RenderCache:
                 self.base = RenderSession(source, base_settings, base_limit, pool=lease(), renderer=base_renderer)
                 self.base.upstream = spatial
             else:
-                self.base.set_limit(base_limit)
+                self.base.set_limit(self.limit*2//3 if layers==3 else self.limit) if reuse_device_base else self.base.set_limit(base_limit)
             if layers == 2:
                 current = self.base
             else:
@@ -621,6 +701,11 @@ class RenderCache:
         with self.lock:
             self.limit = int(limit)
             derived = [s for s in self.sessions.values() if s is not self.base]
+            if getattr(self.base,'device_preview',False) and self.spatial is None:
+                base_share=limit*2//3 if derived else limit
+                self.base.set_limit(base_share)
+                for session in derived:session.set_limit(limit-base_share)
+                return
             share = limit//(3 if derived else 2)
             if self.spatial:
                 self.spatial.set_limit(share)

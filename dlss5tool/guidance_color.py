@@ -4,6 +4,7 @@ The enhancement worker retains its RGBA8 protocol. Only motion analysis sees
 this SDR copy; native rendering and encoding retain the original RGBA16F.
 Rows are bounded so a large HDR frame does not require whole-frame FP32 copies.
 """
+from functools import lru_cache
 import numpy as np
 
 from dlss5tool.video_export import _pq_eotf, _hlg_eotf
@@ -44,6 +45,26 @@ def validate_analysis_frame(frame, settings):
             raise ValueError('HDR guidance input contains non-finite pixels')
 
 
+@lru_cache(maxsize=2)
+def _half_hdr_linear_table(profile):
+    """Evaluate the unchanged EOTF once for every half encoding, not per pixel.
+
+    Only finite RGB indices are consumed. Keep NumPy's resulting dtype (HLG
+    currently yields float64); downcasting would change the analysis proxy.
+    """
+    values = np.arange(65536, dtype=np.uint16).view(np.float16).astype(np.float32)
+    values[~np.isfinite(values)] = 0
+    values = np.clip(values, 0, 1)
+    if profile == 'hdr10_pq':
+        result = _pq_eotf(values) * 100.0
+    elif profile == 'hdr10_hlg':
+        result = _hlg_eotf(values) * 12.0
+    else:
+        raise ValueError('Half EOTF table requires PQ or HLG')
+    result.flags.writeable = False
+    return result
+
+
 def analysis_rgba8(frame, settings):
     if settings.get('frame_format', 'rgba8') != 'rgba16f':
         if frame.dtype != np.uint8:
@@ -52,15 +73,22 @@ def analysis_rgba8(frame, settings):
     profile, primaries = _hdr_analysis_format(frame, settings)
     result = np.empty(frame.shape, dtype=np.uint8)
     for top in range(0, frame.shape[0], 128):
-        rgb = frame[top:top + 128, :, :3].astype(np.float32)
-        if not np.isfinite(rgb).all():
-            raise ValueError('HDR guidance input contains non-finite pixels')
-        if profile == 'hdr10_pq':
-            linear = _pq_eotf(np.clip(rgb, 0, 1)) * 100.0
-        elif profile == 'hdr10_hlg':
-            linear = _hlg_eotf(np.clip(rgb, 0, 1)) * 12.0
+        block = frame[top:top + 128, :, :3]
+        if frame.dtype == np.float16 and frame.flags.c_contiguous and profile != 'scrgb':
+            bits = block.view(np.uint16)
+            if np.any((bits & 0x7c00) == 0x7c00):
+                raise ValueError('HDR guidance input contains non-finite pixels')
+            linear = _half_hdr_linear_table(profile)[bits]
         else:
-            linear = rgb  # linear BT.709; signed/over-white render values stay intact
+            rgb = block.astype(np.float32)
+            if not np.isfinite(rgb).all():
+                raise ValueError('HDR guidance input contains non-finite pixels')
+            if profile == 'hdr10_pq':
+                linear = _pq_eotf(np.clip(rgb, 0, 1)) * 100.0
+            elif profile == 'hdr10_hlg':
+                linear = _hlg_eotf(np.clip(rgb, 0, 1)) * 12.0
+            else:
+                linear = rgb  # linear BT.709; signed/over-white render values stay intact
         if profile != 'scrgb' and primaries == 'bt2020':
             linear = np.einsum('...c,dc->...d', linear, _BT2020_TO_709)
         linear = np.maximum(linear, 0)

@@ -16,6 +16,7 @@
 #include <cstdio>
 #include <cstring>
 #include <string>
+#include "hdr_gpu_conversion.h"
 
 #pragma comment(lib, "d3d12.lib")
 #pragma comment(lib, "dxgi.lib")
@@ -48,7 +49,9 @@ UINT g_input_width = 0;
 UINT g_input_height = 0;
 UINT g_output_width = 0;
 UINT g_output_height = 0;
-bool g_hdr = false;
+bool g_hdr = false; // External HDR wire format remains RGBA16F.
+bool g_hdr_gpu = false;
+vsr_hdr::Conversion g_hdr_conversion;
 unsigned int g_quality = 4;
 FILE *g_log = nullptr;
 bool g_adapter_requested = false;
@@ -276,6 +279,7 @@ uint32_t Pack10(float r, float g, float b)
 
 void CopyInput(const void *input)
 {
+    if (g_hdr_gpu) { g_hdr_conversion.CopyInput(input); return; }
     const size_t row_bytes = static_cast<size_t>(g_input_width) * 4;
     auto *destination = g_upload_map + g_input_footprint.Offset;
     if (!g_hdr)
@@ -302,6 +306,7 @@ void CopyInput(const void *input)
 
 void CopyOutput(void *output)
 {
+    if (g_hdr_gpu) { g_hdr_conversion.CopyOutput(output); return; }
     const auto *source = g_readback_map + g_output_footprint.Offset;
     const size_t row_bytes = static_cast<size_t>(g_output_width) * 4;
     if (!g_hdr)
@@ -408,6 +413,8 @@ void Shutdown()
         g_upload->Unmap(0, nullptr);
     if (g_readback != nullptr && g_readback_map != nullptr)
         g_readback->Unmap(0, nullptr);
+    g_hdr_conversion.Close();
+    g_hdr_gpu = false;
     g_upload_map = nullptr;
     g_readback_map = nullptr;
     Release(g_upload);
@@ -469,11 +476,20 @@ int InitializeVSR(
     g_input = CreateTexture(g_input_width, g_input_height, format, D3D12_RESOURCE_FLAG_NONE);
     g_output = CreateTexture(g_output_width, g_output_height, format,
                              D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS);
-    if (g_input == nullptr || g_output == nullptr ||
+    if (g_input == nullptr || g_output == nullptr) {
+        Log("texture allocation failed"); Shutdown(); return 0;
+    }
+    const UINT64 hdr_pixels = UINT64(g_output_width)*g_output_height;
+    g_hdr_gpu = g_hdr && hdr_pixels >= 1920ull*1080 && hdr_pixels <= 3840ull*2160 &&
+        g_hdr_conversion.Initialize(g_device,g_input,g_output);
+    Log("HDR conversion: %s", g_hdr_gpu ? "GPU RGBA16F/RGB10A2" : "CPU compatibility");
+    // Choose one conversion route before the first frame. An active GPU route
+    // never switches implementation after a failed submission/evaluation.
+    if (!g_hdr_gpu && (
         !CreateStaging(g_input, D3D12_HEAP_TYPE_UPLOAD, &g_upload, &g_input_footprint,
                        &g_input_staging_size, &g_upload_map) ||
         !CreateStaging(g_output, D3D12_HEAP_TYPE_READBACK, &g_readback, &g_output_footprint,
-                       &g_output_staging_size, &g_readback_map))
+                       &g_output_staging_size, &g_readback_map)))
     {
         Log("texture/staging allocation failed");
         Shutdown();
@@ -555,7 +571,8 @@ extern "C" __declspec(dllexport) int vsr_process(const void *input_rgba, void *o
     CopyInput(input_rgba);
     if (!BeginCommands())
         return 0;
-    RecordUpload();
+    if (g_hdr_gpu) g_hdr_conversion.RecordUpload(g_list,g_input);
+    else RecordUpload();
     NVSDK_NGX_D3D12_VSR_Eval_Params parameters = {};
     parameters.pInput = g_input;
     parameters.pOutput = g_output;
@@ -570,7 +587,8 @@ extern "C" __declspec(dllexport) int vsr_process(const void *input_rgba, void *o
         g_list->Close();
         return 0;
     }
-    RecordReadback();
+    if (g_hdr_gpu) g_hdr_conversion.RecordReadback(g_list,g_output);
+    else RecordReadback();
     if (!ExecuteAndWait())
         return 0;
     CopyOutput(output_rgba);
@@ -580,4 +598,9 @@ extern "C" __declspec(dllexport) int vsr_process(const void *input_rgba, void *o
 extern "C" __declspec(dllexport) void vsr_shutdown()
 {
     Shutdown();
+}
+
+extern "C" __declspec(dllexport) int vsr_hdr_gpu_conversion()
+{
+    return g_hdr_gpu ? 1 : 0;
 }

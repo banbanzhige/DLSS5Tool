@@ -495,20 +495,52 @@ D3D12_RESOURCE_BARRIER Transition(
     return barrier;
 }
 
+namespace gpu_input {
+ID3D12Resource* buffer=nullptr;
+ID3D12Resource* texture=nullptr; // borrowed; tied to this feature geometry
+HANDLE handle=nullptr;
+D3D12_PLACED_SUBRESOURCE_FOOTPRINT footprint{};
+bool active=false;
+void Close() {
+    active=false;Release(buffer);texture=nullptr;
+    if(handle) CloseHandle(handle);
+    handle=nullptr;footprint={};
+}
+bool Create(ID3D12Resource* target) {
+    if(buffer || !target) return false;
+    auto desc=target->GetDesc();UINT64 size=0;
+    g_device->GetCopyableFootprints(&desc,0,1,0,&footprint,nullptr,nullptr,&size);
+    auto bufferDesc=BufferDescription(size);auto heap=HeapProperties(D3D12_HEAP_TYPE_DEFAULT);
+    if(FAILED(g_device->CreateCommittedResource(&heap,D3D12_HEAP_FLAG_SHARED,&bufferDesc,
+        D3D12_RESOURCE_STATE_COMMON,nullptr,IID_PPV_ARGS(&buffer)))) return false;
+    if(FAILED(g_device->CreateSharedHandle(buffer,nullptr,GENERIC_ALL,nullptr,&handle))) {Close();return false;}
+    texture=target;return true;
+}
+}
+
 void RecordUpload(
     ID3D12GraphicsCommandList *list, const Staging &staging, ID3D12Resource *texture)
 {
     auto to_copy = Transition(texture, D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_COPY_DEST);
     list->ResourceBarrier(1, &to_copy);
     D3D12_TEXTURE_COPY_LOCATION source = {};
-    source.pResource = staging.resource;
+    const bool shared=gpu_input::active && gpu_input::texture==texture;
+    if(shared) {
+        auto barrier=Transition(gpu_input::buffer,D3D12_RESOURCE_STATE_COMMON,D3D12_RESOURCE_STATE_COPY_SOURCE);
+        list->ResourceBarrier(1,&barrier);
+    }
+    source.pResource = shared ? gpu_input::buffer : staging.resource;
     source.Type = D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT;
-    source.PlacedFootprint = staging.footprint;
+    source.PlacedFootprint = shared ? gpu_input::footprint : staging.footprint;
     D3D12_TEXTURE_COPY_LOCATION destination = {};
     destination.pResource = texture;
     destination.Type = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX;
     destination.SubresourceIndex = 0;
     list->CopyTextureRegion(&destination, 0, 0, 0, &source, nullptr);
+    if(shared) {
+        auto barrier=Transition(gpu_input::buffer,D3D12_RESOURCE_STATE_COPY_SOURCE,D3D12_RESOURCE_STATE_COMMON);
+        list->ResourceBarrier(1,&barrier);
+    }
     auto to_common = Transition(texture, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_COMMON);
     list->ResourceBarrier(1, &to_common);
 }
@@ -1114,7 +1146,9 @@ bool EnqueueFrame(const void *color, const float *motion, const float *depth, bo
     const bool gpu_motion = gpu_flow::armed_slot == index;
     gpu_flow::armed_slot = -1;
 
-    CopyRowsToStaging(slot.color_upload, color, FrameRowPitch());
+    if(gpu_input::active) {
+        if(gpu_input::texture!=slot.color) return false;
+    } else CopyRowsToStaging(slot.color_upload, color, FrameRowPitch());
     if (!g_config.zero_guidance_fast_path)
     {
         if (!gpu_motion) PrepareMotion(slot.motion_upload, motion);
@@ -1430,6 +1464,7 @@ void ShutdownInternal()
 {
     ReleaseFeatureResources();
     gpu_output::Close();
+    gpu_input::Close();
     if (g_initialized && g_device != nullptr)
     {
         __try
@@ -1658,6 +1693,7 @@ extern "C" __declspec(dllexport) int dlssnr_init(
 
 extern "C" __declspec(dllexport) int dlssnr_create_feature(int width, int height, int preset)
 {
+    if (gpu_input::buffer) return 0;
     Log("=== create Feature 18 v2 w=%d h=%d preset=%d ===", width, height, preset);
     return CreateFeatureResources(
         static_cast<UINT>(std::max(width, 0)),
@@ -1666,6 +1702,7 @@ extern "C" __declspec(dllexport) int dlssnr_create_feature(int width, int height
 
 extern "C" __declspec(dllexport) int dlssnr_resize(int width, int height, int preset)
 {
+    if (gpu_input::buffer) return 0;
     Log("=== resize Feature 18 v2 w=%d h=%d preset=%d ===", width, height, preset);
     return CreateFeatureResources(
         static_cast<UINT>(std::max(width, 0)),
@@ -1754,6 +1791,33 @@ extern "C" __declspec(dllexport) int dlssnr_gpu_output_create(
     *pitch=staging.footprint.Footprint.RowPitch;*luid=(uint64_t(uint32_t(identity.HighPart))<<32)|identity.LowPart;
     gpu_output::width=g_width;gpu_output::height=g_height;gpu_output::pitch=*pitch;
     return 1;
+}
+
+extern "C" __declspec(dllexport) int dlssnr_gpu_input_create(
+    HANDLE* handle,unsigned long long* allocation,unsigned* pitch,unsigned long long* luid) {
+    if(!g_ready || g_needs_recreate || g_pending_count || g_slot_count!=1 || g_config.tiled_subrects ||
+       !g_config.persistent_buffers || !g_config.merged_submission || g_config.auto_fallback ||
+       !handle || !allocation || !pitch || !luid || !gpu_input::Create(g_slots[0].color)) return 0;
+    auto desc=gpu_input::buffer->GetDesc();auto identity=g_device->GetAdapterLuid();
+    *handle=gpu_input::handle;*allocation=g_device->GetResourceAllocationInfo(0,1,&desc).SizeInBytes;
+    *pitch=gpu_input::footprint.Footprint.RowPitch;
+    *luid=(uint64_t(uint32_t(identity.HighPart))<<32)|identity.LowPart;
+    return 1;
+}
+
+extern "C" __declspec(dllexport) int dlssnr_process_gpu_input(
+    const void* motion,const void* depth,int reset) {
+    if(!gpu_input::buffer || !gpu_output::buffer || gpu_input::active || gpu_output::active ||
+       !g_ready || g_needs_recreate || g_pending_count || g_slot_count!=1 || g_config.tiled_subrects ||
+       !g_config.persistent_buffers || !g_config.merged_submission || g_config.auto_fallback ||
+       gpu_input::texture!=g_slots[0].color || gpu_input::footprint.Footprint.Width!=g_width ||
+       gpu_input::footprint.Footprint.Height!=g_height || gpu_output::width!=g_width || gpu_output::height!=g_height) return 0;
+    // The CUDA producer completed before this request. Return only after the
+    // D3D fence so input/output leases cannot be overwritten during evaluation.
+    gpu_input::active=gpu_output::active=true;
+    const int result=dlssnr_process(reinterpret_cast<void*>(1),motion,depth,reinterpret_cast<void*>(1),reset);
+    gpu_input::active=gpu_output::active=false;
+    return result;
 }
 
 extern "C" __declspec(dllexport) int dlssnr_process_gpu_output(

@@ -41,7 +41,7 @@ if not exist "%RTX_LIB%" (
 )
 
 cl /nologo /std:c++17 /O2 /EHsc /MT /LD /I"%RTX_INCLUDE%" /Fo"%INTERMEDIATE%\vsr_host.obj" ^
-  "%~dp0vsr_host.cpp" "%RTX_LIB%" D3D12.lib DXGI.lib Advapi32.lib User32.lib ^
+  "%~dp0vsr_host.cpp" "%RTX_LIB%" D3D12.lib DXGI.lib D3DCompiler.lib Advapi32.lib User32.lib ^
   /link /OUT:"%OUTPUT%\vsr_host.dll" /PDB:"%INTERMEDIATE%\vsr_host.pdb" /IMPLIB:"%INTERMEDIATE%\vsr_host.lib"
 if errorlevel 1 exit /b %errorlevel%
 

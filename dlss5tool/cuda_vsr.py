@@ -28,11 +28,16 @@ class CudaVSR:
             log_path=log_path)
 
     def __init__(self, session, width, height, scale, *, library_path, cudart_directory,
-                 runtime_directory, log_path, quality=4):
+                 runtime_directory, log_path, quality=4, color_profile='srgb', hdr_ptx=None):
         if any(type(value) is not int for value in (width, height, scale, quality)) or scale not in (2, 4):
             raise ValueError('Integer CUDA VSR geometry and 2x/4x scale required')
         if quality != 4:
             raise ValueError('CUDA VSR currently validates highest quality only')
+        if color_profile not in ('srgb', 'hdr10_pq', 'hdr10_hlg'):
+            raise ValueError('CUDA VSR requires SDR or transfer-coded PQ/HLG')
+        hdr = color_profile != 'srgb'
+        if hdr and hdr_ptx is None:
+            raise ValueError('HDR VSR requires its verified packing PTX')
         ow, oh = validate_dimensions(width, height, scale)
         session._check()
         self.session, self.width, self.height, self.scale = session, width, height, scale
@@ -41,6 +46,7 @@ class CudaVSR:
         self._handle, self._stream = C.c_void_p(), C.c_void_p()
         self._output, self._dll_directory = None, None
         self._library = None
+        self._hdr_packing = None
         for value in (library_path, cudart_directory, runtime_directory):
             path = Path(value).absolute()
             if path.resolve() != path:
@@ -54,7 +60,9 @@ class CudaVSR:
             abi = bind(self._library, 'vsr_cuda_abi', [], C.c_uint)
             if abi() != 1:
                 raise RuntimeError('CUDA VSR ABI mismatch')
-            self._create = bind(self._library, 'vsr_cuda_create',
+            if hdr and bind(self._library, 'vsr_cuda_hdr_abi', [], C.c_uint)() != 1:
+                raise RuntimeError('CUDA HDR VSR ABI mismatch')
+            self._create = bind(self._library, 'vsr_cuda_create_hdr' if hdr else 'vsr_cuda_create',
                 [C.c_void_p, C.c_void_p, C.c_int, C.c_int, C.c_int, C.c_int,
                  C.c_wchar_p, C.c_wchar_p, C.POINTER(C.c_void_p)])
             self._process = bind(self._library, 'vsr_cuda_process',
@@ -70,7 +78,11 @@ class CudaVSR:
                             str(Path(runtime_directory).resolve(strict=True)), str(log_path), C.byref(self._handle)):
                         raise RuntimeError('CUDA VSR initialization failed; inspect native log')
                     if ticket: ticket.consume((width*height+ow*oh)*4)
-            self._output = CudaImage(session, ow, oh)
+            self._output = CudaImage(session, ow, oh, layout='rgba16f' if hdr else 'rgba8',
+                                     color_profile=color_profile)
+            if hdr:
+                from dlss5tool.cuda_hdr_pack import CudaHdrPacking
+                self._hdr_packing = CudaHdrPacking(session, hdr_ptx, width, height, scale)
         except BaseException as error:
             try: self.close()
             except BaseException as cleanup:
@@ -93,12 +105,23 @@ class CudaVSR:
                 frame.adapter_luid != self.session.luid):
             raise ValueError('CUDA VSR input must belong to the same physical GPU and context owner')
         if (frame.width, frame.height, frame.layout, frame.color_profile) != (
-                self.width, self.height, 'rgba8', 'srgb'):
+                self.width, self.height, self._output.layout, self._output.color_profile):
             raise ValueError('CUDA VSR input geometry/color/layout mismatch')
         output = self._output.begin_write()
         try:
             with self.session.current():
-                if not self._process(self._handle, frame.pointer, frame.row_pitch, output, self._output.row_pitch):
+                packing = getattr(self, '_hdr_packing', None)
+                if packing:
+                    source, target = packing._buffers
+                    packing.convert('vsr_pack', frame.pointer, source, self.width, self.height,
+                                    frame.row_pitch, self.width*4)
+                    ok = self._process(self._handle, source, self.width*4, target, self.width*self.scale*4)
+                    if ok:
+                        packing.convert('vsr_unpack', target, output, self.width*self.scale,
+                                        self.height*self.scale, self.width*self.scale*4, self._output.row_pitch)
+                else:
+                    ok = self._process(self._handle, frame.pointer, frame.row_pitch, output, self._output.row_pitch)
+                if not ok:
                     raise RuntimeError('CUDA VSR evaluation failed; retire this worker')
         except BaseException:
             self._failed = True
@@ -118,6 +141,9 @@ class CudaVSR:
         if self._output:
             self._output.close()
             self._output = None
+        if getattr(self, '_hdr_packing', None):
+            self._hdr_packing.close()
+            self._hdr_packing = None
         with self.session.current():
             if self._handle.value:
                 if not self._destroy(self._handle):

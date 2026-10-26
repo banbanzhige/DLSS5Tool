@@ -12,6 +12,22 @@ from dlss5tool.cuda_frame import CudaImage, FrameTiming
 from dlss5tool.gpu_video_export import NativeGpuVideoWriter
 
 
+@pytest.mark.parametrize('profile', ['hdr10_pq', 'hdr10_hlg'])
+def test_hdr_encoder_accepts_only_matching_completed_half_color_lease(profile):
+    cuda = session()
+    writer = NativeGpuVideoWriter.__new__(NativeGpuVideoWriter)
+    writer._cuda, writer.adapter_luid = cuda, cuda.luid
+    writer.is_hdr, writer.color_profile = True, profile
+    writer.width, writer.height, writer._frames = 8, 4, 0
+    writer.write_device = mock.Mock()
+    with CudaImage(cuda, 8, 4, row_pitch=80, layout='rgba16f', color_profile=profile) as image:
+        with image.complete(FrameTiming(0)) as frame:
+            writer.write_cuda_frame(frame)
+            writer.write_device.assert_called_once_with(frame.pointer, frame.nbytes, 'rgba16f', cuda.luid, 80, strict_hdr=True)
+            writer.color_profile = 'hdr10_hlg' if profile == 'hdr10_pq' else 'hdr10_pq'
+            with pytest.raises(ValueError, match='format'): writer.write_cuda_frame(frame)
+
+
 def session():
     cuda = mock.Mock(luid=123,context=C.c_void_p(456),device=C.c_int(0))
     cuda.current.side_effect = nullcontext

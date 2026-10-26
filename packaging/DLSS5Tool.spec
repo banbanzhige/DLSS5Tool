@@ -22,7 +22,12 @@ datas.append((os.path.join(project_root, 'third_party', 'NVIDIA-DLSS', 'LICENSE.
 binaries = []
 hiddenimports = ['dlss5tool.cuda_frame', 'dlss5tool.cuda_vsr', 'dlss5tool.cuda_vsr_runtime',
                  'dlss5tool.cuda_nv12', 'dlss5tool.resident_sr', 'dlss5tool.resident_sr_worker',
-                 'dlss5tool.resident_sr_runtime']
+                 'dlss5tool.resident_sr_runtime', 'dlss5tool.resident_hdr',
+                 'dlss5tool.resident_hdr_runtime', 'dlss5tool.resident_preview',
+                 'dlss5tool.resident_preview_worker', 'dlss5tool.device_consumers',
+                 'dlss5tool.device_cached', 'dlss5tool.device_memory',
+                 'dlss5tool.cuda_analysis', 'dlss5tool.analysis_quantization',
+                 'dlss5tool.cuda_hdr_pack', 'dlss5tool.cuda_p010', 'dlss5tool.device_sr_plan']
 
 # A source checkout with realtime must build and include it, or fail loudly.
 # GPL/proprietary combination clearance is independent of local GPU verification.
@@ -108,6 +113,23 @@ if resident_sr:
     datas.append((os.path.join(resident_root, 'manifest.json'), 'resident-sr'))
     for field in RESIDENT_SR_FILES:
         datas.append((resident_sr[field], 'resident-sr'))
+
+from dlss5tool.resident_hdr_runtime import load_components as load_resident_hdr, FILES as RESIDENT_HDR_FILES
+resident_hdr_root = os.path.join(project_root, 'runtime', 'resident-hdr')
+resident_hdr_manifest = os.path.join(resident_hdr_root, 'manifest.json')
+resident_hdr = load_resident_hdr()
+if os.path.isfile(resident_hdr_manifest) and resident_hdr is None:
+    raise SystemExit('Registered resident HDR components differ from their accepted dependencies or CPU dispatch.')
+if resident_hdr:
+    import json
+    with open(resident_hdr_manifest, encoding='utf-8') as source:
+        resident_hdr_record = json.load(source)
+    if not resident_hdr_record.get('packaging_license_review_complete') and os.environ.get('DLSS5_LOCAL_CANDIDATE') != '1':
+        raise SystemExit('Resident HDR distribution review pending; use -LocalCandidate for local validation.')
+    datas.append((resident_hdr_manifest, 'resident-hdr'))
+    for field, filename in RESIDENT_HDR_FILES.items():
+        collection = binaries if filename.endswith(('.dll', '.exe')) else datas
+        collection.append((resident_hdr[field], 'resident-hdr'))
 
 for filename, required in (
     ("dlssnr_host_v2.dll", True),

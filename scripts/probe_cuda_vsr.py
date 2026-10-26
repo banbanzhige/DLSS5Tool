@@ -37,6 +37,9 @@ def main():
     parser.add_argument('--installed-components', action='store_true', help='Use verified runtime CUDA component discovery')
     parser.add_argument('--decode-contract', action='store_true', help='Validate current PyAV resident NVDEC/DLPack/context contract')
     parser.add_argument('--decode-current-context', action='store_true', help='NVDEC borrows the already-current CUDA owner context')
+    parser.add_argument('--no-snapshots', action='store_true', help='Keep hashes, omit rebuildable full-frame NPY snapshots')
+    parser.add_argument('--hdr-ptx', type=Path, help='Registered CUDA half/packed10 conversion candidate')
+    parser.add_argument('--cudart-directory', type=Path, help='Reuse the verified installed CUDA runtime directory')
     parser.add_argument('--worker', action='store_true')
     args = parser.parse_args()
     task = safe(args.task, ROOT/'tmp')
@@ -48,8 +51,8 @@ def main():
     report_path = task/f'{args.label}.json'
     if report_path.exists():
         raise ValueError('Refusing evidence overwrite')
-    if args.hdr and args.backend != 'd3d12':
-        raise ValueError('CUDA backend acceptance currently covers SDR RGBA8 only')
+    if args.hdr and args.backend == 'cuda' and (not args.hdr_ptx or args.installed_components):
+        raise ValueError('CUDA HDR probe requires an explicit candidate and packing PTX')
     if not args.worker:
         from dlss5tool.process_job import KillOnCloseJob
         from dlss5tool.shared_cache_budget import SharedCacheBudget
@@ -200,15 +203,18 @@ def main():
                 if cuda.luid != expected_luid:
                     raise RuntimeError('Actual CUDA adapter differs from the selected physical GPU')
                 report['actual_luid'] = cuda.luid
-                source = stack.enter_context(CudaImage(cuda, args.width, args.height, row_pitch=args.width*4+32))
+                source = stack.enter_context(CudaImage(cuda, args.width, args.height,
+                    row_pitch=args.width*(8 if args.hdr else 4)+32,
+                    layout='rgba16f' if args.hdr else 'rgba8', color_profile='hdr10_pq' if args.hdr else 'srgb'))
                 options = dict(log_path=task/f'{args.label}-native.log')
                 if args.installed_components:
                     vsr = stack.enter_context(CudaVSR.from_runtime(cuda, args.width, args.height, args.scale, **options))
                 else:
                     vsr = stack.enter_context(CudaVSR(cuda, args.width, args.height, args.scale,
                         library_path=task/'build/vsr_cuda.dll',
-                        cudart_directory=task/'cuda-runtime-12.8/nvidia/cuda_runtime/bin',
-                        runtime_directory=ROOT/'runtime', **options))
+                        cudart_directory=safe(args.cudart_directory) if args.cudart_directory else task/'cuda-runtime-12.8/nvidia/cuda_runtime/bin',
+                        runtime_directory=ROOT/'runtime', color_profile='hdr10_pq' if args.hdr else 'srgb',
+                        hdr_ptx=safe(args.hdr_ptx,task) if args.hdr_ptx else None, **options))
                 def process(frame, index):
                     with source.upload(frame, FrameTiming(index, index, Fraction(1, 30), index == 0)) as input_frame:
                         with vsr.process_device(input_frame) as output:
@@ -240,7 +246,7 @@ def main():
                 output = process(frame, index)
                 report['timings_ms'].append((time.perf_counter()-before)*1000)
                 report['frame_hashes'].append(hashlib.sha256(memoryview(output)).hexdigest())
-                if index < 4:
+                if index < 4 and not args.no_snapshots:
                     np.save(task/f'{args.label}-frame{index}.npy', output, allow_pickle=False)
                 usage = private_bytes(os.getpid())
                 memory = system_memory()

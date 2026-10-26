@@ -20,6 +20,7 @@ class NativeGpuVideoWriter:
         if use_nvenc is False:raise ValueError('GPU export was explicitly selected with software encoding')
         metadata=classify_color_info(hdr_metadata) if hdr_metadata else None
         self.is_hdr=bool(metadata and metadata['is_hdr'])
+        self.color_profile=metadata['profile'] if self.is_hdr else 'srgb'
         if self.is_hdr and hdr_ptx is None:raise ValueError('HDR export requires verified HDR PTX')
         if nvenc_preset!='p5' or quality_profile not in ('high','balanced') or rate_control!='quality':
             raise ValueError('Native export acceptance currently covers P5 quality high/balanced only')
@@ -72,17 +73,18 @@ class NativeGpuVideoWriter:
             self.write_device(self._upload,contiguous.nbytes,layout,self.adapter_luid,strict_hdr=False)
         except BaseException:self.abort();raise
 
-    def write_cuda_frame(self,frame):
-        """Consume an SDR lease in the shared owner context before buffer reuse."""
+    def write_cuda_frame(self,frame,*,strict_hdr=True):
+        """Consume a matching SDR/HDR lease in its owner before buffer reuse."""
         from dlss5tool.cuda_frame import ReadyCudaFrame
         if not isinstance(frame,ReadyCudaFrame):raise TypeError('Completed CUDA frame lease required')
         frame._check()
-        if (self.is_hdr or frame.session is not self._cuda or frame.context!=self._cuda.context.value
-                or frame.adapter_luid!=self.adapter_luid or frame.layout!='rgba8'
-                or frame.color_profile!='srgb' or (frame.width,frame.height)!=(self.width,self.height)
+        if (frame.session is not self._cuda or frame.context!=self._cuda.context.value
+                or frame.adapter_luid!=self.adapter_luid or frame.layout!=('rgba16f' if self.is_hdr else 'rgba8')
+                or frame.color_profile!=getattr(self,'color_profile','srgb') or (frame.width,frame.height)!=(self.width,self.height)
                 or frame.timing.sequence!=self._frames):
             raise ValueError('Encoder frame owner/format/geometry/sequence mismatch')
-        self.write_device(frame.pointer,frame.nbytes,'rgba',frame.adapter_luid,frame.row_pitch)
+        self.write_device(frame.pointer,frame.nbytes,'rgba16f' if self.is_hdr else 'rgba',
+                          frame.adapter_luid,frame.row_pitch,**({'strict_hdr':strict_hdr} if self.is_hdr else {}))
 
     def write_device(self,pointer,nbytes,layout,adapter_luid,row_pitch=None,*,strict_hdr=True):
         """Producer must wait its GPU fence and hold its resource until return."""

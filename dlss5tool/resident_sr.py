@@ -74,6 +74,12 @@ def make_plan(inspection, settings, adapter):
 
 def try_export(manager, source, output, settings, *, cancel, progress, frame_progress=None):
     """Choose before starting frames; unsupported settings keep cached export."""
+    from dlss5tool import appearance
+    if (settings.get('hdr_mode') is True or settings.get('frame_generation_multiplier', 1) > 1
+            or appearance.enhancement_bypass(settings) != 'source'):
+        from dlss5tool.resident_hdr import try_export as try_hdr
+        return try_hdr(manager, source, output, settings, cancel=cancel, progress=progress,
+                       frame_progress=frame_progress)
     if os.name != 'nt' or not eligible_settings(settings):
         return None
     from dlss5tool.image_sequence import is_sequence
@@ -223,7 +229,11 @@ def export_resident(source, output, plan, components, *, cancel, progress=None,
                 previous_frames = done
                 require_memory_headroom(1, stage='resident_sr_progress', cancel=cancel)
                 if frame_progress:
-                    frame_progress(done, plan['frames'])
+                    encoded = reply.get('encoded_frames', done)
+                    expected_total = plan['frames']*plan.get('multiplier', 1)
+                    if type(encoded) is not int or not 0 <= encoded <= expected_total:
+                        raise RuntimeError('Invalid encoded-frame progress')
+                    frame_progress(encoded, expected_total)
                 if progress:
                     from dlss5tool.i18n import tr
                     progress(tr('status.shared_export',hit=0,done=done,total=plan['frames']),done/plan['frames'])
@@ -234,7 +244,8 @@ def export_resident(source, output, plan, components, *, cancel, progress=None,
             elif reply.get('kind') == 'complete':
                 result = reply.get('result')
                 if (not isinstance(result, dict) or result.get('status') != 'complete'
-                        or result.get('real_frames') != plan['frames'] or result.get('output_rate') != plan['rate']
+                        or result.get('real_frames') != plan['frames']
+                        or result.get('output_rate') != str(Fraction(plan['rate'])*plan.get('multiplier', 1))
                         or (result.get('width'), result.get('height')) != (plan['width']*plan['scale'], plan['height']*plan['scale'])):
                     raise RuntimeError('Resident worker output differs from the selected contract')
                 break

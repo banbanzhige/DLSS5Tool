@@ -47,7 +47,10 @@ def verified_geometry(width, height):
 
 
 class CudaNv12Converter:
-    def __init__(self, session, ptx_path, width, height):
+    software_format, dtype_bits, color_layout = 'nv12', 8, 'rgba8'
+    kernel_name = b'nv12_to_rgba'
+
+    def __init__(self, session, ptx_path, width, height, *, color_profile='srgb'):
         if not verified_geometry(width, height):
             raise ValueError('Resident decoder requires even height, width divisible by 8 and <=1080p input')
         session._check()
@@ -63,13 +66,13 @@ class CudaNv12Converter:
         self._destroy = bind(session.cuda, 'cuStreamDestroy_v2', [C.c_void_p])
         self._pointer_context = bind(session.cuda, 'cuPointerGetAttribute', [C.c_void_p, C.c_int, C.c_uint64])
         try:
-            self._output = CudaImage(session, width, height)
+            self._output = CudaImage(session, width, height, layout=self.color_layout, color_profile=color_profile)
             with session.current():
                 ptx = C.create_string_buffer(Path(ptx_path).read_bytes())
                 check(self._load(C.byref(self._module), ptx), 'NV12 PTX load')
                 check(bind(session.cuda, 'cuModuleGetFunction',
                     [C.POINTER(C.c_void_p), C.c_void_p, C.c_char_p])(
-                        C.byref(self._function), self._module, b'nv12_to_rgba'), 'NV12 kernel')
+                        C.byref(self._function), self._module, self.kernel_name), 'NVDEC conversion kernel')
                 check(bind(session.cuda, 'cuStreamCreate', [C.POINTER(C.c_void_p), C.c_uint])(
                     C.byref(self._stream), 1), 'NV12 stream')
         except BaseException:
@@ -77,7 +80,7 @@ class CudaNv12Converter:
             raise
 
     def _planes(self, frame):
-        if (frame.format.name != 'cuda' or frame.sw_format.name != 'nv12' or
+        if (frame.format.name != 'cuda' or frame.sw_format.name != self.software_format or
                 (frame.width, frame.height) != (self.width, self.height) or len(frame.planes) != 2):
             raise ValueError('Full-size resident CUDA NV12 frame required')
         capsule_pointer = C.pythonapi.PyCapsule_GetPointer
@@ -91,12 +94,13 @@ class CudaNv12Converter:
             tensor = C.cast(capsule_pointer(capsule, b'dltensor'), C.POINTER(_Tensor)).contents
             shape = ((self.height, self.width) if index == 0 else (self.height//2, self.width//2, 2))
             pitch = plane.line_size
-            strides = (pitch, 1) if index == 0 else (pitch, 2, 1)
+            element_bytes = self.dtype_bits//8
+            strides = (pitch//element_bytes, 1) if index == 0 else (pitch//element_bytes, 2, 1)
             if (tensor.ndim != len(shape) or not tensor.shape or not tensor.strides or
                     tuple(tensor.shape[:tensor.ndim]) != shape or tuple(tensor.strides[:tensor.ndim]) != strides or
-                    (tensor.dtype.code, tensor.dtype.bits, tensor.dtype.lanes) != (1, 8, 1) or
+                    (tensor.dtype.code, tensor.dtype.bits, tensor.dtype.lanes) != (1, self.dtype_bits, 1) or
                     (tensor.device.kind, tensor.device.index) != (2, self.session.device.value) or
-                    type(pitch) is not int or not self.width <= pitch <= self.width+65536 or
+                    type(pitch) is not int or pitch % element_bytes or not self.width*element_bytes <= pitch <= self.width*element_bytes+65536 or
                     not tensor.data or tensor.offset != 0):
                 raise ValueError('Unexpected NVDEC plane shape/dtype/pitch/device/offset')
             context = C.c_void_p()
@@ -112,7 +116,7 @@ class CudaNv12Converter:
             raise RuntimeError('NV12 converter closed or failed')
         if not isinstance(timing, FrameTiming):
             raise TypeError('Source FrameTiming required')
-        coeff = conversion_coefficients(frame.colorspace, frame.color_range)
+        coeff = self._coefficients(frame)
         # Windows PyAV does not implement DLPack stream synchronization.
         # Complete the shared-context producer before exporting its capsules.
         self.session.synchronize()
@@ -122,6 +126,9 @@ class CudaNv12Converter:
                 return self._produce(addresses, pitches, coeff, timing)
             finally:
                 capsules.clear()
+
+    def _coefficients(self, frame):
+        return conversion_coefficients(frame.colorspace, frame.color_range)
 
     def _produce(self, addresses, pitches, coeff, timing):
         """Internal synchronized launch; also used by the bounded fixture probe."""

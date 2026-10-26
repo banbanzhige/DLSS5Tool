@@ -227,6 +227,30 @@ class OpticalFlow:
             self.check(self.copy(C.byref(copy)), 'readback')
             return decode_flow(self.output, self.w, self.h)
 
+    def calculate_cuda_gray(self, first, second):
+        """Consume completed same-context padded gray leases without RGB upload."""
+        from dlss5tool.cuda_frame import ReadyCudaFrame
+        if self._closed: raise RuntimeError('NVOFA session closed')
+        for frame in (first, second):
+            if not isinstance(frame, ReadyCudaFrame): raise TypeError('Completed CUDA gray frame required')
+            frame._check()
+            if ((frame.width, frame.height, frame.layout, frame.color_profile)!=(self.w,self.h,'gray8','analysis')
+                    or frame.context != self.context.value):
+                raise ValueError('NVOFA gray frame context/geometry/format mismatch')
+        with self._current():
+            for index, frame in enumerate((first,second)):
+                descriptor = Copy2D(stype=2,sdevice=frame.pointer,spitch=frame.row_pitch,dtype=2,
+                    ddevice=self.pointers[index],dpitch=self.pitches[index],width=self.w,height=self.h)
+                self.check(self.copy(C.byref(descriptor)), 'device gray input')
+            inp=ExecuteIn(self.buffers[0],self.buffers[1],None,1,0,None,0,0,None)
+            out=ExecuteOut(self.buffers[2],None,None)
+            self.check(self.execute(self.handle,C.byref(inp),C.byref(out)), 'execute')
+            self.check(self.sync(), 'synchronize')
+            descriptor=Copy2D(stype=2,sdevice=self.pointers[2],spitch=self.pitches[2],dtype=1,
+                dhost=self.output.ctypes.data,dpitch=self.gw*4,width=self.gw*4,height=self.gh)
+            self.check(self.copy(C.byref(descriptor)), 'readback')
+            return decode_flow(self.output,self.w,self.h)
+
     def close(self):
         if self._closed:
             return

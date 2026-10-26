@@ -539,6 +539,32 @@ class Live:
         return dict(descriptor=dict(producer_pid=os.getpid(),handle=handle.value,allocation=allocation.value,
             size=pitch.value*self._h,producer_luid=luid.value,pitch=pitch.value))
 
+    def gpu_input_create(self):
+        if self.backend != 'v2' or self.pending or not hasattr(self._lib, 'dlssnr_gpu_input_create'):
+            raise RuntimeError('GPU input requires a compatible idle v2 host')
+        create = self._lib.dlssnr_gpu_input_create
+        create.argtypes = [ctypes.POINTER(ctypes.c_void_p), ctypes.POINTER(ctypes.c_uint64),
+                           ctypes.POINTER(ctypes.c_uint), ctypes.POINTER(ctypes.c_uint64)]
+        create.restype = ctypes.c_int
+        handle, allocation, pitch, luid = ctypes.c_void_p(), ctypes.c_uint64(), ctypes.c_uint(), ctypes.c_uint64()
+        if not create(ctypes.byref(handle), ctypes.byref(allocation), ctypes.byref(pitch), ctypes.byref(luid)):
+            raise RuntimeError('GPU input requires fixed single-slot, persistent merged processing')
+        return dict(descriptor=dict(producer_pid=os.getpid(), handle=handle.value, allocation=allocation.value,
+                    size=pitch.value*self._h, producer_luid=luid.value, pitch=pitch.value))
+
+    def process_gpu_input(self, reset=False):
+        if int(self.settings.get('guidance_mode', 0)) or self.pending:
+            raise RuntimeError('GPU input currently requires unguided synchronous enhancement')
+        _set_options(self._lib, self.settings)
+        reset = self._prepare_guidance(None, reset)
+        process = self._lib.dlssnr_process_gpu_input
+        process.argtypes = [ctypes.c_void_p, ctypes.c_void_p, ctypes.c_int]
+        process.restype = ctypes.c_int
+        ok = process(self._mv.ctypes.data_as(ctypes.c_void_p) if self._mv is not None else None,
+                     self._depth_pointer(), int(reset))
+        self._reset_next = not bool(ok)
+        return bool(ok)
+
     def process(self, rgba, reset=False, *, gpu_output=False):
         _set_options(self._lib, self.settings)
         h, w = rgba.shape[:2]

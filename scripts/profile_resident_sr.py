@@ -23,6 +23,9 @@ def main():
     parser.add_argument('--cancel-after', type=int)
     parser.add_argument('--sample-gpu', action='store_true')
     parser.add_argument('--quality', choices=('high','balanced'), default='high')
+    parser.add_argument('--color-profile', choices=('srgb', 'hdr10_pq', 'hdr10_hlg'), default='srgb')
+    parser.add_argument('--enhance', action='store_true')
+    parser.add_argument('--multiplier', type=int, choices=(1, 2, 3, 4), default=1)
     args = parser.parse_args()
     from scripts.build_vsr_cuda import safe, digest
     task = safe(args.task, ROOT/'tmp')
@@ -41,8 +44,8 @@ def main():
     watchdog = threading.Timer(150, cancel.set)
     watchdog.daemon = True; watchdog.start()
     settings = app_settings.validate(dict(super_resolution_scale=args.scale,
-        frame_generation_multiplier=1, nr_quality={'total':0}, output_view=0,
-        hdr_mode=False, output_mix=1, nvenc_preset='p5', rate_control='quality', quality_profile=args.quality))
+        frame_generation_multiplier=args.multiplier, nr_quality={'total':1 if args.enhance else 0}, output_view=0,
+        hdr_mode=args.color_profile != 'srgb', output_mix=1, nvenc_preset='p5', rate_control='quality', quality_profile=args.quality))
     report = dict(source_sha256=digest(source), settings=settings)
     adapter = dlss_engine.available_render_adapters()[0]
     pool = SharedCacheBudget(limit_bytes=1024**3)
@@ -60,15 +63,44 @@ def main():
         inspection = inspect_source(source, cancel, allow_vfr=True)
         if inspection[-1] > 1800:
             raise ValueError('Probe limited to 1800 frames')
-        plan = make_plan(inspection, settings, adapter)
+        pure_settings = dict(settings, frame_generation_multiplier=1, nr_quality={'total':0})
+        if args.color_profile != 'srgb':
+            from dlss5tool.resident_hdr import make_plan as make_hdr_plan
+            plan = make_hdr_plan(inspection, pure_settings, adapter)
+            if plan and plan['color_profile'] != args.color_profile:
+                raise ValueError('Requested HDR color profile differs from source')
+        else:
+            plan = make_plan(inspection, pure_settings, adapter)
         if plan is None:
             raise ValueError('Not a supported resident SR contract: '+repr(inspection))
+        plan.update(multiplier=args.multiplier, nr=args.enhance, consumer_settings=settings)
         components = load_components()
         if not components:
             raise RuntimeError('Verified encoder components missing')
-        components['nv12_ptx'] = str(safe(task/'nv12-rgba.ptx', task))
-        components['component_hashes'] = {key:digest(Path(components[key])) for key in ('nv12_ptx', 'native_library', 'sdr_ptx')}
+        if args.color_profile != 'srgb':
+            from dlss5tool.cuda_vsr_runtime import load_components as load_vsr
+            pair = load_vsr()
+            components.update(p010_ptx=str(task/'p010-rgba-v2.ptx'), hdr_pack_ptx=str(task/'vsr-hdr-v2.ptx'),
+                hdr_vsr_library=str(task/'build/vsr_cuda.dll'), cudart_directory=pair['cudart_directory'],
+                runtime_directory=pair['runtime_directory'])
+            keys = ('p010_ptx', 'hdr_pack_ptx', 'hdr_vsr_library', 'native_library', 'sdr_ptx', 'hdr_ptx')
+        else:
+            local_ptx = task/'nv12-rgba.ptx'
+            components['nv12_ptx'] = str(safe(local_ptx if local_ptx.exists() else ROOT/'runtime/resident-sr/nv12-rgba.ptx'))
+            keys = ('nv12_ptx', 'native_library', 'sdr_ptx')
+        if args.enhance:
+            components['device_host'] = str(task/'consumer-build/enhancement.dll')
+            keys += ('device_host',)
+        if args.multiplier > 1:
+            components['device_worker'] = str(task/'consumer-build/frame-worker.exe')
+            keys += ('device_worker',)
+        components['analysis_ptx'] = str(task/'analysis-v2.ptx')
+        components['analysis_tables'] = str(task/'analysis-tables.npz')
+        keys += ('analysis_ptx', 'analysis_tables')
+        components['component_hashes'] = {key:digest(Path(components[key])) for key in keys}
         components['cuda_vsr_manifest'] = digest(ROOT/'runtime/vsr-cuda/manifest.json')
+        from dlss5tool.analysis_quantization import cpu_fingerprint
+        components['analysis_cpu'] = cpu_fingerprint()
         def on_frames(done, total):
             if args.cancel_after is not None and done >= args.cancel_after:
                 report['cancel_requested_seconds'] = time.perf_counter()-started

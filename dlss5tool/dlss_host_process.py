@@ -147,6 +147,11 @@ def _host_worker_main(
                 })
             elif operation == 'gpu_output_create':
                 connection.send({'ok':True,'operation':operation,**live.gpu_output_create()})
+            elif operation == 'gpu_input_create':
+                connection.send({'ok':True,'operation':operation,**live.gpu_input_create()})
+            elif operation == 'process_gpu_input':
+                has_output=live.process_gpu_input(reset=bool(message.get('reset')))
+                connection.send({'ok':True,'operation':operation,'has_output':bool(has_output),**_metadata(live)})
             elif operation == 'process_gpu_output':
                 has_output=live.process(input_frame,reset=bool(message.get('reset')),gpu_output=True)
                 connection.send({'ok':True,'operation':operation,'has_output':bool(has_output),**_metadata(live)})
@@ -622,6 +627,8 @@ class ProcessLive:
         self._retry_retiring()
 
     def update(self, settings):
+        if getattr(self, '_gpu_input_descriptor', None):
+            raise HostProcessError('Retire the mapped GPU input owner before changing settings')
         updated = dict(self.settings)
         updated.update(settings or {})
         updated = guidance_client.normalize_public_settings(updated)
@@ -647,6 +654,8 @@ class ProcessLive:
         self._sync_metadata()
 
     def resize(self, width, height, preset=None, settings=None):
+        if getattr(self, '_gpu_input_descriptor', None):
+            raise HostProcessError('Retire the mapped GPU input owner before resizing')
         updated = dict(self.settings)
         updated.update(settings or {})
         updated = guidance_client.normalize_public_settings(updated)
@@ -663,6 +672,28 @@ class ProcessLive:
 
     def gpu_output_create(self):
         return self._session.request('gpu_output_create')['descriptor']
+
+    def gpu_input_create(self):
+        descriptor = self._session.request('gpu_input_create')['descriptor']
+        self._gpu_input_descriptor = dict(descriptor)
+        return descriptor
+
+    def process_cuda_frame(self, frame, mapping, reset=False):
+        from dlss5tool.cuda_frame import ReadyCudaFrame
+        if not isinstance(frame, ReadyCudaFrame):
+            raise TypeError('Completed CUDA frame lease required')
+        frame._check()
+        descriptor = getattr(self, '_gpu_input_descriptor', None)
+        if (not descriptor or (frame.width, frame.height) != (self._w, self._h)
+                or frame.layout != self.settings.get('frame_format', 'rgba8')
+                or frame.color_profile != self.settings.get('color_profile', 'srgb')
+                or (mapping.producer_pid, mapping.handle) != (descriptor['producer_pid'], descriptor['handle'])):
+            raise ValueError('Enhancement GPU input owner/geometry/color mismatch')
+        mapping.copy_from(frame, descriptor['pitch'])
+        response = self._session.request('process_gpu_input', reset=bool(reset or self._reset_next))
+        self._reset_next = not response['has_output']
+        if not response['has_output']:
+            raise HostProcessError('DLSS GPU input/output failed')
 
     def process_device(self,rgba,reset=False):
         if self.enhancement_bypassed:

@@ -20,9 +20,10 @@ void Receive(void* data, size_t bytes) {
     Check(fread(data, 1, bytes, stdin) == bytes, "input pipe truncated");
 }
 int Run(int argc, wchar_t** argv) {
-    bool gpu_mode=false;
+    bool gpu_mode=false,device_input=false;
 #ifdef GPU_EXPORT
-    gpu_mode=argc==8 && !wcscmp(argv[7],L"gpu");
+    device_input=argc==8 && !wcscmp(argv[7],L"gpu-device");
+    gpu_mode=device_input || (argc==8 && !wcscmp(argv[7],L"gpu"));
 #endif
     Check(argc == 7 || gpu_mode, "worker runtime-dir log-dir width height multiplier sdr|hdr-coded [gpu]");
     g_width = _wtoi(argv[3]); g_height = _wtoi(argv[4]);
@@ -83,7 +84,7 @@ int Run(int argc, wchar_t** argv) {
     opts.backbufferSubrectSize=opts.outputInterpSubrectSize={g_width,g_height};
     NVSDK_NGX_D3D12_DLSSG_Eval_Params eval{};
     eval.pDepth=depth.resource; eval.pMVecs=motion.resource; eval.pOutputDisableInterpolation=validity.gpu;
-    const uint32_t ready[]={gpu_mode ? 0x32474746u : 0x31474746u,g_selected_adapter.luid_low,uint32_t(g_selected_adapter.luid_high)};
+    const uint32_t ready[]={device_input ? 0x33474746u : gpu_mode ? 0x32474746u : 0x31474746u,g_selected_adapter.luid_low,uint32_t(g_selected_adapter.luid_high)};
     Send(ready,sizeof(ready)); fflush(wire);
 #ifdef GPU_PIPELINE_PROBE
     Check(multiplier==2 && !hdr,"residency probe is SDR 2x only");
@@ -91,8 +92,16 @@ int Run(int argc, wchar_t** argv) {
 #endif
 #ifdef GPU_EXPORT
     if(gpu_mode) gpu_pipeline_probe::Init(wire,outputs[0].resource);
+    if(device_input) {
+        Check(gpu_input::Create(colors[0].resource),"shared GPU input");
+        auto desc=gpu_input::buffer->GetDesc();
+        const uint64_t message[]={reinterpret_cast<uint64_t>(gpu_input::handle),
+            g_device->GetResourceAllocationInfo(0,1,&desc).SizeInBytes,
+            gpu_input::footprint.Footprint.RowPitch,GetCurrentProcessId()};
+        Send(message,sizeof(message));fflush(wire);
+    }
 #endif
-    std::vector<unsigned char> input(size_t(g_height)*FrameRowPitch()), output(input.size());
+    std::vector<unsigned char> input(device_input ? 0 : size_t(g_height)*FrameRowPitch()), output(input.size());
     std::vector<float> mv(size_t(g_width)*g_height*2);
     std::vector<uint16_t> half(mv.size());
     for(unsigned frame=0;;++frame) {
@@ -106,14 +115,26 @@ int Run(int argc, wchar_t** argv) {
 #elif defined(GPU_EXPORT)
         const bool resident=gpu_mode && (command&4)!=0;
         if(gpu_mode) command&=~4u;
+        const bool shared_input=device_input && (command&8)!=0;
+        if(device_input) command&=~8u;
 #else
         const bool resident=false;
 #endif
         Check(command==0 || command==1 || command==2,"frame command");
         if(command==2) break;
-        Receive(input.data(),input.size()); Receive(mv.data(),mv.size()*4);
+#ifdef GPU_EXPORT
+        if(device_input) Check(shared_input && resident,"device input command");
+        if(!shared_input)
+#endif
+        Receive(input.data(),input.size());
+        Receive(mv.data(),mv.size()*4);
         for(size_t i=0;i<mv.size();++i) {Check(std::isfinite(mv[i]) && std::abs(mv[i])<65504,"finite motion");half[i]=DirectX::PackedVector::XMConvertFloatToHalf(mv[i]);}
         auto& color=colors[frame%2];
+#ifdef GPU_EXPORT
+        gpu_input::active=shared_input;
+        if(shared_input) gpu_input::texture=color.resource;
+        else
+#endif
         CopyRowsToStaging(color.upload,input.data(),FrameRowPitch());
         CopyRowsToStaging(motion.upload,half.data(),size_t(g_width)*4);
         eval.pBackbuffer=eval.pHudless=color.resource;

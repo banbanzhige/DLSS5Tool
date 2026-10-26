@@ -34,6 +34,8 @@ def run(request, notify):
     # native decoder threads; no global logging change is made in the GUI.
     av.logging.restore_default_callback()
     plan, components = request['plan'], request['components']
+    hdr = plan.get('color_profile', 'srgb') != 'srgb'
+    multiplier = plan.get('multiplier', 1)
     if components.get('pyav') and (av.__version__ != components['pyav'] or
             {name:list(version) for name,version in av.library_versions.items()} != components.get('av_libraries')):
         raise RuntimeError('PyAV/FFmpeg libraries differ from resident conversion acceptance')
@@ -43,7 +45,11 @@ def run(request, notify):
     output = safe_path(request['staging'])
     if source_identity(source) != request['source_identity']:
         raise RuntimeError('Source changed after export preflight')
-    for key in ('nv12_ptx', 'native_library', 'sdr_ptx'):
+    component_keys = (('p010_ptx', 'hdr_vsr_library', 'hdr_pack_ptx', 'hdr_ptx') if hdr else ('nv12_ptx',))
+    consumer_keys = (('device_host',) if plan.get('nr') else ()) + (('device_worker',) if multiplier > 1 else ())
+    if components.get('analysis_ptx'):
+        consumer_keys += ('analysis_ptx', 'analysis_tables')
+    for key in (*component_keys, *consumer_keys, 'native_library', 'sdr_ptx'):
         path = safe_path(components[key], exists=True)
         from dlss5tool.cuda_vsr_runtime import sha256
         if sha256(path) != components.get('component_hashes', {}).get(key):
@@ -54,7 +60,9 @@ def run(request, notify):
     pool = SharedCacheBudget(request['pool']) if request.get('pool') else None
     telemetry = ExportTelemetry()
     cuda = converter = vsr = writer = container = stream = iterator = frame = None
+    consumers = None
     hashes = []
+    vram_admission = None
     completed = False
     try:
       with memory_scope(pool):
@@ -64,12 +72,13 @@ def run(request, notify):
             expected_luid = ((plan['adapter']['luid_high'] & 0xffffffff)<<32)|plan['adapter']['luid_low']
             if cuda.luid != expected_luid:
                 raise RuntimeError('Actual CUDA adapter differs from the selected physical GPU')
+            from dlss5tool.device_memory import admit_plan
+            vram_admission = admit_plan(cuda, plan, encoder=True)
+            if components.get('analysis_cpu'):
+                from dlss5tool.analysis_quantization import cpu_fingerprint
+                if components['analysis_cpu'] != cpu_fingerprint():
+                    raise RuntimeError('Analysis CPU dispatch changed after preflight')
             with cuda.current():
-                available, capacity = C.c_size_t(), C.c_size_t()
-                check(bind(cuda.cuda, 'cuMemGetInfo_v2', [C.POINTER(C.c_size_t), C.POINTER(C.c_size_t)])(
-                    C.byref(available), C.byref(capacity)), 'Resident GPU memory preflight')
-                if available.value < 512*1024**2+width*height*64+width*height*scale*scale*24:
-                    raise MemoryError('Insufficient VRAM for the bounded resident SR pipeline')
                 container = av.open(str(source), mode='r', timeout=(20, 60), hwaccel=HWAccel('cuda',
                     device=plan['adapter']['cuda_index'], allow_software_fallback=False, is_hw_owned=True,
                     options={'primary_ctx':'0', 'current_ctx':'1'}))
@@ -78,13 +87,40 @@ def run(request, notify):
                 if not stream.codec_context.is_hwaccel:
                     raise RuntimeError('Resident export requires confirmed NVDEC decoding')
                 iterator = container.decode(stream)
-                converter = CudaNv12Converter(cuda, components['nv12_ptx'], width, height)
-                vsr = CudaVSR.from_runtime(cuda, width, height, scale, log_path=request['native_log'])
-                writer = NativeGpuVideoWriter(output, width*scale, height*scale, rate,
+                if hdr:
+                    from dlss5tool.cuda_p010 import CudaP010Converter
+                    converter = CudaP010Converter(cuda, components['p010_ptx'], width, height,
+                                                 color_profile=plan['color_profile'])
+                    vsr = CudaVSR(cuda, width, height, scale, log_path=request['native_log'],
+                        library_path=components['hdr_vsr_library'],
+                        cudart_directory=components['cudart_directory'], runtime_directory=components['runtime_directory'],
+                        color_profile=plan['color_profile'], hdr_ptx=components['hdr_pack_ptx'])
+                else:
+                    converter = CudaNv12Converter(cuda, components['nv12_ptx'], width, height)
+                    vsr = CudaVSR.from_runtime(cuda, width, height, scale, log_path=request['native_log'])
+                writer = NativeGpuVideoWriter(output, width*scale, height*scale, rate*multiplier,
                     audio_source=str(source), native_library=components['native_library'],
                     sdr_ptx=components['sdr_ptx'], cuda_session=cuda, device_input=True,
+                    hdr_ptx=components.get('hdr_ptx'), hdr_metadata=plan.get('hdr_metadata'),
                     device_ordinal=plan['adapter']['cuda_index'], use_nvenc=True,
-                    nvenc_preset='p5', rate_control='quality', quality_profile=plan['quality'], codec='h264')
+                    nvenc_preset='p5', rate_control='quality', quality_profile=plan['quality'], codec='hevc' if hdr else 'h264')
+            def encode_frame(pixels, source_index=None, kind='real'):
+                if request.get('audit'):
+                    import hashlib
+                    import numpy as np
+                    snapshot = pixels._owner.download(pixels)
+                    encoded_input = snapshot if hdr else np.ascontiguousarray(snapshot[..., 2::-1])
+                    hashes.append(hashlib.sha256(memoryview(encoded_input)).hexdigest())
+                with telemetry.measure('encode'):
+                    writer.write_cuda_frame(pixels, strict_hdr=not (plan.get('nr') and kind == 'real'))
+            if plan.get('nr') or multiplier > 1:
+                from dlss5tool.device_consumers import DeviceConsumers
+                config = dict(plan['consumer_settings'], render_gpu=plan['adapter']['id'],
+                    color_profile=plan.get('color_profile', 'srgb'), frame_format='rgba16f' if hdr else 'rgba8',
+                    color_primaries=plan.get('hdr_metadata', {}).get('color_primaries', 'bt709'))
+                consumers = DeviceConsumers(cuda, width*scale, height*scale, rate, config, components,
+                    Path(request['native_log']).parent, encode_frame,
+                    validate_hdr=vsr._hdr_packing.validate if hdr else None, telemetry=telemetry)
             if ticket:
                 ticket.consume(512*1024**2+width*height*64+width*height*scale*scale*24)
         notify('initialized', adapter_luid=cuda.luid)
@@ -103,8 +139,8 @@ def run(request, notify):
                     or previous is not None and abs(timestamp-previous-interval) > max(Fraction(2, 1000000), interval/500)
                     or int(round(getattr(frame, 'rotation', 0)/90)) % 4):
                 raise ValueError('Source frame count, CFR timeline or orientation differs from preflight')
-            if frame.color_trc in (16, 18) or frame.interlaced_frame:
-                raise ValueError('HDR or interlaced frames cannot enter resident SDR export')
+            if (not hdr and frame.color_trc in (16, 18)) or frame.interlaced_frame:
+                raise ValueError('Frame color/interlace contract changed during resident export')
             timing = FrameTiming(count, frame.pts, Fraction(frame.time_base), count == 0)
             with telemetry.measure('nv12_rgba'):
                 decoded = converter.convert(frame, timing)
@@ -112,23 +148,27 @@ def run(request, notify):
                 with telemetry.measure('super_resolution'):
                     processed = vsr.process_device(decoded)
                 with processed:
-                    if request.get('audit'):
-                        # Diagnostic-only CPU snapshot; normal export never downloads RGB.
-                        import hashlib
-                        import numpy as np
-                        rgb = vsr._output.download(processed)[..., :3]
-                        hashes.append(hashlib.sha256(np.ascontiguousarray(rgb[..., ::-1]).tobytes()).hexdigest())
-                    with telemetry.measure('encode'):
-                        writer.write_cuda_frame(processed)
+                    if consumers:
+                        consumers.feed(processed)
+                    else:
+                        encode_frame(processed)
             frame = None
             previous = timestamp
             count += 1
             now = time.perf_counter()
             if count == 1 or count == total or now-last_progress >= .2:
-                notify('progress', frames=count, total=total)
+                notify('progress', frames=count, total=total,
+                       encoded_frames=consumers.outputs if consumers else count, total_output_frames=total*multiplier)
                 last_progress = now
         if count != total:
             raise ValueError('Source ended before the inspected frame count')
+        consumer_result = consumers.finish() if consumers else dict(generated_frames=0)
+        consumer_result['real_frames'] = count
+        if multiplier > 1:
+            # Endpoint holds are encoded by finish(), after the final source
+            # progress. Publish their real count before draining/publication.
+            notify('progress', frames=count, total=total, encoded_frames=count*multiplier,
+                   total_output_frames=total*multiplier)
         frame_seconds = time.perf_counter()-started_frames
         # Release decoder frames and codec references while their owner is current.
         with telemetry.measure('decoder_close'), cuda.current():
@@ -140,15 +180,21 @@ def run(request, notify):
             writer.finish()
         audio_mode = writer.audio_mode
         writer = None
+        if consumers:
+            consumers.close(); consumers = None
         converter.close(); converter = None
         if source_identity(source) != request['source_identity']:
             raise RuntimeError('Source changed while exporting')
-        result = dict(status='complete', route='resident-cuda-sr', real_frames=count, generated_frames=0,
-            output_rate=str(rate), width=width*scale, height=height*scale,
+        result = dict(status='complete', route='resident-cuda-hdr-sr' if hdr else 'resident-cuda-sr',
+            **consumer_result, output_rate=str(rate*multiplier), width=width*scale, height=height*scale,
             adapter=plan['adapter'], actual_luid=cuda.luid, audio_mode=audio_mode,
             frame_seconds=frame_seconds, frame_fps=count/frame_seconds, frame_hashes=hashes,
             audit=bool(request.get('audit')), performance=telemetry.snapshot(),
+            vram_admission=vram_admission,
             decode_backend='NVDEC → CUDA VSR → NVENC', new_frames=count, cache_hits=0)
+        if multiplier > 1:
+            from dlss5tool.frame_generation import WARNING
+            result.update(experimental=True, warning=WARNING)
         completed = True
         # The output is drained/muxed, and NVDEC/NVENC owners are released. The
         # parent retires this process before final publication, even if NGX
@@ -157,12 +203,11 @@ def run(request, notify):
     except BaseException as error:
         notify('failed', error=(type(error).__name__+': '+str(error))[:4000])
         raise
-    except BaseException as error:
-        notify('failed', error=(type(error).__name__+': '+str(error))[:4000])
-        raise
     finally:
         if writer:
             writer.abort()
+        if consumers:
+            consumers.close()
         if iterator:
             iterator.close()
         frame = iterator = None
@@ -196,10 +241,21 @@ def worker_main(handle, nonce):
         if message.get('version') != 1 or message.get('nonce') != nonce or message.get('operation') != 'start':
             raise ValueError('Invalid resident export startup confirmation')
         try:
-            run(message['request'], notify)
+            if message['request'].get('mode') == 'preview':
+                from dlss5tool.resident_preview_worker import run as preview_run
+                def control():
+                    from dlss5tool.memory_budget import require_memory_headroom
+                    while not connection.poll(.2):
+                        require_memory_headroom(1,stage='resident_preview_idle')
+                    reply = json.loads(connection.recv_bytes(MAX_MESSAGE).decode('utf-8'))
+                    if reply.get('version') != 1 or reply.get('nonce') != nonce:
+                        raise ValueError('Invalid preview control envelope')
+                    return reply
+                preview_run(message['request'], notify, control)
+            else:
+                run(message['request'], notify)
         except BaseException as error:
             notify('failed', error=(type(error).__name__+': '+str(error))[:4000])
-            raise SystemExit(1)
             raise SystemExit(1)
     finally:
         connection.close()
