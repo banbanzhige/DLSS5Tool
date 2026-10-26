@@ -20,7 +20,7 @@ datas.append((os.path.join(project_root, 'licenses', 'NVIDIA-Optical-Flow-Header
 datas.append((os.path.join(project_root, 'scripts', 'rtxmfg_temporal', 'LICENSE.txt'), 'licenses/RTX40MFG-Unlock'))
 datas.append((os.path.join(project_root, 'third_party', 'NVIDIA-DLSS', 'LICENSE.txt'), 'licenses/NVIDIA-DLSS'))
 binaries = []
-hiddenimports = []
+hiddenimports = ['dlss5tool.cuda_frame', 'dlss5tool.cuda_vsr', 'dlss5tool.cuda_vsr_runtime']
 
 # A source checkout with realtime must build and include it, or fail loudly.
 # GPL/proprietary combination clearance is independent of local GPU verification.
@@ -78,6 +78,26 @@ if gpu_components:
     if not os.path.isdir(av_license):
         raise SystemExit('GPU export dependency license directory missing')
     datas.append((av_license, 'licenses/GPU-export'))
+
+# CUDA VSR is an additive device-frame backend. CPU-frame exports retain their
+# accepted D3D12 route; no temporary build directory is collected.
+from dlss5tool.cuda_vsr_runtime import load_components as load_cuda_vsr, FILES as CUDA_VSR_FILES
+cuda_vsr = load_cuda_vsr()
+if cuda_vsr:
+    import json
+    cuda_vsr_root = os.path.join(project_root, 'runtime', 'vsr-cuda')
+    cuda_vsr_manifest = os.path.join(cuda_vsr_root, 'manifest.json')
+    with open(cuda_vsr_manifest, encoding='utf-8') as source:
+        cuda_vsr_record = json.load(source)
+    if not cuda_vsr_record.get('packaging_license_review_complete') and os.environ.get('DLSS5_LOCAL_CANDIDATE') != '1':
+        raise SystemExit('CUDA VSR distribution review pending; use -LocalCandidate for local validation.')
+    datas.append((cuda_vsr_manifest, 'vsr-cuda'))
+    for field in CUDA_VSR_FILES:
+        binaries.append((cuda_vsr[field], 'vsr-cuda'))
+    cuda_vsr_licenses = os.path.join(cuda_vsr_root, 'licenses')
+    if not os.path.isdir(cuda_vsr_licenses):
+        raise SystemExit('CUDA VSR license directory missing')
+    datas.append((cuda_vsr_licenses, 'licenses/CUDA-VSR'))
 
 for filename, required in (
     ("dlssnr_host_v2.dll", True),

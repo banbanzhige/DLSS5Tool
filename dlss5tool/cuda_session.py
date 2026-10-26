@@ -33,6 +33,7 @@ class CudaSession:
         self.luid=int.from_bytes(luid.raw,'little')
         check(bind(self.cuda,'cuDevicePrimaryCtxRetain',[C.POINTER(p),i])(C.byref(self.context),self.device),'CUDA retain')
         self._buffers=set()
+        self._buffer_sizes={}
 
     def _check(self):
         if self._closed or threading.get_ident()!=self._thread:raise RuntimeError('CUDA session closed or accessed from wrong thread')
@@ -49,10 +50,23 @@ class CudaSession:
         with self.current():
             pointer=C.c_uint64();check(self._alloc(C.byref(pointer),size),'CUDA allocate')
         self._buffers.add(pointer.value)
+        self._buffer_sizes[pointer.value]=size
         return pointer.value
+
+    def free(self,pointer):
+        """Release only a buffer allocated by this session, on its owner thread."""
+        self._check()
+        if pointer not in self._buffers:raise ValueError('CUDA buffer is not owned by this session')
+        with self.current():check(self._free(pointer),'CUDA free')
+        self._buffers.remove(pointer)
+        self._buffer_sizes.pop(pointer,None)
 
     def upload(self,pointer,array):
         with self.current():check(self._upload(pointer,array.ctypes.data,array.nbytes),'CUDA upload')
+
+    def synchronize(self):
+        """Complete producer work before publishing a cross-stream frame."""
+        with self.current():check(bind(self.cuda,'cuCtxSynchronize',[])(),'CUDA producer completion')
 
     def download(self,pointer,size):
         data=C.create_string_buffer(size)
@@ -65,6 +79,7 @@ class CudaSession:
         with self.current():
             for pointer in self._buffers:errors.append(self._free(pointer))
         self._buffers.clear();errors.append(self._release(self.device));self._closed=True
+        self._buffer_sizes.clear()
         if any(errors):raise RuntimeError(f'CUDA session cleanup failed: {errors}')
 
     def __enter__(self):return self

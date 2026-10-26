@@ -241,7 +241,7 @@ def format_resource_hint(estimate, gpu_memory=None):
     return text
 
 
-def _load_host():
+def _load_host(host_path=None):
     status = runtime_status()
     if not status["available"]:
         raise SuperResolutionError("缺少 RTX 视频超分组件：" + "、".join(status["missing"]))
@@ -249,7 +249,7 @@ def _load_host():
     if hasattr(os, "add_dll_directory"):
         dll_directory = os.add_dll_directory(BASE)
     try:
-        library = ctypes.WinDLL(VSR_HOST_DLL)
+        library = ctypes.WinDLL(host_path or VSR_HOST_DLL)
     except OSError as exception:
         if dll_directory is not None:
             dll_directory.close()
@@ -263,11 +263,50 @@ def _load_host():
     library.vsr_process.restype = ctypes.c_int
     library.vsr_shutdown.argtypes = []
     library.vsr_shutdown.restype = None
+    if hasattr(library, 'vsr_init_adapter') and hasattr(library, 'vsr_adapter_luid'):
+        library.vsr_init_adapter.argtypes = library.vsr_init.argtypes + [ctypes.c_int32, ctypes.c_uint32]
+        library.vsr_init_adapter.restype = ctypes.c_int
+        library.vsr_adapter_luid.argtypes = [ctypes.POINTER(ctypes.c_int32), ctypes.POINTER(ctypes.c_uint32)]
+        library.vsr_adapter_luid.restype = ctypes.c_int
     library._dll_directory_handle = dll_directory
     return library
 
 
-def _worker_main(connection, width, height, scale, is_hdr, input_name, output_name, log_path):
+def _initialize_host(library, width, height, scale, is_hdr, log_path, render_gpu='auto', selected=None):
+    """Resolve identity in the disposable worker, never initialize GPU in GUI."""
+    supports_identity = hasattr(library, 'vsr_init_adapter') and hasattr(library, 'vsr_adapter_luid')
+    arguments = (width, height, scale, 4, int(is_hdr), BASE, log_path)
+    if supports_identity:
+        from dlss5tool.dlss_engine import available_render_adapters, invalidate_render_adapters
+        if render_gpu == 'auto':
+            # Auto keeps the native high-performance NVIDIA policy. Read back
+            # its actual identity without a second inventory/driver query.
+            initialized = library.vsr_init(*arguments)
+        else:
+            if selected is None:
+                selected = next((record for record in available_render_adapters()
+                                 if record['id'] == render_gpu), None)
+            if selected is None or selected['id'] != render_gpu:
+                raise SuperResolutionError('所选超分显卡当前不可用，请刷新显卡列表后重试')
+            initialized = library.vsr_init_adapter(*arguments, selected['luid_high'], selected['luid_low'])
+        if not initialized:
+            raise SuperResolutionError('RTX Video Super Resolution 在所选显卡初始化失败，请查看超分日志')
+        high, low = ctypes.c_int32(), ctypes.c_uint32()
+        if (not library.vsr_adapter_luid(ctypes.byref(high), ctypes.byref(low)) or
+                (selected is not None and
+                 (high.value, low.value) != (selected['luid_high'], selected['luid_low']))):
+            invalidate_render_adapters()
+            raise SuperResolutionError('超分实际显卡与所选显卡不一致，任务已停止，请刷新显卡列表')
+        return dict(selected or {}, luid_high=high.value, luid_low=low.value,
+                    verified=True, backend='d3d12', auto_selection=render_gpu == 'auto')
+    if render_gpu != 'auto':
+        raise SuperResolutionError('当前超分宿主不支持显式选卡，请更新 vsr_host.dll')
+    if not library.vsr_init(*arguments):
+        raise SuperResolutionError('RTX Video Super Resolution 初始化失败，请查看超分日志')
+    return dict(verified=False, backend='d3d12', legacy_host=True)
+
+
+def _worker_main(connection, width, height, scale, is_hdr, input_name, output_name, log_path, options=None):
     input_memory = output_memory = None
     library = None
     memory_pressure = False
@@ -280,13 +319,11 @@ def _worker_main(connection, width, height, scale, is_hdr, input_name, output_na
         output_frame = np.ndarray(
             (output_height, output_width, 4), dtype=dtype, buffer=output_memory.buf,
         )
-        library = _load_host()
-        initialized = library.vsr_init(
-            width, height, scale, 4, 1 if is_hdr else 0, BASE, log_path,
-        )
-        if not initialized:
-            raise SuperResolutionError("RTX Video Super Resolution 初始化失败，请查看超分日志")
-        connection.send({"ok": True, "operation": "initialize"})
+        options = options or {}
+        library = _load_host(options.get('host_library'))
+        adapter = _initialize_host(library, width, height, scale, is_hdr, log_path,
+                                   options.get('render_gpu', 'auto'), options.get('adapter_record'))
+        connection.send({"ok": True, "operation": "initialize", "adapter_info": adapter})
         while True:
             message = receive_worker_command(connection, output_frame.nbytes,allocation_bytes=0)
             operation = message.get("operation")
@@ -336,12 +373,15 @@ def _worker_main(connection, width, height, scale, is_hdr, input_name, output_na
 class ProcessSuperResolution:
     """One disposable VSR process with fixed source and target shared buffers."""
 
-    def __init__(self, width, height, scale, is_hdr=False, timeout=60.0):
+    def __init__(self, width, height, scale, is_hdr=False, timeout=60.0, *, render_gpu='auto', _host_library=None):
         self._closed = False
         self._process = self._connection = self._child_connection = None
         self._input_memory = self._output_memory = None
         self._input_frame = self._output_frame = None
         self.log_path = None
+        self.adapter_info = {}
+        self.render_gpu = str(render_gpu)
+        self._host_library = _host_library
         self.width = int(width)
         self.height = int(height)
         self.scale = normalize_scale(scale)
@@ -373,6 +413,13 @@ class ProcessSuperResolution:
                 raise
 
     def _initialize_resources(self,input_bytes,output_bytes,pool,ticket):
+        selected = None
+        if self.render_gpu != 'auto':
+            from dlss5tool.dlss_engine import available_render_adapters
+            selected = next((record for record in available_render_adapters()
+                             if record['id'] == self.render_gpu), None)
+            if selected is None:
+                raise SuperResolutionError('所选超分显卡当前不可用，请刷新显卡列表后重试')
         self._input_memory = shared_memory.SharedMemory(create=True, size=input_bytes)
         self._output_memory = shared_memory.SharedMemory(create=True, size=output_bytes)
         if ticket:ticket.consume(input_bytes+output_bytes)
@@ -389,6 +436,9 @@ class ProcessSuperResolution:
                 self._child_connection, self.width, self.height, self.scale, self.is_hdr,
                 self._input_memory.name, self._output_memory.name, self.log_path,
             )
+        if self.render_gpu != 'auto' or self._host_library is not None:
+            arguments += ({'render_gpu': self.render_gpu, 'host_library': self._host_library,
+                           'adapter_record': selected},)
         self._process = context.Process(
             target=worker_with_memory_pool if pool else _worker_main,
             args=(_worker_main,pool.name,arguments) if pool else arguments,
@@ -397,7 +447,9 @@ class ProcessSuperResolution:
         self._process.start()
         self._child_connection.close()
         self._child_connection = None
-        self._receive("initialize")
+        response = self._receive("initialize")
+        if isinstance(response, dict):
+            self.adapter_info = dict(response.get('adapter_info') or {})
 
     def _log_tail(self):
         try:
@@ -422,6 +474,9 @@ class ProcessSuperResolution:
         except (EOFError, OSError) as exception:
             raise SuperResolutionError(f"超分子进程在 {operation} 时断开：{exception}") from exception
         if not response.get("ok"):
+            if operation == 'initialize':
+                from dlss5tool.dlss_engine import invalidate_render_adapters
+                invalidate_render_adapters()
             if response.get('memory_pressure'):
                 record_memory_event('worker_rejected',**response['memory_pressure'])
             detail = response.get("error") or "超分子进程返回未知错误"

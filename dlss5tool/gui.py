@@ -6049,13 +6049,14 @@ class App(GpuResourceGuard, SharedRenderPreview, LocalPreviewComposition, Previe
         scale = normalize_scale(scale)
         if scale == 1:
             return None
-        key = (int(width), int(height), scale, bool(is_hdr))
+        render_gpu = getattr(self, '_host_settings', {}).get('render_gpu_selected_id', 'auto')
+        key = (int(width), int(height), scale, bool(is_hdr), render_gpu)
         with self._super_resolution_lock:
             if self._super_resolution_live is not None and self._super_resolution_key != key:
                 self._close_super_resolution()
             if self._super_resolution_live is None:
                 self._super_resolution_live = ProcessSuperResolution(
-                    width, height, scale, is_hdr=is_hdr,
+                    width, height, scale, is_hdr=is_hdr, render_gpu=render_gpu,
                 )
                 self._super_resolution_key = key
             return self._super_resolution_live
@@ -10374,7 +10375,8 @@ class App(GpuResourceGuard, SharedRenderPreview, LocalPreviewComposition, Previe
                 output_size=None,
             )
             self.logln(f"[导出] 编码器: {writer.encoder_name}")
-            sr_live = ProcessSuperResolution(width, height, scale, is_hdr=False)
+            sr_live = ProcessSuperResolution(width, height, scale, is_hdr=False,
+                                             render_gpu=dlss_settings.get('render_gpu', 'auto'))
             live = ProcessLive(output_width, output_height, dlss_settings, _on_guidance_ready=self._guidance_started)
             settings = dict(settings, _composition_adapter=live.adapter_info) if live.adapter_info else settings
             memory_after = query_gpu_memory(cache_seconds=0)
@@ -10507,7 +10509,8 @@ class App(GpuResourceGuard, SharedRenderPreview, LocalPreviewComposition, Previe
                 output_size=None if scale > 1 else export_settings.get('output_size'),
             )
             if scale > 1:
-                sr_live = ProcessSuperResolution(width, height, scale, is_hdr=True)
+                sr_live = ProcessSuperResolution(width, height, scale, is_hdr=True,
+                                                 render_gpu=hdr_settings.get('render_gpu', 'auto'))
             live = ProcessLive(process_width, process_height, hdr_settings, _on_guidance_ready=self._guidance_started)
             settings = dict(settings, _composition_adapter=live.adapter_info) if live.adapter_info else settings
             if settings.get('guidance_mode'):

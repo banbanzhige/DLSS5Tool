@@ -32,6 +32,7 @@ from dlss5tool.gpu_decode import decode_options
 # preview adapter supplies its smaller user-facing value explicitly.
 DEFAULT_PREFETCH_AHEAD = 120
 MAX_PREFETCH_AHEAD = 48
+EXPORT_PREFETCH_AHEAD = 2
 
 PIXEL_KEYS = (
     '_nr_bypass', 'decode_cpu_fallback',
@@ -160,6 +161,7 @@ class RenderSession:
         self.suspended = False
         self.prefetch = True
         self.prefetch_ahead = DEFAULT_PREFETCH_AHEAD
+        self.sequential_export = False
         self.upstream = None
         self.progress = None
         self.thread = None
@@ -224,7 +226,11 @@ class RenderSession:
             # recent frame produced during a seek-history replay.
             candidates=[i for i in self.cache if not protect_target or i!=self.target]
             if not candidates:break
-            key = max(candidates, key=lambda i: abs(i-self.target))
+            # An export consumes increasing indices. Retire consumed history
+            # before lookahead, otherwise a budget change can discard the next
+            # encoded frame and force a complete temporal replay.
+            consumed = [i for i in candidates if i < self.target] if self.sequential_export else []
+            key = min(consumed) if consumed else max(candidates, key=lambda i: abs(i-self.target))
             self.bytes -= _pair_bytes(self.cache.pop(key))
         self._publish()
         return allowance
@@ -305,10 +311,13 @@ class RenderSession:
     def wait(self, index, cancel):
         while True:
             check_cancel(cancel)
-            value = self.request(index)
-            if value is not None:
-                return value
             with self.condition:
+                # Keep the miss and wait atomic. A faster upstream can publish
+                # between them; losing that notification adds a 50 ms poll to
+                # a frame that is already ready.
+                value = self.request(index)
+                if value is not None:
+                    return value
                 if self.closed:
                     raise Cancelled('处理缓存已关闭')
                 if self.complete and self.metadata and index >= self.metadata['source_frames']*self.multiplier:
@@ -345,11 +354,17 @@ class RenderSession:
                 self.stop = threading.Event()
                 stop = self.stop
                 replaying = self.restart
+                known_scene_cuts = tuple((self.metadata or {}).get('scene_cuts', ())) if replaying else ()
                 self.restart = False
                 self.produced = -1
                 self.complete = False
             def metadata(value):
                 with self.condition:
+                    # Replay can stop at a cached tail before rediscovering its
+                    # cuts. Retain known metadata for those immutable pixels.
+                    if known_scene_cuts and 'scene_cuts' in value:
+                        value = {**value, 'scene_cuts': tuple(sorted(
+                            set(known_scene_cuts).union(value['scene_cuts'])))}
                     self.metadata = value
                     self.condition.notify_all()
             def gate(source_index):
@@ -376,7 +391,10 @@ class RenderSession:
                         # One extra real frame supplies the right endpoint.
                         capacity = max(2*self.multiplier, self._allowance() // max(self.frame_bytes, 1))
                         ahead = min(capacity-1, max(2*self.multiplier, self.prefetch_ahead))
-                        if not self.frame_bytes or source_index*self.multiplier <= self.target+ahead+self.multiplier:
+                        # The preview horizon has an extra real endpoint. The
+                        # export's small window already includes that endpoint.
+                        endpoint = 0 if self.sequential_export else self.multiplier
+                        if not self.frame_bytes or source_index*self.multiplier <= self.target+ahead+endpoint:
                             break
                         self.condition.wait(.1)
                     check_cancel(stop)
@@ -627,6 +645,33 @@ class RenderCache:
 
 def encode_cached(session, output, settings, cancel, progress, *, frame_progress=None,
                   performance_sink=None):
+    # Pure SR needs only a short pipeline window. NR/FG retain their existing
+    # overlap horizon; their temporal stages can otherwise starve one another.
+    # Both paths retire consumed pixels first during sequential encoding.
+    short_window = session.multiplier == 1 and appearance.enhancement_bypass(settings) == 'source'
+    previous = []
+    layer = session
+    while isinstance(layer, RenderSession):
+        with layer.condition:
+            previous.append((layer, layer.prefetch_ahead, layer.sequential_export))
+            if short_window:
+                layer.prefetch_ahead = EXPORT_PREFETCH_AHEAD
+            layer.sequential_export = True
+            layer.condition.notify_all()
+        layer = layer.upstream
+    try:
+        return _encode_cached(session, output, settings, cancel, progress,
+                              frame_progress=frame_progress, performance_sink=performance_sink)
+    finally:
+        for layer, ahead, sequential in previous:
+            with layer.condition:
+                layer.prefetch_ahead = ahead
+                layer.sequential_export = sequential
+                layer.condition.notify_all()
+
+
+def _encode_cached(session, output, settings, cancel, progress, *, frame_progress=None,
+                   performance_sink=None):
     from dlss5tool.video_export import compose_hdr_frame, compose_output_frame
     from dlss5tool.gpu_export_runtime import create_video_writer as FFmpegVideoWriter
     import cv2
@@ -747,8 +792,9 @@ def encode_cached(session, output, settings, cancel, progress, *, frame_progress
             sequence.validate(lambda: check_cancel(cancel))
         os.rename(temporary, destination)
         success = True
-        cuts = len((session.metadata or {}).get('scene_cuts', ()))
-        return {**metadata, 'status': 'complete', 'real_frames': metadata['source_frames'],
+        scene_cuts = tuple((session.metadata or {}).get('scene_cuts', ()))
+        cuts = len(scene_cuts)
+        return {**metadata, 'scene_cuts': scene_cuts, 'status': 'complete', 'real_frames': metadata['source_frames'],
                 'generated_frames': (session.result or {}).get('generated_frames',
                     (metadata['source_frames']-1-cuts)*(session.multiplier-1)),
                 'cut_holds': cuts*(session.multiplier-1), 'endpoint_holds': session.multiplier-1,

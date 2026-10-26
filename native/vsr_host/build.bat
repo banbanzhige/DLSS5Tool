@@ -21,6 +21,8 @@ if errorlevel 1 (
 set "ROOT=%~dp0..\.."
 set "OUTPUT=%ROOT%\runtime"
 set "INTERMEDIATE=%ROOT%\build\native\vsr_host"
+if defined VSR_OUTPUT_DIR set "OUTPUT=%VSR_OUTPUT_DIR%"
+if defined VSR_INTERMEDIATE_DIR set "INTERMEDIATE=%VSR_INTERMEDIATE_DIR%"
 if not exist "%OUTPUT%" mkdir "%OUTPUT%"
 if not exist "%INTERMEDIATE%" mkdir "%INTERMEDIATE%"
 if not defined NV_RTX_VIDEO_SDK set "NV_RTX_VIDEO_SDK=%ROOT%\third_party\RTX_Video_SDK"
@@ -49,6 +51,10 @@ if not exist "%RTX_RUNTIME%" (
   echo         %RTX_RUNTIME%
   exit /b 1
 )
-copy /y "%RTX_RUNTIME%" "%OUTPUT%\nvngx_vsr.dll" >nul
-echo [ok] Built vsr_host.dll and staged nvngx_vsr.dll.
+if not defined VSR_SKIP_RUNTIME_STAGE (
+  copy /y "%RTX_RUNTIME%" "%OUTPUT%\nvngx_vsr.dll" >nul
+  echo [ok] Built vsr_host.dll and staged nvngx_vsr.dll.
+) else (
+  echo [ok] Built isolated vsr_host.dll; runtime DLL reused from its existing directory.
+)
 exit /b 0

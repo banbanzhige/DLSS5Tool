@@ -4,13 +4,14 @@
 #include <windows.h>
 #include <d3d12.h>
 #include <nvsdk_ngx.h>
-static NVSDK_NGX_Result ProbeInit(unsigned long long app, const wchar_t* path, ID3D12Device* device) {
+static NVSDK_NGX_Result ProbeInit(unsigned long long app, const wchar_t* path, ID3D12Device* device,
+                                 const NVSDK_NGX_FeatureCommonInfo* provided = nullptr) {
     // The probe DLL is deliberately not next to nvngx_vsr.dll. The application
     // data path is NOT a feature search path; declare the read-only runtime.
     const wchar_t* paths[] = {path};
     NVSDK_NGX_FeatureCommonInfo info{};
     info.PathListInfo = {paths, 1};
-    return NVSDK_NGX_D3D12_Init(app, path, device, &info);
+    return NVSDK_NGX_D3D12_Init(app, path, device, provided ? provided : &info);
 }
 #define NVSDK_NGX_D3D12_Init ProbeInit
 #include "../native/vsr_host/vsr_host.cpp"

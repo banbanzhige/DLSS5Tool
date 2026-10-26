@@ -16,11 +16,7 @@ _BT2020_TO_709 = np.array([
 ], dtype=np.float32)
 
 
-def analysis_rgba8(frame, settings):
-    if settings.get('frame_format', 'rgba8') != 'rgba16f':
-        if frame.dtype != np.uint8:
-            raise ValueError('SDR guidance requires RGBA8')
-        return frame
+def _hdr_analysis_format(frame, settings):
     profile = settings.get('color_profile')
     if profile not in HDR_PROFILES:
         raise ValueError('HDR guidance requires an explicit PQ, HLG or scRGB profile')
@@ -29,6 +25,31 @@ def analysis_rgba8(frame, settings):
     primaries = settings.get('color_primaries', 'bt2020')
     if profile != 'scrgb' and primaries not in ('bt2020', 'bt709'):
         raise ValueError('HDR guidance supports BT.2020 or BT.709 primaries')
+    return profile, primaries
+
+
+def validate_analysis_frame(frame, settings):
+    """Retain input checks when a cache consumer reuses upstream scene cuts.
+
+    Checking bounded rows avoids tone mapping or allocating a full RGBA8 proxy.
+    Alpha is ignored, as in analysis_rgba8's existing RGB validation contract.
+    """
+    if settings.get('frame_format', 'rgba8') != 'rgba16f':
+        if frame.dtype != np.uint8:
+            raise ValueError('SDR guidance requires RGBA8')
+        return
+    _hdr_analysis_format(frame, settings)
+    for top in range(0, frame.shape[0], 128):
+        if not np.isfinite(frame[top:top + 128, :, :3]).all():
+            raise ValueError('HDR guidance input contains non-finite pixels')
+
+
+def analysis_rgba8(frame, settings):
+    if settings.get('frame_format', 'rgba8') != 'rgba16f':
+        if frame.dtype != np.uint8:
+            raise ValueError('SDR guidance requires RGBA8')
+        return frame
+    profile, primaries = _hdr_analysis_format(frame, settings)
     result = np.empty(frame.shape, dtype=np.uint8)
     for top in range(0, frame.shape[0], 128):
         rgb = frame[top:top + 128, :, :3].astype(np.float32)

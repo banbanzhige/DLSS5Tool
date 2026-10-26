@@ -51,6 +51,8 @@ UINT g_output_height = 0;
 bool g_hdr = false;
 unsigned int g_quality = 4;
 FILE *g_log = nullptr;
+bool g_adapter_requested = false;
+LUID g_requested_adapter = {};
 
 template <typename T>
 void Release(T *&value)
@@ -345,12 +347,16 @@ bool CreateDevice()
             continue;
         DXGI_ADAPTER_DESC1 description = {};
         adapter->GetDesc1(&description);
-        if (description.VendorId == 0x10DE &&
+        const bool matches = !g_adapter_requested ||
+            (description.AdapterLuid.HighPart == g_requested_adapter.HighPart &&
+             description.AdapterLuid.LowPart == g_requested_adapter.LowPart);
+        if (matches && description.VendorId == 0x10DE &&
             !(description.Flags & DXGI_ADAPTER_FLAG_SOFTWARE) &&
             SUCCEEDED(D3D12CreateDevice(adapter, D3D_FEATURE_LEVEL_12_0, IID_PPV_ARGS(&g_device))))
         {
             selected = adapter;
             Log("adapter: %ls", description.Description);
+            Log("adapter LUID=%08X:%08X", unsigned(description.AdapterLuid.HighPart), description.AdapterLuid.LowPart);
             break;
         }
         adapter->Release();
@@ -428,11 +434,13 @@ void Shutdown()
 }
 }
 
-extern "C" __declspec(dllexport) int vsr_init(
+int InitializeVSR(
     int input_width, int input_height, int scale, int quality, int hdr,
-    const wchar_t *runtime_directory, const wchar_t *log_path)
+    const wchar_t *runtime_directory, const wchar_t *log_path, const LUID *adapter)
 {
     Shutdown();
+    g_adapter_requested = adapter != nullptr;
+    g_requested_adapter = adapter ? *adapter : LUID{};
     if (log_path != nullptr)
         _wfopen_s(&g_log, log_path, L"w");
     if (input_width <= 0 || input_height <= 0 || (scale != 2 && scale != 4))
@@ -474,7 +482,10 @@ extern "C" __declspec(dllexport) int vsr_init(
 
     const wchar_t *application_path =
         runtime_directory != nullptr && *runtime_directory != L'\0' ? runtime_directory : L".";
-    NVSDK_NGX_Result result = NVSDK_NGX_D3D12_Init(0, application_path, g_device);
+    const wchar_t *search_paths[] = {application_path};
+    NVSDK_NGX_FeatureCommonInfo common_info{};
+    common_info.PathListInfo = {search_paths, 1};
+    NVSDK_NGX_Result result = NVSDK_NGX_D3D12_Init(0, application_path, g_device, &common_info);
     Log("NGX init -> 0x%08X", result);
     if (NVSDK_NGX_FAILED(result))
     {
@@ -510,6 +521,30 @@ extern "C" __declspec(dllexport) int vsr_init(
         Shutdown();
         return 0;
     }
+    return 1;
+}
+
+extern "C" __declspec(dllexport) int vsr_init(
+    int input_width, int input_height, int scale, int quality, int hdr,
+    const wchar_t *runtime_directory, const wchar_t *log_path)
+{
+    return InitializeVSR(input_width, input_height, scale, quality, hdr, runtime_directory, log_path, nullptr);
+}
+
+extern "C" __declspec(dllexport) int vsr_init_adapter(
+    int input_width, int input_height, int scale, int quality, int hdr,
+    const wchar_t *runtime_directory, const wchar_t *log_path, int32_t luid_high, uint32_t luid_low)
+{
+    const LUID adapter{luid_low, luid_high};
+    return InitializeVSR(input_width, input_height, scale, quality, hdr, runtime_directory, log_path, &adapter);
+}
+
+extern "C" __declspec(dllexport) int vsr_adapter_luid(int32_t *high, uint32_t *low)
+{
+    if (!g_device || !high || !low) return 0;
+    const LUID actual = g_device->GetAdapterLuid();
+    *high = actual.HighPart;
+    *low = actual.LowPart;
     return 1;
 }
 

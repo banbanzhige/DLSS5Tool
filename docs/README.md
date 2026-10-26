@@ -58,6 +58,11 @@
 - 当前接入进展：[2026-09-17 编码时间戳与SDR GPU转换（候选通过，未切换默认）](development/ENCODER_INTEGRATION_20260917.md)
 - 后续落地：[2026-09-19 真实插帧与音视频封装接入（显式候选，HDR转换未完成）](development/GPU_EXPORT_INTEGRATION_20260919.md)
 - 最新本地升级：[HDR转换、普通增强、独立导出进程与应用选择已接入](development/GPU_EXPORT_UPGRADE_20260919.md)
+- 超分效率研究：[2026-10-24 实卡吞吐、GPU 利用率、场景检测候选与 NVEncC 复用方案](development/SR_EFFICIENCY_20261024.md)
+- 超分升级路线：[实施方案、阶段依赖、验收与回滚](development/SR_UPGRADE_ROADMAP_20261024.md)；[流程、SDK、编解码依赖及关联功能清单](development/SR_UPGRADE_CHECKLIST_20261024.md)
+- 2026-10-26 状态：[超分升级 TODO 对账](development/SR_UPGRADE_RECONCILIATION_20261026.md)；[内存保护与缓存协调已完成项](development/RAM_HEADROOM_IMPLEMENTATION_20261026.md)
+- 超分 S0/S1 已实施：[场景复用、顺序导出、像素与性能验收](development/SR_SCENE_OPTIMIZATION_20261026.md)；[原始测量及验证汇总](development/sr-scene-optimization-20261026/verification-summary.json)
+- 超分 S2 已实施：[SDR CUDA VSR、设备帧与显式选卡](development/SR_CUDA_IMPLEMENTATION_20261026.md)；[组件／像素／退出与缓存导出证据](development/sr-cuda-20261026/verification-summary.json)。完整 GPU 帧链从 S3 继续。
 
 - 仓库维护：[卫生守则与空间预算](development/REPOSITORY_HYGIENE.md)、[2026-09-11 临时目录盘点](development/TMP_AUDIT_20260911.md)
 

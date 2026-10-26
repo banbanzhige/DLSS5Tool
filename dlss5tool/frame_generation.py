@@ -21,7 +21,7 @@ from dlss5tool import i18n
 from dlss5tool import paths
 from dlss5tool.gpu_decode import iter_timestamps, decode_options, BACKEND as DECODE_BACKEND
 from dlss5tool.image_sequence import ImageSequence, is_sequence, open_capture, source_bytes, audio_source
-from dlss5tool.guidance_color import analysis_rgba8
+from dlss5tool.guidance_color import analysis_rgba8, validate_analysis_frame
 from dlss5tool.video_export import (
     FFmpegHDRVideoReader, FFmpegVideoWriter, find_ffmpeg, find_ffprobe,
     probe_video_stream, compose_hdr_frame, compose_output_frame, tone_map_hdr_preview,
@@ -327,10 +327,16 @@ def inspect_source(source, cancel, progress=None, *, allow_vfr=False, allow_cpu_
     return meta, rate, width, height, count
 
 
+def scene_thumbnail(frame):
+    """Own one small scene history; resize packed RGBA before selecting RGB."""
+    return cv2.resize(frame, (64, 64), interpolation=cv2.INTER_AREA)
+
+
 def is_cut(previous, current):
     # Conservative experimental cut detector; does not certify arbitrary edits.
-    a = cv2.resize(previous[..., :3], (64, 64), interpolation=cv2.INTER_AREA).astype(np.float32)
-    b = cv2.resize(current[..., :3], (64, 64), interpolation=cv2.INTER_AREA).astype(np.float32)
+    a = previous if previous.shape[:2] == (64, 64) else scene_thumbnail(previous)
+    b = current if current.shape[:2] == (64, 64) else scene_thumbnail(current)
+    a, b = a[..., :3].astype(np.float32), b[..., :3].astype(np.float32)
     return float(np.mean(np.abs(a-b))) / 255 > .45
 
 
@@ -381,6 +387,8 @@ def export_video(source, output, *, multiplier=2, scale=1, enhance=False, settin
                 meta, rate, w, h, total = inspect(source, cancel)
         else:
             upstream = input_session.wait_metadata(cancel)
+            if upstream.get('super_resolution_adapter'):
+                report['super_resolution_adapter'] = dict(upstream['super_resolution_adapter'])
             meta = upstream['source_metadata']
             rate = Fraction(upstream['source_rate'])
             w, h = upstream['width'], upstream['height']
@@ -461,7 +469,9 @@ def export_video(source, output, *, multiplier=2, scale=1, enhance=False, settin
         if scale > 1 and input_session is None:
             from dlss5tool.super_resolution import ProcessSuperResolution
             _emit_progress(progress, i18n.tr('status.init_super_resolution'), 0)
-            sr = measured('super_resolution_init', ProcessSuperResolution, w, h, scale, is_hdr=hdr)
+            sr = measured('super_resolution_init', ProcessSuperResolution, w, h, scale, is_hdr=hdr,
+                          render_gpu=config.get('render_gpu', 'auto'))
+            report['super_resolution_adapter'] = dict(getattr(sr, 'adapter_info', {}) or {})
         if creates_nr:
             from dlss5tool.dlss_host_process import ProcessLive
             _emit_progress(progress, i18n.tr('status.init_enhancement'), 0)
@@ -581,10 +591,17 @@ def export_video(source, output, *, multiplier=2, scale=1, enhance=False, settin
                 _emit_progress(progress, i18n.tr('status.super_resolution_frame', frame=index+1), index/max(total, 1))
                 # ProcessSuperResolution returns an owned snapshot already.
                 rgba = measured('super_resolution', sr.process, rgba)
-            scene_proxy = analysis_rgba8(rgba, config)
-            cut = previous_scene_proxy is not None and is_cut(previous_scene_proxy, scene_proxy)
             if input_session is not None:
+                # Metadata is published before its frame. Keep the input
+                # validation, but do not recompute cuts that are overwritten.
+                measured('scene_input_validation', validate_analysis_frame, rgba, config)
+                scene_proxy = None
                 cut = index in input_session.metadata.get('scene_cuts', ())
+            else:
+                # HDR analysis remains full resolution before the area resize;
+                # changing this order would change the nonlinear color math.
+                scene_proxy = measured('scene_analysis', lambda: scene_thumbnail(analysis_rgba8(rgba, config)))
+                cut = previous_scene_proxy is not None and is_cut(previous_scene_proxy, scene_proxy)
             if cut:
                 scene_cuts.append(index)
                 publish_metadata()
@@ -675,7 +692,7 @@ def export_video(source, output, *, multiplier=2, scale=1, enhance=False, settin
             previous = rgba.copy() if native else rgba
             previous_proxy = proxy.copy() if native else None
             previous_reference = reference
-            previous_scene_proxy = cv2.resize(scene_proxy, (64, 64), interpolation=cv2.INTER_AREA)
+            previous_scene_proxy = scene_proxy
             index += 1
             report['real_frames'] = index
             progress(f'处理 {index}/{total} 源帧 · 输出 {rate*multiplier} fps', min(index/total, .99))

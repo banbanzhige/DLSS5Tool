@@ -247,6 +247,77 @@ def test_prefetch_ahead_is_bounded_and_configurable():
         session.close()
 
 
+def test_sequential_export_retires_consumed_history_when_allowance_shrinks(monkeypatch):
+    pixels = np.zeros((8, 8, 4), np.uint8)
+    pair, _, _ = rc._snapshot_pair(pixels, pixels)
+    session = rc.RenderSession('source', {}, 5*pair.nbytes)
+    try:
+        session.sequential_export = True
+        session.target, session.produced = 5, 7
+        session.complete = True
+        session.cache.update((i, pair) for i in range(3, 8))
+        session.bytes = 5*pair.nbytes
+        monkeypatch.setattr(session, '_allowance', lambda: 3*pair.nbytes)
+        # Ordinary nearest-frame eviction drops frame 7. It must survive a
+        # processing reservation so export need not initialize the model again.
+        assert session._reclaim()
+        assert tuple(session.cache) == (5, 6, 7)
+        for index in (5, 6, 7):
+            assert session.request(index) is pair
+            assert not session.restart
+        assert session.bytes <= session._allowance()
+    finally:
+        session.close()
+
+
+def test_sequential_export_bounds_lookahead_including_endpoint():
+    session = rc.RenderSession('source', {}, 100000, renderer=renderer)
+    session.prefetch_ahead = rc.EXPORT_PREFETCH_AHEAD
+    session.sequential_export = True
+    try:
+        session.wait(0, threading.Event())
+        with session.condition:
+            assert session.condition.wait_for(lambda: session.produced >= 2, 3)
+            assert not session.condition.wait_for(lambda: session.produced > 2, .15)
+        assert set(session.cache) == {0, 1, 2}
+        assert session.wait(1, threading.Event())[0][0, 0, 0] == 1
+    finally:
+        session.close()
+
+
+def test_wait_cannot_miss_frame_published_after_cache_miss():
+    release_producer, published = threading.Event(), threading.Event()
+    reader = threading.current_thread()
+    def render(_source, _output, *, frame_sink, metadata_sink, **_kwargs):
+        metadata_sink({'source_frames': 1})
+        assert release_producer.wait(3)
+        frame = np.zeros((8, 8, 4), np.uint8)
+        frame_sink(0, frame, frame)
+        published.set()
+        return {}
+    session = rc.RenderSession('source', {}, 65536, renderer=render)
+    class PublicationCondition(threading.Condition):
+        def __exit__(self, *args):
+            result = super().__exit__(*args)
+            if threading.current_thread() is reader and not self._is_owned() and not published.is_set():
+                # Deterministically place publication in an unlocked gap between
+                # the miss and wait, if the consumer ever introduces that gap.
+                release_producer.set()
+                assert published.wait(3)
+            return result
+        def wait(self, timeout=None):
+            if threading.current_thread() is reader:
+                assert 0 not in session.cache, 'wait lost a ready-frame notification'
+                release_producer.set()
+            return super().wait(timeout)
+    session.condition = PublicationCondition(threading.RLock())
+    try:
+        assert session.wait(0, threading.Event())[0].shape == (8, 8, 4)
+    finally:
+        release_producer.set()
+        session.close()
+
+
 class Writer:
     instances = []
     def __init__(self, path, *args, **kwargs):
