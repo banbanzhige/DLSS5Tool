@@ -285,16 +285,16 @@ class GPUVideoCapture:
             frame = self._next()
             if frame is None:
                 return False, None
-            from dlss5tool.memory_budget import require_memory_headroom
-            require_memory_headroom(frame.width * frame.height * 24)
+            from dlss5tool.memory_budget import memory_allocation
             # Match the existing planar-YUV -> BGR color conversion. Passing NV12
             # directly to swscale can select a different rounding implementation.
             planar = {'nv12': 'yuv420p', 'p010le': 'yuv420p10le', 'p016le': 'yuv420p16le'}
-            if frame.format.name in planar:
-                frame = frame.reformat(format=planar[frame.format.name])
-            image = frame.to_ndarray(format='bgr24')
-            if self.rotation:
-                image = np.ascontiguousarray(np.rot90(image, self.rotation))
+            with memory_allocation(frame.width*frame.height*24,stage='decode_sdr'):
+                if frame.format.name in planar:
+                    frame = frame.reformat(format=planar[frame.format.name])
+                image = frame.to_ndarray(format='bgr24')
+                if self.rotation:
+                    image = np.ascontiguousarray(np.rot90(image, self.rotation))
             if frame.pts is not None:
                 self.timestamp_ms = float(frame.pts * frame.time_base) * 1000
             return True, image

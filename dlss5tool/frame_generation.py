@@ -152,7 +152,10 @@ class NativeStream:
                     raise RuntimeError('DLSSG 返回无效 HDR 数值，未截断或降为 SDR')
                 frames.append(frame)
             return frames, all(valid)
-        return self.call(exchange)
+        from dlss5tool.memory_budget import memory_allocation
+        with memory_allocation(self.bytes*(self.multiplier-1),stage='fg_output',
+                               cancel=lambda:check_cancel(self.cancel)):
+            return self.call(exchange)
 
     def process_device(self,rgba,motion,reset,consume):
         """Call consume(subframe, valid) on the owner thread before reuse ACK.
@@ -410,13 +413,15 @@ def export_video(source, output, *, multiplier=2, scale=1, enhance=False, settin
         from dlss5tool.super_resolution import estimate_resources
         plan = estimate_resources(w, h, 1 if input_session else scale, hdr, in_flight=1,
             use_super_resolution=scale > 1 and input_session is None,
-            use_enhancement=creates_nr)
-        fg_frames = ow*oh*(8 if hdr else 4)*4 if multiplier > 1 else 0
-        decode_frames = w*h*(48 if meta['is_hdr'] else 3) if input_session is None else 0
+            use_enhancement=creates_nr,decode_buffer=0 if input_session else 1,
+            decode_is_hdr=meta['is_hdr'],frame_generation_multiplier=multiplier,
+            frame_generation_size=(ow,oh))
         resize_frames = ow*oh*(8 if hdr else 4)*2 if (ow, oh) != (process_w, process_h) else 0
         # The shared system reserve already covers model/driver headroom. Only
         # charge known buffers of stages this invocation actually creates.
-        require_memory_headroom(plan['known_ram_bytes'] + fg_frames + decode_frames + resize_frames)
+        require_memory_headroom(plan['known_ram_bytes'] + resize_frames,
+            stage='render_plan',cancel=lambda:check_cancel(cancel),
+            recommended_bytes=plan['recommended_ram_bytes']+resize_frames)
         if gpu_export is None and hdr and not render_only and input_session is None and not view and not meta.get('_is_vfr'):
             from dlss5tool.gpu_export_runtime import eligible,load_components
             if ow*oh>=1920*1080 and eligible(ow,oh,hdr_metadata=meta,
@@ -694,6 +699,8 @@ def export_video(source, output, *, multiplier=2, scale=1, enhance=False, settin
         return report
     except BaseException as error:
         report.update(status='cancelled' if isinstance(error, Cancelled) else 'failed', error=str(error))
+        from dlss5tool.memory_budget import memory_events
+        report['memory_pressure_events']=memory_events()
         if isinstance(error, Cancelled):
             raise
         raise RuntimeError(f'{error}\n诊断记录：{log_dir}') from error

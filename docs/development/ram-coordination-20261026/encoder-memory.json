@@ -1,0 +1,148 @@
+{
+  "cases": [
+    {
+      "profile": "sdr",
+      "status": "passed",
+      "runs": [
+        {
+          "route": "baseline",
+          "encoder": "H.264 NVENC (GPU)",
+          "decode": {
+            "returncode": 0,
+            "frames": 8,
+            "md5": [
+              "a715ab410b7a91ae8a32a35527ec1552",
+              "e45a805d3d1cfcc7e5e25bc8c06ff249",
+              "903c0c7e00b3774be64eaa41828cbc30",
+              "0ca2cf32f406a61027c78c06577e709c",
+              "9fc48e7ed80fba1142a9c8729df3847a",
+              "ad5bef0825fa14641133aa3ab45b9e39",
+              "e7c229338d245cf242a763de63099709",
+              "06fc5c129621f0a63641729fd415cbc3"
+            ],
+            "stderr": ""
+          }
+        },
+        {
+          "route": "isolated",
+          "encoder": "NVENC H.264 GPU",
+          "decode": {
+            "returncode": 0,
+            "frames": 8,
+            "md5": [
+              "a715ab410b7a91ae8a32a35527ec1552",
+              "e45a805d3d1cfcc7e5e25bc8c06ff249",
+              "903c0c7e00b3774be64eaa41828cbc30",
+              "0ca2cf32f406a61027c78c06577e709c",
+              "9fc48e7ed80fba1142a9c8729df3847a",
+              "ad5bef0825fa14641133aa3ab45b9e39",
+              "e7c229338d245cf242a763de63099709",
+              "06fc5c129621f0a63641729fd415cbc3"
+            ],
+            "stderr": ""
+          }
+        }
+      ]
+    },
+    {
+      "profile": "pq",
+      "status": "passed",
+      "runs": [
+        {
+          "route": "baseline",
+          "encoder": "HEVC Main10 NVENC（HDR）",
+          "decode": {
+            "returncode": 0,
+            "frames": 8,
+            "md5": [
+              "a2ea54e839ece5e840ddcb5a42391b0b",
+              "57a5fb7830846e95a4ec6676bf2683ae",
+              "11930480f8ae1c4a838356134560433f",
+              "f7cd8cc90678565106c101d9f67f2752",
+              "e14c476d9a815fca4524dab8e2368002",
+              "5a0ac276149afc7cd70a37cf7e1e7ff5",
+              "e82a0372b236d9234d04788b8bd1479c",
+              "199f151269c9f29abc33c6577d5ef64b"
+            ],
+            "stderr": ""
+          }
+        },
+        {
+          "route": "isolated",
+          "encoder": "NVENC HEVC HDR GPU",
+          "decode": {
+            "returncode": 0,
+            "frames": 8,
+            "md5": [
+              "a2ea54e839ece5e840ddcb5a42391b0b",
+              "57a5fb7830846e95a4ec6676bf2683ae",
+              "11930480f8ae1c4a838356134560433f",
+              "f7cd8cc90678565106c101d9f67f2752",
+              "e14c476d9a815fca4524dab8e2368002",
+              "5a0ac276149afc7cd70a37cf7e1e7ff5",
+              "e82a0372b236d9234d04788b8bd1479c",
+              "199f151269c9f29abc33c6577d5ef64b"
+            ],
+            "stderr": ""
+          }
+        }
+      ]
+    },
+    {
+      "profile": "hlg",
+      "status": "passed",
+      "runs": [
+        {
+          "route": "baseline",
+          "encoder": "HEVC Main10 NVENC（HDR）",
+          "decode": {
+            "returncode": 0,
+            "frames": 8,
+            "md5": [
+              "a2ea54e839ece5e840ddcb5a42391b0b",
+              "57a5fb7830846e95a4ec6676bf2683ae",
+              "11930480f8ae1c4a838356134560433f",
+              "f7cd8cc90678565106c101d9f67f2752",
+              "e14c476d9a815fca4524dab8e2368002",
+              "5a0ac276149afc7cd70a37cf7e1e7ff5",
+              "e82a0372b236d9234d04788b8bd1479c",
+              "199f151269c9f29abc33c6577d5ef64b"
+            ],
+            "stderr": ""
+          }
+        },
+        {
+          "route": "isolated",
+          "encoder": "NVENC HEVC HDR GPU",
+          "decode": {
+            "returncode": 0,
+            "frames": 8,
+            "md5": [
+              "a2ea54e839ece5e840ddcb5a42391b0b",
+              "57a5fb7830846e95a4ec6676bf2683ae",
+              "11930480f8ae1c4a838356134560433f",
+              "f7cd8cc90678565106c101d9f67f2752",
+              "e14c476d9a815fca4524dab8e2368002",
+              "5a0ac276149afc7cd70a37cf7e1e7ff5",
+              "e82a0372b236d9234d04788b8bd1479c",
+              "199f151269c9f29abc33c6577d5ef64b"
+            ],
+            "stderr": ""
+          }
+        }
+      ]
+    }
+  ],
+  "scope": "8 frames per profile; SDR/PQ/HLG; existing components, no builds",
+  "cancel_before_creation": "passed",
+  "ledger_after": {
+    "limit_bytes": 268435456,
+    "used_bytes": 0,
+    "other_bytes": 0,
+    "effective_limit_bytes": 268435456,
+    "reserved_processing_bytes": 0,
+    "waiting_processing_bytes": 0,
+    "reclaim_epoch": 0
+  },
+  "status": "passed"
+}

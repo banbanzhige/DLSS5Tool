@@ -18,7 +18,7 @@ import numpy as np
 from dlss5tool import paths
 from dlss5tool import appearance
 from dlss5tool.deferred_error import ErrorSnapshot
-from dlss5tool.memory_budget import cache_limit_bytes
+from dlss5tool.memory_budget import cache_limit_bytes, current_pool, memory_scope, set_processing_priority
 from dlss5tool.export_metrics import ExportTelemetry
 from dlss5tool.parameter_contract import COMPOSITION_VERSION
 from dlss5tool.image_sequence import ImageSequence, is_sequence, source_bytes, audio_source
@@ -167,6 +167,22 @@ class RenderSession:
         self.hits = self.new_frames = self.replayed_frames = 0
         self.telemetry = ExportTelemetry()
         self.snapshot_copied_bytes = self.snapshot_borrowed_bytes = 0
+        if self.pool is None:
+            root=current_pool()
+            if root is not None:
+                from dlss5tool.shared_cache_budget import SharedCacheBudget
+                self.pool=SharedCacheBudget(root.name)
+        if self.pool:
+            self.settings['guidance_cache_pool']=self.pool.name
+            self.pool.set_reclaimer(self._reclaim)
+
+    def _reclaim(self):
+        if not self.condition.acquire(blocking=False):return False
+        try:
+            if not self.closed:self._trim(protect_target=True)
+            self.condition.notify_all()
+        finally:self.condition.release()
+        return True
 
     @property
     def error(self):
@@ -201,12 +217,14 @@ class RenderSession:
             with self.pool.locked():
                 self.pool.publish_locked(self.bytes)
 
-    def _trim(self, needed=0):
+    def _trim(self, needed=0, *, protect_target=False):
         allowance = self._allowance()
         while self.cache and self.bytes + needed > allowance:
             # Retain the neighbourhood currently being consumed, not the most
             # recent frame produced during a seek-history replay.
-            key = max(self.cache, key=lambda i: abs(i-self.target))
+            candidates=[i for i in self.cache if not protect_target or i!=self.target]
+            if not candidates:break
+            key = max(candidates, key=lambda i: abs(i-self.target))
             self.bytes -= _pair_bytes(self.cache.pop(key))
         self._publish()
         return allowance
@@ -316,6 +334,10 @@ class RenderSession:
                 self.condition.wait(.05)
 
     def _produce(self):
+        with memory_scope(self.pool):
+            self._produce_scoped()
+
+    def _produce_scoped(self):
         while True:
             with self.condition:
                 if self.closed:
@@ -331,6 +353,7 @@ class RenderSession:
                     self.metadata = value
                     self.condition.notify_all()
             def gate(source_index):
+                set_processing_priority(source_index <= (self.target+self.multiplier-1)//self.multiplier)
                 with self.condition:
                     while not stop.is_set():
                         if self.suspended:
@@ -342,7 +365,7 @@ class RenderSession:
                         if replaying and self.target in self.cache:
                             self.condition.wait(.05)
                             continue
-                        if not self.prefetch:
+                        if not self.prefetch or (self.pool and self.pool.under_pressure):
                             # Real frames need no neighbour. Interpolated frames
                             # require the next real frame as their right endpoint.
                             last_source = (self.target+self.multiplier-1)//self.multiplier

@@ -1,0 +1,3379 @@
+{
+  "calibration_label": "calibrated-runtime",
+  "maximum_unmodelled_private_delta_bytes": 2751143936,
+  "candidates": [
+    {
+      "cap_gib": 2,
+      "local_peak_cushion_bytes": -603660288,
+      "covers_sample_plus_one_gib": false
+    },
+    {
+      "cap_gib": 4,
+      "local_peak_cushion_bytes": 1543823360,
+      "covers_sample_plus_one_gib": true
+    },
+    {
+      "cap_gib": 8,
+      "local_peak_cushion_bytes": 5838790656,
+      "covers_sample_plus_one_gib": true
+    },
+    {
+      "cap_gib": 16,
+      "local_peak_cushion_bytes": 14428725248,
+      "covers_sample_plus_one_gib": true
+    }
+  ],
+  "recommended_cap_gib": 4,
+  "policy": {
+    "version": "ram-coordination-20261026",
+    "physical_reserve_min": 2147483648,
+    "physical_reserve_max": 4294967296,
+    "physical_reserve_divisor": 8,
+    "commit_reserve": "same_as_physical",
+    "cache_physical_fraction": 0.25,
+    "recovery_margin_bytes": 134217728,
+    "recovery_headroom_bytes": 268435456,
+    "recovery_delay_seconds": 0.5,
+    "reclaim_timeout_seconds": 1.5,
+    "idle_retire_seconds": 5.0
+  },
+  "reserves": [
+    {
+      "total_gib": 8,
+      "previous_reserve_gib": 2.0,
+      "new_reserve_gib": 2.0,
+      "required_256_mib_minimum_free_gib": 2.25
+    },
+    {
+      "total_gib": 16,
+      "previous_reserve_gib": 2.0,
+      "new_reserve_gib": 2.0,
+      "required_256_mib_minimum_free_gib": 2.25
+    },
+    {
+      "total_gib": 32,
+      "previous_reserve_gib": 4.0,
+      "new_reserve_gib": 4.0,
+      "required_256_mib_minimum_free_gib": 4.25
+    },
+    {
+      "total_gib": 64,
+      "previous_reserve_gib": 8.0,
+      "new_reserve_gib": 4.0,
+      "required_256_mib_minimum_free_gib": 4.25
+    },
+    {
+      "total_gib": 128,
+      "previous_reserve_gib": 16.0,
+      "new_reserve_gib": 4.0,
+      "required_256_mib_minimum_free_gib": 4.25
+    }
+  ],
+  "matrix": [
+    {
+      "total_gib": 8,
+      "free_gib": 0,
+      "commit_gib": 0.125,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 8,
+      "free_gib": 0,
+      "commit_gib": 1,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 8,
+      "free_gib": 0,
+      "commit_gib": 2,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 8,
+      "free_gib": 0,
+      "commit_gib": 2.25,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 8,
+      "free_gib": 0,
+      "commit_gib": 4,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 8,
+      "free_gib": 0,
+      "commit_gib": 6,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 8,
+      "free_gib": 0,
+      "commit_gib": 16,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 8,
+      "free_gib": 0.25,
+      "commit_gib": 0.125,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 8,
+      "free_gib": 0.25,
+      "commit_gib": 1,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 8,
+      "free_gib": 0.25,
+      "commit_gib": 2,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 8,
+      "free_gib": 0.25,
+      "commit_gib": 2.25,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 8,
+      "free_gib": 0.25,
+      "commit_gib": 4,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 8,
+      "free_gib": 0.25,
+      "commit_gib": 6,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 8,
+      "free_gib": 0.25,
+      "commit_gib": 16,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 8,
+      "free_gib": 0.5,
+      "commit_gib": 0.125,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 8,
+      "free_gib": 0.5,
+      "commit_gib": 1,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 8,
+      "free_gib": 0.5,
+      "commit_gib": 2,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 8,
+      "free_gib": 0.5,
+      "commit_gib": 2.25,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 8,
+      "free_gib": 0.5,
+      "commit_gib": 4,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 8,
+      "free_gib": 0.5,
+      "commit_gib": 6,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 8,
+      "free_gib": 0.5,
+      "commit_gib": 16,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 8,
+      "free_gib": 1,
+      "commit_gib": 0.125,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 8,
+      "free_gib": 1,
+      "commit_gib": 1,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 8,
+      "free_gib": 1,
+      "commit_gib": 2,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 8,
+      "free_gib": 1,
+      "commit_gib": 2.25,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 8,
+      "free_gib": 1,
+      "commit_gib": 4,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 8,
+      "free_gib": 1,
+      "commit_gib": 6,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 8,
+      "free_gib": 1,
+      "commit_gib": 16,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 8,
+      "free_gib": 2,
+      "commit_gib": 0.125,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 8,
+      "free_gib": 2,
+      "commit_gib": 1,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 8,
+      "free_gib": 2,
+      "commit_gib": 2,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 8,
+      "free_gib": 2,
+      "commit_gib": 2.25,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 8,
+      "free_gib": 2,
+      "commit_gib": 4,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 8,
+      "free_gib": 2,
+      "commit_gib": 6,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 8,
+      "free_gib": 2,
+      "commit_gib": 16,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 8,
+      "free_gib": 2.25,
+      "commit_gib": 0.125,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "commit"
+    },
+    {
+      "total_gib": 8,
+      "free_gib": 2.25,
+      "commit_gib": 1,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "commit"
+    },
+    {
+      "total_gib": 8,
+      "free_gib": 2.25,
+      "commit_gib": 2,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "commit"
+    },
+    {
+      "total_gib": 8,
+      "free_gib": 2.25,
+      "commit_gib": 2.25,
+      "previous_admitted": true,
+      "admitted": true,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 8,
+      "free_gib": 2.25,
+      "commit_gib": 4,
+      "previous_admitted": true,
+      "admitted": true,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 8,
+      "free_gib": 2.25,
+      "commit_gib": 6,
+      "previous_admitted": true,
+      "admitted": true,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 8,
+      "free_gib": 2.25,
+      "commit_gib": 16,
+      "previous_admitted": true,
+      "admitted": true,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 8,
+      "free_gib": 3,
+      "commit_gib": 0.125,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "commit"
+    },
+    {
+      "total_gib": 8,
+      "free_gib": 3,
+      "commit_gib": 1,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "commit"
+    },
+    {
+      "total_gib": 8,
+      "free_gib": 3,
+      "commit_gib": 2,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "commit"
+    },
+    {
+      "total_gib": 8,
+      "free_gib": 3,
+      "commit_gib": 2.25,
+      "previous_admitted": true,
+      "admitted": true,
+      "reason": "commit"
+    },
+    {
+      "total_gib": 8,
+      "free_gib": 3,
+      "commit_gib": 4,
+      "previous_admitted": true,
+      "admitted": true,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 8,
+      "free_gib": 3,
+      "commit_gib": 6,
+      "previous_admitted": true,
+      "admitted": true,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 8,
+      "free_gib": 3,
+      "commit_gib": 16,
+      "previous_admitted": true,
+      "admitted": true,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 8,
+      "free_gib": 4,
+      "commit_gib": 0.125,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "commit"
+    },
+    {
+      "total_gib": 8,
+      "free_gib": 4,
+      "commit_gib": 1,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "commit"
+    },
+    {
+      "total_gib": 8,
+      "free_gib": 4,
+      "commit_gib": 2,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "commit"
+    },
+    {
+      "total_gib": 8,
+      "free_gib": 4,
+      "commit_gib": 2.25,
+      "previous_admitted": true,
+      "admitted": true,
+      "reason": "commit"
+    },
+    {
+      "total_gib": 8,
+      "free_gib": 4,
+      "commit_gib": 4,
+      "previous_admitted": true,
+      "admitted": true,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 8,
+      "free_gib": 4,
+      "commit_gib": 6,
+      "previous_admitted": true,
+      "admitted": true,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 8,
+      "free_gib": 4,
+      "commit_gib": 16,
+      "previous_admitted": true,
+      "admitted": true,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 8,
+      "free_gib": 4.25,
+      "commit_gib": 0.125,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "commit"
+    },
+    {
+      "total_gib": 8,
+      "free_gib": 4.25,
+      "commit_gib": 1,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "commit"
+    },
+    {
+      "total_gib": 8,
+      "free_gib": 4.25,
+      "commit_gib": 2,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "commit"
+    },
+    {
+      "total_gib": 8,
+      "free_gib": 4.25,
+      "commit_gib": 2.25,
+      "previous_admitted": true,
+      "admitted": true,
+      "reason": "commit"
+    },
+    {
+      "total_gib": 8,
+      "free_gib": 4.25,
+      "commit_gib": 4,
+      "previous_admitted": true,
+      "admitted": true,
+      "reason": "commit"
+    },
+    {
+      "total_gib": 8,
+      "free_gib": 4.25,
+      "commit_gib": 6,
+      "previous_admitted": true,
+      "admitted": true,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 8,
+      "free_gib": 4.25,
+      "commit_gib": 16,
+      "previous_admitted": true,
+      "admitted": true,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 8,
+      "free_gib": 6,
+      "commit_gib": 0.125,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "commit"
+    },
+    {
+      "total_gib": 8,
+      "free_gib": 6,
+      "commit_gib": 1,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "commit"
+    },
+    {
+      "total_gib": 8,
+      "free_gib": 6,
+      "commit_gib": 2,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "commit"
+    },
+    {
+      "total_gib": 8,
+      "free_gib": 6,
+      "commit_gib": 2.25,
+      "previous_admitted": true,
+      "admitted": true,
+      "reason": "commit"
+    },
+    {
+      "total_gib": 8,
+      "free_gib": 6,
+      "commit_gib": 4,
+      "previous_admitted": true,
+      "admitted": true,
+      "reason": "commit"
+    },
+    {
+      "total_gib": 8,
+      "free_gib": 6,
+      "commit_gib": 6,
+      "previous_admitted": true,
+      "admitted": true,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 8,
+      "free_gib": 6,
+      "commit_gib": 16,
+      "previous_admitted": true,
+      "admitted": true,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 8,
+      "free_gib": 8,
+      "commit_gib": 0.125,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "commit"
+    },
+    {
+      "total_gib": 8,
+      "free_gib": 8,
+      "commit_gib": 1,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "commit"
+    },
+    {
+      "total_gib": 8,
+      "free_gib": 8,
+      "commit_gib": 2,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "commit"
+    },
+    {
+      "total_gib": 8,
+      "free_gib": 8,
+      "commit_gib": 2.25,
+      "previous_admitted": true,
+      "admitted": true,
+      "reason": "commit"
+    },
+    {
+      "total_gib": 8,
+      "free_gib": 8,
+      "commit_gib": 4,
+      "previous_admitted": true,
+      "admitted": true,
+      "reason": "commit"
+    },
+    {
+      "total_gib": 8,
+      "free_gib": 8,
+      "commit_gib": 6,
+      "previous_admitted": true,
+      "admitted": true,
+      "reason": "commit"
+    },
+    {
+      "total_gib": 8,
+      "free_gib": 8,
+      "commit_gib": 16,
+      "previous_admitted": true,
+      "admitted": true,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 16,
+      "free_gib": 0,
+      "commit_gib": 0.125,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 16,
+      "free_gib": 0,
+      "commit_gib": 1,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 16,
+      "free_gib": 0,
+      "commit_gib": 2,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 16,
+      "free_gib": 0,
+      "commit_gib": 2.25,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 16,
+      "free_gib": 0,
+      "commit_gib": 4,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 16,
+      "free_gib": 0,
+      "commit_gib": 6,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 16,
+      "free_gib": 0,
+      "commit_gib": 16,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 16,
+      "free_gib": 0.25,
+      "commit_gib": 0.125,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 16,
+      "free_gib": 0.25,
+      "commit_gib": 1,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 16,
+      "free_gib": 0.25,
+      "commit_gib": 2,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 16,
+      "free_gib": 0.25,
+      "commit_gib": 2.25,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 16,
+      "free_gib": 0.25,
+      "commit_gib": 4,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 16,
+      "free_gib": 0.25,
+      "commit_gib": 6,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 16,
+      "free_gib": 0.25,
+      "commit_gib": 16,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 16,
+      "free_gib": 0.5,
+      "commit_gib": 0.125,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 16,
+      "free_gib": 0.5,
+      "commit_gib": 1,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 16,
+      "free_gib": 0.5,
+      "commit_gib": 2,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 16,
+      "free_gib": 0.5,
+      "commit_gib": 2.25,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 16,
+      "free_gib": 0.5,
+      "commit_gib": 4,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 16,
+      "free_gib": 0.5,
+      "commit_gib": 6,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 16,
+      "free_gib": 0.5,
+      "commit_gib": 16,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 16,
+      "free_gib": 1,
+      "commit_gib": 0.125,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 16,
+      "free_gib": 1,
+      "commit_gib": 1,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 16,
+      "free_gib": 1,
+      "commit_gib": 2,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 16,
+      "free_gib": 1,
+      "commit_gib": 2.25,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 16,
+      "free_gib": 1,
+      "commit_gib": 4,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 16,
+      "free_gib": 1,
+      "commit_gib": 6,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 16,
+      "free_gib": 1,
+      "commit_gib": 16,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 16,
+      "free_gib": 2,
+      "commit_gib": 0.125,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 16,
+      "free_gib": 2,
+      "commit_gib": 1,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 16,
+      "free_gib": 2,
+      "commit_gib": 2,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 16,
+      "free_gib": 2,
+      "commit_gib": 2.25,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 16,
+      "free_gib": 2,
+      "commit_gib": 4,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 16,
+      "free_gib": 2,
+      "commit_gib": 6,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 16,
+      "free_gib": 2,
+      "commit_gib": 16,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 16,
+      "free_gib": 2.25,
+      "commit_gib": 0.125,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "commit"
+    },
+    {
+      "total_gib": 16,
+      "free_gib": 2.25,
+      "commit_gib": 1,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "commit"
+    },
+    {
+      "total_gib": 16,
+      "free_gib": 2.25,
+      "commit_gib": 2,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "commit"
+    },
+    {
+      "total_gib": 16,
+      "free_gib": 2.25,
+      "commit_gib": 2.25,
+      "previous_admitted": true,
+      "admitted": true,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 16,
+      "free_gib": 2.25,
+      "commit_gib": 4,
+      "previous_admitted": true,
+      "admitted": true,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 16,
+      "free_gib": 2.25,
+      "commit_gib": 6,
+      "previous_admitted": true,
+      "admitted": true,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 16,
+      "free_gib": 2.25,
+      "commit_gib": 16,
+      "previous_admitted": true,
+      "admitted": true,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 16,
+      "free_gib": 3,
+      "commit_gib": 0.125,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "commit"
+    },
+    {
+      "total_gib": 16,
+      "free_gib": 3,
+      "commit_gib": 1,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "commit"
+    },
+    {
+      "total_gib": 16,
+      "free_gib": 3,
+      "commit_gib": 2,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "commit"
+    },
+    {
+      "total_gib": 16,
+      "free_gib": 3,
+      "commit_gib": 2.25,
+      "previous_admitted": true,
+      "admitted": true,
+      "reason": "commit"
+    },
+    {
+      "total_gib": 16,
+      "free_gib": 3,
+      "commit_gib": 4,
+      "previous_admitted": true,
+      "admitted": true,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 16,
+      "free_gib": 3,
+      "commit_gib": 6,
+      "previous_admitted": true,
+      "admitted": true,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 16,
+      "free_gib": 3,
+      "commit_gib": 16,
+      "previous_admitted": true,
+      "admitted": true,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 16,
+      "free_gib": 4,
+      "commit_gib": 0.125,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "commit"
+    },
+    {
+      "total_gib": 16,
+      "free_gib": 4,
+      "commit_gib": 1,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "commit"
+    },
+    {
+      "total_gib": 16,
+      "free_gib": 4,
+      "commit_gib": 2,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "commit"
+    },
+    {
+      "total_gib": 16,
+      "free_gib": 4,
+      "commit_gib": 2.25,
+      "previous_admitted": true,
+      "admitted": true,
+      "reason": "commit"
+    },
+    {
+      "total_gib": 16,
+      "free_gib": 4,
+      "commit_gib": 4,
+      "previous_admitted": true,
+      "admitted": true,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 16,
+      "free_gib": 4,
+      "commit_gib": 6,
+      "previous_admitted": true,
+      "admitted": true,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 16,
+      "free_gib": 4,
+      "commit_gib": 16,
+      "previous_admitted": true,
+      "admitted": true,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 16,
+      "free_gib": 4.25,
+      "commit_gib": 0.125,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "commit"
+    },
+    {
+      "total_gib": 16,
+      "free_gib": 4.25,
+      "commit_gib": 1,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "commit"
+    },
+    {
+      "total_gib": 16,
+      "free_gib": 4.25,
+      "commit_gib": 2,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "commit"
+    },
+    {
+      "total_gib": 16,
+      "free_gib": 4.25,
+      "commit_gib": 2.25,
+      "previous_admitted": true,
+      "admitted": true,
+      "reason": "commit"
+    },
+    {
+      "total_gib": 16,
+      "free_gib": 4.25,
+      "commit_gib": 4,
+      "previous_admitted": true,
+      "admitted": true,
+      "reason": "commit"
+    },
+    {
+      "total_gib": 16,
+      "free_gib": 4.25,
+      "commit_gib": 6,
+      "previous_admitted": true,
+      "admitted": true,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 16,
+      "free_gib": 4.25,
+      "commit_gib": 16,
+      "previous_admitted": true,
+      "admitted": true,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 16,
+      "free_gib": 6,
+      "commit_gib": 0.125,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "commit"
+    },
+    {
+      "total_gib": 16,
+      "free_gib": 6,
+      "commit_gib": 1,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "commit"
+    },
+    {
+      "total_gib": 16,
+      "free_gib": 6,
+      "commit_gib": 2,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "commit"
+    },
+    {
+      "total_gib": 16,
+      "free_gib": 6,
+      "commit_gib": 2.25,
+      "previous_admitted": true,
+      "admitted": true,
+      "reason": "commit"
+    },
+    {
+      "total_gib": 16,
+      "free_gib": 6,
+      "commit_gib": 4,
+      "previous_admitted": true,
+      "admitted": true,
+      "reason": "commit"
+    },
+    {
+      "total_gib": 16,
+      "free_gib": 6,
+      "commit_gib": 6,
+      "previous_admitted": true,
+      "admitted": true,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 16,
+      "free_gib": 6,
+      "commit_gib": 16,
+      "previous_admitted": true,
+      "admitted": true,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 16,
+      "free_gib": 8,
+      "commit_gib": 0.125,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "commit"
+    },
+    {
+      "total_gib": 16,
+      "free_gib": 8,
+      "commit_gib": 1,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "commit"
+    },
+    {
+      "total_gib": 16,
+      "free_gib": 8,
+      "commit_gib": 2,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "commit"
+    },
+    {
+      "total_gib": 16,
+      "free_gib": 8,
+      "commit_gib": 2.25,
+      "previous_admitted": true,
+      "admitted": true,
+      "reason": "commit"
+    },
+    {
+      "total_gib": 16,
+      "free_gib": 8,
+      "commit_gib": 4,
+      "previous_admitted": true,
+      "admitted": true,
+      "reason": "commit"
+    },
+    {
+      "total_gib": 16,
+      "free_gib": 8,
+      "commit_gib": 6,
+      "previous_admitted": true,
+      "admitted": true,
+      "reason": "commit"
+    },
+    {
+      "total_gib": 16,
+      "free_gib": 8,
+      "commit_gib": 16,
+      "previous_admitted": true,
+      "admitted": true,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 16,
+      "free_gib": 16,
+      "commit_gib": 0.125,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "commit"
+    },
+    {
+      "total_gib": 16,
+      "free_gib": 16,
+      "commit_gib": 1,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "commit"
+    },
+    {
+      "total_gib": 16,
+      "free_gib": 16,
+      "commit_gib": 2,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "commit"
+    },
+    {
+      "total_gib": 16,
+      "free_gib": 16,
+      "commit_gib": 2.25,
+      "previous_admitted": true,
+      "admitted": true,
+      "reason": "commit"
+    },
+    {
+      "total_gib": 16,
+      "free_gib": 16,
+      "commit_gib": 4,
+      "previous_admitted": true,
+      "admitted": true,
+      "reason": "commit"
+    },
+    {
+      "total_gib": 16,
+      "free_gib": 16,
+      "commit_gib": 6,
+      "previous_admitted": true,
+      "admitted": true,
+      "reason": "commit"
+    },
+    {
+      "total_gib": 16,
+      "free_gib": 16,
+      "commit_gib": 16,
+      "previous_admitted": true,
+      "admitted": true,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 32,
+      "free_gib": 0,
+      "commit_gib": 0.125,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 32,
+      "free_gib": 0,
+      "commit_gib": 1,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 32,
+      "free_gib": 0,
+      "commit_gib": 2,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 32,
+      "free_gib": 0,
+      "commit_gib": 2.25,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 32,
+      "free_gib": 0,
+      "commit_gib": 4,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 32,
+      "free_gib": 0,
+      "commit_gib": 6,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 32,
+      "free_gib": 0,
+      "commit_gib": 16,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 32,
+      "free_gib": 0.25,
+      "commit_gib": 0.125,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 32,
+      "free_gib": 0.25,
+      "commit_gib": 1,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 32,
+      "free_gib": 0.25,
+      "commit_gib": 2,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 32,
+      "free_gib": 0.25,
+      "commit_gib": 2.25,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 32,
+      "free_gib": 0.25,
+      "commit_gib": 4,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 32,
+      "free_gib": 0.25,
+      "commit_gib": 6,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 32,
+      "free_gib": 0.25,
+      "commit_gib": 16,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 32,
+      "free_gib": 0.5,
+      "commit_gib": 0.125,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 32,
+      "free_gib": 0.5,
+      "commit_gib": 1,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 32,
+      "free_gib": 0.5,
+      "commit_gib": 2,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 32,
+      "free_gib": 0.5,
+      "commit_gib": 2.25,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 32,
+      "free_gib": 0.5,
+      "commit_gib": 4,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 32,
+      "free_gib": 0.5,
+      "commit_gib": 6,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 32,
+      "free_gib": 0.5,
+      "commit_gib": 16,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 32,
+      "free_gib": 1,
+      "commit_gib": 0.125,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 32,
+      "free_gib": 1,
+      "commit_gib": 1,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 32,
+      "free_gib": 1,
+      "commit_gib": 2,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 32,
+      "free_gib": 1,
+      "commit_gib": 2.25,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 32,
+      "free_gib": 1,
+      "commit_gib": 4,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 32,
+      "free_gib": 1,
+      "commit_gib": 6,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 32,
+      "free_gib": 1,
+      "commit_gib": 16,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 32,
+      "free_gib": 2,
+      "commit_gib": 0.125,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 32,
+      "free_gib": 2,
+      "commit_gib": 1,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 32,
+      "free_gib": 2,
+      "commit_gib": 2,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 32,
+      "free_gib": 2,
+      "commit_gib": 2.25,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 32,
+      "free_gib": 2,
+      "commit_gib": 4,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 32,
+      "free_gib": 2,
+      "commit_gib": 6,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 32,
+      "free_gib": 2,
+      "commit_gib": 16,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 32,
+      "free_gib": 2.25,
+      "commit_gib": 0.125,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 32,
+      "free_gib": 2.25,
+      "commit_gib": 1,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 32,
+      "free_gib": 2.25,
+      "commit_gib": 2,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 32,
+      "free_gib": 2.25,
+      "commit_gib": 2.25,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 32,
+      "free_gib": 2.25,
+      "commit_gib": 4,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 32,
+      "free_gib": 2.25,
+      "commit_gib": 6,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 32,
+      "free_gib": 2.25,
+      "commit_gib": 16,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 32,
+      "free_gib": 3,
+      "commit_gib": 0.125,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 32,
+      "free_gib": 3,
+      "commit_gib": 1,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 32,
+      "free_gib": 3,
+      "commit_gib": 2,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 32,
+      "free_gib": 3,
+      "commit_gib": 2.25,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 32,
+      "free_gib": 3,
+      "commit_gib": 4,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 32,
+      "free_gib": 3,
+      "commit_gib": 6,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 32,
+      "free_gib": 3,
+      "commit_gib": 16,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 32,
+      "free_gib": 4,
+      "commit_gib": 0.125,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 32,
+      "free_gib": 4,
+      "commit_gib": 1,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 32,
+      "free_gib": 4,
+      "commit_gib": 2,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 32,
+      "free_gib": 4,
+      "commit_gib": 2.25,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 32,
+      "free_gib": 4,
+      "commit_gib": 4,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 32,
+      "free_gib": 4,
+      "commit_gib": 6,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 32,
+      "free_gib": 4,
+      "commit_gib": 16,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 32,
+      "free_gib": 4.25,
+      "commit_gib": 0.125,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "commit"
+    },
+    {
+      "total_gib": 32,
+      "free_gib": 4.25,
+      "commit_gib": 1,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "commit"
+    },
+    {
+      "total_gib": 32,
+      "free_gib": 4.25,
+      "commit_gib": 2,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "commit"
+    },
+    {
+      "total_gib": 32,
+      "free_gib": 4.25,
+      "commit_gib": 2.25,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "commit"
+    },
+    {
+      "total_gib": 32,
+      "free_gib": 4.25,
+      "commit_gib": 4,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "commit"
+    },
+    {
+      "total_gib": 32,
+      "free_gib": 4.25,
+      "commit_gib": 6,
+      "previous_admitted": true,
+      "admitted": true,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 32,
+      "free_gib": 4.25,
+      "commit_gib": 16,
+      "previous_admitted": true,
+      "admitted": true,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 32,
+      "free_gib": 6,
+      "commit_gib": 0.125,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "commit"
+    },
+    {
+      "total_gib": 32,
+      "free_gib": 6,
+      "commit_gib": 1,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "commit"
+    },
+    {
+      "total_gib": 32,
+      "free_gib": 6,
+      "commit_gib": 2,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "commit"
+    },
+    {
+      "total_gib": 32,
+      "free_gib": 6,
+      "commit_gib": 2.25,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "commit"
+    },
+    {
+      "total_gib": 32,
+      "free_gib": 6,
+      "commit_gib": 4,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "commit"
+    },
+    {
+      "total_gib": 32,
+      "free_gib": 6,
+      "commit_gib": 6,
+      "previous_admitted": true,
+      "admitted": true,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 32,
+      "free_gib": 6,
+      "commit_gib": 16,
+      "previous_admitted": true,
+      "admitted": true,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 32,
+      "free_gib": 8,
+      "commit_gib": 0.125,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "commit"
+    },
+    {
+      "total_gib": 32,
+      "free_gib": 8,
+      "commit_gib": 1,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "commit"
+    },
+    {
+      "total_gib": 32,
+      "free_gib": 8,
+      "commit_gib": 2,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "commit"
+    },
+    {
+      "total_gib": 32,
+      "free_gib": 8,
+      "commit_gib": 2.25,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "commit"
+    },
+    {
+      "total_gib": 32,
+      "free_gib": 8,
+      "commit_gib": 4,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "commit"
+    },
+    {
+      "total_gib": 32,
+      "free_gib": 8,
+      "commit_gib": 6,
+      "previous_admitted": true,
+      "admitted": true,
+      "reason": "commit"
+    },
+    {
+      "total_gib": 32,
+      "free_gib": 8,
+      "commit_gib": 16,
+      "previous_admitted": true,
+      "admitted": true,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 32,
+      "free_gib": 16,
+      "commit_gib": 0.125,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "commit"
+    },
+    {
+      "total_gib": 32,
+      "free_gib": 16,
+      "commit_gib": 1,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "commit"
+    },
+    {
+      "total_gib": 32,
+      "free_gib": 16,
+      "commit_gib": 2,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "commit"
+    },
+    {
+      "total_gib": 32,
+      "free_gib": 16,
+      "commit_gib": 2.25,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "commit"
+    },
+    {
+      "total_gib": 32,
+      "free_gib": 16,
+      "commit_gib": 4,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "commit"
+    },
+    {
+      "total_gib": 32,
+      "free_gib": 16,
+      "commit_gib": 6,
+      "previous_admitted": true,
+      "admitted": true,
+      "reason": "commit"
+    },
+    {
+      "total_gib": 32,
+      "free_gib": 16,
+      "commit_gib": 16,
+      "previous_admitted": true,
+      "admitted": true,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 64,
+      "free_gib": 0,
+      "commit_gib": 0.125,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 64,
+      "free_gib": 0,
+      "commit_gib": 1,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 64,
+      "free_gib": 0,
+      "commit_gib": 2,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 64,
+      "free_gib": 0,
+      "commit_gib": 2.25,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 64,
+      "free_gib": 0,
+      "commit_gib": 4,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 64,
+      "free_gib": 0,
+      "commit_gib": 6,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 64,
+      "free_gib": 0,
+      "commit_gib": 16,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 64,
+      "free_gib": 0.25,
+      "commit_gib": 0.125,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 64,
+      "free_gib": 0.25,
+      "commit_gib": 1,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 64,
+      "free_gib": 0.25,
+      "commit_gib": 2,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 64,
+      "free_gib": 0.25,
+      "commit_gib": 2.25,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 64,
+      "free_gib": 0.25,
+      "commit_gib": 4,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 64,
+      "free_gib": 0.25,
+      "commit_gib": 6,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 64,
+      "free_gib": 0.25,
+      "commit_gib": 16,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 64,
+      "free_gib": 0.5,
+      "commit_gib": 0.125,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 64,
+      "free_gib": 0.5,
+      "commit_gib": 1,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 64,
+      "free_gib": 0.5,
+      "commit_gib": 2,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 64,
+      "free_gib": 0.5,
+      "commit_gib": 2.25,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 64,
+      "free_gib": 0.5,
+      "commit_gib": 4,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 64,
+      "free_gib": 0.5,
+      "commit_gib": 6,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 64,
+      "free_gib": 0.5,
+      "commit_gib": 16,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 64,
+      "free_gib": 1,
+      "commit_gib": 0.125,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 64,
+      "free_gib": 1,
+      "commit_gib": 1,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 64,
+      "free_gib": 1,
+      "commit_gib": 2,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 64,
+      "free_gib": 1,
+      "commit_gib": 2.25,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 64,
+      "free_gib": 1,
+      "commit_gib": 4,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 64,
+      "free_gib": 1,
+      "commit_gib": 6,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 64,
+      "free_gib": 1,
+      "commit_gib": 16,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 64,
+      "free_gib": 2,
+      "commit_gib": 0.125,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 64,
+      "free_gib": 2,
+      "commit_gib": 1,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 64,
+      "free_gib": 2,
+      "commit_gib": 2,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 64,
+      "free_gib": 2,
+      "commit_gib": 2.25,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 64,
+      "free_gib": 2,
+      "commit_gib": 4,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 64,
+      "free_gib": 2,
+      "commit_gib": 6,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 64,
+      "free_gib": 2,
+      "commit_gib": 16,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 64,
+      "free_gib": 2.25,
+      "commit_gib": 0.125,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 64,
+      "free_gib": 2.25,
+      "commit_gib": 1,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 64,
+      "free_gib": 2.25,
+      "commit_gib": 2,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 64,
+      "free_gib": 2.25,
+      "commit_gib": 2.25,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 64,
+      "free_gib": 2.25,
+      "commit_gib": 4,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 64,
+      "free_gib": 2.25,
+      "commit_gib": 6,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 64,
+      "free_gib": 2.25,
+      "commit_gib": 16,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 64,
+      "free_gib": 3,
+      "commit_gib": 0.125,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 64,
+      "free_gib": 3,
+      "commit_gib": 1,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 64,
+      "free_gib": 3,
+      "commit_gib": 2,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 64,
+      "free_gib": 3,
+      "commit_gib": 2.25,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 64,
+      "free_gib": 3,
+      "commit_gib": 4,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 64,
+      "free_gib": 3,
+      "commit_gib": 6,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 64,
+      "free_gib": 3,
+      "commit_gib": 16,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 64,
+      "free_gib": 4,
+      "commit_gib": 0.125,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 64,
+      "free_gib": 4,
+      "commit_gib": 1,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 64,
+      "free_gib": 4,
+      "commit_gib": 2,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 64,
+      "free_gib": 4,
+      "commit_gib": 2.25,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 64,
+      "free_gib": 4,
+      "commit_gib": 4,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 64,
+      "free_gib": 4,
+      "commit_gib": 6,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 64,
+      "free_gib": 4,
+      "commit_gib": 16,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 64,
+      "free_gib": 4.25,
+      "commit_gib": 0.125,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "commit"
+    },
+    {
+      "total_gib": 64,
+      "free_gib": 4.25,
+      "commit_gib": 1,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "commit"
+    },
+    {
+      "total_gib": 64,
+      "free_gib": 4.25,
+      "commit_gib": 2,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "commit"
+    },
+    {
+      "total_gib": 64,
+      "free_gib": 4.25,
+      "commit_gib": 2.25,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "commit"
+    },
+    {
+      "total_gib": 64,
+      "free_gib": 4.25,
+      "commit_gib": 4,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "commit"
+    },
+    {
+      "total_gib": 64,
+      "free_gib": 4.25,
+      "commit_gib": 6,
+      "previous_admitted": false,
+      "admitted": true,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 64,
+      "free_gib": 4.25,
+      "commit_gib": 16,
+      "previous_admitted": false,
+      "admitted": true,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 64,
+      "free_gib": 6,
+      "commit_gib": 0.125,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "commit"
+    },
+    {
+      "total_gib": 64,
+      "free_gib": 6,
+      "commit_gib": 1,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "commit"
+    },
+    {
+      "total_gib": 64,
+      "free_gib": 6,
+      "commit_gib": 2,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "commit"
+    },
+    {
+      "total_gib": 64,
+      "free_gib": 6,
+      "commit_gib": 2.25,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "commit"
+    },
+    {
+      "total_gib": 64,
+      "free_gib": 6,
+      "commit_gib": 4,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "commit"
+    },
+    {
+      "total_gib": 64,
+      "free_gib": 6,
+      "commit_gib": 6,
+      "previous_admitted": false,
+      "admitted": true,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 64,
+      "free_gib": 6,
+      "commit_gib": 16,
+      "previous_admitted": false,
+      "admitted": true,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 64,
+      "free_gib": 8,
+      "commit_gib": 0.125,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "commit"
+    },
+    {
+      "total_gib": 64,
+      "free_gib": 8,
+      "commit_gib": 1,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "commit"
+    },
+    {
+      "total_gib": 64,
+      "free_gib": 8,
+      "commit_gib": 2,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "commit"
+    },
+    {
+      "total_gib": 64,
+      "free_gib": 8,
+      "commit_gib": 2.25,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "commit"
+    },
+    {
+      "total_gib": 64,
+      "free_gib": 8,
+      "commit_gib": 4,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "commit"
+    },
+    {
+      "total_gib": 64,
+      "free_gib": 8,
+      "commit_gib": 6,
+      "previous_admitted": false,
+      "admitted": true,
+      "reason": "commit"
+    },
+    {
+      "total_gib": 64,
+      "free_gib": 8,
+      "commit_gib": 16,
+      "previous_admitted": false,
+      "admitted": true,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 64,
+      "free_gib": 16,
+      "commit_gib": 0.125,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "commit"
+    },
+    {
+      "total_gib": 64,
+      "free_gib": 16,
+      "commit_gib": 1,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "commit"
+    },
+    {
+      "total_gib": 64,
+      "free_gib": 16,
+      "commit_gib": 2,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "commit"
+    },
+    {
+      "total_gib": 64,
+      "free_gib": 16,
+      "commit_gib": 2.25,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "commit"
+    },
+    {
+      "total_gib": 64,
+      "free_gib": 16,
+      "commit_gib": 4,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "commit"
+    },
+    {
+      "total_gib": 64,
+      "free_gib": 16,
+      "commit_gib": 6,
+      "previous_admitted": false,
+      "admitted": true,
+      "reason": "commit"
+    },
+    {
+      "total_gib": 64,
+      "free_gib": 16,
+      "commit_gib": 16,
+      "previous_admitted": true,
+      "admitted": true,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 128,
+      "free_gib": 0,
+      "commit_gib": 0.125,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 128,
+      "free_gib": 0,
+      "commit_gib": 1,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 128,
+      "free_gib": 0,
+      "commit_gib": 2,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 128,
+      "free_gib": 0,
+      "commit_gib": 2.25,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 128,
+      "free_gib": 0,
+      "commit_gib": 4,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 128,
+      "free_gib": 0,
+      "commit_gib": 6,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 128,
+      "free_gib": 0,
+      "commit_gib": 16,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 128,
+      "free_gib": 0.25,
+      "commit_gib": 0.125,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 128,
+      "free_gib": 0.25,
+      "commit_gib": 1,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 128,
+      "free_gib": 0.25,
+      "commit_gib": 2,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 128,
+      "free_gib": 0.25,
+      "commit_gib": 2.25,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 128,
+      "free_gib": 0.25,
+      "commit_gib": 4,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 128,
+      "free_gib": 0.25,
+      "commit_gib": 6,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 128,
+      "free_gib": 0.25,
+      "commit_gib": 16,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 128,
+      "free_gib": 0.5,
+      "commit_gib": 0.125,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 128,
+      "free_gib": 0.5,
+      "commit_gib": 1,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 128,
+      "free_gib": 0.5,
+      "commit_gib": 2,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 128,
+      "free_gib": 0.5,
+      "commit_gib": 2.25,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 128,
+      "free_gib": 0.5,
+      "commit_gib": 4,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 128,
+      "free_gib": 0.5,
+      "commit_gib": 6,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 128,
+      "free_gib": 0.5,
+      "commit_gib": 16,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 128,
+      "free_gib": 1,
+      "commit_gib": 0.125,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 128,
+      "free_gib": 1,
+      "commit_gib": 1,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 128,
+      "free_gib": 1,
+      "commit_gib": 2,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 128,
+      "free_gib": 1,
+      "commit_gib": 2.25,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 128,
+      "free_gib": 1,
+      "commit_gib": 4,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 128,
+      "free_gib": 1,
+      "commit_gib": 6,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 128,
+      "free_gib": 1,
+      "commit_gib": 16,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 128,
+      "free_gib": 2,
+      "commit_gib": 0.125,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 128,
+      "free_gib": 2,
+      "commit_gib": 1,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 128,
+      "free_gib": 2,
+      "commit_gib": 2,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 128,
+      "free_gib": 2,
+      "commit_gib": 2.25,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 128,
+      "free_gib": 2,
+      "commit_gib": 4,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 128,
+      "free_gib": 2,
+      "commit_gib": 6,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 128,
+      "free_gib": 2,
+      "commit_gib": 16,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 128,
+      "free_gib": 2.25,
+      "commit_gib": 0.125,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 128,
+      "free_gib": 2.25,
+      "commit_gib": 1,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 128,
+      "free_gib": 2.25,
+      "commit_gib": 2,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 128,
+      "free_gib": 2.25,
+      "commit_gib": 2.25,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 128,
+      "free_gib": 2.25,
+      "commit_gib": 4,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 128,
+      "free_gib": 2.25,
+      "commit_gib": 6,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 128,
+      "free_gib": 2.25,
+      "commit_gib": 16,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 128,
+      "free_gib": 3,
+      "commit_gib": 0.125,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 128,
+      "free_gib": 3,
+      "commit_gib": 1,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 128,
+      "free_gib": 3,
+      "commit_gib": 2,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 128,
+      "free_gib": 3,
+      "commit_gib": 2.25,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 128,
+      "free_gib": 3,
+      "commit_gib": 4,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 128,
+      "free_gib": 3,
+      "commit_gib": 6,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 128,
+      "free_gib": 3,
+      "commit_gib": 16,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 128,
+      "free_gib": 4,
+      "commit_gib": 0.125,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 128,
+      "free_gib": 4,
+      "commit_gib": 1,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 128,
+      "free_gib": 4,
+      "commit_gib": 2,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 128,
+      "free_gib": 4,
+      "commit_gib": 2.25,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 128,
+      "free_gib": 4,
+      "commit_gib": 4,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 128,
+      "free_gib": 4,
+      "commit_gib": 6,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 128,
+      "free_gib": 4,
+      "commit_gib": 16,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 128,
+      "free_gib": 4.25,
+      "commit_gib": 0.125,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "commit"
+    },
+    {
+      "total_gib": 128,
+      "free_gib": 4.25,
+      "commit_gib": 1,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "commit"
+    },
+    {
+      "total_gib": 128,
+      "free_gib": 4.25,
+      "commit_gib": 2,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "commit"
+    },
+    {
+      "total_gib": 128,
+      "free_gib": 4.25,
+      "commit_gib": 2.25,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "commit"
+    },
+    {
+      "total_gib": 128,
+      "free_gib": 4.25,
+      "commit_gib": 4,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "commit"
+    },
+    {
+      "total_gib": 128,
+      "free_gib": 4.25,
+      "commit_gib": 6,
+      "previous_admitted": false,
+      "admitted": true,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 128,
+      "free_gib": 4.25,
+      "commit_gib": 16,
+      "previous_admitted": false,
+      "admitted": true,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 128,
+      "free_gib": 6,
+      "commit_gib": 0.125,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "commit"
+    },
+    {
+      "total_gib": 128,
+      "free_gib": 6,
+      "commit_gib": 1,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "commit"
+    },
+    {
+      "total_gib": 128,
+      "free_gib": 6,
+      "commit_gib": 2,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "commit"
+    },
+    {
+      "total_gib": 128,
+      "free_gib": 6,
+      "commit_gib": 2.25,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "commit"
+    },
+    {
+      "total_gib": 128,
+      "free_gib": 6,
+      "commit_gib": 4,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "commit"
+    },
+    {
+      "total_gib": 128,
+      "free_gib": 6,
+      "commit_gib": 6,
+      "previous_admitted": false,
+      "admitted": true,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 128,
+      "free_gib": 6,
+      "commit_gib": 16,
+      "previous_admitted": false,
+      "admitted": true,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 128,
+      "free_gib": 8,
+      "commit_gib": 0.125,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "commit"
+    },
+    {
+      "total_gib": 128,
+      "free_gib": 8,
+      "commit_gib": 1,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "commit"
+    },
+    {
+      "total_gib": 128,
+      "free_gib": 8,
+      "commit_gib": 2,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "commit"
+    },
+    {
+      "total_gib": 128,
+      "free_gib": 8,
+      "commit_gib": 2.25,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "commit"
+    },
+    {
+      "total_gib": 128,
+      "free_gib": 8,
+      "commit_gib": 4,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "commit"
+    },
+    {
+      "total_gib": 128,
+      "free_gib": 8,
+      "commit_gib": 6,
+      "previous_admitted": false,
+      "admitted": true,
+      "reason": "commit"
+    },
+    {
+      "total_gib": 128,
+      "free_gib": 8,
+      "commit_gib": 16,
+      "previous_admitted": false,
+      "admitted": true,
+      "reason": "physical"
+    },
+    {
+      "total_gib": 128,
+      "free_gib": 16,
+      "commit_gib": 0.125,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "commit"
+    },
+    {
+      "total_gib": 128,
+      "free_gib": 16,
+      "commit_gib": 1,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "commit"
+    },
+    {
+      "total_gib": 128,
+      "free_gib": 16,
+      "commit_gib": 2,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "commit"
+    },
+    {
+      "total_gib": 128,
+      "free_gib": 16,
+      "commit_gib": 2.25,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "commit"
+    },
+    {
+      "total_gib": 128,
+      "free_gib": 16,
+      "commit_gib": 4,
+      "previous_admitted": false,
+      "admitted": false,
+      "reason": "commit"
+    },
+    {
+      "total_gib": 128,
+      "free_gib": 16,
+      "commit_gib": 6,
+      "previous_admitted": false,
+      "admitted": true,
+      "reason": "commit"
+    },
+    {
+      "total_gib": 128,
+      "free_gib": 16,
+      "commit_gib": 16,
+      "previous_admitted": false,
+      "admitted": true,
+      "reason": "physical"
+    }
+  ],
+  "scope": "Cap selection from one local sampled workload set; minimum reserve retained. Synthetic RAM capacities are not actual multi-machine OOM tests."
+}

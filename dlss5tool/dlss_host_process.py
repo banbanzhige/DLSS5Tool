@@ -10,7 +10,8 @@ commands and acknowledgements.
 
 import multiprocessing
 from multiprocessing import shared_memory
-from dlss5tool.memory_budget import require_memory_headroom, receive_worker_command
+from dlss5tool.memory_budget import (require_memory_headroom, receive_worker_command,
+    memory_allocation, current_pool, worker_with_memory_pool, record_memory_event)
 import os
 import tempfile
 import traceback
@@ -47,6 +48,8 @@ def _open_shared_memory(*, name=None, create=False, size=0, track=True):
 
 def _error_payload(operation, exception, log_path=None):
     detail = str(exception) or repr(exception)
+    pressure=getattr(exception,'details',None)
+    if pressure is not None:pressure=dict(pressure,source_pid=os.getpid())
     if log_path:
         try:
             with open(log_path, encoding="utf-8", errors="replace") as handle:
@@ -60,6 +63,7 @@ def _error_payload(operation, exception, log_path=None):
         "operation": operation,
         "error": detail,
         "traceback": traceback.format_exc()[-4000:],
+        "memory_pressure": pressure,
     }
 
 
@@ -112,7 +116,8 @@ def _host_worker_main(
 
     while True:
         try:
-            message = receive_worker_command(connection, input_frame.nbytes)
+            message = receive_worker_command(connection, input_frame.nbytes,
+                                             allocation_bytes=input_frame.nbytes)
         except (EOFError, OSError):
             break
         except MemoryError as exception:
@@ -244,43 +249,57 @@ class _HostSession:
         # Two IPC frames, native upload/readback per slot and caller output/
         # composition frames. Pure NR/HDR also needs admission without VSR.
         slots = configured_in_flight(settings)
-        require_memory_headroom(frame_bytes * (4 + 2 * slots))
-        try:
-            self._input_memory = _open_shared_memory(
-                create=True, size=frame_bytes, track=True,
+        # Only this owner's IPC and per-slot native staging are allocated here.
+        # Caller composition/output copies are admitted at their own stage.
+        pool=current_pool()
+        with memory_allocation(frame_bytes * (2 + 2 * slots),pool=pool,
+                               stage='nr_initialize') as ticket:
+            try:
+                self._initialize_resources(settings, live_factory, frame_bytes, pool, ticket)
+            except BaseException as error:
+                try:self.close()
+                except BaseException as cleanup:
+                    if ticket:ticket.defer_until_retired(self)
+                    if hasattr(error,'add_note'):error.add_note('NR cleanup: '+str(cleanup))
+                raise
+
+    def _initialize_resources(self, settings, live_factory, frame_bytes, pool, ticket):
+        self._input_memory = _open_shared_memory(
+            create=True, size=frame_bytes, track=True,
+        )
+        self._output_memory = _open_shared_memory(
+            create=True, size=frame_bytes, track=True,
+        )
+        if ticket:ticket.consume(frame_bytes*2)
+        self._input_frame = np.ndarray(
+            (self.height, self.width, 4), dtype=self.dtype,
+            buffer=self._input_memory.buf,
+        )
+        self._output_frame = np.ndarray(
+            (self.height, self.width, 4), dtype=self.dtype,
+            buffer=self._output_memory.buf,
+        )
+        context = multiprocessing.get_context("spawn")
+        self._connection, self._child_connection = context.Pipe(duplex=True)
+        worker_settings=dict(settings)
+        if pool:worker_settings['guidance_cache_pool']=pool.name
+        arguments=(
+                self._child_connection, self.width, self.height, worker_settings,
+                self._input_memory.name, self._output_memory.name,
+                self.log_path, live_factory,
             )
-            self._output_memory = _open_shared_memory(
-                create=True, size=frame_bytes, track=True,
-            )
-            self._input_frame = np.ndarray(
-                (self.height, self.width, 4), dtype=self.dtype,
-                buffer=self._input_memory.buf,
-            )
-            self._output_frame = np.ndarray(
-                (self.height, self.width, 4), dtype=self.dtype,
-                buffer=self._output_memory.buf,
-            )
-            context = multiprocessing.get_context("spawn")
-            self._connection, self._child_connection = context.Pipe(duplex=True)
-            self._process = context.Process(
-                target=_host_worker_main,
-                args=(
-                    self._child_connection, self.width, self.height, dict(settings),
-                    self._input_memory.name, self._output_memory.name,
-                    self.log_path, live_factory,
-                ),
-                name="dlss-host-%s" % settings.get("host_backend", "auto"),
-                daemon=True,
-            )
-            self._process.start()
-            self._child_connection.close()
-            self._child_connection = None
-            response = self._receive(_CREATE_TIMEOUT, "initialize")
-            self._check_response(response)
-            self._apply_metadata(response)
-        except BaseException:
-            self.close()
-            raise
+        self._process = context.Process(
+            target=worker_with_memory_pool if pool else _host_worker_main,
+            args=(_host_worker_main,pool.name,arguments) if pool else arguments,
+            name="dlss-host-%s" % settings.get("host_backend", "auto"),
+            daemon=True,
+        )
+        self._process.start()
+        self._child_connection.close()
+        self._child_connection = None
+        response = self._receive(_CREATE_TIMEOUT, "initialize")
+        self._check_response(response)
+        self._apply_metadata(response)
 
     def _worker_description(self):
         if self._process is None:
@@ -312,6 +331,8 @@ class _HostSession:
     def _check_response(response):
         if response.get("ok"):
             return
+        if response.get('memory_pressure'):
+            record_memory_event('worker_rejected',**response['memory_pressure'])
         detail = response.get("error", "未知错误")
         trace = str(response.get("traceback", "")).strip()
         if trace:
@@ -360,11 +381,12 @@ class _HostSession:
                 "RGBA frame must be %s with shape %s, got %s/%s"
                 % (np.dtype(self.dtype).name, self._input_frame.shape, rgba.shape, rgba.dtype)
             )
-        require_memory_headroom(rgba.nbytes * 2)
+        require_memory_headroom(rgba.nbytes,stage='nr_input')
         np.copyto(self._input_frame, rgba)
 
     def copy_output(self):
-        return self._output_frame.copy()
+        with memory_allocation(self._output_frame.nbytes,stage='nr_output'):
+            return self._output_frame.copy()
 
     def close(self):
         if self._closed:

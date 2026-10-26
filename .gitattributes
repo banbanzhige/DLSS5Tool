@@ -24,4 +24,5 @@
 # Preserve the hashes of archived diagnostic evidence, including raw CRLF logs.
 docs/development/p0-upstream-comparison-20261020/** binary
 docs/development/export-performance-20261022/** binary
+docs/development/ram-coordination-20261026/** binary
 

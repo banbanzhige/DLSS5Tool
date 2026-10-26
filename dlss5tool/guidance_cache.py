@@ -7,8 +7,10 @@ RGBA bytes, not paths/frame numbers. Store RAW depth, never temporal normalizati
 from collections import OrderedDict
 from contextlib import nullcontext
 import hashlib
+import threading
+from functools import wraps
 import numpy as np
-from dlss5tool.memory_budget import cache_limit_bytes
+from dlss5tool.memory_budget import cache_limit_bytes, current_pool
 
 CACHE_VERSION = 'raw_lru_v2_shared'
 
@@ -28,8 +30,22 @@ def frame_digest(frame):
     return digest.digest()
 
 
+def _cache_locked(method):
+    @wraps(method)
+    def call(self,*args,**kwargs):
+        with self._lock:return method(self,*args,**kwargs)
+    return call
+
+
 class RawGuidanceCache:
     def __init__(self, limit_bytes, pool=None):
+        self._lock=threading.RLock()
+        self._standalone=pool is None
+        if pool is None:
+            root=current_pool()
+            if root is not None:
+                from dlss5tool.shared_cache_budget import SharedCacheBudget
+                pool=SharedCacheBudget(root.name)
         self.pool = pool
         self.generation = pool.generation if pool else 0
         self.pending_bytes = 0
@@ -38,7 +54,15 @@ class RawGuidanceCache:
         self.bytes = 0
         self.hits = self.misses = self.evictions = 0
         self._items = OrderedDict()
+        if self.pool:self.pool.set_reclaimer(self._reclaim)
 
+    def _reclaim(self):
+        if not self._lock.acquire(blocking=False):return False
+        try:self.trim()
+        finally:self._lock.release()
+        return True
+
+    @_cache_locked
     def get(self, key):
         value = self._items.get(key)
         if value is None:
@@ -48,10 +72,12 @@ class RawGuidanceCache:
             self._items.move_to_end(key)
         return value
 
+    @_cache_locked
     def put(self, key, value):
         with self.pool.locked() if self.pool else nullcontext():
             self.limit_bytes = (self.pool.allowance_locked(respect_demand=True) if self.pool else
                                 cache_limit_bytes(self.requested_limit_bytes, self.bytes))
+            if self._standalone:self.limit_bytes=min(self.limit_bytes,self.requested_limit_bytes)
             self._trim()
             if self.pool and value.nbytes > self.limit_bytes and value.nbytes <= self.pool.limit_bytes:
                 self.pending_bytes = value.nbytes
@@ -78,6 +104,7 @@ class RawGuidanceCache:
         self._items[key] = owned
         self.bytes += owned.nbytes
 
+    @_cache_locked
     def clear(self):
         self._items.clear()
         self.bytes = 0
@@ -90,6 +117,7 @@ class RawGuidanceCache:
             _,value=self._items.popitem(last=False)
             self.bytes-=value.nbytes;self.evictions+=1
 
+    @_cache_locked
     def trim(self):
         if self.pool:
             with self.pool.locked():
@@ -99,15 +127,18 @@ class RawGuidanceCache:
                     self.generation=self.pool.generation
                 if self.pending_bytes > self.pool.limit_bytes:self.pending_bytes=0
                 self.limit_bytes=self.pool.allowance_locked(respect_demand=True)
+                if self._standalone:self.limit_bytes=min(self.limit_bytes,self.requested_limit_bytes)
                 self._trim();self.pool.publish_locked(self.bytes,self.pending_bytes)
         else:
             self.limit_bytes = cache_limit_bytes(self.requested_limit_bytes, self.bytes)
             self._trim()
 
+    @_cache_locked
     def close(self):
         self.clear()
         if self.pool:self.pool.close();self.pool=None
 
+    @_cache_locked
     def metrics(self):
         return {'cache_version': CACHE_VERSION, 'cache_bytes': self.bytes,
                 'cache_limit_bytes': self.limit_bytes, 'cache_entries': len(self._items),

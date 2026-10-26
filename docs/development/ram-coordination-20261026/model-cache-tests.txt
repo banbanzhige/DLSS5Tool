@@ -1,0 +1,7 @@
+test_cut_inactive_mode_and_failure (tests.test_guidance_cache.ModelCacheTests.test_cut_inactive_mode_and_failure) ... ok
+test_replay_seek_partial_hit_and_eviction (tests.test_guidance_cache.ModelCacheTests.test_replay_seek_partial_hit_and_eviction) ... ok
+
+----------------------------------------------------------------------
+Ran 2 tests in 5.338s
+
+OK

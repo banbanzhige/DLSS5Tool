@@ -16,7 +16,9 @@ def assess_video_export(width, height, frames, fps, settings, *, memory=None,
     enhancement = appearance.enhancement_bypass(settings) is None
     slots = 1 if scale > 1 or settings.get('frame_generation_multiplier', 1) > 1 else configured_in_flight(settings)
     estimate = estimate_resources(width, height, scale, hdr, in_flight=slots,
-        use_super_resolution=scale > 1, use_enhancement=enhancement)
+        use_super_resolution=scale > 1, use_enhancement=enhancement,
+        decode_buffer=1 if hdr else settings.get('decode_buffer',4),
+        frame_generation_multiplier=settings.get('frame_generation_multiplier',1))
     try:
         rate = float(fps)
         duration = max(0, int(frames))/rate if math.isfinite(rate) and rate > 0 else None

@@ -194,6 +194,8 @@ def fake_vsr_worker(connection, width, height, scale, is_hdr, input_name, output
 def test_vsr_real_spawn_and_shared_memory_reaped_across_repeated_tasks(hdr):
     context = multiprocessing.get_context('spawn')
     def process(**kwargs):
+        if kwargs.get('target') is sr.worker_with_memory_pool:
+            kwargs['args']=kwargs['args'][2]
         return context.Process(**{**kwargs, 'target': fake_vsr_worker})
     replacement = SimpleNamespace(Pipe=context.Pipe, Process=process)
     with mock.patch.object(sr.multiprocessing, 'get_context', return_value=replacement), \

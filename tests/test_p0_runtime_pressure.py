@@ -80,7 +80,7 @@ def test_real_spawned_idle_host_retires_after_simulated_pressure():
         while session._process.is_alive() and time.monotonic() < deadline:
             time.sleep(.02)
         assert not session._process.is_alive()
-        with pytest.raises(HostProcessError, match='MemoryError'):
+        with pytest.raises(HostProcessError, match='MemoryPressureError'):
             session.request('pending')
     finally:
         owner.close()

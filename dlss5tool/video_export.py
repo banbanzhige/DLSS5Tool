@@ -623,18 +623,24 @@ class FFmpegHDRVideoReader:
     def _check_memory(self):
         # Packed 16-bit input plus float conversion temporaries and output.
         from dlss5tool.memory_budget import require_memory_headroom
-        require_memory_headroom(self.width * self.height * 48)
+        require_memory_headroom(self.width * self.height * 48,stage='decode_hdr_plan')
 
     def read(self):
         if getattr(self, '_pending_frames', None):
             return self._pending_frames.pop(0)
+        if self._sequence_reader is not None and (self._sequence_reader.closed or
+                self._sequence_reader.position>=len(self._sequence_reader.sequence.files)):
+            return None
+        from dlss5tool.memory_budget import memory_allocation
+        with memory_allocation(self.width*self.height*48,stage='decode_hdr'):
+            return self._read_allocated()
+
+    def _read_allocated(self):
         if self._sequence_reader is not None:
             reader = self._sequence_reader
             if reader.closed or reader.position >= len(reader.sequence.files):
                 return None
-            self._check_memory()
             return self._sequence_reader.read()
-        self._check_memory()
         data = bytearray(self._frame_bytes)
         view = memoryview(data)
         received = 0

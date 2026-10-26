@@ -130,20 +130,29 @@ class ProcessGpuVideoWriter:
         try:
             self.output_path=Path(args[0] if args else kwargs['output_path']).resolve()
             if self.output_path.exists():raise FileExistsError(self.output_path)
-            from dlss5tool.memory_budget import require_memory_headroom
-            require_memory_headroom(width*height*32)  # IPC plus owned upload frame.
-            self._transaction=Path(tempfile.mkdtemp(prefix='.'+self.output_path.stem+'.gpu-',dir=self.output_path.parent))
-            self._candidate=self._transaction/self.output_path.name
-            if args:args=(str(self._candidate),*args[1:])
-            else:kwargs={**kwargs,'output_path':str(self._candidate)}
-            self._memory=shared_memory.SharedMemory(create=True,size=width*height*16)
-            context=multiprocessing.get_context('spawn');self._connection,child=context.Pipe()
-            self._proc=context.Process(target=_worker,args=(child,self._memory.name,args,kwargs),daemon=True)
-            self._proc.start();child.close()
-            self._job=_KillJob(self._proc.pid)
-            reply=self._receive()
-            for name,value in reply['metadata'].items():setattr(self,name,value)
+            from dlss5tool.memory_budget import memory_allocation
+            with memory_allocation(width*height*32,stage='gpu_encoder_initialize',cancel=self._raise_cancelled) as ticket:
+                self._initialize_resources(args,kwargs,width,height,ticket)
         except BaseException:self._terminate();raise
+
+    def _initialize_resources(self,args,kwargs,width,height,ticket):
+        self._transaction=Path(tempfile.mkdtemp(prefix='.'+self.output_path.stem+'.gpu-',dir=self.output_path.parent))
+        self._candidate=self._transaction/self.output_path.name
+        if args:args=(str(self._candidate),*args[1:])
+        else:kwargs={**kwargs,'output_path':str(self._candidate)}
+        self._memory=shared_memory.SharedMemory(create=True,size=width*height*16)
+        if ticket:ticket.consume(width*height*16)
+        context=multiprocessing.get_context('spawn');self._connection,child=context.Pipe()
+        self._proc=context.Process(target=_worker,args=(child,self._memory.name,args,kwargs),daemon=True)
+        self._proc.start();child.close()
+        self._job=_KillJob(self._proc.pid)
+        reply=self._receive()
+        for name,value in reply['metadata'].items():setattr(self,name,value)
+
+    def _raise_cancelled(self):
+        if self._cancel is not None and self._cancel.is_set():
+            from dlss5tool.frame_generation import Cancelled
+            raise Cancelled('已取消GPU导出')
 
     def _receive(self):
         deadline=time.monotonic()+self._timeout

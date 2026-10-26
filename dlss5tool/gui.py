@@ -48,7 +48,8 @@ from dlss5tool.image_alpha import (
     ALPHA_EXTENSIONS, read_still, inference_color, resize_preview, restore_alpha,
 )
 from dlss5tool.shared_cache_budget import SharedCacheBudget
-from dlss5tool.memory_budget import bounded_frame_count, cache_limit_bytes, system_memory, require_memory_headroom
+from dlss5tool.memory_budget import (bounded_frame_count, cache_limit_bytes, system_memory,
+    require_memory_headroom, prefer_pool, memory_events, memory_policy)
 from dlss5tool.export_metrics import FrameRate
 from dlss5tool.export_preflight import assess_video_export
 from dlss5tool.residual_composition import release_native_composer
@@ -4068,9 +4069,17 @@ class App(GpuResourceGuard, SharedRenderPreview, LocalPreviewComposition, Previe
         with self._cache_lock:
             if getattr(self, '_shared_cache_pool', None) is None:
                 self._shared_cache_pool = SharedCacheBudget(limit_bytes=self._preview_cache_bytes())
+                self._shared_cache_pool.set_reclaimer(self._reclaim_frame_cache)
+                prefer_pool(self._shared_cache_pool)
                 with self._shared_cache_pool.locked():
                     self._publish_frame_cache_locked()
             return self._shared_cache_pool
+
+    def _reclaim_frame_cache(self):
+        if not self._cache_lock.acquire(blocking=False):return False
+        try:self._evict_preview_cache_locked()
+        finally:self._cache_lock.release()
+        return True
 
     def _available_frame_cache_bytes(self):
         pool = getattr(self, '_shared_cache_pool', None)
@@ -8292,6 +8301,9 @@ class App(GpuResourceGuard, SharedRenderPreview, LocalPreviewComposition, Previe
             self._last_frame_index(),
             self._frame + self._prerender_target_frames() - 1,
         )
+        pool=getattr(self,'_shared_cache_pool',None)
+        if pool and pool.under_pressure:
+            target_end=self._frame
         target_size = self._active_preview_size or self._playback_preview_size()
         sk = self._settings_hash()
         if not self.playing and getattr(self, '_preview_processed_frames', 1) == 0:
@@ -9397,6 +9409,8 @@ class App(GpuResourceGuard, SharedRenderPreview, LocalPreviewComposition, Previe
             'workbench_mode': self._workbench_mode,
             'gpu_resources': self._gpu_resource_snapshot(),
             'system_memory': system_memory(),
+            'memory_pressure_events': memory_events(),
+            'memory_policy': memory_policy(),
             'export_performance': getattr(self, '_last_export_profile', None),
             'export_preflight': getattr(self, '_last_export_preflight', None),
             "settings": self._collect_settings(include_cache_pool=deep),
@@ -10337,8 +10351,11 @@ class App(GpuResourceGuard, SharedRenderPreview, LocalPreviewComposition, Previe
         # This path processes synchronously; extra in-flight textures cannot
         # improve throughput until VSR/DLSS scheduling is pipelined.
         dlss_settings['host_in_flight'] = 1
-        require_memory_headroom(estimate_resources(width, height, scale,
-                                in_flight=1)['recommended_ram_bytes'])
+        resource_plan=estimate_resources(width,height,scale,in_flight=1,
+            decode_buffer=export_settings.get('decode_buffer',4))
+        require_memory_headroom(resource_plan['known_ram_bytes'],stage='sdr_export_plan',
+            recommended_bytes=resource_plan['recommended_ram_bytes'],
+            cancel=self._raise_if_export_cancelled if hasattr(self,'_export_cancel_event') else None)
         writer = None
         sr_live = None
         live = None
@@ -10448,8 +10465,11 @@ class App(GpuResourceGuard, SharedRenderPreview, LocalPreviewComposition, Previe
             "host_backend": "v2",
             "host_auto_fallback": False,
         }
-        require_memory_headroom(estimate_resources(width, height, scale,
-                                is_hdr=True, in_flight=1)['recommended_ram_bytes'])
+        resource_plan=estimate_resources(width,height,scale,is_hdr=True,in_flight=1,
+            use_super_resolution=scale>1,decode_buffer=1)
+        require_memory_headroom(resource_plan['known_ram_bytes'],stage='hdr_export_plan',
+            recommended_bytes=resource_plan['recommended_ram_bytes'],
+            cancel=self._raise_if_export_cancelled if hasattr(self,'_export_cancel_event') else None)
         hdr_settings['host_in_flight'] = select_in_flight(
             width, height, scale, settings.get('host_in_flight', 2), is_hdr=True,
             guidance=bool(settings.get('guidance_mode')),
@@ -10457,6 +10477,13 @@ class App(GpuResourceGuard, SharedRenderPreview, LocalPreviewComposition, Previe
         )
         if not hdr_settings['host_in_flight']:
             raise MemoryError(tr('message.frame_ram_headroom'))
+        if hdr_settings['host_in_flight']>1:
+            resource_plan=estimate_resources(width,height,scale,is_hdr=True,
+                in_flight=hdr_settings['host_in_flight'],use_super_resolution=scale>1,
+                decode_buffer=1)
+            require_memory_headroom(resource_plan['known_ram_bytes'],stage='hdr_export_queue',
+                recommended_bytes=resource_plan['recommended_ram_bytes'],
+                cancel=self._raise_if_export_cancelled if hasattr(self,'_export_cancel_event') else None)
         reader = None
         writer = None
         live = None

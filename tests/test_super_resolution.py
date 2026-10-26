@@ -67,10 +67,11 @@ class RuntimeDiscoveryTests(unittest.TestCase):
 
 class SessionPolicyTests(unittest.TestCase):
     def test_ram_pressure_rejected_before_shared_memory_or_child_start(self):
-        with mock.patch.object(super_resolution, 'memory_headroom_bytes', return_value=1), \
+        with mock.patch('dlss5tool.memory_budget.system_memory', return_value={
+                'total_physical_bytes':16*1024**3,'free_physical_bytes':1,'free_commit_bytes':16*1024**3}), \
                 mock.patch.object(super_resolution.shared_memory, 'SharedMemory') as buffers, \
                 mock.patch.object(super_resolution.multiprocessing, 'get_context') as context:
-            with self.assertRaises(super_resolution.SuperResolutionError):
+            with self.assertRaises(MemoryError):
                 super_resolution.ProcessSuperResolution(1920, 1080, 2)
             buffers.assert_not_called()
             context.assert_not_called()
