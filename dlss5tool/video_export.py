@@ -749,7 +749,7 @@ def write_composed_frame(writer, original, processed, view=0, mix=1.0, *, settin
     else:
         if order == 'rgb' and not view:
             rgba = compose_sdr_rgba(original,processed,mix=mix,settings=settings)
-            writer.write(np.ascontiguousarray(rgba[...,:3][...,::-1]))
+            writer.write(cv2.cvtColor(rgba, cv2.COLOR_RGBA2BGR))
             return False
         if order == 'rgb':
             original = np.ascontiguousarray(original[...,:3][...,::-1])

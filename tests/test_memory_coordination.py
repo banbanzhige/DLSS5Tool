@@ -200,6 +200,21 @@ def test_reclaim_does_not_drop_render_target_or_temporal_state():
     finally:session.close();owner.close()
 
 
+def test_healthy_processing_reservation_keeps_prefetch_running(monkeypatch):
+    owner = SharedCacheBudget(limit_bytes=1024*MIB)
+    state = memory(8*GIB)
+    monkeypatch.setattr(mb, 'system_memory', lambda: state)
+    try:
+        with owner.processing(128*MIB):
+            snapshot = owner.snapshot()
+            assert snapshot['reserved_processing_bytes'] == 128*MIB
+            assert snapshot['effective_limit_bytes'] <= 1024*MIB - 128*MIB - mb.RECOVERY_MARGIN
+            assert not owner.under_pressure
+        assert not owner.under_pressure
+    finally:
+        owner.close()
+
+
 def test_schema_mismatch_is_rejected_without_overwriting_ledger():
     owner=SharedCacheBudget(limit_bytes=1234)
     try:

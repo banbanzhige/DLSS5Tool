@@ -18,6 +18,9 @@ from dlss5tool.video_export import compose_hdr_frame, resize_original
 @pytest.mark.parametrize('hdr', [False, True])
 @pytest.mark.parametrize('quality', [1, .4])
 def test_real_pipeline_keeps_source_and_mix_separate(tmp_path, monkeypatch, scale, hdr, quality):
+    # This fixture mocks the separate SR/NR owners, not the installed resident
+    # GPU pipeline, whose optional spatial-cache ownership is different.
+    monkeypatch.setattr('dlss5tool.resident_hdr_runtime.load_components', lambda: None)
     source = tmp_path / 'source.mp4'
     source.write_bytes(b'synthetic')
     monkeypatch.setenv('DLSS5TOOL_FG_LOG_ROOT', str(tmp_path / 'logs'))

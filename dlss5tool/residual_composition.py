@@ -208,6 +208,11 @@ def _native_inputs(original, processed, *, order, profile):
             and ((profile == 'srgb' and original.dtype == processed.dtype == np.uint8)
                  or (profile == 'scrgb' and original.dtype == processed.dtype == np.float32))):
         return original, processed, 255 if profile == 'srgb' else 1, None
+    if (profile == 'srgb' and original.dtype == processed.dtype == np.uint8
+            and original.shape[-1] == processed.shape[-1] == 3):
+        import cv2
+        conversion = cv2.COLOR_BGR2RGBA if order == 'bgr' else cv2.COLOR_RGB2RGBA
+        return cv2.cvtColor(original, conversion), cv2.cvtColor(processed, conversion), 255, None
     # The native shader keeps alpha and always consumes RGBA.  BGR callers are
     # converted to RGB around the dispatch so the luma weights stay correct.
     hdr = profile != 'srgb'
@@ -247,6 +252,16 @@ def _native_compose_frame(original, processed, values, *, order, bridge, profile
     if not ok:
         release_native_composer()
         return None
+    if not hdr:
+        if processed.shape[-1] == 3:
+            import cv2
+            conversion = cv2.COLOR_RGBA2BGR if order == 'bgr' else cv2.COLOR_RGBA2RGB
+            return cv2.cvtColor(result, conversion)
+        if order == 'rgb':
+            # Native output already owns RGBA8 storage. Preserve the public
+            # alpha contract without copying and reassigning all RGB pixels.
+            result[..., 3] = original[..., 3] if original.shape[-1] > 3 else processed[..., 3]
+            return result
     rgb = result[..., :3]
     if hdr:
         if encode is not None:

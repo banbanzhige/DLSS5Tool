@@ -242,9 +242,12 @@ class SharedCacheBudget:
     @property
     def under_pressure(self):
         with self.locked():
-            reserved,waiting=self._processing_locked()
+            _,waiting=self._processing_locked()
             self._limit_locked()  # evaluate the recovery hysteresis
-            return bool(reserved or waiting or struct.unpack_from('<Q',self.mapping,40)[0])
+            # Admitted allocations already reduce the cache allowance. Pausing
+            # for every healthy decode/readback reservation serializes the
+            # pipeline; only blocked allocations or active reclaim need a pause.
+            return bool(waiting or struct.unpack_from('<Q',self.mapping,40)[0])
 
     @contextmanager
     def processing(self,required,*,stage='allocation',cancel=None,timeout=None,recommended_bytes=None):

@@ -109,7 +109,7 @@ class NativeComposerLifetimeTests(unittest.TestCase):
         image = np.zeros((4, 4, 3), np.uint8)
         values = appearance.preflight({'nr_quality': {'total': .75}})
         with mock.patch.object(rc, 'NATIVE_COMPOSITION_MIN_PIXELS', 1), \
-                mock.patch.object(rc.np, 'empty', side_effect=MemoryError('frame allocation')):
+                mock.patch.object(rc.np, 'empty_like', side_effect=MemoryError('frame allocation')):
             try:
                 rc._native_compose(image, image, values, order='rgb')
             except MemoryError as error:

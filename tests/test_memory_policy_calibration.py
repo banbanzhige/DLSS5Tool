@@ -33,7 +33,9 @@ def test_hdr_without_vsr_and_decoding_have_separate_costs():
     with_vsr=estimate_resources(3840,2160,1,True,in_flight=1,decode_buffer=1)
     assert plain['vsr_ram_bytes']==0
     assert plain['decode_ram_bytes']==3840*2160*48
-    assert with_vsr['known_ram_bytes']-plain['known_ram_bytes']==3840*2160*24
+    # HDR uses RGBA16F IPC plus aligned RGBA16F upload/readback staging.
+    assert with_vsr['vsr_ram_bytes']==3840*2160*32
+    assert with_vsr['known_ram_bytes']-plain['known_ram_bytes']==with_vsr['vsr_ram_bytes']
     assert plain['recommended_ram_bytes']>plain['known_ram_bytes']
 
 
