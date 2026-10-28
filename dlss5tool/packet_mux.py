@@ -14,7 +14,7 @@ from dlss5tool.nvenc_yuv import EncodedYuvPacket, YuvEncoderConfig
 
 
 class PacketVideoWriter:
-    def __init__(self, output_path, config, headers, *, audio_source=None):
+    def __init__(self, output_path, config, headers, *, audio_source=None, source_video_start=None):
         if not isinstance(config,YuvEncoderConfig):raise TypeError('YuvEncoderConfig required')
         self.output_path=Path(output_path).resolve()
         if self.output_path.suffix.lower() not in ('.mp4','.mkv','.mov'):
@@ -24,6 +24,7 @@ class PacketVideoWriter:
             raise ValueError('Bounded codec headers required')
         self.config,self.headers=config,headers
         self.audio_source=audio_source
+        self.source_video_start=source_video_start
         self._container=None;self._stream=None;self._temp_path=None;self._audio_temp=None
         self._count=0;self._next_display=0;self._pending=set();self._last_dts=None
         self._closed=False;self._failed=False;self.audio_mode=None
@@ -97,7 +98,7 @@ class PacketVideoWriter:
                     suffix='.audio.tmp'+self.output_path.suffix,dir=self.output_path.parent)
                 os.close(fd)
                 self.audio_mode=mux_source_audio(find_ffmpeg(),self._temp_path,
-                    str(self.audio_source),self._audio_temp)
+                    str(self.audio_source),self._audio_temp,source_video_start=self.source_video_start)
                 os.rename(self._audio_temp,self.output_path);self._audio_temp=None
             else:
                 # Windows rename refuses an existing destination.

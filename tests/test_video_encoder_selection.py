@@ -9,6 +9,8 @@ import numpy as np
 
 from dlss5tool import parallel_export
 from dlss5tool import video_export as video
+from dlss5tool.video_timeline import VideoTimeline
+from fractions import Fraction
 
 
 class EncoderSelectionTests(unittest.TestCase):
@@ -108,10 +110,12 @@ class EncoderSelectionTests(unittest.TestCase):
         process.wait.return_value = 0
         with tempfile.TemporaryDirectory() as directory, \
                 mock.patch.object(parallel_export, "open_capture", return_value=cap), \
+                mock.patch.object(parallel_export, 'inspect_video_timeline', return_value=VideoTimeline(
+                    tuple(str(Fraction(i, 24)) for i in range(4)), Fraction(1, 6), Fraction(0), Fraction(24), False)), \
                 mock.patch.object(parallel_export, "find_ffmpeg", return_value="ffmpeg"), \
                 mock.patch.object(parallel_export, "select_video_encoder", return_value=("hevc", False)) as select, \
                 mock.patch.object(parallel_export.subprocess, "Popen", return_value=process) as launch, \
-                mock.patch.object(parallel_export, "_read_json", return_value={"ok": True}), \
+                mock.patch.object(parallel_export, "_read_json", return_value={"ok": True, 'kept_frames': 2}), \
                 mock.patch.object(parallel_export, "concat_video_segments"), \
                 mock.patch.object(parallel_export, "mux_source_audio", return_value="none"):
             result = parallel_export.export_parallel("source.mp4", os.path.join(directory, "out.mp4"), {})

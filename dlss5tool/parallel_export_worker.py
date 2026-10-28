@@ -66,6 +66,8 @@ def main():
     parser.add_argument("--video-bitrate-mbps", type=float, default=20.0)
     parser.add_argument("--output-width", type=int, default=0)
     parser.add_argument("--output-height", type=int, default=0)
+    parser.add_argument('--disable-b-frames', action='store_true')
+    parser.add_argument('--fps', type=float)
     args = parser.parse_args()
 
     source = os.path.abspath(args.input)
@@ -91,7 +93,7 @@ def main():
         cap = open_capture(source, **decode_options(settings))
         if not cap.isOpened():
             raise RuntimeError("无法打开输入视频")
-        fps = cap.get(cv2.CAP_PROP_FPS) or 30.0
+        fps = args.fps if args.fps is not None else (cap.get(cv2.CAP_PROP_FPS) or 30.0)
         width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
         height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
         cap.set(cv2.CAP_PROP_POS_FRAMES, process_start)
@@ -107,6 +109,7 @@ def main():
             video_bitrate_mbps=args.video_bitrate_mbps,
             output_size=(args.output_width, args.output_height)
             if args.output_width > 0 and args.output_height > 0 else None,
+            **({'disable_b_frames': True} if args.disable_b_frames else {}),
         )
         live = None
         pending = []

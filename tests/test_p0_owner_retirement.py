@@ -225,7 +225,11 @@ def test_cancel_cleanup_failure_still_finishes_export_ui():
     app._begin_export_ui = lambda text: setattr(app, '_export_t0', 0)
     app._end_export_ui = app._remember_export = app.logln = mock.Mock()
     writer = mock.Mock()
-    with mock.patch.object(gui, 'FFmpegVideoWriter', return_value=writer):
+    from fractions import Fraction
+    from dlss5tool.video_timeline import VideoTimeline
+    timeline = VideoTimeline(tuple(str(Fraction(i, 24)) for i in range(24)), Fraction(1), Fraction(0), Fraction(24), False)
+    with mock.patch.object(gui, 'FFmpegVideoWriter', return_value=writer), \
+            mock.patch.object(gui, 'inspect_video_timeline', return_value=timeline):
         result = app._export_video_source('fixture.mp4', {}, {}, {},
                                           out_path='fixture-output.mp4', notify=False)
     writer.abort.assert_called_once_with()

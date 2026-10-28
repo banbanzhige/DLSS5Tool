@@ -15,6 +15,8 @@ import cv2
 
 from dlss5tool.image_sequence import open_capture
 from dlss5tool.gpu_decode import decode_options
+from dlss5tool.video_timeline import inspect_video_timeline
+from dlss5tool.vfr_mux import retime_encoded_video
 
 from dlss5tool.video_export import (
     concat_video_segments,
@@ -83,7 +85,7 @@ def _encoding_worker_args(
 def export_parallel(
     source, output, settings, workers=2, warmup=8, nvenc_preset="p5",
     rate_control="quality", quality_profile="high", video_bitrate_mbps=20.0,
-    output_size=None, progress=None,
+    output_size=None, progress=None, timeline=None,
 ):
     """Export contiguous segments concurrently and losslessly concatenate them."""
     source = os.path.abspath(source)
@@ -96,6 +98,8 @@ def export_parallel(
     height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
     fps = cap.get(cv2.CAP_PROP_FPS) or 30.0
     cap.release()
+    timeline = timeline or inspect_video_timeline(source, fps, **decode_options(settings))
+    frame_count, fps = timeline.frames, float(timeline.rate)
     workers = max(2, min(int(workers), 4, frame_count))
     warmup = max(0, min(int(warmup), 120))
     chunk = math.ceil(frame_count / workers)
@@ -138,11 +142,14 @@ def export_parallel(
                 "--result", result_path,
                 "--worker-id", str(worker_id),
                 "--nvenc", "1" if use_nvenc else "0",
+                '--fps', f'{fps:.12g}',
             ]
             cmd += _encoding_worker_args(
                 nvenc_preset, rate_control, quality_profile,
                 video_bitrate_mbps, output_size, codec=codec,
             )
+            if timeline.restore:
+                cmd.append('--disable-b-frames')
             stderr_handle = open(stderr_path, "wb")
             stderr_handles.append(stderr_handle)
             process = subprocess.Popen(
@@ -196,12 +203,20 @@ def export_parallel(
                 "并行 DLSS 子进程失败：\n" + "\n\n".join(details) +
                 "\n诊断文件已保留在：" + diagnostic_dir
             )
+        for job, result in zip(jobs, results):
+            if result.get('kept_frames') != job['frames']:
+                raise RuntimeError('并行分段帧数与原时间线不一致')
         if progress:
             progress(frame_count, frame_count, "正在拼接视频和音频")
 
         joined = os.path.join(temp_dir, "joined.mp4")
         concat_video_segments(ffmpeg, [job["segment"] for job in jobs], joined)
-        audio_mode = mux_source_audio(ffmpeg, joined, source, output)
+        if timeline.restore:
+            retimed = os.path.join(temp_dir, 'retimed.mp4')
+            retime_encoded_video(joined, retimed, timeline.timestamps, timeline.end)
+            joined = retimed
+        audio_mode = mux_source_audio(ffmpeg, joined, source, output,
+                                      source_video_start=str(timeline.start))
         elapsed = time.perf_counter() - started
         return {
             "frames": frame_count,

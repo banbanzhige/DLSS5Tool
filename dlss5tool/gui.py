@@ -86,6 +86,7 @@ from dlss5tool.video_export import (
     probe_video_stream, resolve_output_container, tone_map_hdr_preview,
 )
 from dlss5tool.gpu_export_runtime import create_video_writer as FFmpegVideoWriter
+from dlss5tool.video_timeline import inspect_video_timeline
 from dlss5tool import ui_theme
 from dlss5tool.divider_preview import DividerPreview
 from dlss5tool.ui_widgets import (
@@ -10467,7 +10468,7 @@ class App(GpuResourceGuard, SharedRenderPreview, LocalPreviewComposition, Previe
 
     def _export_hdr_video(
         self, source_path, color_info, out_path, total_frames, fps, width, height,
-        settings, export_settings, view, mix,
+        settings, export_settings, view, mix, *, timeline=None,
     ):
         """Run the strict PQ/HLG RGBA16F path in its own disposable host."""
         self._cleanup_video_export()
@@ -10524,6 +10525,7 @@ class App(GpuResourceGuard, SharedRenderPreview, LocalPreviewComposition, Previe
                 quality_profile=export_settings['quality_profile'],
                 video_bitrate_mbps=export_settings['video_bitrate_mbps'],
                 output_size=None if scale > 1 else export_settings.get('output_size'),
+                **(timeline.writer_options() if timeline is not None else {}),
             )
             if scale > 1:
                 sr_live = ProcessSuperResolution(width, height, scale, is_hdr=True,
@@ -10597,6 +10599,8 @@ class App(GpuResourceGuard, SharedRenderPreview, LocalPreviewComposition, Previe
             while pending:
                 consume_one()
             self._raise_if_export_cancelled()
+            if timeline is not None and written != timeline.frames:
+                raise RuntimeError(f'解码帧数与原时间线不一致：{written}/{timeline.frames}')
             writer.finish()
             completed = True
             return {
@@ -10855,6 +10859,17 @@ class App(GpuResourceGuard, SharedRenderPreview, LocalPreviewComposition, Previe
         error_message = ""
         try:
             self._cleanup_video_export()
+            timeline = None
+            if fg_multiplier == 1 and super_resolution_scale == 1 and not is_sequence(source_path):
+                def inspect_progress(done, total):
+                    self.set_progress(done, max(total, done), tr('status.inspect_timestamps'))
+                    self.root.update()
+                    self._raise_if_export_cancelled()
+                timeline = inspect_video_timeline(
+                    source_path, fps, check_cancel=self._raise_if_export_cancelled,
+                    progress=inspect_progress, **decode_options(export_settings),
+                )
+                n, fps = timeline.frames, float(timeline.rate)
             if export_settings['rate_control'] == 'quality':
                 encoding_note = QUALITY_PROFILE_NAMES.get(
                     export_settings['quality_profile'], "高质量（推荐）"
@@ -10881,6 +10896,7 @@ class App(GpuResourceGuard, SharedRenderPreview, LocalPreviewComposition, Previe
                 result = self._export_hdr_video(
                     source_path, color_info, out_path, n, fps, w, h,
                     settings, export_settings, view, mix,
+                    timeline=timeline,
                 )
                 exported_frames = result['frames']
                 dlss_seconds = result['dlss_seconds']
@@ -10935,6 +10951,7 @@ class App(GpuResourceGuard, SharedRenderPreview, LocalPreviewComposition, Previe
                     video_bitrate_mbps=export_settings['video_bitrate_mbps'],
                     output_size=export_settings['output_size'],
                     progress=self._parallel_progress,
+                    timeline=timeline,
                 )
                 exported_frames = result['frames']
                 success = True
@@ -10957,6 +10974,7 @@ class App(GpuResourceGuard, SharedRenderPreview, LocalPreviewComposition, Previe
                     quality_profile=export_settings['quality_profile'],
                     video_bitrate_mbps=export_settings['video_bitrate_mbps'],
                     output_size=export_settings['output_size'],
+                    **timeline.writer_options(),
                 )
                 self.logln(f"[导出] 编码器: {writer.encoder_name}；完成后保留原视频音轨")
                 decode_buffer = export_settings['decode_buffer']
@@ -11040,6 +11058,8 @@ class App(GpuResourceGuard, SharedRenderPreview, LocalPreviewComposition, Previe
                         pending_write.result()
                     write_pool.submit(release_native_composer).result()
                 self._raise_if_export_cancelled()
+                if exported_frames != timeline.frames:
+                    raise RuntimeError(f'解码帧数与原时间线不一致：{exported_frames}/{timeline.frames}')
                 writer.finish()
                 success = True
                 self.logln(f"[导出] 音频: {writer.audio_mode}")

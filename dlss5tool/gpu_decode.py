@@ -154,9 +154,10 @@ def _remember(identity, index, frame):
             _CHECKPOINTS.popitem(last=False)
 
 
-def iter_timestamps(source, check_cancel, *, allow_cpu_fallback=False, backend_sink=None):
+def iter_timestamps(source, check_cancel, *, allow_cpu_fallback=False, backend_sink=None, duration_sink=None):
     """Inspect real presentation timestamps without RGB conversion or pixel history."""
     capture = open_video_capture(source, allow_cpu_fallback=allow_cpu_fallback)
+    last_duration = None
     try:
         if backend_sink:
             backend_sink(capture.backend)
@@ -167,7 +168,11 @@ def iter_timestamps(source, check_cancel, *, allow_cpu_fallback=False, backend_s
                 break
             if frame.pts is None:
                 raise decode_error('视频帧缺少时间戳')
+            duration = getattr(frame, 'duration', None)
+            last_duration = (Fraction(duration) * frame.time_base if duration and duration > 0 else None)
             yield str(Fraction(frame.pts) * frame.time_base)
+        if duration_sink:
+            duration_sink(last_duration)
     finally:
         capture.release()
 

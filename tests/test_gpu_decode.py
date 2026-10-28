@@ -186,6 +186,14 @@ def test_timestamp_inspection_does_not_convert_or_retain_pixels(video):
         assert all(isinstance(pts, int) for pts in gpu._CHECKPOINTS[gpu._identity(source)].values())
 
 
+def test_timestamp_inspection_reports_actual_final_frame_duration(video):
+    source, frames, _ = video
+    frames[-1].duration = 17
+    durations = []
+    assert len(list(gpu.iter_timestamps(source, lambda: None, duration_sink=durations.append))) == len(frames)
+    assert durations == [Fraction(17, 1000)]
+
+
 def test_decode_open_error_reaches_export_consumer_instead_of_hanging():
     from dlss5tool import gui
     app = SimpleNamespace(video='input.mp4', _video_color_info={})

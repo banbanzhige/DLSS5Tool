@@ -302,7 +302,7 @@ def probe_video_stream(ffmpeg, source):
                 [
                     ffprobe, "-v", "error", "-select_streams", "v:0",
                     "-show_entries",
-                    "stream=codec_name,profile,width,height,avg_frame_rate,r_frame_rate,nb_frames,duration,pix_fmt,color_space,color_primaries,color_transfer,color_range,chroma_location,field_order:stream_side_data=rotation:stream_tags=rotate",
+                    "stream=codec_name,profile,width,height,avg_frame_rate,r_frame_rate,nb_frames,start_time,start_pts,duration,duration_ts,time_base,pix_fmt,color_space,color_primaries,color_transfer,color_range,chroma_location,field_order:stream_side_data=rotation:stream_tags=rotate",
                     "-of", "json", source,
                 ],
                 stdin=subprocess.DEVNULL, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
@@ -787,7 +787,40 @@ def compose_output_frame(original, processed, view=0, mix=1.0, *, settings=None)
     return cv2.addWeighted(original, 1.0 - mix, processed, mix, 0.0)
 
 
-def mux_source_audio(ffmpeg, video_path, audio_source, output_path):
+def _audio_timeline_offsets(ffmpeg, source, source_video_start=None):
+    """Place video and all audio tracks on one common source time origin.
+
+    Use declared stream starts, so AAC priming packets are not mistaken for an
+    intentional audio lead. Keep earlier audio by delaying video when needed.
+    """
+    probe = find_ffprobe(ffmpeg)
+    if not probe:
+        raise RuntimeError('音画同步封装需要 ffprobe 检查音视频起点')
+    result = subprocess.run([
+        probe, '-v', 'error', '-show_entries', 'stream=codec_type,start_time',
+        '-of', 'json', source,
+    ], stdin=subprocess.DEVNULL, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+        timeout=20, creationflags=_CREATE_NO_WINDOW)
+    if result.returncode:
+        raise RuntimeError('无法读取源音视频起点，已停止封装')
+    streams = json.loads(result.stdout).get('streams') or []
+    def start(stream):
+        value = stream.get('start_time')
+        if value in (None, 'N/A'):
+            return None
+        return Fraction(value)
+    video = next((stream for stream in streams if stream.get('codec_type') == 'video'), None)
+    first_video = (Fraction(str(source_video_start)) if source_video_start is not None else
+                   start(video) if video is not None else Fraction(0))
+    if first_video is None:
+        raise ValueError('源视频缺少起始时间，无法对齐音轨')
+    audio_starts = [value for stream in streams if stream.get('codec_type') == 'audio'
+                    for value in [start(stream)] if value is not None]
+    origin = min([first_video, *audio_starts])
+    return first_video - origin, -origin
+
+
+def mux_source_audio(ffmpeg, video_path, audio_source, output_path, *, source_video_start=None):
     """Atomically attach source audio to an encoded video and return the audio mode."""
     video_path = os.path.abspath(video_path)
     audio_source = os.path.abspath(audio_source)
@@ -796,6 +829,8 @@ def mux_source_audio(ffmpeg, video_path, audio_source, output_path):
     if output_ext not in OUTPUT_CONTAINER_EXTENSIONS.values():
         raise ValueError("视频输出容器仅支持 MP4、MKV 或 MOV")
     audio_codecs = probe_audio_codecs(ffmpeg, audio_source)
+    offsets = (_audio_timeline_offsets(ffmpeg, audio_source, source_video_start)
+               if audio_codecs != [] else (Fraction(0), Fraction(0)))
     output_dir = os.path.dirname(output_path) or os.getcwd()
     container = output_container_from_path(output_path)
     container_ext = output_container_extension(container)
@@ -805,12 +840,16 @@ def mux_source_audio(ffmpeg, video_path, audio_source, output_path):
     )
     mux_path = mux_temp.name
     mux_temp.close()
-    common = [ffmpeg, "-hide_banner", "-loglevel", "error", "-y", "-i", video_path]
+    # -copyts prevents each input from independently subtracting its own start.
+    # Explicit offsets translate both inputs by the same source-time origin.
+    common = [ffmpeg, "-hide_banner", "-loglevel", "error", "-y", '-copyts',
+              '-itsoffset', f'{float(offsets[0]):.9f}', "-i", video_path]
     if audio_codecs == []:
         common.extend(["-map", "0:v:0", "-an"])
     else:
-        common.extend(["-i", audio_source, "-map", "0:v:0", "-map", "1:a?"])
-    common.extend(["-c:v", "copy"])
+        common.extend(['-itsoffset', f'{float(offsets[1]):.9f}',
+                       "-i", audio_source, "-map", "0:v:0", "-map", "1:a?"])
+    common.extend(["-c:v", "copy", '-avoid_negative_ts', 'disabled'])
     if container in {"mp4", "mov"}:
         common.extend(["-movflags", "+faststart"])
     try:
@@ -910,6 +949,7 @@ class FFmpegVideoWriter:
         rate_control="quality", quality_profile="high",
         video_bitrate_mbps=20.0, output_size=None, codec="auto",
         frame_timestamps=None, timeline_end=None, cancel=None,
+        source_video_start=None, disable_b_frames=False,
     ):
         self.output_path = os.path.abspath(output_path)
         output_ext = os.path.splitext(self.output_path)[1].lower()
@@ -920,6 +960,7 @@ class FFmpegVideoWriter:
         self.height = int(height)
         self.fps = float(fps)
         self.audio_source = os.path.abspath(audio_source) if audio_source else None
+        self.source_video_start = source_video_start
         self.frame_timestamps = tuple(frame_timestamps) if frame_timestamps is not None else None
         self.timeline_end = timeline_end
         self.cancel = cancel
@@ -978,7 +1019,7 @@ class FFmpegVideoWriter:
             self.quality_profile, self.video_bitrate_mbps, codec=self.codec,
         ))
         cmd.extend(self.frame_contract.output_color_args)
-        if self.frame_timestamps is not None:
+        if self.frame_timestamps is not None or disable_b_frames:
             cmd.extend(["-bf", "0"])
         if self.output_container in {"mp4", "mov"}:
             if self.codec == "hevc":
@@ -1079,7 +1120,8 @@ class FFmpegVideoWriter:
                 video_path = self._retimed_path
             if self.audio_source:
                 self.audio_mode = mux_source_audio(
-                    self.ffmpeg, video_path, self.audio_source, self.output_path
+                    self.ffmpeg, video_path, self.audio_source, self.output_path,
+                    source_video_start=self.source_video_start,
                 )
             else:
                 os.replace(video_path, self.output_path)

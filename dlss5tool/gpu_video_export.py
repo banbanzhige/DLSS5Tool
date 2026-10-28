@@ -15,7 +15,7 @@ class NativeGpuVideoWriter:
                  hdr_ptx=None,
                  device_ordinal=0,use_nvenc=True,nvenc_preset='p5',hdr_metadata=None,
                  rate_control='quality',quality_profile='high',video_bitrate_mbps=20.0,
-                 output_size=None,codec='auto',cuda_session=None,device_input=False):
+                 output_size=None,codec='auto',cuda_session=None,device_input=False,source_video_start=None):
         from dlss5tool.video_export import classify_color_info,resolve_encoder_size
         if use_nvenc is False:raise ValueError('GPU export was explicitly selected with software encoding')
         metadata=classify_color_info(hdr_metadata) if hdr_metadata else None
@@ -54,7 +54,8 @@ class NativeGpuVideoWriter:
                     self._converter=CudaHdrConverter.from_contract(hdr_ptx,self.frame_contract)
                 else:self._converter=CudaSdrConverter.from_contract(sdr_ptx,self.frame_contract)
                 self._encoder=NativeYuvEncoder(native_library,self.config)
-            self._mux=PacketVideoWriter(output_path,self.config,self._encoder.headers,audio_source=audio_source)
+            self._mux=PacketVideoWriter(output_path,self.config,self._encoder.headers,audio_source=audio_source,
+                                       source_video_start=source_video_start)
         except BaseException:
             self.abort();raise
 

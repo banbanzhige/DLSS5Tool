@@ -267,6 +267,7 @@ class InlineControlTests(unittest.TestCase):
         self.assertEqual(app._export_frame_generated_video.call_count, 2)
         app._export_frame_generated_video.reset_mock()
         with mock.patch.object(gui, 'FFmpegVideoWriter', side_effect=RuntimeError('legacy route')), \
+                mock.patch.object(gui, 'inspect_video_timeline', return_value=mock.Mock(frames=24, rate=Fraction(24), writer_options=lambda: {})), \
                 mock.patch.object(gui.traceback, 'print_exc'):
             legacy = app._export_video_source('not-existing-source.mp4', {}, {}, {}, out_path='not-existing-result.mp4', notify=False)
         self.assertFalse(legacy['success'])

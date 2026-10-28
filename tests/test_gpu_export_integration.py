@@ -97,7 +97,7 @@ class PacketBoundaryTests(unittest.TestCase):
             writer=PacketVideoWriter(target,YuvEncoderConfig(320,180,24,1),b'headers',audio_source='audio')
             writer._container=Mock();writer._temp_path=str(video)
             writer._count=writer._next_display=1
-            def mux(*_):
+            def mux(*_, **__):
                 target.touch()  # A competing writer creates final destination while muxing.
                 return 'audio'
             with patch('dlss5tool.video_export.find_ffmpeg',return_value='ffmpeg'), \

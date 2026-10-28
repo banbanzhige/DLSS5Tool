@@ -35,6 +35,13 @@ class HdrContractTests(unittest.TestCase):
 
 
 class RoutingTests(unittest.TestCase):
+    def test_ordered_packet_remux_routes_to_encoder_without_b_frames(self):
+        with patch('dlss5tool.video_export.FFmpegVideoWriter') as legacy, \
+                patch('dlss5tool.gpu_export_runtime.load_components') as components:
+            create_video_writer('out.mp4', 320, 180, 24, disable_b_frames=True)
+        legacy.assert_called_once_with('out.mp4', 320, 180, 24, cancel=None, disable_b_frames=True)
+        components.assert_not_called()
+
     def test_unsupported_contracts_keep_original_encoder(self):
         for options in (dict(use_nvenc=False),dict(nvenc_preset='p7'),dict(rate_control='bitrate'),
                         dict(quality_profile='maximum'),dict(codec='hevc'),dict(output_size=(640,360))):
