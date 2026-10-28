@@ -45,7 +45,11 @@
     },
     {
       "version": "v3.1.0",
-      "packages": "E:/dist/DLSS5Tool/v3.1.0/editions"
+      "packages": "E:/dist/DLSS5Tool/v3.1.0/official-baseline-20261028"
+    },
+    {
+      "version": "v3.1.1",
+      "packages": "E:/dist/DLSS5Tool/v3.1.1/editions"
     }
   ]
 }

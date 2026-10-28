@@ -1,0 +1,249 @@
+{
+  "version": "v3.1.1",
+  "source_commit": "26e2555af320d6d6738b36bf30bed26660f2564b",
+  "output": "E:\\dist\\DLSS5Tool\\v3.1.1\\editions",
+  "official_baseline": "v3.1.0",
+  "official_baseline_verified": true,
+  "original_user_state_preserved": true,
+  "local_candidate": true,
+  "three_archives_crc_verified": true,
+  "full_equals_lite_plus_addon": true,
+  "editions": {
+    "lite": {
+      "name": "DLSS5Tool-v3.1.1-win64-lite.zip",
+      "size": 589575590,
+      "sha256": "4b06d20a5926436efaee2e3f56a67cbbffd336cb67efdadfa62cc4a54765d123",
+      "unpacked_bytes": 1035863625,
+      "file_count": 1882,
+      "crc_verified": true,
+      "volumes": [],
+      "github_name": "DLSS5Tool-v3.1.1-win64.zip"
+    },
+    "addon": {
+      "name": "DLSS5Tool-v3.1.1-win64-addon.zip",
+      "size": 3053866457,
+      "sha256": "2b60a336213122deb4068214ec4523521feaaba90e40b5c2ddff750e6b5de007",
+      "unpacked_bytes": 4781669865,
+      "file_count": 2415,
+      "crc_verified": true,
+      "volumes": [
+        {
+          "name": "DLSS5Tool-v3.1.1-win64-addon.zip.001",
+          "size": 1992294400,
+          "sha256": "8a0c8e17e2ea7f4a348a0d2a9925bb0fd838cfb1de3676878d3c642b4ee3d99f"
+        },
+        {
+          "name": "DLSS5Tool-v3.1.1-win64-addon.zip.002",
+          "size": 1061572057,
+          "sha256": "f951731f197e43078225590151d98db9c633419f33f1f81738764acf02b61582"
+        }
+      ]
+    },
+    "full": {
+      "name": "DLSS5Tool-v3.1.1-win64-full.zip",
+      "size": 3643439536,
+      "sha256": "550e1eb8aaf21a99de3456a0c869f279d066052ac682131c3a2f7917fe546007",
+      "unpacked_bytes": 5817529369,
+      "file_count": 4296,
+      "crc_verified": true,
+      "volumes": [
+        {
+          "name": "DLSS5Tool-v3.1.1-win64-full.zip.001",
+          "size": 1992294400,
+          "sha256": "41471b99f4cbda01ae6fac8276715c27690cde865efeb2789307feea273903e2"
+        },
+        {
+          "name": "DLSS5Tool-v3.1.1-win64-full.zip.002",
+          "size": 1651145136,
+          "sha256": "014ab61fd0b92d0f364332f800713417ccdedfc194ca1fc831b47ba9ae088f9c"
+        }
+      ]
+    }
+  },
+  "incremental_updates": {
+    "mode": "required",
+    "target": "v3.1.1",
+    "first_updater_version": "v2.2.0",
+    "required_baselines": [
+      "v3.1.0"
+    ],
+    "assets": [
+      {
+        "changed_files": 10,
+        "edition": "lite",
+        "from": "v3.1.0",
+        "payload_bytes": 18136860,
+        "published": false,
+        "removed_files": 0,
+        "sha256": "ddc21ef3db481f0e0f599c021960e0b398dbe1601b42932bd0fbb6fbfbfe5427",
+        "size": 16588445,
+        "to": "v3.1.1",
+        "name": "DLSS5Tool-v3.1.0-to-v3.1.1-win64-lite.dlssupdate"
+      },
+      {
+        "changed_files": 11,
+        "edition": "full",
+        "from": "v3.1.0",
+        "payload_bytes": 18137492,
+        "published": false,
+        "removed_files": 0,
+        "sha256": "186906f8833d874e4517501ec62caae0640e6c430ae0002184b50e686cc6e724",
+        "size": 16838845,
+        "to": "v3.1.1",
+        "name": "DLSS5Tool-v3.1.0-to-v3.1.1-win64-full.dlssupdate"
+      }
+    ]
+  },
+  "targeted_tests": {
+    "audio_fix_passed": 138,
+    "audio_fix_subtests": 21,
+    "release_passed": 82,
+    "release_subtests": 4,
+    "full_regression_run": false
+  },
+  "frozen_modules_verified": 26,
+  "build_inputs_unchanged": 140,
+  "frozen_flow_off_on": {
+    "version": "v3.1.1",
+    "passed": true,
+    "cases": [
+      {
+        "case": "vfr-flow-off",
+        "passed": true,
+        "guidance_mode": 0,
+        "worker": {
+          "worker_id": 0,
+          "start": 0,
+          "end": 120,
+          "process_start": 0,
+          "ok": true,
+          "kept_frames": 120,
+          "processed_frames": 120,
+          "dlss_seconds": 0.063181099940266,
+          "wall_seconds": 7.4015677999996115,
+          "encoder": "libx264 (CPU 回退)",
+          "host_backend": "v2",
+          "adapter_info": {
+            "id": "dxgi:10DE:2783:27831ED3:000000A1:00000002EDD00000:P000001000",
+            "name": "NVIDIA GeForce RTX 4070 SUPER",
+            "preference_index": 0,
+            "vendor_id": 4318,
+            "device_id": 10115,
+            "subsys_id": 662904531,
+            "revision": 161,
+            "dedicated_video_memory": 12579766272,
+            "luid_high": 0,
+            "luid_low": 82906,
+            "d3d12_feature_level": "12_0",
+            "cuda_index": 0,
+            "pci_bus_id": "0000:01:00.0"
+          },
+          "in_flight": 3
+        },
+        "frames": 120,
+        "audio_mode": "原音轨直通",
+        "relative_av_shift_seconds": 0.0,
+        "normalized_video_pts_exact": true,
+        "audio_payload_exact": true
+      },
+      {
+        "case": "vfr-flow-on",
+        "passed": true,
+        "guidance_mode": 1,
+        "worker": {
+          "worker_id": 0,
+          "start": 0,
+          "end": 120,
+          "process_start": 0,
+          "ok": true,
+          "kept_frames": 120,
+          "processed_frames": 120,
+          "dlss_seconds": 5.599333899994235,
+          "wall_seconds": 12.663704300000973,
+          "encoder": "libx264 (CPU 回退)",
+          "host_backend": "v2",
+          "adapter_info": {
+            "id": "dxgi:10DE:2783:27831ED3:000000A1:00000002EDD00000:P000001000",
+            "name": "NVIDIA GeForce RTX 4070 SUPER",
+            "preference_index": 0,
+            "vendor_id": 4318,
+            "device_id": 10115,
+            "subsys_id": 662904531,
+            "revision": 161,
+            "dedicated_video_memory": 12579766272,
+            "luid_high": 0,
+            "luid_low": 82906,
+            "d3d12_feature_level": "12_0",
+            "cuda_index": 0,
+            "pci_bus_id": "0000:01:00.0"
+          },
+          "in_flight": 3
+        },
+        "frames": 120,
+        "audio_mode": "原音轨直通",
+        "relative_av_shift_seconds": 0.0,
+        "normalized_video_pts_exact": true,
+        "audio_payload_exact": true
+      },
+      {
+        "case": "offset-flow-on",
+        "passed": true,
+        "guidance_mode": 1,
+        "worker": {
+          "worker_id": 0,
+          "start": 0,
+          "end": 120,
+          "process_start": 0,
+          "ok": true,
+          "kept_frames": 120,
+          "processed_frames": 120,
+          "dlss_seconds": 5.16862510001738,
+          "wall_seconds": 12.079513900000165,
+          "encoder": "libx264 (CPU 回退)",
+          "host_backend": "v2",
+          "adapter_info": {
+            "id": "dxgi:10DE:2783:27831ED3:000000A1:00000002EDD00000:P000001000",
+            "name": "NVIDIA GeForce RTX 4070 SUPER",
+            "preference_index": 0,
+            "vendor_id": 4318,
+            "device_id": 10115,
+            "subsys_id": 662904531,
+            "revision": 161,
+            "dedicated_video_memory": 12579766272,
+            "luid_high": 0,
+            "luid_low": 82906,
+            "d3d12_feature_level": "12_0",
+            "cuda_index": 0,
+            "pci_bus_id": "0000:01:00.0"
+          },
+          "in_flight": 3
+        },
+        "frames": 120,
+        "audio_mode": "原音轨直通",
+        "relative_av_shift_seconds": 0.0,
+        "normalized_video_pts_exact": true,
+        "audio_payload_exact": true
+      }
+    ],
+    "scope": "Frozen rendering/RAFT/encode worker + source-verified production parent retiming/audio mux; no GUI automation"
+  },
+  "old_frozen_helper_real_upgrades": {
+    "lite": "complete",
+    "full": "complete"
+  },
+  "notes_three_copies_exact": true,
+  "uploaded": true,
+  "draft": true,
+  "published": false,
+  "github_draft_url": "https://github.com/banbanzhige/DLSS5Tool/releases/tag/untagged-51929728a53b05778c42",
+  "github_release_id": 426570051,
+  "github_assets_verified": 10,
+  "github_asset_digests_and_sizes_exact": true,
+  "registered_next_baseline": "v3.1.1",
+  "cleanup": {
+    "external_observed_free_delta_bytes": 13447802880,
+    "external_logical_bytes_removed": 13427750573,
+    "external_temporary_bytes": 0,
+    "source_task_record": "F:\\project\\DLSS5Tool\\tmp\\release-v311-20261028\\TASK.md"
+  }
+}
