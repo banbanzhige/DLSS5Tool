@@ -59,9 +59,9 @@ class PlayerHelperTests(unittest.TestCase):
         guidance = _dlss_runtime_guidance(error)
         self.assertIn("FeatureNotSupported", guidance)
         self.assertIn("30系.zip", guidance)
-        self.assertIn("_internal\\nvngx_dlssnr.dll", guidance)
-        self.assertIn("高性能（NVIDIA GPU）", guidance)
-        self.assertIn("关于 → 导出诊断", guidance)
+        self.assertIn(gui.tr('mods.path_settings'), guidance)
+        self.assertIn(gui.tr('label.render_gpu'), guidance)
+        self.assertIn("导出诊断日志", guidance)
         self.assertIn(updater.RELEASES_URL, guidance)
         self.assertFalse(_is_dlss_runtime_unsupported("0xBAD00002"))
 

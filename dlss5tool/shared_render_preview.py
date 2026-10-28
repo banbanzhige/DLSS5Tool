@@ -15,9 +15,21 @@ from dlss5tool.gpu_decode import decode_options
 from dlss5tool.preview_feedback import PreviewFeedback
 from dlss5tool.preview_jobs import LatestPreviewJob
 from dlss5tool.deferred_error import ErrorSnapshot
+from dlss5tool.dlss_error_guidance import format_error, runtime_guidance
 
 
 class SharedRenderPreview(PreviewFeedback):
+    def _shared_report_error(self, error):
+        text = str(error)
+        display = format_error(text)
+        self.set_status(tr('status.shared_failed', error=display.splitlines()[0]))
+        if getattr(self, '_shared_last_error', None) != text:
+            # Commit before a modal dialog pumps Tk callbacks.
+            self._shared_last_error = text
+            self.logln('[预览] ' + display)
+            if runtime_guidance(text):
+                self._show_dlss_error(text)
+
     def _shared_wait_status(self, stage):
         key = (self.video, getattr(self, '_shared_revision', 0),
                getattr(self, '_shared_output_index', getattr(self, '_frame', 0)))
@@ -432,10 +444,7 @@ class SharedRenderPreview(PreviewFeedback):
             self._clear_preview_wait()
             PreviewFeedback._set_parameter_status(self, 'failed')
             self._cancel_after('_scrub_after')
-            self.set_status(tr('status.shared_failed', error=str(error).splitlines()[0]))
-            if getattr(self, '_shared_last_error', None) != str(error):
-                self.logln('[预览] ' + str(error))
-                self._shared_last_error = str(error)
+            self._shared_report_error(error)
             return False
 
     def _shared_poll(self):
@@ -566,8 +575,7 @@ class SharedRenderPreview(PreviewFeedback):
         except Exception as error:
             self.pause()
             self._clear_preview_wait()
-            self.set_status(tr('status.shared_failed', error=str(error).splitlines()[0]))
-            self.logln('[预览] ' + str(error))
+            self._shared_report_error(error)
 
     def _shared_buffer(self):
         if not self.playing:

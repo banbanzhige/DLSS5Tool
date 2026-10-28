@@ -77,12 +77,15 @@ class SwitchStabilityTests(unittest.TestCase):
 class StillPreviewTests(unittest.TestCase):
     def test_paused_worker_failure_stops_buffering_and_remains_visible(self):
         app = gui.App.__new__(gui.App)
+        app.root = mock.sentinel.root
         app._preview_worker_error = 'CreateFeature(18) -> 0xBAD00002'
         for name in ('pause', '_freeze_preview_cache', 'logln', 'set_status', '_draw_work_status'):
             setattr(app, name, mock.Mock())
         app.canvas = mock.Mock()
         app._preview_session_active = mock.Mock()
-        app._preview_decode_tick()
+        with mock.patch.object(gui.messagebox, 'showerror') as showerror:
+            app._preview_decode_tick()
+        showerror.assert_called_once()
         app._preview_session_active.assert_not_called()
         app._freeze_preview_cache.assert_called_once_with(resume_ms=None)
         app._draw_work_status.assert_called_once_with(gui.tr('status.preview_failed'))

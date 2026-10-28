@@ -37,6 +37,12 @@ from dlss5tool import i18n
 from dlss5tool.app_version import APP_VERSION
 from dlss5tool import diagnostics, support_diagnostics
 from dlss5tool import dlss_engine
+from dlss5tool.dlss_error_guidance import (
+    format_error as _format_dlss_error,
+    is_runtime_unsupported as _is_dlss_runtime_unsupported,
+    offers_runtime_download as _offers_dlss_runtime_download,
+    runtime_guidance as _dlss_runtime_guidance,
+)
 from dlss5tool import guidance_client
 from dlss5tool.guidance_public import depth_enabled, public_mode, still_image_settings
 from dlss5tool.preview_comparison import PreviewComparison
@@ -217,24 +223,6 @@ CANVAS_BG = "#161616"
 CANVAS_DROP_BG = "#24405C"
 
 
-def _is_dlss_runtime_unsupported(error):
-    """Recognize NGX's FeatureNotSupported result without hiding raw diagnostics."""
-    text = str(error or "")
-    return bool(
-        re.search(r"0xBAD00001", text, re.IGNORECASE)
-        or re.search(r"FeatureNotSupported", text, re.IGNORECASE)
-    )
-
-
-def _dlss_runtime_guidance(error):
-    if re.search(r"0xBAD00002\b", str(error), re.I):
-        return tr("message.dlss_platform_error")
-    if not _is_dlss_runtime_unsupported(error):
-        return ""
-    return tr(
-        "message.dlss_runtime_unsupported",
-        releases_url=updater.RELEASES_URL,
-    )
 HUD_FILL = "#d8d8d8"
 SPLIT_LINE = "#7FE8E8"
 TIMELINE_BG = "#1a1a1a"
@@ -6140,12 +6128,7 @@ class App(GpuResourceGuard, SharedRenderPreview, LocalPreviewComposition, Previe
                     self._live.update(settings)
                 return self._live
             except Exception as ex:
-                raw_error = str(ex)
-                guidance = _dlss_runtime_guidance(raw_error)
-                display_error = (
-                    raw_error + "\n\n" + guidance
-                    if guidance and guidance not in raw_error else raw_error
-                )
+                display_error = _format_dlss_error(ex)
                 self._live_error = display_error
                 if threading.current_thread() is threading.main_thread():
                     self.logln("[DLSS] " + display_error)
@@ -8522,10 +8505,11 @@ class App(GpuResourceGuard, SharedRenderPreview, LocalPreviewComposition, Previe
         self.pause()
         self._freeze_preview_cache(resume_ms=None)
         self._dlss_pending = False
-        self.logln('[预览] DLSS 缓存失败: ' + str(error))
+        self.logln('[预览] DLSS 缓存失败: ' + _format_dlss_error(error))
         self.set_status(tr('status.preview_failed'))
         if hasattr(self, 'canvas'):
             self._draw_work_status(tr('status.preview_failed'))
+        self._show_dlss_error(error)
         return True
 
     def _play_tick(self):
@@ -10012,6 +9996,26 @@ class App(GpuResourceGuard, SharedRenderPreview, LocalPreviewComposition, Previe
         self._last_export_profile = None
         self.set_status(status_text)
 
+    def _show_dlss_error(self, error):
+        guidance = _dlss_runtime_guidance(error)
+        if not guidance:
+            return False
+        offer_download = _offers_dlss_runtime_download(error)
+        title = tr(
+            'dialog.dlss_runtime_unsupported'
+            if offer_download and _is_dlss_runtime_unsupported(error)
+            else 'dialog.dlss_failed'
+        )
+        if offer_download:
+            if messagebox.askyesno(
+                title, guidance + tr('message.open_releases_prompt'),
+                icon='error', parent=self.root,
+            ):
+                self._open_release_page(updater.RELEASES_URL)
+        else:
+            messagebox.showerror(title, guidance, parent=self.root)
+        return True
+
     def _end_export_ui(
         self, success, out_path, done_label=None, done_message=None, cancelled=False,
         completed_items=1, notify=True, error_message="",
@@ -10053,17 +10057,9 @@ class App(GpuResourceGuard, SharedRenderPreview, LocalPreviewComposition, Previe
                 pass
             self.set_status(tr("status.export_failed_log"))
             if notify:
-                guidance = _dlss_runtime_guidance(error_message)
-                if guidance and _is_dlss_runtime_unsupported(error_message):
-                    if messagebox.askyesno(
-                        tr("dialog.dlss_runtime_unsupported"),
-                        guidance + tr("message.open_releases_prompt"),
-                        icon="error",
-                    ):
-                        self._open_release_page(updater.RELEASES_URL)
-                else:
+                if not self._show_dlss_error(error_message):
                     messagebox.showerror(
-                        tr("dialog.export_failed"), guidance or tr("message.export_incomplete")
+                        tr("dialog.export_failed"), tr("message.export_incomplete")
                     )
 
     @staticmethod
@@ -10310,7 +10306,7 @@ class App(GpuResourceGuard, SharedRenderPreview, LocalPreviewComposition, Previe
         except Exception as ex:
             traceback.print_exc()
             error_message = str(ex)
-            self.logln(tr("log.export_error", error=error_message))
+            self.logln(tr("log.export_error", error=_format_dlss_error(error_message)))
         self._end_export_ui(
             success, out_path, tr("common.completed"),
             tr("status.exported_image", path=out_path) if success else None,
@@ -11058,7 +11054,7 @@ class App(GpuResourceGuard, SharedRenderPreview, LocalPreviewComposition, Previe
         except Exception as ex:
             traceback.print_exc()
             error_message = str(ex)
-            self.logln(tr("log.export_error", error=error_message))
+            self.logln(tr("log.export_error", error=_format_dlss_error(error_message)))
         finally:
             actions = []
             if writer and not success:
