@@ -15,13 +15,13 @@
 </p>
 
 <p align="center">
-  <a href="CHANGELOG.md"><img src="https://img.shields.io/badge/source-v3.1.0-0E7490?style=flat&amp;labelColor=475569" alt="源码版本 v3.1.0" height="20"></a>
+  <a href="CHANGELOG.md"><img src="https://img.shields.io/badge/source-v3.1.1-0E7490?style=flat&amp;labelColor=475569" alt="源码版本 v3.1.1" height="20"></a>
   <a href="#快速开始"><img src="https://img.shields.io/badge/platform-Windows_x64-0369A1?style=flat&amp;labelColor=475569" alt="平台 Windows x64" height="20"></a>
   <a href="#2-选择显卡运行库"><img src="https://img.shields.io/badge/GPU-NVIDIA_RTX-0E7490?style=flat&amp;labelColor=475569" alt="显卡 NVIDIA RTX；请按代际选择运行库" height="20"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-GPLv3-0369A1?style=flat&amp;labelColor=475569" alt="当前组合源码采用 GPLv3 许可证" height="20"></a>
 </p>
 
-本文介绍 **v3.1.0** 本地打包版本，改进超分处理、自动预渲染、缓存回收与导出效率，并支持队列输出目录管理。部分环境下的持续内存增长仍待解决。是否已公开下载以 Releases 实际附件为准。变化见 [更新说明](docs/release/RELEASE_NOTES_v3.1.0.md)，分发限制见[许可证](#许可证)。
+本文介绍 **v3.1.1** 草稿版本，修复部分视频导出后的音画不同步，并改善 DLSS 初始化失败提示。部分环境下的持续内存增长仍待解决。是否已公开下载以 Releases 实际附件为准。变化见 [更新说明](docs/release/RELEASE_NOTES_v3.1.1.md)，分发限制见[许可证](#许可证)。
 
 ## 功能概览
 
@@ -208,9 +208,9 @@ mods\nvngx_dlssnr.dll
 
 **如何更新？**
 
-通过「关于 → 检查更新」，或直接下载 Release。本轮仅为 v3.0.4 准备到 v3.1.0 的轻量版／完整版增量；正式发布且附件齐全后，才可通过发布页或更新器获取。更早版本使用整包升级，不自动串联多个增量包。
+通过「关于 → 检查更新」，或直接下载 Release。本轮仅为 v3.1.0 准备到 v3.1.1 的轻量版／完整版增量；正式发布且附件齐全后，才可通过发布页或更新器获取。更早版本使用整包升级，不自动串联多个增量包。
 
-轻量版对应 `lite` 更新包，已安装附加组件的版本对应 `full`。不要只替换 EXE，也不要把旧版本组件直接混入 v3.1.0；[历史省流量升级说明](docs/release/UPGRADE_v2.3.1.md)仅适用于其中明确列出的版本。
+轻量版对应 `lite` 更新包，已安装附加组件的版本对应 `full`。不要只替换 EXE，也不要把旧版本组件直接混入 v3.1.1；[历史省流量升级说明](docs/release/UPGRADE_v2.3.1.md)仅适用于其中明确列出的版本。
 
 有匹配包时，更新器只下载当前安装形态的变化文件，校验后再次确认退出，由独立助手安装。没有匹配包时，轻量版可下载整包，完整版引导到发布页选择完整版或同版本轻量版＋附加包。没有更新助手的旧版请手动将新版完整解压到新目录；增量更新需发布页提供对应附件。详见[更新说明](docs/USER_GUIDE.md)。
 
