@@ -100,8 +100,8 @@ def vsr_worker(*args):
         sr.VSR_HOST_DLL = os.environ['DLSS5TOOL_P0_VSR_HOST']
     real_load = sr._load_host
     profile = Profile('sr')
-    def load():
-        library = real_load()
+    def load(*load_args, **load_kwargs):
+        library = real_load(*load_args, **load_kwargs)
         profile.library = library
         actual = library.vsr_process
         def process(*parameters):

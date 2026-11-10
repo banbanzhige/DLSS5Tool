@@ -1,0 +1,120 @@
+{
+  "status": "research_complete_growth_reproduced_no_verified_public_cure",
+  "date": "2026-11-11",
+  "product_commit": "e5f91b8858d7cba8a2ca9ce1ae0abec35619cf15",
+  "environment": {
+    "python": "3.13.3 (tags/v3.13.3:6280bb5, Apr  8 2025, 14:47:33) [MSC v.1943 64 bit (AMD64)]",
+    "windows": [
+      10,
+      0,
+      26300,
+      2,
+      ""
+    ],
+    "gpu": "RTX 4070 SUPER",
+    "driver": "621.14",
+    "ram_gib": 64
+  },
+  "conclusions": {
+    "updaters_in_measured_idle": 0,
+    "all_three_memory_plateau_gates_failed": true,
+    "measured_rates_mib_per_minute": {
+      "native-device11-current-cuda-d3d11": 74.74499161315639,
+      "native-nr-current-nr": 60.962286464069436,
+      "native-sr-current-vsr-fixed": 63.11632216714233
+    },
+    "no_driver_or_global_settings_changed": true,
+    "no_external_binaries_executed": true
+  },
+  "diagnostics_change": {
+    "file": "scripts/profile_native_frame_memory.py",
+    "sha256": "97f3af75645fd1f0121f237bf7a81f7b1768bb445bc8c19ed818d052c32c3424",
+    "reason": "Forward optional host-loader arguments; real VSR rerun verified after stale diagnostic wrapper TypeError"
+  },
+  "plateau_limits": {
+    "max_absolute_slope_mib_per_minute": 0.25,
+    "max_window_delta_mib": 16
+  },
+  "artifacts": [
+    {
+      "file": "native-device11-current-cuda-d3d11.json.gz",
+      "bytes": 71844,
+      "sha256": "0b9149581213fa38f7abc94fed45dc9a8da4cbe8835a8b8ce60fd2aea1e6558d"
+    },
+    {
+      "file": "native-nr-current-nr.json.gz",
+      "bytes": 76795,
+      "sha256": "ce7c4e3f44cd5a5a793eefd388861a4d0203a1588ec7acc2ae6c9beee9b17597"
+    },
+    {
+      "file": "native-sr-current-vsr-fixed.json.gz",
+      "bytes": 76395,
+      "sha256": "63eba629d352d19a494b1e398295e69092c1eda23d9b8fc9506ccb8695d84d99"
+    },
+    {
+      "file": "native-sr-current-vsr.json.gz",
+      "bytes": 7440,
+      "sha256": "852018dbde0b8441dbfbf1845d26daafbec37f3dd95877b1837db6a3fe0a8306"
+    },
+    {
+      "file": "measurements.json",
+      "bytes": 7527,
+      "sha256": "0df98943d001694798a2d8b25b62b8404ceada2668df5b358675db0250c8b8f7"
+    },
+    {
+      "file": "source-provenance.json",
+      "bytes": 27504,
+      "sha256": "0da9466cbb009dec6be551828a9729df064a98ac4630677d0fadb2340521a870"
+    }
+  ],
+  "runtimes_unchanged": [
+    {
+      "file": "runtime/dlssnr_host_v2.dll",
+      "sha256": "c8ad631f8f78b2dedec6aec418c7a570d6fc5bf1b9ffa9f3514bcb0edd58fc13",
+      "bytes": 295424
+    },
+    {
+      "file": "runtime/nvngx_dlssnr.dll",
+      "sha256": "ceb6432f6fbdf44d886014bcd47241932bf8b67439feef9bbdd0961436662650",
+      "bytes": 165840496
+    },
+    {
+      "file": "runtime/vsr_host.dll",
+      "sha256": "ed26ab54b57d01ad6754bbae4e70bff5c38fcafef1e866798a01ae159212c2c1",
+      "bytes": 251392
+    },
+    {
+      "file": "runtime/nvngx_vsr.dll",
+      "sha256": "c3d88eea5ff7a548edefa66414cf6e77464d0947277c904f324dd23abf58a1ed",
+      "bytes": 19140144
+    }
+  ],
+  "limitations": [
+    "Finite 300-second observations, not hour-scale acceptance",
+    "Optional NVIDIA modules still loaded; no verified injection-free control",
+    "No new per-allocation stack capture",
+    "Latest Veyra/OptiScaler only read statically, not run locally",
+    "No RTX 3080 / 596.21 replication"
+  ],
+  "recommended_order": [
+    "Bounded native ownership and resumable independent image queue",
+    "Verified driver/plugin A/B and exact native allocation attribution",
+    "Video continuation with temporal-quality and full-timeline validation",
+    "Evidence-driven resource retirement audit"
+  ],
+  "cleanup": {
+    "status": "completed",
+    "task": "tmp/memory-growth-research-20261111",
+    "start_free_approx_gib": 47.1,
+    "peak_disk_budget_bytes": 134217728,
+    "removed_top_level_items": 7,
+    "removed_logical_bytes": 6492522.0,
+    "free_before_bytes": 50532450304,
+    "free_after_bytes": 50539073536,
+    "measured_free_change_bytes": 6623232,
+    "remaining_bytes": 2024.0,
+    "remaining_reason": "TASK.md registration only; review 2026-11-18",
+    "checks": "Exact absolute boundary, ancestors and entries without reparse points, no active source references, exclusive file opens, all own test/research sessions completed",
+    "disk_delta_note": "Whole-volume free-space change can include concurrent activity"
+  }
+}

@@ -1,0 +1,196 @@
+{
+  "native-device11-current-cuda-d3d11": {
+    "processing_and_exit": "passed",
+    "elapsed_seconds": 301.778,
+    "peak_tree_private_bytes": 511963136,
+    "safety_stop": null,
+    "remaining": [],
+    "supervisor_recovery": [],
+    "long_term_memory_plateau_verified": false,
+    "overlay_modules": [
+      "C:\\WINDOWS\\system32\\nvspcap64.dll"
+    ],
+    "idle_worker": {
+      "pid": 31780,
+      "created": 134388022723270724,
+      "samples": 1116,
+      "sufficient_samples": true,
+      "start_median_bytes": 170151936,
+      "end_median_bytes": 473825280,
+      "delta_bytes": 303673344,
+      "median_time_span_seconds": 232.47481536865234,
+      "mib_per_minute": 74.74499161315639,
+      "range_bytes": 380268544,
+      "selection": "largest private commit at end of idle window; exact PID+creation time"
+    },
+    "idle_tree": {
+      "samples": 1116,
+      "sufficient_samples": true,
+      "start_median_bytes": 171388928,
+      "end_median_bytes": 475062272,
+      "delta_bytes": 303673344,
+      "median_time_span_seconds": 232.47481536865234,
+      "mib_per_minute": 74.74499161315639,
+      "range_bytes": 380276736
+    },
+    "relevant_modules": [
+      "C:\\WINDOWS\\SYSTEM32\\nvcuda.DLL",
+      "C:\\WINDOWS\\system32\\DriverStore\\FileRepository\\nv_dispi.inf_amd64_cee48bd6d33f95ab\\nvcuda64.dll",
+      "C:\\WINDOWS\\System32\\DriverStore\\FileRepository\\nv_dispi.inf_amd64_cee48bd6d33f95ab\\Display.NvContainer\\NvMessageBus.dll",
+      "C:\\WINDOWS\\System32\\DriverStore\\FileRepository\\nv_dispi.inf_amd64_cee48bd6d33f95ab\\nvwgf2umx.dll",
+      "C:\\WINDOWS\\system32\\nvspcap64.dll",
+      "C:\\WINDOWS\\System32\\DriverStore\\FileRepository\\nv_dispi.inf_amd64_cee48bd6d33f95ab\\nvppex.dll"
+    ],
+    "source_unchanged_during_run": true,
+    "worker_result": {
+      "case": "native-device11",
+      "scale": 2,
+      "frames": 32,
+      "multiplier": 1,
+      "enhance": true,
+      "extension_point_policy": null,
+      "native": "cuda",
+      "cuda_initialized": true,
+      "d3d_device_created": true,
+      "idle_seconds": 300,
+      "minimal_device_work": false,
+      "minimal_compute": true,
+      "minimal_readback": false,
+      "minimal_timing": false,
+      "status": "passed"
+    },
+    "max_updaters_in_measured_idle": 0
+  },
+  "native-nr-current-nr": {
+    "processing_and_exit": "passed",
+    "elapsed_seconds": 308.882,
+    "peak_tree_private_bytes": 1227943936,
+    "safety_stop": null,
+    "remaining": [],
+    "supervisor_recovery": [],
+    "long_term_memory_plateau_verified": false,
+    "overlay_modules": [
+      "C:\\WINDOWS\\system32\\nvspcap64.dll"
+    ],
+    "idle_worker": {
+      "pid": 36668,
+      "created": 134388027153261114,
+      "samples": 1113,
+      "sufficient_samples": true,
+      "start_median_bytes": 910268416.0,
+      "end_median_bytes": 1157451776.0,
+      "delta_bytes": 247183360.0,
+      "median_time_span_seconds": 232.0113980770111,
+      "mib_per_minute": 60.962286464069436,
+      "range_bytes": 308641792,
+      "selection": "largest private commit at end of idle window; exact PID+creation time"
+    },
+    "idle_tree": {
+      "samples": 1113,
+      "sufficient_samples": true,
+      "start_median_bytes": 948275200.0,
+      "end_median_bytes": 1195347968.0,
+      "delta_bytes": 247072768.0,
+      "median_time_span_seconds": 232.0113980770111,
+      "mib_per_minute": 60.93501140322135,
+      "range_bytes": 308609024
+    },
+    "post_warmup_tree": {
+      "samples": 0,
+      "sufficient_samples": false
+    },
+    "relevant_modules": [
+      "C:\\WINDOWS\\system32\\nvspcap64.dll",
+      "C:\\WINDOWS\\System32\\DriverStore\\FileRepository\\nv_dispi.inf_amd64_cee48bd6d33f95ab\\nvwgf2umx.dll",
+      "C:\\WINDOWS\\System32\\DriverStore\\FileRepository\\nv_dispi.inf_amd64_cee48bd6d33f95ab\\nvppex.dll",
+      "F:\\project\\DLSS5Tool\\runtime\\nvngx_dlssnr.dll",
+      "C:\\WINDOWS\\System32\\DriverStore\\FileRepository\\nv_dispi.inf_amd64_cee48bd6d33f95ab\\_nvngx.dll",
+      "C:\\WINDOWS\\SYSTEM32\\nvcuda.dll",
+      "C:\\WINDOWS\\System32\\DriverStore\\FileRepository\\nv_dispi.inf_amd64_cee48bd6d33f95ab\\nvngx_dlssg.dll",
+      "C:\\WINDOWS\\System32\\DriverStore\\FileRepository\\nv_dispi.inf_amd64_cee48bd6d33f95ab\\ngx-builtins\\nvngx_dlssd.dll",
+      "C:\\WINDOWS\\System32\\DriverStore\\FileRepository\\nv_dispi.inf_amd64_cee48bd6d33f95ab\\nvcuda64.dll",
+      "C:\\WINDOWS\\System32\\DriverStore\\FileRepository\\nv_dispi.inf_amd64_cee48bd6d33f95ab\\Display.NvContainer\\NvMessageBus.dll"
+    ],
+    "source_unchanged_during_run": true,
+    "worker_result": {
+      "case": "native-nr",
+      "scale": 2,
+      "frames": 32,
+      "multiplier": 1,
+      "enhance": true,
+      "extension_point_policy": null,
+      "native": "nr",
+      "width": 320,
+      "height": 180,
+      "diagnostic_gc_interval": 512,
+      "first_output_sha256": "b2eab2e96e1c94751425a42d1e435e41f8c48a5f1cd41ff4defb3931323ddc07",
+      "status": "passed"
+    },
+    "max_updaters_in_measured_idle": 0
+  },
+  "native-sr-current-vsr-fixed": {
+    "processing_and_exit": "passed",
+    "elapsed_seconds": 308.754,
+    "peak_tree_private_bytes": 785514496,
+    "safety_stop": null,
+    "remaining": [],
+    "supervisor_recovery": [],
+    "long_term_memory_plateau_verified": false,
+    "overlay_modules": [
+      "C:\\WINDOWS\\system32\\nvspcap64.dll"
+    ],
+    "idle_worker": {
+      "pid": 17036,
+      "created": 134388031831869978,
+      "samples": 1113,
+      "sufficient_samples": true,
+      "start_median_bytes": 459606016.0,
+      "end_median_bytes": 715511808.0,
+      "delta_bytes": 255905792.0,
+      "median_time_span_seconds": 232.0009527206421,
+      "mib_per_minute": 63.11632216714233,
+      "range_bytes": 320131072,
+      "selection": "largest private commit at end of idle window; exact PID+creation time"
+    },
+    "idle_tree": {
+      "samples": 1113,
+      "sufficient_samples": true,
+      "start_median_bytes": 497268736.0,
+      "end_median_bytes": 753063936.0,
+      "delta_bytes": 255795200.0,
+      "median_time_span_seconds": 232.0009527206421,
+      "mib_per_minute": 63.08904587829182,
+      "range_bytes": 320098304
+    },
+    "post_warmup_tree": {
+      "samples": 0,
+      "sufficient_samples": false
+    },
+    "relevant_modules": [
+      "C:\\WINDOWS\\System32\\DriverStore\\FileRepository\\nv_dispi.inf_amd64_cee48bd6d33f95ab\\nvwgf2umx.dll",
+      "C:\\WINDOWS\\system32\\nvspcap64.dll",
+      "C:\\WINDOWS\\System32\\DriverStore\\FileRepository\\nv_dispi.inf_amd64_cee48bd6d33f95ab\\nvppex.dll",
+      "C:\\WINDOWS\\System32\\DriverStore\\FileRepository\\nv_dispi.inf_amd64_cee48bd6d33f95ab\\_nvngx.dll",
+      "C:\\WINDOWS\\SYSTEM32\\nvcuda.dll",
+      "C:\\WINDOWS\\System32\\DriverStore\\FileRepository\\nv_dispi.inf_amd64_cee48bd6d33f95ab\\nvngx_dlssg.dll",
+      "C:\\WINDOWS\\System32\\DriverStore\\FileRepository\\nv_dispi.inf_amd64_cee48bd6d33f95ab\\nvcuda64.dll",
+      "C:\\WINDOWS\\System32\\DriverStore\\FileRepository\\nv_dispi.inf_amd64_cee48bd6d33f95ab\\Display.NvContainer\\NvMessageBus.dll"
+    ],
+    "source_unchanged_during_run": true,
+    "worker_result": {
+      "case": "native-sr",
+      "scale": 2,
+      "frames": 32,
+      "multiplier": 1,
+      "enhance": true,
+      "extension_point_policy": null,
+      "native": "sr",
+      "width": 320,
+      "height": 180,
+      "diagnostic_gc_interval": 512,
+      "first_output_sha256": "07a889d24caaa48b68fa35f8e6cfa64ecd74378d2f09f2b702fc4c2f26f8f903",
+      "status": "passed"
+    },
+    "max_updaters_in_measured_idle": 0
+  }
+}
