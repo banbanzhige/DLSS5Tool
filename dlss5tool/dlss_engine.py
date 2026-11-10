@@ -340,6 +340,14 @@ class Live:
         adapters, expected_adapter = _configure_render_adapter(
             self._lib, s, self.backend,
         )
+        from dlss5tool import dlss_runtime
+        runtime_adapter = (expected_adapter or getattr(self, '_runtime_adapter', {})
+                           or s.get('_runtime_adapter', {}))
+        self._runtime_adapter = runtime_adapter
+        runtime = mod_paths.runtime_info(s, adapter=runtime_adapter)
+        if runtime.get('needs_download'):
+            runtime = dlss_runtime.ensure_runtime(s, adapter=runtime_adapter)
+        self.runtime_path = runtime['path']
         if not self._lib.dlssnr_init(self._w, self._h, int(s.get('preset', 1)), self.runtime_path, LOG_PATH):
             log = _read_log_tail(LOG_PATH)
             detail = "dlssnr_init failed (D3D12/gate). See dlss_run.log"

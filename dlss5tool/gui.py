@@ -60,6 +60,7 @@ from dlss5tool.export_metrics import FrameRate
 from dlss5tool.export_preflight import assess_video_export
 from dlss5tool.residual_composition import release_native_composer
 from dlss5tool import mod_paths
+from dlss5tool import dlss_runtime
 from dlss5tool import export_queue as export_queue_state
 from dlss5tool import updater
 from dlss5tool import delta_update
@@ -3707,7 +3708,22 @@ class App(GpuResourceGuard, SharedRenderPreview, LocalPreviewComposition, Previe
         if not workspace.session_summary()[1]:
             fresh = self._collect_host_settings()
             keys = ('mods_directory', 'dlss_runtime')
-            if any(workspace.client.settings.get(k, '') != fresh.get(k, '') for k in keys):
+            try:
+                config = workspace.collect()
+            except (ValueError, TypeError, tk.TclError):
+                config = {}
+            adapter = dlss_runtime.realtime_adapter(config, getattr(workspace, '_adapters', []))
+            runtime = mod_paths.runtime_info(fresh, adapter=adapter)
+            if runtime.get('needs_download'):
+                self._runtime_prepare_adapter = adapter
+                self._last_module_settings = None
+                self._on_mod_settings_change()
+                self._gpu_start_reason = tr('runtime.preparing')
+                return False
+            workspace.client.runtime_adapter = adapter
+            active_runtime = getattr(workspace.client, 'runtime_selection', None)
+            changed_path = isinstance(active_runtime, dict) and active_runtime.get('path') != runtime['path']
+            if changed_path or any(workspace.client.settings.get(k, '') != fresh.get(k, '') for k in keys):
                 workspace.client.close()
                 workspace.client.settings.update({k: fresh.get(k, '') for k in keys})
                 workspace._host_ready = None
@@ -4432,7 +4448,7 @@ class App(GpuResourceGuard, SharedRenderPreview, LocalPreviewComposition, Previe
             'v_persistent': tk.BooleanVar(value=saved['host_persistent_buffers']),
             'v_in_flight': tk.IntVar(value=saved['host_in_flight']),
             'v_fallback': tk.BooleanVar(value=saved['host_auto_fallback']),
-            'v_runtime': tk.StringVar(value=tr('mods.bundled') if saved.get('dlss_runtime') == '__bundled__' else (saved.get('dlss_runtime', '') or tr('mods.auto'))),
+            'v_runtime': tk.StringVar(value=dlss_runtime.selection_label(saved.get('dlss_runtime', ''))),
             'v_guidance': self._settings['v_guidance'],
             'v_guidance_edge': tk.IntVar(value=saved.get('guidance_edge', 720)),
             'v_flow_direction': tk.StringVar(value=tr('guidance.option.' + saved.get('guidance_flow_direction', 'backward'))),
@@ -4483,15 +4499,24 @@ class App(GpuResourceGuard, SharedRenderPreview, LocalPreviewComposition, Previe
         ttk.Label(host_group, text=tr("label.submission")).grid(row=3, column=0, sticky="w", pady=3)
         submission.grid(row=3, column=1, sticky="ew", pady=3)
 
+        queue_row = ttk.Frame(host_group, style="Panel.TFrame")
+        queue_row.grid(row=4, column=1, sticky="ew", pady=3)
+        queue_row.columnconfigure(1, weight=1)
         in_flight = self._chrome_spin(
-            host_group, from_=1, to=MAX_IN_FLIGHT, textvariable=d['v_in_flight'], width=7,
+            queue_row, from_=1, to=MAX_IN_FLIGHT, textvariable=d['v_in_flight'], width=7,
             command=self._on_host_settings_change,
         )
         queue_label = ttk.Label(host_group, text=tr("label.gpu_queue_frames"))
         queue_label.grid(row=4, column=0, sticky="w", pady=3)
-        in_flight.grid(row=4, column=1, sticky="w", pady=3)
+        in_flight.grid(row=0, column=0, sticky="w")
         Tooltip(queue_label, tr('queue.depth_hint'))
         Tooltip(in_flight, tr('queue.depth_hint'))
+        d['w_queue_status'] = ttk.Label(
+            queue_row, text='', style='Hint.TLabel', wraplength=160, justify='left',
+        )
+        d['w_queue_status'].grid(row=0, column=1, sticky='w', padx=(8, 0))
+        d['w_queue_status'].grid_remove()
+        Tooltip(d['w_queue_status'], tr('queue.depth_hint'))
 
         zero_fast = CheckToggle(
             host_group, tr("label.zero_guidance_fast"), d['v_zero_fast'],
@@ -4508,9 +4533,6 @@ class App(GpuResourceGuard, SharedRenderPreview, LocalPreviewComposition, Previe
             command=self._on_host_settings_change, ui=self._ui,
         )
         fallback.grid(row=7, column=0, columnspan=2, sticky="w", pady=2)
-        d['w_queue_status'] = ttk.Label(host_group, style='Muted.TLabel', wraplength=290)
-        d['w_queue_status'].grid(row=8, column=0, columnspan=2, sticky='w', pady=(5, 0))
-        Tooltip(d['w_queue_status'], tr('queue.depth_hint'))
         self._theme_widgets.extend((zero_fast, persistent, fallback))
         d.update({
             'w_backend': backend,
@@ -4572,7 +4594,7 @@ class App(GpuResourceGuard, SharedRenderPreview, LocalPreviewComposition, Previe
         if selected is None or selected == d.get('render_gpu_selected_id'):
             return
         d['render_gpu_selected_id'] = selected
-        self._on_host_settings_change()
+        self._on_mod_settings_change()
 
     def _start_render_gpu_scan(self):
         if not hasattr(self, '_host_settings') or getattr(self, '_render_gpu_scan_closing', False):
@@ -4640,8 +4662,13 @@ class App(GpuResourceGuard, SharedRenderPreview, LocalPreviewComposition, Previe
         else:
             status = ''
         d['render_gpu_scan_status'] = status
+        d['render_adapters'] = adapters
         self._set_render_gpu_status(status)
         self._update_host_control_states()
+        runtime = mod_paths.runtime_info(self._collect_host_settings())
+        if not error and runtime.get('needs_download'):
+            self._last_module_settings = None
+            self._on_mod_settings_change()
 
     def _build_guidance_settings(self, parent):
         from dlss5tool.guidance_settings_ui import build_guidance_settings
@@ -4689,13 +4716,18 @@ class App(GpuResourceGuard, SharedRenderPreview, LocalPreviewComposition, Previe
         runtime_row = ttk.Frame(editor.body, style='Panel.TFrame')
         runtime_row.grid(row=1, column=0, sticky='ew')
         runtime_row.columnconfigure(0, weight=1)
-        runtime_combo = self._chrome_combo(runtime_row, d['v_runtime'], [tr('mods.auto'), tr('mods.bundled')] + mod_paths.runtime_choices(saved))
+        runtime_combo = self._chrome_combo(runtime_row, d['v_runtime'], dlss_runtime.selection_choices(saved))
         runtime_combo.grid(row=0, column=0, sticky='ew', padx=(0, 4))
         runtime_combo.bind('<<ComboboxSelected>>', lambda e: self._on_mod_settings_change())
         runtime_button = ttk.Button(
             runtime_row, text=tr('mods.choose_runtime'), command=self._choose_runtime,
         )
         runtime_button.grid(row=0, column=1, sticky='e')
+        runtime_test = self._chrome_button(runtime_row, tr('runtime.test'), self._test_runtime, variant='ghost')
+        runtime_test.grid(row=1, column=0, columnspan=2, sticky='ew', pady=(6, 0))
+        runtime_status = ttk.Label(runtime_row, text='', style='Hint.TLabel', wraplength=300, justify='left')
+        runtime_status.grid(row=2, column=0, columnspan=2, sticky='ew', pady=(4, 2))
+        runtime_tooltip = Tooltip(runtime_status, tr('runtime.hint'))
         paths = ttk.Frame(editor.body, style='Panel.TFrame')
         paths.grid(row=2, column=0, sticky='ew', pady=(4, 0))
         paths.columnconfigure(0, weight=1)
@@ -4728,6 +4760,7 @@ class App(GpuResourceGuard, SharedRenderPreview, LocalPreviewComposition, Previe
         hint.grid(row=1, column=0, sticky='w', pady=(4, 0))
         d['mod_setup_tooltip'] = Tooltip(open_mods, tr('mods.setup_hint'))
         d.update(w_runtime=runtime_combo, w_mod_hint=hint,
+                 w_runtime_test=runtime_test, w_runtime_status=runtime_status, runtime_tooltip=runtime_tooltip,
                  w_runtime_button=runtime_button, path_vars=path_vars, path_controls=path_controls, path_entries=path_entries)
         self._last_module_settings = self._collect_host_settings()
 
@@ -4833,7 +4866,7 @@ class App(GpuResourceGuard, SharedRenderPreview, LocalPreviewComposition, Previe
             messagebox.showerror(tr('mods.title'), str(exc))
 
     def _choose_runtime(self):
-        if self._exporting or self._queue_running:
+        if self._exporting or self._queue_running or self._switching_backend or self._diagnosing or self._realtime_busy():
             return
         path = filedialog.askopenfilename(title=tr('mods.choose_runtime'), initialdir=str(mod_paths.mods_root(self._collect_host_settings())), filetypes=[('DLSS runtime', '*.dll')])
         if path:
@@ -4841,7 +4874,7 @@ class App(GpuResourceGuard, SharedRenderPreview, LocalPreviewComposition, Previe
             self._on_mod_settings_change()
 
     def _refresh_mods(self):
-        choices = [tr('mods.auto'), tr('mods.bundled')] + mod_paths.runtime_choices(self._collect_host_settings())
+        choices = dlss_runtime.selection_choices(self._collect_host_settings())
         current = self._host_settings['v_runtime'].get()
         if current not in choices:
             choices.append(current)
@@ -4851,6 +4884,14 @@ class App(GpuResourceGuard, SharedRenderPreview, LocalPreviewComposition, Previe
             self._on_mod_settings_change()
         else:
             self._update_host_control_states()
+
+    def _test_runtime(self):
+        if (self._exporting or self._queue_running or self._switching_backend or self._diagnosing
+                or self._realtime_busy() or self._gpu_thread_alive(getattr(self, '_gpu_release_thread', None))):
+            return
+        self._runtime_test_requested = True
+        self._last_module_settings = None
+        self._on_mod_settings_change()
 
     def _on_mod_settings_change(self):
         if self._realtime_busy() or self._gpu_thread_alive(getattr(self, '_gpu_release_thread', None)):
@@ -4883,6 +4924,10 @@ class App(GpuResourceGuard, SharedRenderPreview, LocalPreviewComposition, Previe
             settings = self._collect_host_settings()
         if settings == getattr(self, '_last_module_settings', None):
             return
+        test_runtime = getattr(self, '_runtime_test_requested', False)
+        self._runtime_test_requested = False
+        self._runtime_test_text = ''
+        self._runtime_test_detail = ''
         from dlss5tool.guidance_parameters import DISPLAY_KEYS
         if previous_settings is not None and (
                 {k: v for k, v in settings.items() if k not in DISPLAY_KEYS} ==
@@ -4939,14 +4984,37 @@ class App(GpuResourceGuard, SharedRenderPreview, LocalPreviewComposition, Previe
             self._draw_work_status(tr('guidance.switching'))
         previous = self._play_dlss_thread
         result = queue.SimpleQueue()
+        runtime_events = queue.SimpleQueue()
+        self._runtime_events = runtime_events
+        cancel_runtime = threading.Event()
+        self._runtime_cancel = cancel_runtime
+        adapter = dlss_runtime.selected_adapter(settings,
+            getattr(self, '_host_settings', {}).get('render_adapters', []))
+        prepare_adapter = getattr(self, '_runtime_prepare_adapter', None)
+        self._runtime_prepare_adapter = None
+        if prepare_adapter is not None:
+            adapter = prepare_adapter
+        def progress(received, total):
+            # Workers communicate via mailboxes, never through Tk.
+            runtime_events.put(('download', int(received * 100 / total)))
 
         def retire():
+            runtime_pending = True
             try:
                 # Keep the old worker referenced until it really exits; its
                 # in-flight IPC/GPU work has its own timeout. Never join on Tk.
                 if previous is not None:
                     previous.join()
                 self._close_live()
+                runtime = mod_paths.runtime_info(settings, adapter=adapter)
+                if runtime.get('profile'):
+                    runtime = dlss_runtime.ensure_runtime(settings, adapter=adapter, progress=progress, cancel=cancel_runtime)
+                    runtime_events.put(('ready', runtime))
+                if test_runtime:
+                    runtime_events.put(('testing', None))
+                    tested = dlss_runtime.test_runtime(settings)
+                    runtime_events.put(('passed', tested))
+                runtime_pending = False
                 if settings.get('guidance_mode'):
                     if not probe_settings.get('guidance_mode'):
                         result.put({'info': {}, 'still_flow_skipped': True})
@@ -4958,6 +5026,8 @@ class App(GpuResourceGuard, SharedRenderPreview, LocalPreviewComposition, Previe
                     result.put({'info': info})
                     return
             except Exception as exc:
+                if runtime_pending:
+                    runtime_events.put(('failed', str(exc)))
                 cleanup_message = ''
                 if warm_preview is not None:
                     try:
@@ -5001,6 +5071,30 @@ class App(GpuResourceGuard, SharedRenderPreview, LocalPreviewComposition, Previe
 
     def _poll_module_reload(self, result):
         self._module_reload_after = None
+        events = getattr(self, '_runtime_events', None)
+        while events is not None:
+            try:
+                kind, value = events.get_nowait()
+            except queue.Empty:
+                break
+            if kind == 'download':
+                self._runtime_test_text = tr('runtime.downloading', percent=value)
+            elif kind == 'ready':
+                self._runtime_test_text = tr('runtime.matched', profile=tr('runtime.option.' + value['profile']))
+            elif kind == 'testing':
+                self._runtime_test_text = tr('runtime.testing')
+            elif kind == 'passed':
+                self._runtime_test_text = tr('runtime.passed', gpu=value['adapter'].get('name', 'NVIDIA GPU'))
+                self.logln(self._runtime_test_text + '\n' + value['path'])
+            elif kind == 'failed':
+                self._runtime_test_detail = value
+                concise = str(value).splitlines()[0][:120]
+                self._runtime_test_text = tr('runtime.failed', error=concise)
+                self.logln(tr('runtime.failed', error=value))
+            label = getattr(self, '_host_settings', {}).get('w_runtime_status')
+            if label is not None:
+                label.config(text=self._runtime_test_text)
+            self.set_status(self._runtime_test_text)
         try:
             error = result.get_nowait()
         except queue.Empty:
@@ -5009,6 +5103,7 @@ class App(GpuResourceGuard, SharedRenderPreview, LocalPreviewComposition, Previe
             )
             return
         self._module_reload_thread = None
+        self._runtime_cancel = None
         pending = getattr(self, '_module_pending_settings', None)
         self._module_pending_settings = None
         self._startup_guidance_mode = 0
@@ -5068,7 +5163,7 @@ class App(GpuResourceGuard, SharedRenderPreview, LocalPreviewComposition, Previe
                 # attempted parameters so the user can fix paths and retry.
                 self._schedule_preview_cache_resume(0)
             return
-        self.set_status(tr('guidance.still_hint' if still_flow_skipped else
+        self.set_status(getattr(self, '_runtime_test_text', '') or tr('guidance.still_hint' if still_flow_skipped else
                            'guidance.checked' if pending and pending.get('guidance_mode') else 'guidance.changed'))
         self._schedule_preview_cache_resume(0)
 
@@ -5103,7 +5198,7 @@ class App(GpuResourceGuard, SharedRenderPreview, LocalPreviewComposition, Previe
         analysis['guidance_depth_invert'] = option('v_depth_invert', ('normal', 'inverted'), 'normal') == 'inverted'
         return {
             **analysis,
-            'dlss_runtime': '' if runtime == tr('mods.auto') else ('__bundled__' if runtime == tr('mods.bundled') else runtime),
+            'dlss_runtime': dlss_runtime.selection_value(runtime),
             'guidance_mode': mode,
             'guidance_skip_still_flow': bool(value('v_skip_still_flow', True)),
             'guidance_flow_backend': option('v_flow_backend', ('raft', 'nvofa'), 'raft'),
@@ -5145,6 +5240,16 @@ class App(GpuResourceGuard, SharedRenderPreview, LocalPreviewComposition, Previe
             present['worker'] = False
             component_error = str(exc)
         runtime = mod_paths.runtime_info(host)
+        if 'w_runtime_status' in d:
+            text = getattr(self, '_runtime_test_text', '')
+            if not text:
+                profile = runtime.get('profile')
+                text = tr('runtime.matched', profile=tr('runtime.option.' + profile)) if profile else tr('runtime.hint')
+                if runtime.get('needs_download'):
+                    text = tr('runtime.pending', profile=tr('runtime.option.' + profile))
+            d['w_runtime_status'].config(text=text)
+            d['runtime_tooltip'].text = runtime['path'] + '\n\n' + (
+                getattr(self, '_runtime_test_detail', '') or tr('runtime.hint'))
         found, missing = tr('mods.found'), tr('mods.missing')
         summary = {
             'runtime': tr('mods.runtime.' + ('bundled' if runtime['source'] == 'bundled' else 'external')) if os.path.isfile(runtime['path']) else missing,
@@ -5215,9 +5320,12 @@ class App(GpuResourceGuard, SharedRenderPreview, LocalPreviewComposition, Previe
         if 'w_mod_hint' in self._host_settings:
             host = self._collect_host_settings()
             busy = self._exporting or self._queue_running or self._switching_backend or self._diagnosing
-            for key in ('w_guidance', 'w_runtime'):
-                self._host_settings[key].config(state='disabled' if busy else 'readonly')
-            self._host_settings['w_runtime_button'].config(state='disabled' if busy else 'normal')
+            runtime_busy = busy or self._realtime_busy()
+            self._host_settings['w_guidance'].config(state='disabled' if busy else 'readonly')
+            self._host_settings['w_runtime'].config(state='disabled' if runtime_busy else 'readonly')
+            self._host_settings['w_runtime_button'].config(state='disabled' if runtime_busy else 'normal')
+            if 'w_runtime_test' in self._host_settings:
+                self._host_settings['w_runtime_test'].config(state='disabled' if runtime_busy else 'normal')
             for widget in self._host_settings.get('path_controls', []):
                 widget.config(state='disabled' if busy else 'normal')
             # A rejected activation is still OFF, but its configuration must
@@ -5320,16 +5428,17 @@ class App(GpuResourceGuard, SharedRenderPreview, LocalPreviewComposition, Previe
         host = self._collect_host_settings()
         requested = host['host_in_flight']
         live = getattr(self, '_live', None)
+        text = ''
         if live is not None:
-            key = 'queue.depth_active' if requested == live.max_in_flight else 'queue.depth_limited'
-            text = tr(key, requested=requested, actual=live.max_in_flight)
-        elif (host['host_backend'] == 'legacy' or host['host_submission'] != 'merged'
-              or not host['host_persistent_buffers']):
-            text = tr('queue.depth_serial', requested=requested)
-        else:
-            text = tr('queue.depth_pending', requested=requested)
+            if requested != live.max_in_flight:
+                text = tr('queue.depth_limited', actual=live.max_in_flight)
+        elif requested > 1 and (
+                host['host_backend'] == 'legacy' or host['host_submission'] != 'merged'
+                or not host['host_persistent_buffers']):
+            text = tr('queue.depth_serial')
         if label.cget('text') != text:
             label.config(text=text)
+            self._set_grid_visible(label, bool(text))
 
     def _on_host_settings_change(self):
         if self._switching_backend:
@@ -5887,6 +5996,9 @@ class App(GpuResourceGuard, SharedRenderPreview, LocalPreviewComposition, Previe
         self._cancel_after('_gpu_release_after')
         if getattr(self, '_module_reload_thread', None) is not None:
             self._close_after_module_reload = True
+            cancel = getattr(self, '_runtime_cancel', None)
+            if cancel is not None:
+                cancel.set()
             self.set_status(tr('guidance.closing'))
             return
         if self._diagnosing:
@@ -6011,7 +6123,7 @@ class App(GpuResourceGuard, SharedRenderPreview, LocalPreviewComposition, Previe
             s.get('host_backend'), s.get('render_gpu'), s.get('host_submission'),
             s.get('host_zero_fast_path'), s.get('host_persistent_buffers'),
             s.get('host_in_flight'),
-            s.get('dlss_runtime'), guidance_client.contract(s),
+            s.get('dlss_runtime'), s.get('mods_directory'), guidance_client.contract(s),
             s.get('guidance_skip_still_flow', True),
             normalize_scale(s.get('super_resolution_scale', 1)),
             enhancement_bypass(s),

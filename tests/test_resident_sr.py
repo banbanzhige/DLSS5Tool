@@ -41,6 +41,12 @@ def test_plan_preserves_rational_fps_and_rejects_missing_physical_identity():
     assert sr.make_plan((META, Fraction(30), 1920,1080,96), SETTINGS, ADAPTER|{'cuda_index':None}) is None
 
 
+def test_plan_preserves_decoded_origin_for_worker_and_audio():
+    inspection = (META | {'_source_video_start': '90001/30'}, Fraction(30), 960, 540, 120)
+    plan = sr.make_plan(inspection, SETTINGS, ADAPTER)
+    assert plan['source_video_start'] == '90001/30'
+
+
 @pytest.fixture
 def transaction(tmp_path, monkeypatch):
     source, destination = tmp_path/'source.mp4', tmp_path/'out.mp4'

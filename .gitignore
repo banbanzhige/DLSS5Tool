@@ -73,3 +73,8 @@ Desktop.ini
 /03.png
 /docs/development/sr-efficiency-20261024
 /docs/development
+
+# Local ComfyUI design and handoff records
+/docs/design/COMFYUI_NODES_V1_DESIGN.md
+/docs/design/COMFYUI_NODES_V1_BOUNDARIES.md
+/docs/design/COMFYUI_PROJECT_HANDOFF.md

@@ -27,6 +27,7 @@ from dlss5tool.video_export import (
     probe_video_stream, compose_hdr_frame, compose_output_frame, tone_map_hdr_preview,
     resize_original,
 )
+from dlss5tool.video_timeline import normalized_timeline_end
 
 PINNED_RUNTIME = '135eaf0733c1e37381a8c28abcf7a862404a54132b81787c04e35d09efc5e36f'
 WARNING = ('实验功能：普通视频采用 NVOFA 估计光流及平面深度；遮挡/字幕/HDR 画质未完整验收。'
@@ -269,20 +270,16 @@ class NativeStream:
 def validate_timestamps(timestamps, rate):
     """Reject VFR instead of silently re-timing it through the existing CFR writer."""
     expected = 1 / rate
-    first = previous = None
+    previous = None
     count = 0
     for timestamp in timestamps:
         timestamp = Fraction(timestamp)
-        if first is None:
-            first = timestamp
-        elif abs((timestamp - previous) - expected) > max(Fraction(2, 1000000), expected / 500):
+        if previous is not None and abs((timestamp - previous) - expected) > max(Fraction(2, 1000000), expected / 500):
             raise ValueError('这个视频是变帧率或时间戳不连续，实验入口暂不重定时；未转换为恒定帧率')
         previous = timestamp
         count += 1
     if not count:
         raise ValueError('视频没有可解码画面')
-    if abs(first) > expected / 2:
-        raise ValueError('视频起始时间不为零，实验入口暂不处理音画偏移；请使用从零开始的测试片段')
     return count
 
 
@@ -335,14 +332,20 @@ def inspect_source(source, cancel, progress=None, *, allow_vfr=False, allow_cpu_
             )
     emit(0)
     actual_backends = []
-    timestamp_options = ({'allow_cpu_fallback': True, 'backend_sink': actual_backends.append}
-                         if allow_cpu_fallback else {})
+    last_duration = [None]
+    timestamp_options = {'duration_sink': lambda value: last_duration.__setitem__(0, value)}
+    if allow_cpu_fallback:
+        timestamp_options.update(allow_cpu_fallback=True, backend_sink=actual_backends.append)
     def timestamps():
         last_report = 0.0
         count = 0
         for field in iter_timestamps(source, lambda: check_cancel(cancel), **timestamp_options):
             if field:
                 count += 1
+                if count == 1:
+                    # Clips may keep their original PTS. Render from frame zero,
+                    # but retain the decoded origin for final audio alignment.
+                    meta['_source_video_start'] = str(Fraction(field))
                 now = time.monotonic()
                 if count == 1 or (expected and count >= expected) or now - last_report >= 0.2:
                     last_report = now
@@ -356,22 +359,16 @@ def inspect_source(source, cancel, progress=None, *, allow_vfr=False, allow_cpu_
             if not count:
                 raise ValueError('视频没有可解码画面')
             values = [Fraction(value) for value in stamps]
-            if values[0] != 0:
-                raise ValueError('视频起始时间不为零，暂不处理音画偏移')
             if any(right <= left for left, right in zip(values, values[1:])):
                 raise ValueError('视频时间戳重复或倒退，无法保留原时间线')
+            stamps = [str(value - values[0]) for value in values]
             try:
                 validate_timestamps(stamps, rate)
             except ValueError:
                 meta['_is_vfr'] = True
                 meta['_source_pts'] = stamps
-                try:
-                    end = Fraction(str(meta['duration']))
-                except (KeyError, ValueError, TypeError):
-                    end = Fraction(0)
-                if end <= values[-1]:
-                    end = values[-1] + (values[-1] - values[-2] if count > 1 else 1 / rate)
-                meta['_source_end'] = str(end)
+                meta['_source_end'] = str(normalized_timeline_end(
+                    meta, values[0], stamps, rate, last_duration[0]))
         else:
             count = validate_timestamps(scan, rate)
     finally:
@@ -573,6 +570,7 @@ def export_video(source, output, *, multiplier=2, scale=1, enhance=False, settin
             writer_options['device_ordinal']=gpu_export.get('device_ordinal',0)
             writer_options['cancel']=cancel
         writer = None if render_only else writer_class(staging, ow, oh, float(rate*multiplier), audio_source=audio_source(source),
+                                   source_video_start=meta.get('_source_video_start'),
                                    use_nvenc=True, hdr_metadata=meta if hdr else None,
                                    nvenc_preset=config.get('nvenc_preset', 'p5'),
                                    rate_control=config.get('rate_control', 'quality'),

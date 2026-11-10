@@ -5,6 +5,7 @@ source timing, queue draining, frame writing and audio muxing are production cod
 """
 from collections import deque
 from fractions import Fraction as F
+import os
 from pathlib import Path
 import subprocess
 import threading
@@ -18,7 +19,7 @@ import cv2
 import numpy as np
 import pytest
 
-from dlss5tool import app_settings, gui, parallel_export
+from dlss5tool import app_settings, frame_generation, gui, parallel_export, render_cache
 from dlss5tool.gpu_export_runtime import create_video_writer
 from dlss5tool.video_export import FFmpegVideoWriter, find_ffmpeg
 from dlss5tool.video_export import probe_video_stream
@@ -63,6 +64,7 @@ def media(tmp_path_factory):
         ('cfr', 'cfr', '0', '0'), ('vfr', 'vfr', '0', '0'),
         ('audio-late', 'cfr', '0', '0.75'), ('video-late', 'cfr', '1', '0'),
         ('both-offset', 'cfr', '1', '1.75'),
+        ('vfr-offset', 'vfr', '7', '7.75'),
     ):
         path = root / f'{name}.mp4'
         run(find_ffmpeg(), '-v', 'error', '-nostdin', '-n', '-copyts',
@@ -161,6 +163,85 @@ def test_gui_export_preserves_source_frame_and_audio_timing(media, tmp_path, mon
     assert result['success'], result['error']
     assert not worker.pending and worker.settings['guidance_mode'] == 1
     assert_sync(media[name], output)
+
+
+@pytest.mark.parametrize('name', ['video-late', 'both-offset', 'vfr-offset'])
+@pytest.mark.parametrize('route', ['direct', 'cached'])
+def test_shared_export_preserves_source_frame_and_audio_timing(media, tmp_path, monkeypatch, name, route):
+    # Exercise the same inspector/renderer used by SR, without changing pixels.
+    # Decode, encode, cache handoff and audio muxing remain production code.
+    def software_writer(*args, **kwargs):
+        kwargs['use_nvenc'] = False
+        return FFmpegVideoWriter(*args, **kwargs)
+
+    monkeypatch.setattr(frame_generation, 'FFmpegVideoWriter', software_writer)
+    monkeypatch.setattr('dlss5tool.gpu_export_runtime.create_video_writer', software_writer)
+    monkeypatch.setenv('DLSS5TOOL_FG_LOG_ROOT', str(tmp_path / 'render-logs'))
+    output = tmp_path / f'{route}.mp4'
+    settings = dict(decode_cpu_fallback=True, nr_quality={'total': 0},
+                    frame_generation_multiplier=1, super_resolution_scale=1)
+    if route == 'direct':
+        result = frame_generation.export_video(media[name], output, multiplier=1,
+                                                enhance=False, settings=settings)
+    else:
+        session = render_cache.RenderSession(media[name], settings, 32 * 1024**2)
+        try:
+            result = render_cache.encode_cached(session, output, settings,
+                                                 threading.Event(), lambda *args: None)
+        finally:
+            session.close()
+    assert result['real_frames'] == 120
+    assert_sync(media[name], output)
+
+
+@pytest.mark.skipif(os.environ.get('DLSS5TOOL_TEST_NATIVE_OFFSET_SR') != '1',
+                    reason='Opt-in acceptance on a verified NVIDIA SR runtime')
+@pytest.mark.parametrize('hdr', [False, True], ids=['sdr', 'hdr'])
+def test_native_sr_export_and_preview_accept_offset_source(media, tmp_path, monkeypatch, hdr):
+    from dlss5tool.resident_sr import try_export
+    from dlss5tool.resident_preview import render_preview
+
+    source = tmp_path / 'sr-source.mp4'
+    color = (['-c:v', 'libx265', '-pix_fmt', 'yuv420p10le', '-x265-params',
+              'log-level=error:colorprim=bt2020:transfer=smpte2084:colormatrix=bt2020nc',
+              '-color_primaries', 'bt2020', '-color_trc', 'smpte2084', '-colorspace', 'bt2020nc']
+             if hdr else ['-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-color_primaries', 'bt709',
+                          '-color_trc', 'bt709', '-colorspace', 'bt709'])
+    run(find_ffmpeg(), '-v', 'error', '-nostdin', '-n', '-copyts', '-i', media['both-offset'],
+        '-map', '0:v:0', '-map', '0:a:0', '-vf', 'scale=960:540', '-preset', 'ultrafast',
+        *color, '-color_range', 'tv', '-chroma_sample_location', 'left', '-c:a', 'copy',
+        '-fps_mode', 'passthrough', '-avoid_negative_ts', 'disabled', source)
+    monkeypatch.setenv('DLSS5TOOL_SR_LOG_ROOT', str(tmp_path / 'export-logs'))
+    monkeypatch.setenv('DLSS5TOOL_SR_PREVIEW_LOG_ROOT', str(tmp_path / 'preview-logs'))
+    settings = dict(super_resolution_scale=2, frame_generation_multiplier=1,
+                    nr_quality={'total': 0}, hdr_mode=hdr, output_view=0)
+    manager = render_cache.RenderCache(32 * 1024**2)
+    output = tmp_path / 'sr-output.mp4'
+    cancel = threading.Event()
+    try:
+        inspection = manager.inspect(source, cancel)
+        assert F(inspection[0]['_source_video_start']) == 1
+        result = try_export(manager, source, output, settings, cancel=cancel, progress=lambda *args: None)
+        assert result is not None, 'Expected the resident GPU SR route'
+        assert result['real_frames'] == 120
+        assert (result['width'], result['height']) == (1920, 1080)
+        assert_sync(source, output)
+        exported = probe_video_stream(find_ffmpeg(), output)
+        assert bool(exported['is_hdr']) == hdr
+
+        frames, metadata = [], []
+        def receive(index, processed, reference, **kwargs):
+            assert processed.shape == reference.shape == (1080, 1920, 4)
+            assert processed.dtype == (np.float16 if hdr else np.uint8)
+            frames.append(index)
+
+        preview = render_preview(source, scale=2, enhance=False, settings=settings,
+            cancel=cancel, frame_sink=receive, metadata_sink=metadata.append,
+            source_inspector=lambda *args, **kwargs: inspection)
+        assert preview['real_frames'] == 120 and frames == list(range(120))
+        assert metadata[0]['route'] == 'resident-gpu-preview'
+    finally:
+        manager.close()
 
 
 def test_gui_does_not_publish_a_short_decode_as_success(media, tmp_path, monkeypatch):

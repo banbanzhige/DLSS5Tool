@@ -40,6 +40,7 @@ def make_plan(inspection, settings, adapter):
             or type(count) is not int or count <= 0):
         return None
     return dict(width=width, height=height, scale=2, rate=str(rate), frames=count,
+                source_video_start=meta.get('_source_video_start', '0'),
                 quality=settings.get('quality_profile', 'high'), adapter=dict(adapter),
                 color_profile=meta['profile'], hdr_metadata={key:meta[key] for key in (
                     'is_hdr', 'profile', 'color_transfer', 'color_primaries', 'color_space',

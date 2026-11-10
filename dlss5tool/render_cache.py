@@ -851,6 +851,7 @@ def _encode_cached(session, output, settings, cancel, progress, *, frame_progres
         with telemetry.measure('encoder_init'):
             writer = FFmpegVideoWriter(temporary, metadata['width'], metadata['height'], float(rate),
                 audio_source=audio_source(session.source), use_nvenc=True, hdr_metadata=hdr,
+                source_video_start=timeline.get('_source_video_start'),
                 nvenc_preset=settings.get('nvenc_preset', 'p5'), rate_control=settings.get('rate_control', 'quality'),
                 quality_profile=settings.get('quality_profile', 'high'), video_bitrate_mbps=settings.get('video_bitrate_mbps', 20),cancel=cancel,
                 **timeline_options)

@@ -69,6 +69,7 @@ def make_plan(inspection, settings, adapter):
             or type(count) is not int or count <= 0):
         return None
     return dict(width=width, height=height, scale=scale, rate=str(rate), frames=count,
+                source_video_start=meta.get('_source_video_start', '0'),
                 quality=settings.get('quality_profile', 'high'), adapter=dict(adapter))
 
 

@@ -25,7 +25,7 @@ def restore_language():
 def test_generic_startup_failure_has_actionable_guidance(error):
     message = hints.runtime_guidance(error)
     assert '无法确定具体原因' in message
-    assert '30系.zip' in message and '50系.zip' in message
+    assert '按显卡自动匹配' in message and '测试所选 DLL' in message
     assert i18n.tr('mods.path_settings') in message
     assert i18n.tr('label.render_gpu') in message
     assert '导出诊断日志' in message
@@ -81,7 +81,7 @@ def test_generic_error_dialog_opens_download_page_only_when_selected(open_downlo
     with mock.patch.object(gui.messagebox, 'askyesno', return_value=open_download) as ask:
         assert app._show_dlss_error('Feature 18 create failed.')
     assert ask.call_args.args[0] == i18n.tr('dialog.dlss_failed')
-    assert '30系.zip' in ask.call_args.args[1]
+    assert '按显卡自动匹配' in ask.call_args.args[1]
     assert ask.call_args.kwargs['parent'] is app.root
     if open_download:
         app._open_release_page.assert_called_once_with(updater.RELEASES_URL)

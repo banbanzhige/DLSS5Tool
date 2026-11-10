@@ -490,6 +490,7 @@ class RealtimeClient:
         self._safety = None
         self.generation = 0
         self.runtime_selection = None
+        self.runtime_adapter = None
         self.hotkeys = dict(DEFAULT_HOTKEYS)
         self._handshake = threading.Event()
         self._handshake_event = None
@@ -556,14 +557,15 @@ class RealtimeClient:
         state = self.state_root if self.state_root is not None else paths.state_path("realtime").resolve()
         state.mkdir(parents=True, exist_ok=True)
         environment = os.environ.copy()
-        feature_root = self.settings.get('realtime_runtime_directory') or Path(mod_paths.runtime_path(self.settings)).resolve().parent
+        runtime = mod_paths.runtime_info(self.settings, adapter=self.runtime_adapter)
+        feature_root = self.settings.get('realtime_runtime_directory') or paths.runtime_root()
         environment["DLSS5_REALTIME_RUNTIME_ROOT"] = str(Path(feature_root).resolve())
-        environment['DLSS5_REALTIME_NR_PATH'] = str(Path(mod_paths.runtime_path(self.settings)).resolve())
+        environment['DLSS5_REALTIME_NR_PATH'] = str(Path(runtime['path']).resolve())
         environment["DLSS5_REALTIME_EFFECTS_ROOT"] = str((self.host.parent / "effects").resolve())
         environment['DLSS5_REALTIME_STATE_ROOT'] = str(state)
         bindings = validate_hotkeys(self.hotkeys)
         environment['DLSS5_REALTIME_HOTKEYS'] = json.dumps(native_hotkeys(bindings))
-        self.runtime_selection = {**mod_paths.runtime_info(self.settings),
+        self.runtime_selection = {**runtime,
                                   'feature_directory': str(Path(feature_root).resolve()),
                                   'meaning': 'paths passed to host, not proof of loaded modules'}
         self.generation += 1

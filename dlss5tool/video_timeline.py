@@ -37,6 +37,23 @@ def _fraction(value, default=None):
         return default
 
 
+def normalized_timeline_end(metadata, first, stamps, rate, last_duration=None):
+    """Return the stream end relative to the first decoded frame."""
+    # Stream duration is relative to stream.start_time, not to container zero.
+    time_base = _fraction(metadata.get('time_base'))
+    duration_ticks = _fraction(metadata.get('duration_ts'))
+    start_ticks = _fraction(metadata.get('start_pts'))
+    duration = (duration_ticks * time_base if time_base is not None and duration_ticks is not None
+                else _fraction(metadata.get('duration')))
+    stream_start = (start_ticks * time_base if time_base is not None and start_ticks is not None
+                    else _fraction(metadata.get('start_time'), first))
+    end = stream_start + duration - first if duration is not None else Fraction(0)
+    last = Fraction(stamps[-1])
+    if end <= last:
+        end = last + (last_duration or (last - Fraction(stamps[-2]) if len(stamps) > 1 else 1 / rate))
+    return end
+
+
 def inspect_video_timeline(source, fps=None, *, check_cancel=None, progress=None,
                            allow_cpu_fallback=False):
     """Normalize decoded PTS while retaining the original first-frame position.
@@ -78,18 +95,7 @@ def inspect_video_timeline(source, fps=None, *, check_cancel=None, progress=None
     check_cancel()
     if not stamps:
         raise ValueError('视频没有可解码画面')
-    # Stream duration is relative to stream.start_time, not to container zero.
-    time_base = _fraction(metadata.get('time_base'))
-    duration_ticks = _fraction(metadata.get('duration_ts'))
-    start_ticks = _fraction(metadata.get('start_pts'))
-    duration = (duration_ticks * time_base if time_base is not None and duration_ticks is not None
-                else _fraction(metadata.get('duration')))
-    stream_start = (start_ticks * time_base if time_base is not None and start_ticks is not None
-                    else _fraction(metadata.get('start_time'), first))
-    end = stream_start + duration - first if duration is not None else Fraction(0)
-    last = Fraction(stamps[-1])
-    if end <= last:
-        end = last + (last_duration[0] or (last - Fraction(stamps[-2]) if len(stamps) > 1 else 1 / rate))
+    end = normalized_timeline_end(metadata, first, stamps, rate, last_duration[0])
     tolerance = Fraction(2, 1_000_000)
     restore = (any(abs(Fraction(stamp) - index / rate) > tolerance
                    for index, stamp in enumerate(stamps))

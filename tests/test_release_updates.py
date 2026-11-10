@@ -253,6 +253,9 @@ class ReleaseUpdateWorkflowTests(unittest.TestCase):
         assets = output / 'github-assets'
         self.assertEqual(len(workflow.verify_upload_updates(assets, policy_path=self.policy)['assets']), 2)
         notice = (assets / 'README-UPLOAD.txt').read_text()
+        self.assertIn('not uploaded unless explicitly requested', notice)
+        for name in ('Join-ReleaseArchive.ps1', 'RELEASE_NOTES_v2.2.1.md', 'SHA256SUMS.txt'):
+            self.assertTrue((assets / name).is_file(), name)
         for edition in ('lite', 'full'):
             self.assertIn(delta.asset_name('v2.2.0', 'v2.2.1', edition), notice)
         report = delta.read_json(assets / 'package-report.json')

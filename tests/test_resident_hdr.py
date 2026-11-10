@@ -25,6 +25,12 @@ def test_combined_consumer_plan_keeps_rational_output_rate_and_original_settings
     assert plan['consumer_settings']==config and plan['color_profile']=='hdr10_pq'
 
 
+def test_hdr_consumer_plan_preserves_decoded_origin():
+    inspection = (META | {'_source_video_start': '90001/30'}, Fraction(30), 960, 540, 120)
+    plan = make_plan(inspection, settings(), ADAPTER)
+    assert plan['source_video_start'] == '90001/30'
+
+
 @pytest.mark.parametrize('change',[dict(_is_vfr=True),dict(chroma_location='center'),dict(color_range='pc'),
     dict(pixel_format='yuv420p12le'),dict(profile='scrgb'),dict(codec_name='av1'),
     dict(color_space='bt2020c'),dict(tags={'rotate':'90'}),dict(field_order='tt')])

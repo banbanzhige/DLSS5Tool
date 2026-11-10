@@ -100,6 +100,7 @@ def run(request, notify):
                     vsr = CudaVSR.from_runtime(cuda, width, height, scale, log_path=request['native_log'])
                 writer = NativeGpuVideoWriter(output, width*scale, height*scale, rate*multiplier,
                     audio_source=str(source), native_library=components['native_library'],
+                    source_video_start=plan.get('source_video_start', '0'),
                     sdr_ptx=components['sdr_ptx'], cuda_session=cuda, device_input=True,
                     hdr_ptx=components.get('hdr_ptx'), hdr_metadata=plan.get('hdr_metadata'),
                     device_ordinal=plan['adapter']['cuda_index'], use_nvenc=True,
@@ -135,7 +136,8 @@ def run(request, notify):
                 break
             timestamp = Fraction(frame.pts)*frame.time_base if frame.pts is not None else None
             interval = 1/rate
-            if (timestamp is None or count >= total or (count == 0 and timestamp != 0)
+            if (timestamp is None or count >= total
+                    or (count == 0 and timestamp != Fraction(plan.get('source_video_start', '0')))
                     or previous is not None and abs(timestamp-previous-interval) > max(Fraction(2, 1000000), interval/500)
                     or int(round(getattr(frame, 'rotation', 0)/90)) % 4):
                 raise ValueError('Source frame count, CFR timeline or orientation differs from preflight')

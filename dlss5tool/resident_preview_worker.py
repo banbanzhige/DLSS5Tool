@@ -135,7 +135,8 @@ def run(request, notify, control):
                 raise ValueError('Preview source ended before its inspected frame count')
             timestamp = Fraction(frame.pts)*frame.time_base if frame.pts is not None else None
             interval = 1/Fraction(plan['rate'])
-            if (timestamp is None or count == 0 and timestamp != 0 or frame.interlaced_frame
+            if (timestamp is None or frame.interlaced_frame
+                    or (count == 0 and timestamp != Fraction(plan.get('source_video_start', '0')))
                     or int(round(getattr(frame, 'rotation', 0)/90)) % 4
                     or previous_time is not None and abs(timestamp-previous_time-interval) > max(Fraction(2,1000000),interval/500)
                     or not hdr and frame.color_trc in (16,18)):

@@ -38,15 +38,35 @@ def bundled_runtime():
     return str(paths.runtime_root() / 'nvngx_dlssnr.dll')
 
 
-def runtime_info(settings=None):
+def runtime_info(settings=None, *, adapter=None):
+    from dlss5tool import dlss_runtime
     settings = settings or {}
     selected = str(settings.get('dlss_runtime', '')).strip()
     if selected == '__bundled__':
         return {'path': bundled_runtime(), 'source': 'bundled', 'fallback': False, 'ambiguous': False}
-    if selected:
+    profile = dlss_runtime.PROFILE_SELECTIONS.get(selected, '')
+    if selected and not profile:
         path = module_path(settings, 'dlss_runtime', selected)
         if path.is_file():
             return {'path': str(path.resolve()), 'source': 'selected', 'fallback': False, 'ambiguous': False}
+    adapter = dlss_runtime.selected_adapter(settings) if adapter is None else adapter
+    profile = profile or dlss_runtime.gpu_profile(adapter)
+    if profile:
+        if profile == 'rtx40' and dlss_runtime.matches(bundled_runtime(), profile):
+            path, source = bundled_runtime(), 'bundled'
+        else:
+            path, source = str(dlss_runtime.managed_path(settings, profile)), 'detected'
+            if not dlss_runtime.matches(path, profile):
+                for root in search_roots(settings):
+                    candidates = [root / 'nvngx_dlssnr.dll', *root.glob('nvngx_dlssnr*.dll'),
+                                  *(root / 'dlss').glob('*/nvngx_dlssnr.dll')]
+                    match = next((candidate for candidate in candidates if dlss_runtime.matches(candidate, profile)), None)
+                    if match is not None:
+                        path = str(match.resolve())
+                        break
+        return {'path': path, 'source': source, 'fallback': bool(selected and selected not in dlss_runtime.PROFILE_SELECTIONS),
+                'ambiguous': False, 'profile': profile, 'gpu': adapter.get('name', ''),
+                'needs_download': not dlss_runtime.matches(path, profile)}
     roots = search_roots(settings)
     for root in roots:
         path = root / 'nvngx_dlssnr.dll'
@@ -62,8 +82,8 @@ def runtime_info(settings=None):
     return {'path': bundled_runtime(), 'source': 'bundled', 'fallback': bool(selected), 'ambiguous': len(candidates) > 1}
 
 
-def runtime_path(settings=None):
-    return runtime_info(settings)['path']
+def runtime_path(settings=None, *, adapter=None):
+    return runtime_info(settings, adapter=adapter)['path']
 
 
 def runtime_choices(settings=None):

@@ -8,6 +8,7 @@ DLSS5Tool.exe
 _internal/
 mods/
   nvngx_dlssnr.dll                 # 可选替换运行库
+  dlss/                           # 按显卡自动下载、校验的 NR 运行库
   enhancement/
     guidance_worker.exe
     enhancement.json
@@ -24,6 +25,10 @@ mods/
 3. NVOFA 是当前组件提供的硬件光流选项，无需权重和迭代，仍需支持的 NVIDIA GPU 与驱动。
 4. 启用前进行两帧检查。NVOFA 初始化失败时提示并尝试 RAFT（需权重）；处理中失败停止，不中途换算法。
 5. “设置 → 模型与组件”查看状态和详情；“替换 DLL / 模型”可选自定义组件目录或权重路径。
+
+NR 运行库默认按当前 DLSS 渲染显卡匹配：30／50 系缺少时自动从项目 GitHub 下载并校验，
+40 系使用内置库。自动下载进入 `mods/dlss/` 独立子目录，不覆盖原有文件。
+“替换 DLL / 模型 → DLSS 运行库”可手动选择系列或 DLL，并用“测试所选 DLL”验证单帧处理。
 
 默认采用 RAFT-Large，不承诺实时 30fps。开发从仓库根目录 `run.bat` 启动。
 仅支持 SDR、非分块；单张图和首帧/reset 为零光流。切镜、seek、换会话重置历史。
@@ -57,7 +62,9 @@ Extract the trusted complete add-on beside DLSS5Tool.exe, not inside mods. Keep 
 Select a flow backend, then Flow only. The last mode is restored after a startup environment check; failure turns it off and reports the reason. First use checks RAFT-Large before enabling it. RAFT-Large is the default (512 edge, six updates,
 FP32, backward flow) and needs weights. NVOFA needs a supported NVIDIA GPU/driver, but no weights or iterations.
 Initialization failure is reported before trying RAFT; runtime failure stops processing with no mid-video switch.
-No automatic CPU fallback, downloads or installers. Base enhancement works with guidance off.
+No automatic CPU fallback or inference-component downloads. Base enhancement works with guidance off.
+The NR runtime is matched to the rendering GPU; missing RTX 30/50 runtimes are downloaded and verified
+under mods/dlss. Switch a series or DLL and use Test selected DLL in Replace DLL / models.
 Launch the development app with `run.bat` at the repo root.
 
 Current public editions omit depth weights and hide depth inference. Existing installed files are not deleted.

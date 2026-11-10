@@ -58,7 +58,7 @@ class PlayerHelperTests(unittest.TestCase):
         self.assertTrue(_is_dlss_runtime_unsupported(error))
         guidance = _dlss_runtime_guidance(error)
         self.assertIn("FeatureNotSupported", guidance)
-        self.assertIn("30系.zip", guidance)
+        self.assertIn("按显卡自动匹配", guidance)
         self.assertIn(gui.tr('mods.path_settings'), guidance)
         self.assertIn(gui.tr('label.render_gpu'), guidance)
         self.assertIn("导出诊断日志", guidance)
@@ -1974,6 +1974,11 @@ class WidgetSmokeTests(unittest.TestCase):
                 previous_hash = app._settings_hash()
                 app._host_settings['v_render_gpu'].set(gpu_label)
                 app._on_render_gpu_selected()
+                deadline = time.monotonic() + 3
+                while app._module_reload_thread is not None and time.monotonic() < deadline:
+                    root.update()
+                    time.sleep(.005)
+                self.assertIsNone(app._module_reload_thread)
                 self.assertEqual(app._collect_host_settings()['render_gpu'], self.render_gpu_id)
                 self.assertNotEqual(app._settings_hash(), previous_hash)
                 app._set_render_gpu_display('auto')

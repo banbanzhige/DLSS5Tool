@@ -71,6 +71,7 @@ def _metadata(live):
     return {
         "backend": live.backend,
         "adapter_info": dict(getattr(live, "adapter_info", {})),
+        "runtime_path": str(getattr(live, "runtime_path", "")),
         "max_in_flight": int(live.max_in_flight),
         "supports_async": bool(live.supports_async),
         "tiled": bool(getattr(live, "tiled", False)),
@@ -345,6 +346,8 @@ class _HostSession:
         raise HostProcessError(detail)
 
     def _apply_metadata(self, response):
+        if 'runtime_path' in response:
+            self.runtime_path = response['runtime_path']
         if "adapter_info" in response:
             self.adapter_info = dict(response["adapter_info"])
         if 'guidance_info' in response:
@@ -555,6 +558,16 @@ class ProcessLive:
         return candidates
 
     def _start_session(self, width, height, settings):
+        adapter = None
+        if self._live_factory is None:
+            from dlss5tool import dlss_runtime, mod_paths
+            # Download before the host's initialization timeout starts.
+            selected = settings.get('dlss_runtime', '')
+            if (not selected or mod_paths.runtime_info(settings).get('fallback')) and os.path.isfile(dlss_engine.HOST_DLL_V2):
+                adapter = dlss_runtime.selected_adapter(settings, dlss_engine.available_render_adapters())
+            runtime = mod_paths.runtime_info(settings, adapter=adapter)
+            if runtime.get('needs_download'):
+                dlss_runtime.ensure_runtime(settings, adapter=adapter)
         preference = str(settings.get("host_backend", "auto"))
         candidates = (
             self._auto_candidates(settings)
@@ -563,6 +576,8 @@ class ProcessLive:
         failures = []
         for backend in candidates:
             worker_settings = dict(settings)
+            if adapter:
+                worker_settings['_runtime_adapter'] = dict(adapter)
             # Make fallback process-safe: each worker loads exactly one host DLL.
             worker_settings["host_backend"] = backend
             try:
@@ -584,6 +599,7 @@ class ProcessLive:
     def _sync_metadata(self):
         self.backend = self._session.backend
         self.adapter_info = dict(getattr(self._session, "adapter_info", {}))
+        self.runtime_path = str(getattr(self._session, 'runtime_path', ''))
         self.max_in_flight = self._session.max_in_flight
         self.supports_async = self._session.supports_async
         self.tiled = self._session.tiled
@@ -641,6 +657,7 @@ class ProcessLive:
             or dlss_engine.frame_contract(updated) != dlss_engine.frame_contract(self.settings)
             or guidance_client.contract(updated) != guidance_client.contract(self.settings)
             or updated.get("dlss_runtime", "") != self.settings.get("dlss_runtime", "")
+            or updated.get("mods_directory", "") != self.settings.get("mods_directory", "")
             or updated.get("render_gpu", dlss_engine.RENDER_GPU_AUTO)
                 != self.settings.get("render_gpu", dlss_engine.RENDER_GPU_AUTO)
         ):

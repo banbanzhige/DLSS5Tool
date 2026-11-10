@@ -34,6 +34,24 @@ def command(*arguments):
     return result.stdout
 
 
+def release_payloads(package):
+    """Public downloads contain installation archives/volumes and updates.
+
+    Support scripts, release-note copies and checksum text remain local. Notes
+    still supply the release body; every payload retains its SHA256 checks.
+    """
+    expected = {}
+    for details in package['editions'].values():
+        if details['volumes']:
+            for volume in details['volumes']:
+                expected[volume['name']] = {'size': volume['size'], 'sha256': volume['sha256']}
+        else:
+            expected[details['github_name']] = {'size': details['size'], 'sha256': details['sha256']}
+    for details in package['incremental_updates']['assets']:
+        expected[details['name']] = {'size': details['size'], 'sha256': details['sha256']}
+    return expected
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--repo', required=True)
@@ -51,18 +69,7 @@ def main():
     package = json.loads((assets / 'package-report.json').read_text(encoding='utf-8-sig'))
     if package['version'] != args.tag:
         raise ValueError('Package version does not match the draft tag')
-    expected = {}
-    for details in package['editions'].values():
-        if details['volumes']:
-            for volume in details['volumes']:
-                expected[volume['name']] = {'size': volume['size'], 'sha256': volume['sha256']}
-        else:
-            expected[details['github_name']] = {'size': details['size'], 'sha256': details['sha256']}
-    for details in package['incremental_updates']['assets']:
-        expected[details['name']] = {'size': details['size'], 'sha256': details['sha256']}
-    for name in ('Join-ReleaseArchive.ps1', 'SHA256SUMS.txt', notes.name):
-        path = plain_path(assets / name)
-        expected[name] = {'size': path.stat().st_size, 'sha256': digest(path)}
+    expected = release_payloads(package)
     if (assets / notes.name).read_bytes() != notes.read_bytes():
         raise ValueError('Release notes in the upload directory differ from the source')
     for name, entry in expected.items():

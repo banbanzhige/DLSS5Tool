@@ -293,7 +293,9 @@ def main():
            if incremental['mode'] == 'initial_baseline' else
            'REQUIRED incremental payloads (upload every file):\n' +
            ''.join(f"  {r['name']}\n" for r in incremental['assets'])) +
-        'Optional: 30系.zip, 50系.zip, Join-ReleaseArchive.ps1, SHA256SUMS.txt.\n'
+        'Default uploads contain only installation archives/volumes and required incremental payloads.\n'
+        'Keep Join-ReleaseArchive.ps1, RELEASE_NOTES_*.md, SHA256SUMS.txt, package-report.json and README-UPLOAD.txt local.\n'
+        'Release notes supply the release body; support/checksum files are not uploaded unless explicitly requested.\n'
         'No depth weights included; publisher must review third-party terms before public upload.\n',
         encoding='utf-8')
     print('DONE', output, flush=True)

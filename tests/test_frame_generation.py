@@ -15,10 +15,46 @@ class TimingTests(unittest.TestCase):
         self.assertEqual(fg.validate_timestamps(['0', '0.041667', '0.083333'], Fraction(24)), 3)
         self.assertEqual(fg.validate_timestamps(['0', '.033367', '.066733'], Fraction(30000, 1001)), 3)
 
-    def test_vfr_missing_repeated_or_offset_timestamps_rejected(self):
-        for stamps in ([], ['0', '.04', '.1'], ['0', '0'], ['1', '1.041667'], ['0', 'N/A']):
+    def test_vfr_missing_or_repeated_timestamps_rejected(self):
+        for stamps in ([], ['0', '.04', '.1'], ['0', '0'], ['1', '.5'], ['0', 'N/A']):
             with self.subTest(stamps=stamps), self.assertRaises(ValueError):
                 fg.validate_timestamps(stamps, Fraction(24))
+
+    def test_cfr_cadence_does_not_depend_on_time_origin(self):
+        for origin in (Fraction(1), Fraction(-1), Fraction('3600.125')):
+            with self.subTest(origin=origin):
+                stamps = [str(origin + Fraction(i, 24)) for i in range(4)]
+                self.assertEqual(fg.validate_timestamps(stamps, Fraction(24)), 4)
+
+    def test_inspection_preserves_nonzero_cfr_origin_for_both_routes(self):
+        for origin in (Fraction(1), Fraction(-1), Fraction('3600.125')):
+            for allow_vfr in (False, True):
+                with self.subTest(origin=origin, allow_vfr=allow_vfr):
+                    meta = {'r_frame_rate': '24', 'avg_frame_rate': '24',
+                            'width': 128, 'height': 128}
+                    stamps = [str(origin + Fraction(i, 24)) for i in range(4)]
+                    with mock.patch.object(fg, 'find_ffmpeg', return_value='ffmpeg'), \
+                            mock.patch.object(fg, 'find_ffprobe', return_value='ffprobe'), \
+                            mock.patch.object(fg, 'probe_video_stream', return_value=meta), \
+                            mock.patch.object(fg, 'iter_timestamps', return_value=iter(stamps)):
+                        result = fg.inspect_source('clip.mp4', threading.Event(), allow_vfr=allow_vfr)
+                    self.assertEqual(result[4], 4)
+                    self.assertEqual(Fraction(result[0]['_source_video_start']), origin)
+                    self.assertNotIn('_is_vfr', result[0])
+
+    def test_offset_vfr_normalizes_pts_and_uses_exact_stream_end(self):
+        meta = {'r_frame_rate': '30', 'avg_frame_rate': '30', 'width': 128, 'height': 128,
+                'start_time': '5', 'start_pts': '5000', 'time_base': '1/1000',
+                'duration': '0.169', 'duration_ts': '170'}
+        with mock.patch.object(fg, 'find_ffmpeg', return_value='ffmpeg'), \
+                mock.patch.object(fg, 'find_ffprobe', return_value='ffprobe'), \
+                mock.patch.object(fg, 'probe_video_stream', return_value=meta), \
+                mock.patch.object(fg, 'iter_timestamps', return_value=iter(['5', '5.05', '5.15'])):
+            result, _, _, _, count = fg.inspect_source('clip.mp4', threading.Event(), allow_vfr=True)
+        self.assertEqual(count, 3)
+        self.assertEqual(result['_source_video_start'], '5')
+        self.assertEqual(result['_source_pts'], ['0', '1/20', '3/20'])
+        self.assertEqual(Fraction(result['_source_end']), Fraction(17, 100))
 
     def test_exact_pipe_and_truncated_output(self):
         self.assertEqual(fg._read_exact(io.BytesIO(b'abcd'), 4), b'abcd')
@@ -73,7 +109,7 @@ class TimingTests(unittest.TestCase):
         with mock.patch.object(fg, 'find_ffmpeg', return_value='ffmpeg'), \
                 mock.patch.object(fg, 'find_ffprobe', return_value='ffprobe'), \
                 mock.patch.object(fg, 'probe_video_stream', return_value=meta), \
-                mock.patch.object(fg, 'iter_timestamps', side_effect=lambda *args: iter(lines.decode().splitlines())):
+                mock.patch.object(fg, 'iter_timestamps', side_effect=lambda *args, **kwargs: iter(lines.decode().splitlines())):
             with self.assertRaisesRegex(ValueError, '变帧率'):
                 fg.inspect_source('clip.mp4', threading.Event())
             result, rate, _, _, count = fg.inspect_source(
@@ -81,7 +117,8 @@ class TimingTests(unittest.TestCase):
             )
         self.assertEqual((rate, count), (Fraction(30), 4))
         self.assertTrue(result['_is_vfr'])
-        self.assertEqual(result['_source_pts'], ['0', '0.05', '0.083333', '0.133333'])
+        self.assertEqual(list(map(Fraction, result['_source_pts'])),
+                         list(map(Fraction, ['0', '0.05', '0.083333', '0.133333'])))
         self.assertEqual(Fraction(result['_source_end']), Fraction('0.166667'))
 
 

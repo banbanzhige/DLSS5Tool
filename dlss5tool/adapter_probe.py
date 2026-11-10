@@ -327,6 +327,16 @@ def invalidate():
         probe.invalidate()
 
 
+def cached_inventory():
+    """Read the last inventory without starting a probe or loading any DLL."""
+    with _default_lock:
+        probe = _default
+    if probe is None:
+        return None
+    with probe._condition:
+        return copy.deepcopy(probe._cache)
+
+
 def close():
     global _default
     with _default_lock:
