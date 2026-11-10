@@ -15,13 +15,13 @@
 </p>
 
 <p align="center">
-  <a href="CHANGELOG.md"><img src="https://img.shields.io/badge/source-v3.1.1-0E7490?style=flat&amp;labelColor=475569" alt="Source version v3.1.1" height="20"></a>
+  <a href="CHANGELOG.md"><img src="https://img.shields.io/badge/source-v3.1.2-0E7490?style=flat&amp;labelColor=475569" alt="Source version v3.1.2" height="20"></a>
   <a href="#quick-start"><img src="https://img.shields.io/badge/platform-Windows_x64-0369A1?style=flat&amp;labelColor=475569" alt="Platform: Windows x64" height="20"></a>
   <a href="#2-select-the-runtime-for-your-gpu"><img src="https://img.shields.io/badge/GPU-NVIDIA_RTX-0E7490?style=flat&amp;labelColor=475569" alt="GPU: NVIDIA RTX; select the runtime for your GPU generation" height="20"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-GPLv3-0369A1?style=flat&amp;labelColor=475569" alt="Combined source licensed under GPLv3" height="20"></a>
 </p>
 
-This README describes the **v3.1.1** draft, fixing audio/video synchronization for affected exports and improving DLSS initialization failure guidance. Sustained memory growth remains unresolved in some environments. Check the actual Release assets for public availability. See the [v3.1.1 release notes](docs/release/RELEASE_NOTES_v3.1.1.md) and the [redistribution restrictions](#license).
+This README describes the **v3.1.2** candidate, adding automatic GPU runtime matching and manual DLL tests, and fixing timing in super-resolution and frame-interpolation exports of affected clips. Sustained memory growth remains unresolved in some environments. Check the actual Release assets for public availability. See the [v3.1.2 release notes](docs/release/RELEASE_NOTES_v3.1.2.md) and the [redistribution restrictions](#license).
 
 ## Features
 
@@ -140,15 +140,15 @@ Get the [portable release](https://github.com/banbanzhige/DLSS5Tool/releases/lat
 
 ### 2. Select the runtime for your GPU
 
-Confirm your GPU model first. If you need a replacement runtime, use the separate [zip download page](https://github.com/banbanzhige/DLSS5Tool/releases/tag/zip):
+The app matches the selected DLSS rendering GPU automatically. Missing runtimes are downloaded and verified from the project [runtime download page](https://github.com/banbanzhige/DLSS5Tool/releases/tag/zip):
 
 | GPU | Setup |
 | --- | --- |
 | RTX 40 series | Use the bundled default runtime |
-| RTX 30 series | Download `30系.zip` from the zip page and place the DLL as shown below |
-| RTX 50 series | Download `50系.zip` from the zip page and place the DLL as shown below |
+| RTX 30 series | Automatically download the community runtime |
+| RTX 50 series | Automatically download the matching RTX 50 runtime |
 
-Download and extract the matching [nvngx_dlssnr.dll](https://github.com/banbanzhige/DLSS5Tool/releases/tag/zip). Close the app first, then place `nvngx_dlssnr.dll` from the matching archive into the `mods` folder beside the executable:
+In Settings → Replace DLL / models → DLSS runtime, select a GPU series or your own DLL, then click Test selected DLL. Testing uses a separate process and requires no input media. Select Match GPU automatically to restore automatic selection. Downloads are stored under mods/dlss without overwriting existing files. If offline, download a trusted DLL manually and choose its path; the legacy layout is also recognized when its hash matches:
 
 ```text
 mods\nvngx_dlssnr.dll
@@ -208,9 +208,9 @@ Lower playback quality, try smaller media or 2× scaling, and temporarily disabl
 
 **How do I update?**
 
-Use **About → Check for updates**, or download a Release. This build prepares lite/full incremental updates from v3.1.0 to v3.1.1; they become available through Releases and the updater only after official publication. Earlier versions should use complete archives; updates are not automatically chained across versions.
+Use **About → Check for updates**, or download a Release. This build prepares lite/full incremental updates from v3.1.1 to v3.1.2; they become available through Releases and the updater only after official publication. Earlier versions should use complete archives; updates are not automatically chained across versions.
 
-Choose `lite` for Lite, or `full` when inference components are installed. Do not replace only the EXE or mix old components into v3.1.1. The [historical component-reuse guide](docs/release/UPGRADE_v2.3.1.md) applies only to the versions it lists.
+Choose `lite` for Lite, or `full` when inference components are installed. Do not replace only the EXE or mix old components into v3.1.2. The [historical component-reuse guide](docs/release/UPGRADE_v2.3.1.md) applies only to the versions it lists.
 
 When a matching payload exists, the updater downloads changed files for the installed edition, verifies them, then asks again before exiting for the standalone helper to install it. Without a matching payload, Lite offers its complete archive; Full directs you to the release page for Full or Lite plus the matching add-on. Versions without the update helper must be upgraded by fully extracting the new release into a new folder. Incremental updates require the matching assets on the release page. See the [update guide](docs/USER_GUIDE.en.md).
 

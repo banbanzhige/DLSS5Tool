@@ -12,7 +12,9 @@ sys.path.insert(0, str(ROOT))
 MODULES = ('gui', 'app_version', 'residual_composition', 'shared_cache_budget',
            'video_export', 'preview_decoder', 'local_preview_composition',
            'memory_budget', 'frame_generation', 'render_cache', 'device_cached',
-           'resident_preview', 'resident_hdr', 'resident_sr', 'cuda_vsr', 'device_sr_plan')
+           'resident_preview', 'resident_hdr', 'resident_sr', 'cuda_vsr', 'device_sr_plan',
+           'dlss_runtime', 'mod_paths', 'adapter_probe', 'dlss_engine', 'dlss_host_process',
+           'video_timeline', 'resident_sr_worker', 'resident_preview_worker', 'realtime')
 
 
 def identity(value):
