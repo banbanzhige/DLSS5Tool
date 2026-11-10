@@ -66,6 +66,7 @@ def test_vsr_partial_construction_releases_resources_with_traceback_retained(fai
                 mock.patch.object(sr.shared_memory, 'SharedMemory', side_effect=allocate), \
                 mock.patch.object(sr.np, 'ndarray', side_effect=array), \
                 mock.patch.object(sr.multiprocessing, 'get_context', return_value=context), \
+                mock.patch.object(sr, 'create_process_job', return_value=None), \
                 mock.patch.object(sr.ProcessSuperResolution, '_receive', receive):
             with pytest.raises((MemoryError, OSError, RuntimeError)) as retained:
                 owner.__init__(8, 8, 2)
@@ -169,6 +170,8 @@ def test_vsr_broken_pipe_reaps_process_and_keeps_live_buffers(unkillable):
 
 def fake_vsr_worker(connection, width, height, scale, is_hdr, input_name, output_name, log_path):
     """Real spawn/Pipe/shared-memory protocol; no native DLL or GPU."""
+    if connection.recv() != {'operation': 'initialize'}:
+        return
     memories = [shared_memory.SharedMemory(name=name) for name in (input_name, output_name)]
     frames = None
     try:

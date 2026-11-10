@@ -115,6 +115,7 @@ class EncoderSelectionTests(unittest.TestCase):
                 mock.patch.object(parallel_export, "find_ffmpeg", return_value="ffmpeg"), \
                 mock.patch.object(parallel_export, "select_video_encoder", return_value=("hevc", False)) as select, \
                 mock.patch.object(parallel_export.subprocess, "Popen", return_value=process) as launch, \
+                mock.patch.object(parallel_export, 'create_process_job', return_value=None), \
                 mock.patch.object(parallel_export, "_read_json", return_value={"ok": True, 'kept_frames': 2}), \
                 mock.patch.object(parallel_export, "concat_video_segments"), \
                 mock.patch.object(parallel_export, "mux_source_audio", return_value="none"):

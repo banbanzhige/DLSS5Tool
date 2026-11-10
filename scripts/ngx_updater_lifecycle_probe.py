@@ -190,35 +190,64 @@ def supervise(args):
     baseline_rows = processes.snapshot()
     is_updater = lambda row: 'ngx' in row['name'].lower() and 'updat' in row['name'].lower()
     baseline = [processes.identity(r) for r in baseline_rows if is_updater(r)]
-    baseline_pids = {r['pid'] for r in baseline_rows}
+    baseline_identities = {r['pid']: processes.identity(r).get('created') for r in baseline_rows}
     seen, events, samples = {}, [], []
-    known = set()
+    known = {}
     started = time.monotonic()
     with (args.work / 'console.log').open('w', encoding='utf-8') as log:
-        child = subprocess.Popen([sys.executable, '-B', str(Path(__file__).resolve()),
+        executable = getattr(sys, '_base_executable', sys.executable)
+        environment = os.environ.copy()
+        if sys.prefix != sys.base_prefix:
+            environment['__PYVENV_LAUNCHER__'] = sys.executable
+        child = subprocess.Popen([executable, '-B', str(Path(__file__).resolve()),
                                   '--work', str(args.work.resolve()), '--runtime', str(args.runtime.resolve()),
                                   '--cycles', str(args.cycles), '--workload'], cwd=ROOT,
+                                 env=environment,
                                  stdout=log, stderr=subprocess.STDOUT,
                                  creationflags=subprocess.CREATE_NO_WINDOW)
-        known.add(child.pid)
+        child_row = next(r for r in processes.snapshot() if r['pid'] == child.pid)
+        known[child.pid] = processes.identity(child_row).get('created')
+        if known[child.pid] is None:
+            child.terminate()
+            child.wait(timeout=10)
+            raise RuntimeError('Cannot verify workload process identity')
         child_exit = None
         last_set = None
         try:
             while True:
                 now = time.monotonic()
                 rows = processes.snapshot()
+                identities = {}
+
+                def identify(row):
+                    if row['pid'] not in identities:
+                        identities[row['pid']] = processes.identity(row)
+                    return identities[row['pid']]
+
+                # A reused PID is a different process, including baseline PIDs.
+                for row in rows:
+                    if row['pid'] in known and identify(row).get('created') != known[row['pid']]:
+                        del known[row['pid']]
                 # Resolve multiple descendant generations present in one snapshot.
                 for _ in range(4):
-                    known.update(r['pid'] for r in rows if r['parent'] in known and r['pid'] not in baseline_pids)
+                    for row in rows:
+                        if row['pid'] in known or row['parent'] not in known:
+                            continue
+                        created = identify(row).get('created')
+                        if (created is not None and created >= known[row['parent']]
+                                and created != baseline_identities.get(row['pid'])):
+                            known[row['pid']] = created
                 updaters = [r for r in rows if is_updater(r)]
                 for row in updaters:
-                    if row['pid'] not in seen:
-                        detail = processes.identity(row)
-                        detail.update(first_seen=round(now-started, 3), owned=row['pid'] in known,
-                                      existed_before=row['pid'] in baseline_pids)
-                        seen[row['pid']] = detail
+                    detail = identify(row)
+                    key = (row['pid'], detail.get('created'))
+                    if key not in seen:
+                        detail.update(first_seen=round(now-started, 3),
+                                      owned=detail.get('created') is not None and known.get(row['pid']) == detail['created'],
+                                      existed_before=detail.get('created') == baseline_identities.get(row['pid']))
+                        seen[key] = detail
                         events.append(dict(event='observed', **detail))
-                    seen[row['pid']]['last_seen'] = round(now-started, 3)
+                    seen[key]['last_seen'] = round(now-started, 3)
                 current = tuple(sorted(r['pid'] for r in updaters))
                 if current != last_set:
                     sample = dict(seconds=round(now-started, 3), total=len(updaters),
@@ -233,7 +262,7 @@ def supervise(args):
                     print('Workload exited: %s; observing for 20 seconds' % child.returncode, flush=True)
                 if child_exit is not None and now-child_exit >= 20:
                     break
-                if now-started > 180 or len(updaters) > 100:
+                if now-started > args.timeout or len(updaters) > 100:
                     raise RuntimeError('Probe timeout or updater count cap exceeded')
                 time.sleep(.1)
         finally:
@@ -241,10 +270,12 @@ def supervise(args):
                 child.terminate()
                 child.wait(timeout=10)
             remaining = [processes.identity(r) for r in processes.snapshot() if is_updater(r)]
-            owned_remaining = [r for r in remaining if r['pid'] in seen and seen[r['pid']]['owned']]
-            cleanup = [processes.terminate_owned(seen[r['pid']]) for r in owned_remaining]
+            owned_remaining = [r for r in remaining
+                if seen.get((r['pid'], r.get('created')), {}).get('owned')]
+            cleanup = [processes.terminate_owned(r) for r in owned_remaining]
             result = dict(baseline=baseline, workload_pid=child.pid, workload_exit=child.returncode,
                           cycles=args.cycles, poll_seconds=.1, app_exit_observation_seconds=20,
+                          timeout_seconds=args.timeout,
                           observed=list(seen.values()), samples=samples,
                           peak_total=max([len(baseline)] + [s['total'] for s in samples]),
                           peak_owned=max([0] + [s['owned'] for s in samples]),
@@ -261,8 +292,16 @@ def main():
     parser.add_argument('--work', type=Path, required=True)
     parser.add_argument('--runtime', type=Path, default=ROOT/'runtime/nvngx_dlssnr.dll')
     parser.add_argument('--cycles', type=int, default=5)
+    parser.add_argument('--timeout', type=float, default=None,
+                        help='Supervisor limit in seconds (default scales with cycles)')
     parser.add_argument('--workload', action='store_true')
     args = parser.parse_args()
+    if not 0 <= args.cycles <= 100:
+        parser.error('--cycles must be between 0 and 100')
+    if args.timeout is None:
+        args.timeout = max(180, 60 + 15 * args.cycles)
+    if not 30 <= args.timeout <= 1800:
+        parser.error('--timeout must be between 30 and 1800 seconds')
     if not args.work.is_dir():
         parser.error('--work must be an existing registered task directory')
     if args.workload:

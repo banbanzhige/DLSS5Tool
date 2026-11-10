@@ -47,6 +47,23 @@ def _write_json(path, payload, required=True):
     return False
 
 
+def _wait_start_gate(path, timeout=30.0):
+    """No decoding, native initialization or helper spawn before parent release."""
+    if path is None:
+        return  # Standalone diagnostic invocation, without the GUI controller.
+    deadline = time.monotonic() + timeout
+    while True:
+        try:
+            with open(path, encoding='ascii') as gate:
+                if gate.read(6) == 'start':
+                    return
+        except FileNotFoundError:
+            pass
+        if time.monotonic() >= deadline:
+            raise RuntimeError('并行导出未获得进程托管启动许可')
+        time.sleep(.02)
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--input", required=True)
@@ -68,6 +85,7 @@ def main():
     parser.add_argument("--output-height", type=int, default=0)
     parser.add_argument('--disable-b-frames', action='store_true')
     parser.add_argument('--fps', type=float)
+    parser.add_argument('--start-gate')
     args = parser.parse_args()
 
     source = os.path.abspath(args.input)
@@ -89,6 +107,7 @@ def main():
         "process_start": process_start,
     }
     try:
+        _wait_start_gate(args.start_gate)
         dlss_engine.LOG_PATH = os.path.splitext(result_path)[0] + ".ngx.log"
         cap = open_capture(source, **decode_options(settings))
         if not cap.isOpened():

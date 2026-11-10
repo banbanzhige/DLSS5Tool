@@ -9,6 +9,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import threading
 import time
 
 import cv2
@@ -17,6 +18,7 @@ from dlss5tool.image_sequence import open_capture
 from dlss5tool.gpu_decode import decode_options
 from dlss5tool.video_timeline import inspect_video_timeline
 from dlss5tool.vfr_mux import retime_encoded_video
+from dlss5tool.process_job import create_process_job
 
 from dlss5tool.video_export import (
     concat_video_segments,
@@ -29,6 +31,57 @@ from dlss5tool.video_export import (
 
 
 _CREATE_NO_WINDOW = getattr(subprocess, "CREATE_NO_WINDOW", 0)
+_pending_retirements = []
+_retirement_lock = threading.Lock()
+
+
+def _retire_process_trees(trees):
+    pending, errors = [], []
+    for process, lifetime in trees:
+        failed = False
+        if lifetime is not None:
+            try:
+                lifetime.close()
+            except OSError as error:
+                errors.append(str(error))
+                failed = True
+        if process.poll() is None:
+            try:
+                process.terminate()
+                try:
+                    process.wait(timeout=5)
+                except subprocess.TimeoutExpired:
+                    process.kill()
+                    process.wait(timeout=5)
+            except (OSError, subprocess.TimeoutExpired) as error:
+                errors.append(str(error))
+                failed = True
+        if failed:
+            # Retain both the job and its borrowed Popen handle for retry.
+            pending.append((process, lifetime))
+    return pending, errors
+
+
+def _retry_pending_retirements():
+    with _retirement_lock:
+        pending, errors = _retire_process_trees(_pending_retirements)
+        _pending_retirements[:] = pending
+    if errors:
+        raise RuntimeError('前次并行导出进程树尚未回收：' + '; '.join(errors))
+
+
+def _worker_launch():
+    if getattr(sys, 'frozen', False):
+        return [sys.executable, '--parallel-worker'], None
+    environment = os.environ.copy()
+    executable = sys.executable
+    if os.name == 'nt':
+        # The venv redirector can spawn Python before it is assigned to the job.
+        # Launch the interpreter directly, retaining the venv's import paths.
+        executable = getattr(sys, '_base_executable', sys.executable)
+        if sys.prefix != sys.base_prefix:
+            environment['__PYVENV_LAUNCHER__'] = sys.executable
+    return [executable, '-B', '-m', 'dlss5tool.parallel_export_worker'], environment
 
 
 def _read_json(path):
@@ -88,6 +141,7 @@ def export_parallel(
     output_size=None, progress=None, timeline=None,
 ):
     """Export contiguous segments concurrently and losslessly concatenate them."""
+    _retry_pending_retirements()
     source = os.path.abspath(source)
     output = os.path.abspath(output)
     cap = open_capture(source, **decode_options(settings))
@@ -114,6 +168,7 @@ def export_parallel(
     temp_dir = tempfile.mkdtemp(prefix=".dlss-parallel-", dir=output_dir)
     from dlss5tool.paths import project_root
     processes = []
+    lifetime_jobs = []
     jobs = []
     stderr_handles = []
     started = time.perf_counter()
@@ -127,10 +182,7 @@ def export_parallel(
             progress_path = os.path.join(temp_dir, f"progress_{worker_id:02d}.json")
             result_path = os.path.join(temp_dir, f"result_{worker_id:02d}.json")
             stderr_path = os.path.join(temp_dir, f"stderr_{worker_id:02d}.txt")
-            if getattr(sys, "frozen", False):
-                cmd = [sys.executable, "--parallel-worker"]
-            else:
-                cmd = [sys.executable, "-B", "-m", "dlss5tool.parallel_export_worker"]
+            cmd, environment = _worker_launch()
             cmd += [
                 "--input", source,
                 "--output", segment,
@@ -152,12 +204,19 @@ def export_parallel(
                 cmd.append('--disable-b-frames')
             stderr_handle = open(stderr_path, "wb")
             stderr_handles.append(stderr_handle)
+            start_gate = os.path.join(temp_dir, f"worker-{worker_id}.start")
+            cmd += ['--start-gate', start_gate]
             process = subprocess.Popen(
                 cmd, stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL,
                 stderr=stderr_handle, creationflags=_CREATE_NO_WINDOW,
+                env=environment,
                 cwd=None if getattr(sys, "frozen", False) else str(project_root()),
             )
             processes.append(process)
+            lifetime_jobs.append(create_process_job(process))
+            # A fresh task-private gate is published only after job assignment.
+            with open(start_gate, 'x', encoding='ascii') as gate:
+                gate.write('start')
             jobs.append({
                 "segment": segment,
                 "progress": progress_path,
@@ -239,18 +298,23 @@ def export_parallel(
             ),
         }
     finally:
-        for process in processes:
-            if process.poll() is None:
-                process.terminate()
-                try:
-                    process.wait(timeout=5)
-                except subprocess.TimeoutExpired:
-                    process.kill()
+        trees = [(process, lifetime_jobs[index] if index < len(lifetime_jobs) else None)
+                 for index, process in enumerate(processes)]
+        pending, cleanup_errors = _retire_process_trees(trees)
+        with _retirement_lock:
+            _pending_retirements.extend(pending)
         for handle in stderr_handles:
             try:
                 handle.close()
             except OSError:
                 pass
         # Only remove the exact temporary directory created above, inside output_dir.
-        if os.path.commonpath([os.path.abspath(temp_dir), os.path.abspath(output_dir)]) == os.path.abspath(output_dir):
+        if cleanup_errors:
+            message = '并行导出进程树回收失败：' + '; '.join(cleanup_errors) + '\n诊断目录：' + temp_dir
+            error = sys.exc_info()[1]
+            if error is None:
+                raise RuntimeError(message)
+            if hasattr(error, 'add_note'):
+                error.add_note(message)
+        elif os.path.commonpath([os.path.abspath(temp_dir), os.path.abspath(output_dir)]) == os.path.abspath(output_dir):
             shutil.rmtree(temp_dir, ignore_errors=True)

@@ -1,0 +1,379 @@
+{
+  "status": "source_verified_with_four_preexisting_test_failures",
+  "started": "2026-11-10",
+  "completed": "2026-11-11",
+  "issue": "https://github.com/banbanzhige/DLSS5Tool/issues/13",
+  "base_commit": "3bbe3da89c25553bf3aa1d4c6bd01eaf03a4fb7c",
+  "environment": {
+    "python": "3.13.3 (tags/v3.13.3:6280bb5, Apr  8 2025, 14:47:33) [MSC v.1943 64 bit (AMD64)]",
+    "gpu": "NVIDIA GeForce RTX 4070 SUPER",
+    "driver": "621.14"
+  },
+  "tests": {
+    "unique_passed": 280,
+    "subtests_passed": 21,
+    "new_cases_passed": 28,
+    "preexisting_failures": 4,
+    "baseline_method": "Load HEAD versions of the five modified product modules in a fresh process and rerun the same four cache assertions",
+    "runs": [
+      {
+        "file": "pytest-baseline.xml",
+        "suites": [
+          {
+            "name": "pytest",
+            "errors": "0",
+            "failures": "4",
+            "skipped": "0",
+            "tests": "4",
+            "time": "5.737",
+            "timestamp": "2026-11-11T00:01:31.728866+08:00",
+            "hostname": "QQQ"
+          }
+        ],
+        "failed": [
+          {
+            "classname": "tests.test_enhancement_bypass",
+            "name": "test_real_cache_pipeline_zero_keeps_sr_source_and_restores_nr[2-srgb]",
+            "time": "3.898"
+          },
+          {
+            "classname": "tests.test_enhancement_bypass",
+            "name": "test_real_cache_pipeline_zero_keeps_sr_source_and_restores_nr[2-hdr10_pq]",
+            "time": "0.300"
+          },
+          {
+            "classname": "tests.test_enhancement_bypass",
+            "name": "test_real_cache_pipeline_zero_keeps_sr_source_and_restores_nr[2-hdr10_hlg]",
+            "time": "0.300"
+          },
+          {
+            "classname": "tests.test_enhancement_bypass",
+            "name": "test_real_cache_pipeline_zero_keeps_sr_source_and_restores_nr[2-scrgb]",
+            "time": "0.303"
+          }
+        ]
+      },
+      {
+        "file": "pytest-first.xml",
+        "suites": [
+          {
+            "name": "pytest",
+            "errors": "0",
+            "failures": "2",
+            "skipped": "0",
+            "tests": "31",
+            "time": "50.037",
+            "timestamp": "2026-11-10T23:42:57.785232+08:00",
+            "hostname": "QQQ"
+          }
+        ],
+        "failed": [
+          {
+            "classname": "tests.test_dlss_host_lifetime",
+            "name": "test_close_retires_children_and_grandchildren_only[False]",
+            "time": "2.060"
+          },
+          {
+            "classname": "tests.test_dlss_host_lifetime",
+            "name": "test_close_retires_children_and_grandchildren_only[True]",
+            "time": "2.396"
+          }
+        ]
+      },
+      {
+        "file": "pytest-lifetime.xml",
+        "suites": [
+          {
+            "name": "pytest",
+            "errors": "0",
+            "failures": "2",
+            "skipped": "0",
+            "tests": "124",
+            "time": "72.497",
+            "timestamp": "2026-11-10T23:52:55.489872+08:00",
+            "hostname": "QQQ"
+          }
+        ],
+        "failed": [
+          {
+            "classname": "tests.test_p0_memory_boundaries",
+            "name": "test_vsr_real_spawn_and_shared_memory_reaped_across_repeated_tasks[False]",
+            "time": "0.832"
+          },
+          {
+            "classname": "tests.test_p0_memory_boundaries",
+            "name": "test_vsr_real_spawn_and_shared_memory_reaped_across_repeated_tasks[True]",
+            "time": "0.818"
+          }
+        ]
+      },
+      {
+        "file": "pytest-parallel-av.xml",
+        "suites": [
+          {
+            "name": "pytest",
+            "errors": "0",
+            "failures": "0",
+            "skipped": "0",
+            "tests": "2",
+            "time": "12.309",
+            "timestamp": "2026-11-11T00:02:26.38992+08:00",
+            "hostname": "QQQ"
+          }
+        ],
+        "failed": []
+      },
+      {
+        "file": "pytest-parallel-final.xml",
+        "suites": [
+          {
+            "name": "pytest",
+            "errors": "0",
+            "failures": "0",
+            "skipped": "0",
+            "tests": "35",
+            "time": "13.088",
+            "timestamp": "2026-11-11T00:19:18.234023+08:00",
+            "hostname": "QQQ"
+          }
+        ],
+        "failed": []
+      },
+      {
+        "file": "pytest-routes.xml",
+        "suites": [
+          {
+            "name": "pytest",
+            "errors": "0",
+            "failures": "4",
+            "skipped": "0",
+            "tests": "302",
+            "time": "89.265",
+            "timestamp": "2026-11-10T23:58:09.975754+08:00",
+            "hostname": "QQQ"
+          }
+        ],
+        "failed": [
+          {
+            "classname": "tests.test_enhancement_bypass",
+            "name": "test_real_cache_pipeline_zero_keeps_sr_source_and_restores_nr[2-srgb]",
+            "time": "0.240"
+          },
+          {
+            "classname": "tests.test_enhancement_bypass",
+            "name": "test_real_cache_pipeline_zero_keeps_sr_source_and_restores_nr[2-hdr10_pq]",
+            "time": "0.407"
+          },
+          {
+            "classname": "tests.test_enhancement_bypass",
+            "name": "test_real_cache_pipeline_zero_keeps_sr_source_and_restores_nr[2-hdr10_hlg]",
+            "time": "0.301"
+          },
+          {
+            "classname": "tests.test_enhancement_bypass",
+            "name": "test_real_cache_pipeline_zero_keeps_sr_source_and_restores_nr[2-scrgb]",
+            "time": "0.256"
+          }
+        ]
+      }
+    ]
+  },
+  "native": {
+    "sessions": 22,
+    "frames": 66,
+    "resizes": 20,
+    "updaters_observed": 110,
+    "peak_owned": 5,
+    "remaining": 0,
+    "supervisor_cleanup": 0,
+    "exit_observation_seconds": 20,
+    "timeout_seconds": 400
+  },
+  "vsr": {
+    "sessions": 3,
+    "frames": 9,
+    "all_shared_frames_released": true
+  },
+  "source_hashes": [
+    {
+      "file": "dlss5tool/process_job.py",
+      "sha256": "d626e95dfe19b0ae67bd0589d8473713a82a6b524b10b40fe6cb49fc95c83636"
+    },
+    {
+      "file": "dlss5tool/dlss_host_process.py",
+      "sha256": "ca823473114aa4682a4f3cc3197b7120850767cd5954039a6ea56c5aa0d3695c"
+    },
+    {
+      "file": "dlss5tool/super_resolution.py",
+      "sha256": "735a834ff2d6fede71d52d20e7861299c8d4201a855ad259201ce571132e5fe5"
+    },
+    {
+      "file": "dlss5tool/parallel_export.py",
+      "sha256": "c5b9d78dc6a5fe6936371bd5b9412079d5ab463e78dde7af65636e6886353ece"
+    },
+    {
+      "file": "dlss5tool/parallel_export_worker.py",
+      "sha256": "c960d648dff506a427426657d747df3789884b89e380f708d7f6b2c76d293fb5"
+    },
+    {
+      "file": "scripts/ngx_updater_lifecycle_probe.py",
+      "sha256": "1318023a98239d5db707e38a642bb36b90f46334a61acfd5c0525f6bf9a3b741"
+    },
+    {
+      "file": "scripts/verify_vsr_lifetime.py",
+      "sha256": "23d1203e88bf4f8352e5cde32cc73d85627677887e8b31c63f67e4cb045cb972"
+    },
+    {
+      "file": "tests/host_lifetime_fixture.py",
+      "sha256": "eec7f4a8948cb4fb89172767fd16fe83da631e25669d7a712fa68cf81c52cefe"
+    },
+    {
+      "file": "tests/test_dlss_host_lifetime.py",
+      "sha256": "78d5f2fe67e9e80a7ba3eed14b9b05fa9ce81fabf5c2422bfa4ef3fafc44ebfc"
+    },
+    {
+      "file": "tests/test_process_job.py",
+      "sha256": "8bdd70ae16c691cea07b918b1683c9965514114f3e1fe6ac451d894727f7469d"
+    },
+    {
+      "file": "tests/test_parallel_lifetime.py",
+      "sha256": "c749af88ec490224bb7df1d86d283142d26d0a14bfae134f68295afdadf638aa"
+    },
+    {
+      "file": "tests/test_p0_memory_boundaries.py",
+      "sha256": "7e179b51ec48ad507e77e97d1d4ae3f1ee7b107d249e37efbc5ef2afeed1f5bf"
+    },
+    {
+      "file": "tests/test_p0_runtime_pressure.py",
+      "sha256": "e7e246e3edd48f6d62e57beef5bc761a39a988b027138d4ce4ba27dbc7139338"
+    },
+    {
+      "file": "tests/test_video_encoder_selection.py",
+      "sha256": "155c839fdfa77e14b54c953ae7765015f768b706ff5858d2e1068c94b98a3cc9"
+    }
+  ],
+  "runtimes": [
+    {
+      "file": "runtime/dlssnr_host_v2.dll",
+      "sha256": "c8ad631f8f78b2dedec6aec418c7a570d6fc5bf1b9ffa9f3514bcb0edd58fc13",
+      "bytes": 295424
+    },
+    {
+      "file": "runtime/nvngx_dlssnr.dll",
+      "sha256": "ceb6432f6fbdf44d886014bcd47241932bf8b67439feef9bbdd0961436662650",
+      "bytes": 165840496
+    },
+    {
+      "file": "runtime/vsr_host.dll",
+      "sha256": "ed26ab54b57d01ad6754bbae4e70bff5c38fcafef1e866798a01ae159212c2c1",
+      "bytes": 251392
+    },
+    {
+      "file": "runtime/nvngx_vsr.dll",
+      "sha256": "c3d88eea5ff7a548edefa66414cf6e77464d0947277c904f324dd23abf58a1ed",
+      "bytes": 19140144
+    }
+  ],
+  "artifacts": [
+    {
+      "file": "pytest-baseline.xml.gz",
+      "source": "tmp\\ngx-lifecycle-fix-20261110\\pytest-baseline.xml",
+      "sha256": "8f60b1c64cf6a3a5f834425f5b28c2d501236d750d3904e6e7dc8b369557a2da",
+      "original_sha256": "f07bb0afccd184fed257b0026c3125c46bd426bf5ad3b8b303c70732804d35dd",
+      "original_bytes": 19667,
+      "bytes": 1963
+    },
+    {
+      "file": "pytest-first.xml.gz",
+      "source": "tmp\\ngx-lifecycle-fix-20261110\\pytest-first.xml",
+      "sha256": "71b472808ef2da56dab7282e3563c1b478c62a6c8dc4dcf5a24babd5c2b53161",
+      "original_sha256": "ee319e73ccd97b10d40bdda820c4bf2736e3c8bf5244555ad74f32f385ee8206",
+      "original_bytes": 7442,
+      "bytes": 1689
+    },
+    {
+      "file": "pytest-lifetime.xml.gz",
+      "source": "tmp\\ngx-lifecycle-fix-20261110\\pytest-lifetime.xml",
+      "sha256": "eaaeef6c4098c9a3054ade93268fc3f0a44dee25abe14bd0d4363de80ec488b2",
+      "original_sha256": "2b518d3df0e8efceff94ee30ba20d93c997a344830a7662d0605b6e4df2e8147",
+      "original_bytes": 22198,
+      "bytes": 3780
+    },
+    {
+      "file": "pytest-parallel-av.xml.gz",
+      "source": "tmp\\ngx-lifecycle-fix-20261110\\pytest-parallel-av.xml",
+      "sha256": "4b55dfa9474505d066d278dbf28a5bcceebfbcde403a5375ed89094150b46a37",
+      "original_sha256": "645bcd645a3767d14fde1064e339538e59a777b1518b14ba699195bfb1fcc5d4",
+      "original_bytes": 499,
+      "bytes": 268
+    },
+    {
+      "file": "pytest-parallel-final.xml.gz",
+      "source": "tmp\\ngx-lifecycle-fix-20261110\\pytest-parallel-final.xml",
+      "sha256": "abd8afb2d01799361a10676f232cb365781780e56e6f3a17e85812a727eba103",
+      "original_sha256": "0e05249c1ed423a6eb05602b7ebafb1a974f933a7202c6e7cb8d2d5429f5f196",
+      "original_bytes": 2987,
+      "bytes": 823
+    },
+    {
+      "file": "pytest-routes.xml.gz",
+      "source": "tmp\\ngx-lifecycle-fix-20261110\\pytest-routes.xml",
+      "sha256": "6ed97e533edfce4a636d419c89515e2aeddcb4aef46b0ac9e630f2bd3986a5f6",
+      "original_sha256": "30cb1d70dcc7f8eac79b386813da5f6db91caec5e1f7a3dd7ff046b756af8cb8",
+      "original_bytes": 57920,
+      "bytes": 7103
+    },
+    {
+      "file": "native-result.json.gz",
+      "source": "tmp\\ngx-lifecycle-fix-20261110\\native-verified\\result.json",
+      "sha256": "fad50a344174574c150cdefcdd32ac24752d4afb95b58dce77d31ab560a7b778",
+      "original_sha256": "95334975f47cde2ffac7c0f80bb02615debf59af8bcbf66347292eda6ec7c78b",
+      "original_bytes": 63953,
+      "bytes": 4394
+    },
+    {
+      "file": "native-operations.json.gz",
+      "source": "tmp\\ngx-lifecycle-fix-20261110\\native-verified\\operations.json",
+      "sha256": "f3bd87b6479095a4ce906379e29ea23d861fffabcb673f46caaa2808359e48b6",
+      "original_sha256": "dc13093f60f9ec1f334753776cbad57d7c8ae9f8bd5454013dc3098115c7fb05",
+      "original_bytes": 23341,
+      "bytes": 1938
+    },
+    {
+      "file": "native-initial-timeout.json.gz",
+      "source": "tmp\\ngx-lifecycle-fix-20261110\\native\\result.json",
+      "sha256": "291d27fc2140e0dd120c9170bec0c1689180e70744e3736ee124e38f1ce86bab",
+      "original_sha256": "8b6b53c945caf1ad4af79dc26850004e480b232aea53ba85180ce210f4faaafa",
+      "original_bytes": 51837,
+      "bytes": 3671
+    },
+    {
+      "file": "vsr.json.gz",
+      "source": "tmp\\ngx-lifecycle-fix-20261110\\vsr-verified.json",
+      "sha256": "d6aa94a1212ed9fc5bfc3c8f699e756e40f33da8da593cca697c85895a572d2d",
+      "original_sha256": "3243f28b534c50763b3a4678373eed0d1c56e9b0a1c3fe70267dd615c2e3664f",
+      "original_bytes": 1683,
+      "bytes": 417
+    }
+  ],
+  "limitations": [
+    "No RTX 3080 / driver 596.21 reproduction",
+    "No frozen EXE or hour-scale memory plateau acceptance",
+    "Separate historical in-process native growth remains open"
+  ],
+  "cleanup": {
+    "status": "completed",
+    "task": "tmp/ngx-lifecycle-fix-20261110",
+    "start_free_bytes": 50540204032,
+    "peak_disk_budget_bytes": 134217728,
+    "removed_top_level_items": 17,
+    "removed_logical_bytes": 1671252.0,
+    "free_before_bytes": 50537623552,
+    "free_after_bytes": 50539560960,
+    "measured_free_change_bytes": 1937408,
+    "remaining_bytes": 1549.0,
+    "remaining_reason": "TASK.md registration only; review 2026-11-17",
+    "checks": "Exact absolute boundary, ancestors and entries without reparse points, no active source references, exclusive file opens, all exec test/probe sessions completed",
+    "disk_delta_note": "Whole-volume free-space change can include concurrent activity"
+  }
+}

@@ -10,6 +10,7 @@ commands and acknowledgements.
 
 import multiprocessing
 from multiprocessing import shared_memory
+from multiprocessing.connection import wait
 from dlss5tool.memory_budget import (require_memory_headroom, receive_worker_command,
     memory_allocation, current_pool, worker_with_memory_pool, record_memory_event)
 import os
@@ -34,6 +35,11 @@ _STOP_TIMEOUT = 2.0
 
 class HostProcessError(RuntimeError):
     """The isolated DLSS host failed, exited, or stopped responding."""
+
+
+def _make_worker_job(process):
+    from dlss5tool.process_job import create_process_job
+    return create_process_job(process)
 
 
 def _open_shared_memory(*, name=None, create=False, size=0, track=True):
@@ -89,6 +95,11 @@ def _host_worker_main(
     output_memory = None
     live = None
     try:
+        # Never initialize NGX (or spawn its updater) before the parent has
+        # assigned this process to its lifetime job. EOF/stop cancels startup.
+        if connection.recv() != {"operation": "initialize"}:
+            connection.close()
+            return
         # A non-owning process must not ask resource_tracker to unlink the parent's
         # buffers when this deliberately short-lived worker exits.
         input_memory = _open_shared_memory(name=input_name, track=False)
@@ -233,6 +244,7 @@ class _HostSession:
         validate_dimensions(self.width, self.height, 1)
         self._closed = False
         self._process = None
+        self._job = None
         self._connection = None
         self._child_connection = None
         self._input_memory = None
@@ -303,6 +315,8 @@ class _HostSession:
         self._process.start()
         self._child_connection.close()
         self._child_connection = None
+        self._job = _make_worker_job(self._process)
+        self._connection.send({"operation": "initialize"})
         response = self._receive(_CREATE_TIMEOUT, "initialize")
         self._check_response(response)
         self._apply_metadata(response)
@@ -316,7 +330,10 @@ class _HostSession:
         if self._connection is None:
             raise HostProcessError("DLSS 工作进程连接已关闭")
         try:
-            if self._connection.poll(timeout):
+            # A crashed worker may leave descendants alive. Its sentinel must
+            # wake the caller even if a descendant still holds a pipe endpoint.
+            ready = wait([self._connection, self._process.sentinel], timeout)
+            if self._connection in ready:
                 return self._connection.recv()
         except (BrokenPipeError, EOFError, OSError) as exception:
             raise HostProcessError(
@@ -400,25 +417,11 @@ class _HostSession:
         if self._closed:
             return
         self._closed = True
-        if self._process is not None and self._process.is_alive():
-            try:
-                self._connection.send({"operation": "stop"})
-                if self._connection.poll(_STOP_TIMEOUT):
-                    self._connection.recv()
-            except (BrokenPipeError, EOFError, OSError):
-                pass
-            self._process.join(timeout=_STOP_TIMEOUT)
-            if self._process.is_alive():
-                self._process.terminate()
-                self._process.join(timeout=_STOP_TIMEOUT)
-            if self._process.is_alive() and hasattr(self._process, "kill"):
-                self._process.kill()
-                self._process.join(timeout=_STOP_TIMEOUT)
-            if self._process.is_alive():
-                self._closed = False
-                raise HostProcessError('DLSS 工作进程尚未退出，暂不释放共享帧，请重试关闭')
-        if self._process is not None and self._process.pid is not None:
-            self._process.join(timeout=0)
+        try:
+            self._retire_process_tree()
+        except BaseException:
+            self._closed = False
+            raise
         if self._connection is not None:
             try:
                 self._connection.close()
@@ -456,6 +459,35 @@ class _HostSession:
             os.remove(self.log_path)
         except OSError:
             pass
+
+    def _retire_process_tree(self):
+        if self._process is not None and self._process.is_alive():
+            try:
+                self._connection.send({"operation": "stop"})
+                if self._connection.poll(_STOP_TIMEOUT):
+                    self._connection.recv()
+            except (BrokenPipeError, EOFError, OSError):
+                pass
+            self._process.join(timeout=_STOP_TIMEOUT)
+        # Retire the entire session even after a successful stop or a crash.
+        # Closing the last parent-owned job handle also kills stuck descendants.
+        job = getattr(self, '_job', None)
+        if job is not None:
+            job.close()
+        if self._process is not None:
+            if self._process.is_alive() and job is not None:
+                self._process.join(timeout=_STOP_TIMEOUT)
+            if self._process.is_alive():
+                self._process.terminate()
+                self._process.join(timeout=_STOP_TIMEOUT)
+            if self._process.is_alive() and hasattr(self._process, "kill"):
+                self._process.kill()
+                self._process.join(timeout=_STOP_TIMEOUT)
+            if self._process.is_alive():
+                raise HostProcessError('DLSS 工作进程尚未退出，暂不释放共享帧，请重试关闭')
+        if self._process is not None and self._process.pid is not None:
+            self._process.join(timeout=0)
+        self._job = None
 
 
 class _BypassSession:

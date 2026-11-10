@@ -1,6 +1,8 @@
 """Windows kill-on-close lifetime container for an already owned Popen child."""
 import ctypes as C
 import os
+import threading
+from multiprocessing.connection import wait
 
 
 class _Basic(C.Structure):
@@ -21,8 +23,23 @@ class KillOnCloseJob:
     assignment succeeds. This class never opens a process by name or PID.
     """
     def __init__(self, process):
+        self._initialize(int(process._handle))
+
+    @classmethod
+    def from_handle(cls, handle):
+        """Borrow an owned process handle, including a Windows Process.sentinel.
+
+        The caller retains the process handle until its exit watcher has joined.
+        No process is opened by PID and this job handle is never inheritable.
+        """
+        job = cls.__new__(cls)
+        job._initialize(int(handle))
+        return job
+
+    def _initialize(self, process_handle):
         if os.name!='nt':
             raise OSError('Windows job required')
+        self._lock = threading.Lock()
         self._kernel=C.WinDLL('kernel32',use_last_error=True)
         for name,args,result in (
             ('CreateJobObjectW',[C.c_void_p,C.c_wchar_p],C.c_void_p),
@@ -37,17 +54,64 @@ class KillOnCloseJob:
             limits=_Extended(); limits.basic.flags=0x2000
             if not self._kernel.SetInformationJobObject(self._handle,9,C.byref(limits),C.sizeof(limits)):
                 raise C.WinError(C.get_last_error())
-            if not self._kernel.AssignProcessToJobObject(self._handle,int(process._handle)):
+            if not self._kernel.AssignProcessToJobObject(self._handle,process_handle):
                 raise C.WinError(C.get_last_error())
         except BaseException:
             self.close()
             raise
 
     def close(self):
-        if self._handle:
-            if not self._kernel.CloseHandle(self._handle):
-                raise C.WinError(C.get_last_error())
-            self._handle=None
+        # The owner and its worker-exit watcher can retire the same job at once.
+        with self._lock:
+            if self._handle:
+                if not self._kernel.CloseHandle(self._handle):
+                    raise C.WinError(C.get_last_error())
+                self._handle=None
+
+
+class ProcessTreeJob:
+    """Parent-owned lifetime job watching a borrowed process handle.
+
+    The process must wait at a start gate until construction succeeds. Call
+    close() before releasing its process handle, including after natural exit.
+    """
+    def __init__(self, process):
+        handle = (process.sentinel if hasattr(process, 'sentinel')
+                  else int(process._handle))
+        self._job = KillOnCloseJob.from_handle(handle)
+        self._pid = process.pid
+        try:
+            self._watcher = threading.Thread(
+                target=self._watch_exit, args=(handle,),
+                name='ngx-job-%s' % process.pid, daemon=True,
+            )
+            self._watcher.start()
+        except BaseException:
+            self._job.close()
+            raise
+
+    def _watch_exit(self, handle):
+        try:
+            wait([handle])
+        finally:
+            try:
+                self._job.close()
+            except OSError as error:
+                # The session retains this owner for explicit close/retry.
+                from dlss5tool.memory_budget import record_memory_event
+                record_memory_event('worker_job_cleanup_failed',
+                                    source_pid=self._pid, error=str(error))
+
+    def close(self, timeout=2.0):
+        self._job.close()
+        self._watcher.join(timeout=timeout)
+        if self._watcher.is_alive():
+            raise OSError('NGX worker process tree is still retiring; retry close')
+
+
+def create_process_job(process):
+    """Arm a Windows worker before its native initialization is released."""
+    return ProcessTreeJob(process) if os.name == 'nt' else None
 
 
 def process_record(pid):

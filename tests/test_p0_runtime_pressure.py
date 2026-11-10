@@ -108,6 +108,7 @@ def test_vsr_pressure_does_not_enter_potentially_blocking_ngx_shutdown():
     source = shared_memory.SharedMemory(create=True, size=8*8*4)
     target = shared_memory.SharedMemory(create=True, size=16*16*4)
     connection, library = mock.Mock(), mock.Mock()
+    connection.recv.return_value = {'operation': 'initialize'}
     try:
         with mock.patch.object(sr, '_load_host', return_value=library), \
                 mock.patch.object(sr, 'receive_worker_command', side_effect=MemoryError('pressure')):

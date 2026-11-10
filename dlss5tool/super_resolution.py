@@ -5,7 +5,9 @@
 import ctypes
 from dlss5tool.host_queue import clamp_in_flight
 import multiprocessing
+from multiprocessing.connection import wait
 from multiprocessing import shared_memory
+from dlss5tool.process_job import create_process_job
 import os
 import subprocess
 import sys
@@ -322,6 +324,8 @@ def _worker_main(connection, width, height, scale, is_hdr, input_name, output_na
     library = None
     memory_pressure = False
     try:
+        if connection.recv() != {"operation": "initialize"}:
+            return
         dtype = np.float16 if is_hdr else np.uint8
         output_width, output_height = target_size(width, height, scale)
         input_memory = shared_memory.SharedMemory(name=input_name)
@@ -387,6 +391,7 @@ class ProcessSuperResolution:
     def __init__(self, width, height, scale, is_hdr=False, timeout=60.0, *, render_gpu='auto', _host_library=None):
         self._closed = False
         self._process = self._connection = self._child_connection = None
+        self._job = None
         self._input_memory = self._output_memory = None
         self._input_frame = self._output_frame = None
         self.log_path = None
@@ -458,6 +463,8 @@ class ProcessSuperResolution:
         self._process.start()
         self._child_connection.close()
         self._child_connection = None
+        self._job = create_process_job(self._process)
+        self._connection.send({"operation": "initialize"})
         response = self._receive("initialize")
         if isinstance(response, dict):
             self.adapter_info = dict(response.get('adapter_info') or {})
@@ -471,7 +478,9 @@ class ProcessSuperResolution:
 
     def _receive(self, operation):
         dead = self._process is not None and not self._process.is_alive()
-        if not self._connection.poll(0 if dead else self.timeout):
+        ready = (self._connection.poll(0) if dead else
+                 self._connection in wait([self._connection, self._process.sentinel], self.timeout))
+        if not ready:
             if self._process is not None and not self._process.is_alive():
                 detail = f"超分子进程异常退出（代码 {self._process.exitcode}）"
             else:
@@ -519,28 +528,13 @@ class ProcessSuperResolution:
         if self._closed:
             return
         self._closed = True
+        try:
+            self._retire_process_tree()
+        except BaseException:
+            self._closed = False
+            raise
         process = self._process
-        if process is not None and process.is_alive():
-            try:
-                self._connection.send({"operation": "close"})
-                if self._connection.poll(2.0):
-                    self._connection.recv()
-            except (BrokenPipeError, EOFError, OSError):
-                pass
-            # A broken pipe must not skip reaping the owner process.
-            process.join(timeout=3.0)
-            if process.is_alive():
-                process.terminate()
-                process.join(timeout=2.0)
-            if process.is_alive():
-                process.kill()
-                process.join(timeout=2.0)
-            if process.is_alive():
-                self._closed = False
-                raise SuperResolutionError('超分子进程尚未退出，暂不释放共享帧，请重试关闭')
         if process is not None:
-            if process.pid is not None:
-                process.join(timeout=0)
             process.close()
             self._process = None
         for name in ('_connection', '_child_connection'):
@@ -569,6 +563,33 @@ class ProcessSuperResolution:
                 os.remove(self.log_path)
             except OSError:
                 pass
+
+    def _retire_process_tree(self):
+        process = self._process
+        if process is not None and process.is_alive():
+            try:
+                self._connection.send({"operation": "close"})
+                if self._connection.poll(2.0):
+                    self._connection.recv()
+            except (BrokenPipeError, EOFError, OSError):
+                pass
+            # A broken pipe must not skip reaping the owner process.
+            process.join(timeout=3.0)
+        job = getattr(self, '_job', None)
+        if job is not None:
+            job.close()
+        if process is not None:
+            if process.is_alive():
+                process.terminate()
+                process.join(timeout=2.0)
+            if process.is_alive():
+                process.kill()
+                process.join(timeout=2.0)
+            if process.is_alive():
+                raise SuperResolutionError('超分子进程尚未退出，暂不释放共享帧，请重试关闭')
+            if process.pid is not None:
+                process.join(timeout=0)
+        self._job = None
 
     def __enter__(self):
         return self
