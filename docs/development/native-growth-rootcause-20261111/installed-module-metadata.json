@@ -1,0 +1,58 @@
+[
+  {
+    "Path": "C:\\WINDOWS\\SYSTEM32\\nvcuda.DLL",
+    "Length": 4835048,
+    "Version": "32.0.16.2114",
+    "Product": "NVIDIA CUDA 13.5.41 driver",
+    "Description": "NVIDIA CUDA Driver, Version 621.14 ",
+    "SHA256": "5CCC3E3B1FD67E7142AA0E345E384C714FF3F68597B55A31B810BE6701CC6172"
+  },
+  {
+    "Path": "C:\\WINDOWS\\system32\\DriverStore\\FileRepository\\nv_dispi.inf_amd64_cee48bd6d33f95ab\\nvcuda64.dll",
+    "Length": 11348712,
+    "Version": "32.0.16.2114",
+    "Product": "NVIDIA CUDA 13.5.41 driver",
+    "Description": "NVIDIA CUDA Driver, Version 621.14 ",
+    "SHA256": "00E6BF733D2E1E90F708C7E2F45A9763F0226BD20E0CC80421BA4412FDF438DE"
+  },
+  {
+    "Path": "C:\\WINDOWS\\System32\\DriverStore\\FileRepository\\nv_dispi.inf_amd64_cee48bd6d33f95ab\\nvdiagclt64.dll",
+    "Length": 1430248,
+    "Version": null,
+    "Product": null,
+    "Description": null,
+    "SHA256": "41A7F19F25EF5EC2856CF68C83A3AAAA1550D0D2135E5FE110111C473C85F882"
+  },
+  {
+    "Path": "C:\\WINDOWS\\System32\\DriverStore\\FileRepository\\nv_dispi.inf_amd64_cee48bd6d33f95ab\\Display.NvContainer\\NvMessageBus.dll",
+    "Length": 3543272,
+    "Version": "",
+    "Product": "",
+    "Description": "",
+    "SHA256": "2F7087FAF327964B35CB2C7A809D7AF04415A087E6BECBE5076F2CC2912A7617"
+  },
+  {
+    "Path": "C:\\WINDOWS\\System32\\DriverStore\\FileRepository\\nv_dispi.inf_amd64_cee48bd6d33f95ab\\nvwgf2umx.dll",
+    "Length": 92778272,
+    "Version": "32.0.16.2114",
+    "Product": "NVIDIA D3D10 drivers",
+    "Description": "NVIDIA D3D10 Driver, Version 621.14 ",
+    "SHA256": "1151C9D103CB9B3149998A5038A1270274FA43506154EFF46ED7B86A057E87C1"
+  },
+  {
+    "Path": "C:\\WINDOWS\\system32\\nvspcap64.dll",
+    "Length": 1472624,
+    "Version": "11.0.9.585",
+    "Product": "NVIDIA App",
+    "Description": "NVIDIA Game Proxy",
+    "SHA256": "02BA49086D17EA404E8C3234B29D19E7C67764B6F78D7E21CE04754316C0BA55"
+  },
+  {
+    "Path": "C:\\WINDOWS\\System32\\DriverStore\\FileRepository\\nv_dispi.inf_amd64_cee48bd6d33f95ab\\nvppex.dll",
+    "Length": 7564000,
+    "Version": "32.0.16.2114",
+    "Product": "NVIDIA driver loader",
+    "Description": "NVIDIA Driver, Version 621.14 ",
+    "SHA256": "4E7CCACB144D57D5B6D5929E466A1FA2BE3A9506297774AEE2C6FFDF3F783386"
+  }
+]

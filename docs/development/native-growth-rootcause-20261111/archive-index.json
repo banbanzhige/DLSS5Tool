@@ -1,0 +1,717 @@
+[
+  {
+    "path": "build/heap_trace_client.dll",
+    "bytes": 103424,
+    "sha256": "30832577af4a11d6ad148cb2d734d60e57177baa51f80ef91888f23b50ed8beb"
+  },
+  {
+    "path": "build/heap_trace_client.exp",
+    "bytes": 971,
+    "sha256": "48a6095c530b70e0ff831289e6d7e69952f36f45c080ac104b5c7736a213bef2"
+  },
+  {
+    "path": "build/heap_trace_client.lib",
+    "bytes": 2318,
+    "sha256": "0b0b2b6eeeee5ec40848f6b0bda8e6bf6118686a249bfa9e13e0e153d26070d7"
+  },
+  {
+    "path": "build/heap_trace_client.obj",
+    "bytes": 1788,
+    "sha256": "d8f4cf496754748a3821305f1670fbb054236e1f078254b836a8cd2269736e9c"
+  },
+  {
+    "path": "build/native_driver_thread_probe.exe",
+    "bytes": 156672,
+    "sha256": "91e1e2dc24c7ef28cf8c1493a7dcc4054f6b5d883c9b173341d4cb0ffef09e65"
+  },
+  {
+    "path": "build/native_driver_thread_probe.obj",
+    "bytes": 48054,
+    "sha256": "b4706d45fbe121383d9b4ad289e9b95183f74bb33528784c1bc19e8f83ccc898"
+  },
+  {
+    "path": "build/native_heap_trace.exp",
+    "bytes": 951,
+    "sha256": "7a120cd982c8a79fc654d7b1c4e6793af4d50f8c0b413e43424516693359c617"
+  },
+  {
+    "path": "build/native_heap_trace.lib",
+    "bytes": 2284,
+    "sha256": "0c02086687b6cf4956450c185035fdfaee05924c107956dd9d516beac40937a0"
+  },
+  {
+    "path": "build/native_heap_trace.obj",
+    "bytes": 27350,
+    "sha256": "3b98512df8c91c73abcba8c93a0b24b97c6a85eefbb23d5e2c37bbeaa148a8e6"
+  },
+  {
+    "path": "build/native_thread_activity.exp",
+    "bytes": 776,
+    "sha256": "91d695aa5cf00d0ea5ff258df4f59620200d5926e6afc50304417acdbbeaa2f3"
+  },
+  {
+    "path": "build/native_thread_activity.lib",
+    "bytes": 2030,
+    "sha256": "9c9136e07adbfb6b9e5992f2d7543e32b29d6fee3b47d030622f0c779666be3a"
+  },
+  {
+    "path": "build/native_thread_activity.obj",
+    "bytes": 4498,
+    "sha256": "82f4ce1c24d10dd116b4878119cd244a7dbd5bb98b484cb13b94b6f5a96505f2"
+  },
+  {
+    "path": "build-driver-probe.cmd",
+    "bytes": 364,
+    "sha256": "8bb0ed3f15a67dd92d251fb50fc3737b03febaf933fa7f1307eed5e63603c508"
+  },
+  {
+    "path": "build-probes.cmd",
+    "bytes": 885,
+    "sha256": "9d4c57a0a16640db5006ae03724121e90bfce33c7ce7bef20032f8704682a35f"
+  },
+  {
+    "path": "cuda-vsr-route/console.log",
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "cuda-vsr-route/cuda-vsr-frame-memory-regions.jsonl",
+    "bytes": 293125,
+    "sha256": "cf299fd280312f4d8a986ecdc17cb86a0ec5f5dd66fef0f50f65d4c331f9a37b"
+  },
+  {
+    "path": "cuda-vsr-route/cuda-vsr-frame-memory.jsonl",
+    "bytes": 5849,
+    "sha256": "d5f406af423384ea6a910e7f5c18ebb371ab323eef098937c536e3af6b09de8b"
+  },
+  {
+    "path": "cuda-vsr-route/cuda-vsr.log",
+    "bytes": 435,
+    "sha256": "5aed2f95c0080911ff466e47b7007b69c5bc0191edb3a3da903732c7bd4c5b75"
+  },
+  {
+    "path": "cuda-vsr-route/idle-end.json",
+    "bytes": 35,
+    "sha256": "47fc964c7764d1b92abbaf39d59c1f9c3188b956e5b04b990c720f15a00ff620"
+  },
+  {
+    "path": "cuda-vsr-route/idle-start.json",
+    "bytes": 357,
+    "sha256": "ae2e9069eff738c4917938bb8e70548adcd89678f85b00dd3956ff41329b029e"
+  },
+  {
+    "path": "cuda-vsr-route/native-modules.json",
+    "bytes": 5973,
+    "sha256": "1f8ee0c895893776af6adab61bec12038dc49e4a4ab144ae31ce2c00aa73e011"
+  },
+  {
+    "path": "cuda-vsr-route/verification.json",
+    "bytes": 283960,
+    "sha256": "48befd9032588145da14aa0b09231bd032e9a62931c7b451164928a5ab84363f"
+  },
+  {
+    "path": "driver-threads-paired-control-traced/console.jsonl",
+    "bytes": 1029,
+    "sha256": "0ccb464cc017d2cea0d23436fbe89cc222f6250d8b9c5bd78669290a008c896d"
+  },
+  {
+    "path": "driver-threads-paired-control-traced/heap-after.jsonl",
+    "bytes": 2182,
+    "sha256": "b445aebb8dade6a61c47860568334467bb8d0bb558db4b88b3c9a9b5f05dbcc9"
+  },
+  {
+    "path": "driver-threads-paired-control-traced/heap-before.jsonl",
+    "bytes": 1917,
+    "sha256": "75d5773a16bdd2aab3c4599a3044b06e376ef3d7d0cb95e84f3fea8a3fae7387"
+  },
+  {
+    "path": "driver-threads-paired-control-traced/verification.json",
+    "bytes": 6235,
+    "sha256": "7ff7a31b98c3672a8fe68a37035b349faf6ebd1725bce96b98502ae13482394b"
+  },
+  {
+    "path": "driver-threads-paired-control-untraced/console.jsonl",
+    "bytes": 1014,
+    "sha256": "3b52a0263b89f9360406e922d4cc1d716c1e05b3c6d2df56f525721670a840e3"
+  },
+  {
+    "path": "driver-threads-paired-control-untraced/verification.json",
+    "bytes": 6086,
+    "sha256": "0c66e6a281190b8971ed46b754da138cec6c0451e939449764d3d71821ae67e8"
+  },
+  {
+    "path": "driver-threads-paired-nvidia-traced/console.jsonl",
+    "bytes": 1042,
+    "sha256": "5e610dade4983b1850690f6a4f95ec1f66f3134767e3c2df8902b5366a6a1f12"
+  },
+  {
+    "path": "driver-threads-paired-nvidia-traced/heap-after.jsonl",
+    "bytes": 5842,
+    "sha256": "2dd4b6749d7c9501223a59e1eadd560efe7976733495171673c0afa740311c93"
+  },
+  {
+    "path": "driver-threads-paired-nvidia-traced/heap-before.jsonl",
+    "bytes": 3992,
+    "sha256": "1645094de903c89af80f8339222f35cd57ce3112a8d417f24cb739f9e1bb88e8"
+  },
+  {
+    "path": "driver-threads-paired-nvidia-traced/verification.json",
+    "bytes": 8184,
+    "sha256": "da5efcfef2db483c33f371f10b74ef83930bea116e8fbd481e23d42475defb40"
+  },
+  {
+    "path": "driver-threads-paired-nvidia-untraced/console.jsonl",
+    "bytes": 1048,
+    "sha256": "391f771917fcd021c389e1e64a79dee9c6b088bfd085fffb629fb965cd3dec5d"
+  },
+  {
+    "path": "driver-threads-paired-nvidia-untraced/verification.json",
+    "bytes": 6850,
+    "sha256": "ea608445488dbe17d12d8e6507f62cff39f0c2ca7a9fe1cd5b494f68718aa6d1"
+  },
+  {
+    "path": "driver-threads-summary-paired.json",
+    "bytes": 28908,
+    "sha256": "4f96196c4e809dce21eed17e81e83f210a28235f8bcec1debcfb68c55d48f586"
+  },
+  {
+    "path": "installed-module-metadata.json",
+    "bytes": 2313,
+    "sha256": "19a0ca2ceddcd4ba749c137c306c1a5c541b807f8acaabe0fdafd580066c9fab"
+  },
+  {
+    "path": "matrix-allocation-summary.json",
+    "bytes": 131546,
+    "sha256": "55d3323a4ea567908487241907b2e51550697ef3bb4b84156c3e0c584abc14a5"
+  },
+  {
+    "path": "measured-sources/dlss5tool__cuda_frame.py",
+    "bytes": 11419,
+    "sha256": "a58072c945f7f082518f9f6dc8571f3d85cd4ceedb4569f986c3b0fca35bc035"
+  },
+  {
+    "path": "measured-sources/dlss5tool__cuda_session.py",
+    "bytes": 4035,
+    "sha256": "06168586af1cb57c77c0dabf57c0767394651e9541ea00aa461b8e9075c758b1"
+  },
+  {
+    "path": "measured-sources/dlss5tool__cuda_vsr.py",
+    "bytes": 8912,
+    "sha256": "1200f8c792f1675644c2eedc7e6da6d5a9c1ca4f1320553f2a25d0bd5ae96ab4"
+  },
+  {
+    "path": "measured-sources/dlss5tool__cuda_vsr_runtime.py",
+    "bytes": 2378,
+    "sha256": "e93473c3e932ff9f8072ca95dc649af6084331dcfe52cbebcfd446ecf8433c59"
+  },
+  {
+    "path": "measured-sources/dlss5tool__process_job.py",
+    "bytes": 7618,
+    "sha256": "d626e95dfe19b0ae67bd0589d8473713a82a6b524b10b40fe6cb49fc95c83636"
+  },
+  {
+    "path": "measured-sources/native__vsr_cuda__vsr_cuda.cpp",
+    "bytes": 8752,
+    "sha256": "9dac278a288857350ab9577719a9d0dffc1f0cb2878f3ce855b1a0c849852850"
+  },
+  {
+    "path": "measured-sources/scripts__inspect_native_allocations.py",
+    "bytes": 8956,
+    "sha256": "f37968290dbe0a21cd33a1ca2144f53dd5bc5c30024e893466e4eb91cbd784bd"
+  },
+  {
+    "path": "measured-sources/scripts__native_driver_thread_probe.cpp",
+    "bytes": 4344,
+    "sha256": "b6de91d115ea30d79e6d72f4cccf2d0a950509d74d18a9f57c6bd65258934a9f"
+  },
+  {
+    "path": "measured-sources/scripts__native_heap_trace.cpp",
+    "bytes": 13364,
+    "sha256": "f6e1a1961f5ba0ba3744c6f4d0decd2347b941058d3e18e1a53d851c6af7f3e2"
+  },
+  {
+    "path": "measured-sources/scripts__native_thread_activity.cpp",
+    "bytes": 2045,
+    "sha256": "84cb453f95853a80f995170fbfd2b992b40b9b995314bbb29f274322a028a59b"
+  },
+  {
+    "path": "measured-sources/scripts__ngx_updater_lifecycle_probe.py",
+    "bytes": 14955,
+    "sha256": "1318023a98239d5db707e38a642bb36b90f46334a61acfd5c0525f6bf9a3b741"
+  },
+  {
+    "path": "measured-sources/scripts__profile_native_frame_memory.py",
+    "bytes": 24082,
+    "sha256": "97f3af75645fd1f0121f237bf7a81f7b1768bb445bc8c19ed818d052c32c3424"
+  },
+  {
+    "path": "measured-sources/scripts__profile_thread_activity.py",
+    "bytes": 1822,
+    "sha256": "b8130e55594a11710830730c5998e30c587cb7e71cbdebda3ef08a73a2b11c3b"
+  },
+  {
+    "path": "measured-sources/scripts__summarize_native_heap_trace.py",
+    "bytes": 4844,
+    "sha256": "ed78a5768884349f173390935730fff1028c0c5b5dccfc1ecb4e27651e890eaf"
+  },
+  {
+    "path": "measured-sources/scripts__verify_native_driver_threads.py",
+    "bytes": 7769,
+    "sha256": "9d743b4125462a291f6ef6aff810378059e93bf8eb041f65ef6ac629e01a6f5e"
+  },
+  {
+    "path": "measured-sources/scripts__verify_native_worker_recycling.py",
+    "bytes": 23844,
+    "sha256": "6ea7f02027c12176d084168e4979d7819fb893851397f40d29f66f239eef253d"
+  },
+  {
+    "path": "measured-sources/scripts__verify_p0_stability.py",
+    "bytes": 39261,
+    "sha256": "b6ac3cb23226e4858c07fe268e13a5b8e553f114597e905d974711d15a1b334e"
+  },
+  {
+    "path": "native-cuda-cuda-only/console.log",
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "native-cuda-cuda-only/cuda-frame-memory-regions.jsonl",
+    "bytes": 238757,
+    "sha256": "a0a41fe5e6ddb26be7e8c07164a50dc9a13b5fa16809ee058a9c7082b51443be"
+  },
+  {
+    "path": "native-cuda-cuda-only/cuda-frame-memory.jsonl",
+    "bytes": 6806,
+    "sha256": "efa168b352333368853f6abe78d844332dff808fdeca13f93c38c98b1a84919c"
+  },
+  {
+    "path": "native-cuda-cuda-only/events.jsonl",
+    "bytes": 249,
+    "sha256": "49018bf8e54c68221066713f66184825e732e207d5d6bcc9761d0e60b6f16208"
+  },
+  {
+    "path": "native-cuda-cuda-only/memory-samples.json",
+    "bytes": 227960,
+    "sha256": "f9c02ca11567a22a8911a8c77306a876fe53cb87eaabc05b912c9c591f36b225"
+  },
+  {
+    "path": "native-cuda-cuda-only/native-modules.json",
+    "bytes": 5623,
+    "sha256": "595886f212874f44adef5f94b6286615ebeb279b2213266846a3bcf1f1146c8c"
+  },
+  {
+    "path": "native-cuda-cuda-only/result.json",
+    "bytes": 2090,
+    "sha256": "c9ab5a2a54f50ca822a3165dc5243b946d4cb14c41d0ff0f762880ff21e5244e"
+  },
+  {
+    "path": "native-cuda-cuda-only/run-manifest-after.json",
+    "bytes": 6315,
+    "sha256": "d9857edeb5fa65e4c60fc770cac00e263b0708475311357b35c8f69f575c564f"
+  },
+  {
+    "path": "native-cuda-cuda-only/run-manifest-before.json",
+    "bytes": 6315,
+    "sha256": "d9857edeb5fa65e4c60fc770cac00e263b0708475311357b35c8f69f575c564f"
+  },
+  {
+    "path": "native-cuda-cuda-only/settings.json",
+    "bytes": 3405,
+    "sha256": "e6a610d3417275a141c19f3cc8edc37d2d7751cd1b92e286e469a1b2672d6d6c"
+  },
+  {
+    "path": "native-cuda-cuda-only/source-comparison.json",
+    "bytes": 27,
+    "sha256": "f750152e45dc306510411df12c3a41943775140f9788649c4810b85ab9d9ba32"
+  },
+  {
+    "path": "native-cuda-cuda-only/worker-result.json",
+    "bytes": 386,
+    "sha256": "d37eab291c97b6516de4f9bf50c571ca98ea9ae2f72c3f28f26be1e5f60bc837"
+  },
+  {
+    "path": "native-device-cuda-d3d12/console.log",
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "native-device-cuda-d3d12/cuda-frame-memory-regions.jsonl",
+    "bytes": 283127,
+    "sha256": "708c3a9f25cf1b9d77185d9212feb3c13302e2af3fa929258793eb10d10b2d46"
+  },
+  {
+    "path": "native-device-cuda-d3d12/cuda-frame-memory.jsonl",
+    "bytes": 5963,
+    "sha256": "d45469904539d975c8b51ed77f3bf019d621bd9ce63f9f505f66fa18f1e75d74"
+  },
+  {
+    "path": "native-device-cuda-d3d12/events.jsonl",
+    "bytes": 249,
+    "sha256": "3f67415227736ca681b0003ba9a8d926a08f3081d71d2a5b42645e7ee7f6a8ff"
+  },
+  {
+    "path": "native-device-cuda-d3d12/memory-samples.json",
+    "bytes": 230577,
+    "sha256": "35f5a603cca92ecfc449809093b4da6608db789639db936b3e3977a1c3513987"
+  },
+  {
+    "path": "native-device-cuda-d3d12/native-modules.json",
+    "bytes": 6478,
+    "sha256": "cb8afea4bd70550574c5c9a75eb3ced0c98ec257ebf7102f4b23fe6f44b71a4c"
+  },
+  {
+    "path": "native-device-cuda-d3d12/result.json",
+    "bytes": 2097,
+    "sha256": "87a6d2729bd08b8c7e0819089cb4c9b6429d7e00863b8cc8483f5e7611a2ee8d"
+  },
+  {
+    "path": "native-device-cuda-d3d12/run-manifest-after.json",
+    "bytes": 6315,
+    "sha256": "d9857edeb5fa65e4c60fc770cac00e263b0708475311357b35c8f69f575c564f"
+  },
+  {
+    "path": "native-device-cuda-d3d12/run-manifest-before.json",
+    "bytes": 6315,
+    "sha256": "d9857edeb5fa65e4c60fc770cac00e263b0708475311357b35c8f69f575c564f"
+  },
+  {
+    "path": "native-device-cuda-d3d12/settings.json",
+    "bytes": 3405,
+    "sha256": "e6a610d3417275a141c19f3cc8edc37d2d7751cd1b92e286e469a1b2672d6d6c"
+  },
+  {
+    "path": "native-device-cuda-d3d12/source-comparison.json",
+    "bytes": 27,
+    "sha256": "f750152e45dc306510411df12c3a41943775140f9788649c4810b85ab9d9ba32"
+  },
+  {
+    "path": "native-device-cuda-d3d12/worker-result.json",
+    "bytes": 387,
+    "sha256": "b54b5e100f58d6dd7c5861585aab0906fb9c515f8c85b7f931b0583d564798dc"
+  },
+  {
+    "path": "native-device11-cuda-d3d11/console.log",
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "native-device11-cuda-d3d11/cuda-frame-memory-regions.jsonl",
+    "bytes": 291890,
+    "sha256": "d071b8504497b2a6d02d8ed896af9bac2ce28697812dac9f6dae81fb7f97bc53"
+  },
+  {
+    "path": "native-device11-cuda-d3d11/cuda-frame-memory.jsonl",
+    "bytes": 6778,
+    "sha256": "21ed0c5ad43c61c2181b0b3c8fb952ab178e2ab8b63276f17e2bf4ca3a7e4c9c"
+  },
+  {
+    "path": "native-device11-cuda-d3d11/events.jsonl",
+    "bytes": 314,
+    "sha256": "d44417191963e1b3bf7689e1d6f68fdff77bbd4a15fd20b6a412de076ed939b4"
+  },
+  {
+    "path": "native-device11-cuda-d3d11/memory-samples.json",
+    "bytes": 230803,
+    "sha256": "3c25c79ff565d35e3bc9c07e7bf79352fb974fcd976a9117ab7a2b46175baba6"
+  },
+  {
+    "path": "native-device11-cuda-d3d11/native-modules.json",
+    "bytes": 6360,
+    "sha256": "f85ec6473face8263e8232ac0ab3a2741a98aca8a03433266957fe2a86591261"
+  },
+  {
+    "path": "native-device11-cuda-d3d11/result.json",
+    "bytes": 2101,
+    "sha256": "54aa6884ab5b7e6f2bcd5aadad05631e6f0d495c2516b4025f3f17f038396c24"
+  },
+  {
+    "path": "native-device11-cuda-d3d11/run-manifest-after.json",
+    "bytes": 6315,
+    "sha256": "d9857edeb5fa65e4c60fc770cac00e263b0708475311357b35c8f69f575c564f"
+  },
+  {
+    "path": "native-device11-cuda-d3d11/run-manifest-before.json",
+    "bytes": 6315,
+    "sha256": "d9857edeb5fa65e4c60fc770cac00e263b0708475311357b35c8f69f575c564f"
+  },
+  {
+    "path": "native-device11-cuda-d3d11/settings.json",
+    "bytes": 3405,
+    "sha256": "e6a610d3417275a141c19f3cc8edc37d2d7751cd1b92e286e469a1b2672d6d6c"
+  },
+  {
+    "path": "native-device11-cuda-d3d11/source-comparison.json",
+    "bytes": 27,
+    "sha256": "f750152e45dc306510411df12c3a41943775140f9788649c4810b85ab9d9ba32"
+  },
+  {
+    "path": "native-device11-cuda-d3d11/worker-result.json",
+    "bytes": 388,
+    "sha256": "f4f27101cd1fc783babcd60fa06d01ca1b92ff9d3f226c62f4e1ab4fbd39a41b"
+  },
+  {
+    "path": "native-device11-cuda-d3d11-heap/console.log",
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "native-device11-cuda-d3d11-heap/cuda-frame-memory-regions.jsonl",
+    "bytes": 293024,
+    "sha256": "46621dbdd21eff8855b3786817b54f09b68f84cc4800444446bd85a43387a5b9"
+  },
+  {
+    "path": "native-device11-cuda-d3d11-heap/cuda-frame-memory.jsonl",
+    "bytes": 6769,
+    "sha256": "fc31d4198ed5980c25df98252ae81e997fd64fabb139e17ebf4350174960d83c"
+  },
+  {
+    "path": "native-device11-cuda-d3d11-heap/events.jsonl",
+    "bytes": 830,
+    "sha256": "abfcf2dee979d87e9d77936c739cecca34e25a42cccf764782d8c6f68e13fcda"
+  },
+  {
+    "path": "native-device11-cuda-d3d11-heap/memory-samples.json",
+    "bytes": 272114,
+    "sha256": "c07baaa3def898b633c85d68e98fbed0ae90b19ca11dd486bc67677cbbee35ba"
+  },
+  {
+    "path": "native-device11-cuda-d3d11-heap/native-heap-0.jsonl",
+    "bytes": 3118778,
+    "sha256": "ccf9d463e287c44f4c5d5bff839006836479db60a64c20083a9bc462a6df4d1d"
+  },
+  {
+    "path": "native-device11-cuda-d3d11-heap/native-heap-20.jsonl",
+    "bytes": 3119703,
+    "sha256": "d60617a6728d63108fc76d93b72e6214103a4f0967ed0baa4252955ca419aa10"
+  },
+  {
+    "path": "native-device11-cuda-d3d11-heap/native-heap-40.jsonl",
+    "bytes": 3120068,
+    "sha256": "995a26a1da085231939ced20935254c27ad0f3b0d536ada0c14bc53b7949a2b7"
+  },
+  {
+    "path": "native-device11-cuda-d3d11-heap/native-heap-final.jsonl",
+    "bytes": 3120152,
+    "sha256": "99ba559d06e4ea6d9291542853c470f6b9e224f1eea9a08913df4f6c02a9ac10"
+  },
+  {
+    "path": "native-device11-cuda-d3d11-heap/native-modules.json",
+    "bytes": 6451,
+    "sha256": "e7779f6cbce44b1df2592e1e24a393c5152618ccac51928211f1350ff77bd76d"
+  },
+  {
+    "path": "native-device11-cuda-d3d11-heap/result.json",
+    "bytes": 2108,
+    "sha256": "04191c42a6ab888ee99277fef9cfbd6fb7ba82f67f6cab3fb4e2c5234029c140"
+  },
+  {
+    "path": "native-device11-cuda-d3d11-heap/run-manifest-after.json",
+    "bytes": 6516,
+    "sha256": "f2d2d411d622aef5b3d242925161107554cb9804d3bb545dafb2152384ee3a1b"
+  },
+  {
+    "path": "native-device11-cuda-d3d11-heap/run-manifest-before.json",
+    "bytes": 6516,
+    "sha256": "f2d2d411d622aef5b3d242925161107554cb9804d3bb545dafb2152384ee3a1b"
+  },
+  {
+    "path": "native-device11-cuda-d3d11-heap/settings.json",
+    "bytes": 3405,
+    "sha256": "e6a610d3417275a141c19f3cc8edc37d2d7751cd1b92e286e469a1b2672d6d6c"
+  },
+  {
+    "path": "native-device11-cuda-d3d11-heap/source-comparison.json",
+    "bytes": 27,
+    "sha256": "f750152e45dc306510411df12c3a41943775140f9788649c4810b85ab9d9ba32"
+  },
+  {
+    "path": "native-device11-cuda-d3d11-heap/worker-result.json",
+    "bytes": 388,
+    "sha256": "f4f27101cd1fc783babcd60fa06d01ca1b92ff9d3f226c62f4e1ab4fbd39a41b"
+  },
+  {
+    "path": "native-device11-d3d11-only/console.log",
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "native-device11-d3d11-only/device-frame-memory-regions.jsonl",
+    "bytes": 254024,
+    "sha256": "742b40a689d52d6512806570756fb266b2661f46b65665378077c0e6d7e34553"
+  },
+  {
+    "path": "native-device11-d3d11-only/device-frame-memory.jsonl",
+    "bytes": 5877,
+    "sha256": "a1b6432c4b8eb08a6c0d3234b47841d94e193ffe75bd491d708ddf82675eb0e9"
+  },
+  {
+    "path": "native-device11-d3d11-only/events.jsonl",
+    "bytes": 315,
+    "sha256": "fe81893ef04706c0dc4e4029aeb01ebbef4f1136546a6d4c48995088e6758341"
+  },
+  {
+    "path": "native-device11-d3d11-only/memory-samples.json",
+    "bytes": 229391,
+    "sha256": "b04188564aa42462b66e5c57f7bb06818a9779b36a078bb7b0a9290b4f827690"
+  },
+  {
+    "path": "native-device11-d3d11-only/native-modules.json",
+    "bytes": 5549,
+    "sha256": "4ed04e4a44bd4c7b71df353c203241dcd8e85c7c1949c6801a4886d1726d31cb"
+  },
+  {
+    "path": "native-device11-d3d11-only/result.json",
+    "bytes": 2100,
+    "sha256": "5dacc265512c31b311c5b24ba809f32438c8f8334e08ea277d3a61b2b415a85b"
+  },
+  {
+    "path": "native-device11-d3d11-only/run-manifest-after.json",
+    "bytes": 6315,
+    "sha256": "d9857edeb5fa65e4c60fc770cac00e263b0708475311357b35c8f69f575c564f"
+  },
+  {
+    "path": "native-device11-d3d11-only/run-manifest-before.json",
+    "bytes": 6315,
+    "sha256": "d9857edeb5fa65e4c60fc770cac00e263b0708475311357b35c8f69f575c564f"
+  },
+  {
+    "path": "native-device11-d3d11-only/settings.json",
+    "bytes": 3405,
+    "sha256": "e6a610d3417275a141c19f3cc8edc37d2d7751cd1b92e286e469a1b2672d6d6c"
+  },
+  {
+    "path": "native-device11-d3d11-only/source-comparison.json",
+    "bytes": 27,
+    "sha256": "f750152e45dc306510411df12c3a41943775140f9788649c4810b85ab9d9ba32"
+  },
+  {
+    "path": "native-device11-d3d11-only/worker-result.json",
+    "bytes": 393,
+    "sha256": "18c53a122e840a906ef0c293080a010f09d30f515a6a57c679c4260ffc3aa298"
+  },
+  {
+    "path": "native_heap_trace.dll",
+    "bytes": 139776,
+    "sha256": "89b4ca544bbb96c8c162865008c786814da1878d85cb9b42dc166190fc65d36d"
+  },
+  {
+    "path": "native_thread_activity.dll",
+    "bytes": 4096,
+    "sha256": "4a379bc5c9a2b42bc15bb8ee353e6ea451f239aba1bad99a81af7f388fe1a6aa"
+  },
+  {
+    "path": "prepare_evidence.py",
+    "bytes": 6168,
+    "sha256": "b69fb1c39fc82b7d7983a45ef4a4491979ae4698d326c7b22bba770459bd7f0a"
+  },
+  {
+    "path": "probe_cuda_vsr.py",
+    "bytes": 5076,
+    "sha256": "692b03d824f2c179a705a0b9fcfd2ff5aba5d2f51ccdf4f1bf10af0f5798151a"
+  },
+  {
+    "path": "run_driver_probe.py",
+    "bytes": 4395,
+    "sha256": "37cc668b3bbbee5857319afd8d522886a16d4916e8a6d13276cb373f7efbc02c"
+  },
+  {
+    "path": "self-allocate.jsonl",
+    "bytes": 4147,
+    "sha256": "e9cf6e87fe1ba84000902ad02938ffe4352e1d0d607eea91e8d97d0dc602217e"
+  },
+  {
+    "path": "self-check.json",
+    "bytes": 215,
+    "sha256": "ebccb2ba7365958177dad8aa1cbb900c5acb70f1a667185a4b59411660b7d00f"
+  },
+  {
+    "path": "self-free.jsonl",
+    "bytes": 10615,
+    "sha256": "da2276562eb765950e636c645fa736757cdc30318e1922165e0bcdb20d1543f2"
+  },
+  {
+    "path": "self-reallocate.jsonl",
+    "bytes": 8331,
+    "sha256": "bde66a0b49f4ca0e2b156338d3f92909ae17f2dd2f57d8cc50dfdddd8f4d502e"
+  },
+  {
+    "path": "self_check.py",
+    "bytes": 2309,
+    "sha256": "18d3e18131a238d78f05637b5886a499a41a4a472d88d9a0c4fa43b13ebd2a0b"
+  },
+  {
+    "path": "source-index.json",
+    "bytes": 3682,
+    "sha256": "b04622b0f9f10768669b3fb9696747cfec46fd3d16df3a17fdafe92a48191064"
+  },
+  {
+    "path": "source-measured-driver-v1.cpp",
+    "bytes": 4085,
+    "sha256": "517f3ccd789b8b9cc8bd3ad4c3b8430767d439212fcc8a80b4e97d73d20e2d95"
+  },
+  {
+    "path": "summarize_rootcause.py",
+    "bytes": 6272,
+    "sha256": "522928a08d7fa081d72e38886296351f4df8005a59e52971f58f12f86959f7e4"
+  },
+  {
+    "path": "TASK.md",
+    "bytes": 1799,
+    "sha256": "8c4ac739ef7376ed2702c33293a8e924ff1fbbb3d5f7d827f724e7c771631a4c"
+  },
+  {
+    "path": "thread-heap-summary.json",
+    "bytes": 32204,
+    "sha256": "5a1eec6ba2f898d07f50112ac3761710aae37abebef3750c20d57aeedc302e7c"
+  },
+  {
+    "path": "thread-probe-nvidia-driver/console.jsonl",
+    "bytes": 1028,
+    "sha256": "70792bce8365a463d062d6b8ed665fefaaa6f0e41e1f26c08faa3a88b53a9887"
+  },
+  {
+    "path": "thread-probe-nvidia-driver/heap-after.jsonl",
+    "bytes": 5843,
+    "sha256": "20b2cd4a987abfc174f4917528ca7cfbf35d9f1a16e3c4c4cc7512a496fabc31"
+  },
+  {
+    "path": "thread-probe-nvidia-driver/heap-before.jsonl",
+    "bytes": 3993,
+    "sha256": "2670ebb70291a99a83432b91e8efb254b04fb59b8c9f8b3ef947c3f262bed81e"
+  },
+  {
+    "path": "thread-probe-nvidia-driver/result.json",
+    "bytes": 6942,
+    "sha256": "9965b82f08f12c33664c9e368806d76517de5bf091e431eb62217db1b06ae3af"
+  },
+  {
+    "path": "thread-probe-summary.json",
+    "bytes": 398,
+    "sha256": "58316617dafe173db5232bcaf85264c24d39901407f694f4ff59cae23582935b"
+  },
+  {
+    "path": "thread-probe-system-control/console.jsonl",
+    "bytes": 1008,
+    "sha256": "7e167245dee47221070e65182bfe814fcd6f5d931f35f4437d50f66124ad081a"
+  },
+  {
+    "path": "thread-probe-system-control/heap-after.jsonl",
+    "bytes": 2281,
+    "sha256": "71941bdd877fb38d05268fdd1e58f455518b6bc8b6a25811887ba3d5cc61c567"
+  },
+  {
+    "path": "thread-probe-system-control/heap-before.jsonl",
+    "bytes": 2016,
+    "sha256": "3fb6f1f2e4d95eaa5b5069b24e72b8da2eb852c16452288d86d71045dd65d3a3"
+  },
+  {
+    "path": "thread-probe-system-control/result.json",
+    "bytes": 5581,
+    "sha256": "443b8beb83257fd8ed95918e059619569ed209af0b4daea6c5010de164def18e"
+  },
+  {
+    "path": "verification.json",
+    "bytes": 178461,
+    "sha256": "3e958b314ffaed16202c7123acef43c6a5cd646414917c575eae80c4d7141bfd"
+  }
+]

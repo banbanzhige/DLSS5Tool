@@ -1,0 +1,4283 @@
+{
+  "matrix": [
+    {
+      "case": "native-cuda-cuda-only",
+      "pid": 49004,
+      "created": 134388483791837557,
+      "processing_and_exit_passed": true,
+      "source_runtime_unchanged": true,
+      "gpu_snapshots_enabled": false,
+      "remaining_before_recovery": [],
+      "safety_error": null,
+      "worker_private_mib_per_minute": 3.5454320097755434,
+      "worker_private_window_delta": 2531328,
+      "measured_window_seconds": 40.85362505912781,
+      "default_heap_allocated_delta": 267130,
+      "default_heap_span": 59.84492874145508,
+      "thread_starts_delta": 475930,
+      "thread_stops_delta": 475929,
+      "unclassified_threads": 0,
+      "thread_groups": [
+        {
+          "module": "C:\\WINDOWS\\SYSTEM32\\ntdll.dll",
+          "offset": "0x24990",
+          "started_delta": 2
+        },
+        {
+          "module": "C:\\WINDOWS\\System32\\DriverStore\\FileRepository\\nv_dispi.inf_amd64_cee48bd6d33f95ab\\Display.NvContainer\\NvMessageBus.dll",
+          "offset": "0x251510",
+          "started_delta": 475928
+        },
+        {
+          "module": "C:\\WINDOWS\\System32\\DriverStore\\FileRepository\\nv_dispi.inf_amd64_cee48bd6d33f95ab\\nvdiagclt64.dll",
+          "offset": "0x991c0",
+          "started_delta": 0
+        }
+      ],
+      "modules": {
+        "nvcuda.dll": [
+          "C:\\WINDOWS\\SYSTEM32\\nvcuda.DLL"
+        ],
+        "nvcuda64.dll": [
+          "C:\\WINDOWS\\system32\\DriverStore\\FileRepository\\nv_dispi.inf_amd64_cee48bd6d33f95ab\\nvcuda64.dll"
+        ],
+        "NvMessageBus.dll": [
+          "C:\\WINDOWS\\System32\\DriverStore\\FileRepository\\nv_dispi.inf_amd64_cee48bd6d33f95ab\\Display.NvContainer\\NvMessageBus.dll"
+        ],
+        "nvwgf2umx.dll": [],
+        "nvdiagclt64.dll": [
+          "C:\\WINDOWS\\System32\\DriverStore\\FileRepository\\nv_dispi.inf_amd64_cee48bd6d33f95ab\\nvdiagclt64.dll"
+        ]
+      },
+      "heap_traces": [],
+      "long_term_memory_plateau_verified": false
+    },
+    {
+      "case": "native-device-cuda-d3d12",
+      "pid": 47528,
+      "created": 134388485658745152,
+      "processing_and_exit_passed": true,
+      "source_runtime_unchanged": true,
+      "gpu_snapshots_enabled": false,
+      "remaining_before_recovery": [],
+      "safety_error": null,
+      "worker_private_mib_per_minute": 76.93624051259579,
+      "worker_private_window_delta": 54956032,
+      "measured_window_seconds": 40.87292742729187,
+      "default_heap_allocated_delta": 74014574,
+      "default_heap_span": 59.73863124847412,
+      "thread_starts_delta": 401577,
+      "thread_stops_delta": 401576,
+      "unclassified_threads": 0,
+      "thread_groups": [
+        {
+          "module": "C:\\WINDOWS\\System32\\DriverStore\\FileRepository\\nv_dispi.inf_amd64_cee48bd6d33f95ab\\Display.NvContainer\\NvMessageBus.dll",
+          "offset": "0x251510",
+          "started_delta": 401575
+        },
+        {
+          "module": "C:\\WINDOWS\\SYSTEM32\\ntdll.dll",
+          "offset": "0x24990",
+          "started_delta": 2
+        }
+      ],
+      "modules": {
+        "nvcuda.dll": [
+          "C:\\WINDOWS\\SYSTEM32\\nvcuda.DLL"
+        ],
+        "nvcuda64.dll": [
+          "C:\\WINDOWS\\system32\\DriverStore\\FileRepository\\nv_dispi.inf_amd64_cee48bd6d33f95ab\\nvcuda64.dll"
+        ],
+        "NvMessageBus.dll": [
+          "C:\\WINDOWS\\System32\\DriverStore\\FileRepository\\nv_dispi.inf_amd64_cee48bd6d33f95ab\\Display.NvContainer\\NvMessageBus.dll"
+        ],
+        "nvwgf2umx.dll": [
+          "C:\\WINDOWS\\System32\\DriverStore\\FileRepository\\nv_dispi.inf_amd64_cee48bd6d33f95ab\\nvwgf2umx.dll"
+        ],
+        "nvdiagclt64.dll": [
+          "C:\\WINDOWS\\System32\\DriverStore\\FileRepository\\nv_dispi.inf_amd64_cee48bd6d33f95ab\\nvdiagclt64.dll"
+        ]
+      },
+      "heap_traces": [],
+      "long_term_memory_plateau_verified": false
+    },
+    {
+      "case": "native-device11-cuda-d3d11",
+      "pid": 42904,
+      "created": 134388485034187381,
+      "processing_and_exit_passed": true,
+      "source_runtime_unchanged": true,
+      "gpu_snapshots_enabled": false,
+      "remaining_before_recovery": [],
+      "safety_error": null,
+      "worker_private_mib_per_minute": 77.0612302197541,
+      "worker_private_window_delta": 55259136,
+      "measured_window_seconds": 41.03169798851013,
+      "default_heap_allocated_delta": 73809344,
+      "default_heap_span": 59.85713815689087,
+      "thread_starts_delta": 401102,
+      "thread_stops_delta": 401102,
+      "unclassified_threads": 0,
+      "thread_groups": [
+        {
+          "module": "C:\\WINDOWS\\System32\\DriverStore\\FileRepository\\nv_dispi.inf_amd64_cee48bd6d33f95ab\\Display.NvContainer\\NvMessageBus.dll",
+          "offset": "0x251510",
+          "started_delta": 401100
+        },
+        {
+          "module": "C:\\WINDOWS\\System32\\DriverStore\\FileRepository\\nv_dispi.inf_amd64_cee48bd6d33f95ab\\nvwgf2umx.dll",
+          "offset": "0xfd367c",
+          "started_delta": 0
+        },
+        {
+          "module": "C:\\WINDOWS\\SYSTEM32\\ntdll.dll",
+          "offset": "0x24990",
+          "started_delta": 2
+        }
+      ],
+      "modules": {
+        "nvcuda.dll": [
+          "C:\\WINDOWS\\SYSTEM32\\nvcuda.DLL"
+        ],
+        "nvcuda64.dll": [
+          "C:\\WINDOWS\\system32\\DriverStore\\FileRepository\\nv_dispi.inf_amd64_cee48bd6d33f95ab\\nvcuda64.dll"
+        ],
+        "NvMessageBus.dll": [
+          "C:\\WINDOWS\\System32\\DriverStore\\FileRepository\\nv_dispi.inf_amd64_cee48bd6d33f95ab\\Display.NvContainer\\NvMessageBus.dll"
+        ],
+        "nvwgf2umx.dll": [
+          "C:\\WINDOWS\\System32\\DriverStore\\FileRepository\\nv_dispi.inf_amd64_cee48bd6d33f95ab\\nvwgf2umx.dll"
+        ],
+        "nvdiagclt64.dll": [
+          "C:\\WINDOWS\\System32\\DriverStore\\FileRepository\\nv_dispi.inf_amd64_cee48bd6d33f95ab\\nvdiagclt64.dll"
+        ]
+      },
+      "heap_traces": [],
+      "long_term_memory_plateau_verified": false
+    },
+    {
+      "case": "native-device11-cuda-d3d11-heap",
+      "pid": 57372,
+      "created": 134388487965437622,
+      "processing_and_exit_passed": true,
+      "source_runtime_unchanged": true,
+      "gpu_snapshots_enabled": false,
+      "remaining_before_recovery": [],
+      "safety_error": null,
+      "worker_private_mib_per_minute": 19.395932484748354,
+      "worker_private_window_delta": 16846848.0,
+      "measured_window_seconds": 49.70033669471741,
+      "default_heap_allocated_delta": 17441624,
+      "default_heap_span": 58.741316080093384,
+      "thread_starts_delta": 93875,
+      "thread_stops_delta": 93874,
+      "unclassified_threads": 0,
+      "thread_groups": [
+        {
+          "module": "C:\\WINDOWS\\System32\\DriverStore\\FileRepository\\nv_dispi.inf_amd64_cee48bd6d33f95ab\\Display.NvContainer\\NvMessageBus.dll",
+          "offset": "0x251510",
+          "started_delta": 93873
+        },
+        {
+          "module": "C:\\WINDOWS\\System32\\DriverStore\\FileRepository\\nv_dispi.inf_amd64_cee48bd6d33f95ab\\nvwgf2umx.dll",
+          "offset": "0xfd367c",
+          "started_delta": 0
+        },
+        {
+          "module": "C:\\WINDOWS\\SYSTEM32\\ntdll.dll",
+          "offset": "0x24990",
+          "started_delta": 2
+        }
+      ],
+      "modules": {
+        "nvcuda.dll": [
+          "C:\\WINDOWS\\SYSTEM32\\nvcuda.DLL"
+        ],
+        "nvcuda64.dll": [
+          "C:\\WINDOWS\\system32\\DriverStore\\FileRepository\\nv_dispi.inf_amd64_cee48bd6d33f95ab\\nvcuda64.dll"
+        ],
+        "NvMessageBus.dll": [
+          "C:\\WINDOWS\\System32\\DriverStore\\FileRepository\\nv_dispi.inf_amd64_cee48bd6d33f95ab\\Display.NvContainer\\NvMessageBus.dll"
+        ],
+        "nvwgf2umx.dll": [
+          "C:\\WINDOWS\\System32\\DriverStore\\FileRepository\\nv_dispi.inf_amd64_cee48bd6d33f95ab\\nvwgf2umx.dll"
+        ],
+        "nvdiagclt64.dll": [
+          "C:\\WINDOWS\\System32\\DriverStore\\FileRepository\\nv_dispi.inf_amd64_cee48bd6d33f95ab\\nvdiagclt64.dll"
+        ]
+      },
+      "heap_traces": [
+        {
+          "file": "native-heap-0.jsonl",
+          "pid": 57372,
+          "patches": 221,
+          "stacks": 8192,
+          "object_capacity": 524288,
+          "dropped_objects": 0,
+          "dropped_stacks": 318245,
+          "unknown_frees": 321582,
+          "observed_allocated": 96325413,
+          "observed_freed": 92688579,
+          "scope": "default heap; existing IAT references only",
+          "observed_live_bytes": 3636834,
+          "live_by_first_captured_module": {
+            "C:\\WINDOWS\\System32\\ucrtbase.dll": 2999026,
+            "C:\\WINDOWS\\system32\\DriverStore\\FileRepository\\nv_dispi.inf_amd64_cee48bd6d33f95ab\\nvapi64_impl.dll": 0,
+            "C:\\WINDOWS\\System32\\KERNELBASE.dll": 1096,
+            "F:\\project\\DLSS5Tool\\.venv\\Lib\\site-packages\\cv2\\cv2.pyd": 0,
+            "C:\\WINDOWS\\System32\\DriverStore\\FileRepository\\nv_dispi.inf_amd64_cee48bd6d33f95ab\\Display.NvContainer\\NvMessageBus.dll": 1728,
+            "C:\\WINDOWS\\SYSTEM32\\nvcuda.DLL": 0,
+            "C:\\WINDOWS\\system32\\DriverStore\\FileRepository\\nv_dispi.inf_amd64_cee48bd6d33f95ab\\nvcuda64.dll": 0,
+            "C:\\WINDOWS\\SYSTEM32\\nvapi64.dll": 0,
+            "C:\\WINDOWS\\System32\\DriverStore\\FileRepository\\nv_dispi.inf_amd64_cee48bd6d33f95ab\\nvdxgdmal64.dll": 0,
+            "C:\\WINDOWS\\System32\\DriverStore\\FileRepository\\nv_dispi.inf_amd64_cee48bd6d33f95ab\\nvdiagclt64.dll": 0,
+            "C:\\WINDOWS\\System32\\DriverStore\\FileRepository\\nv_dispi.inf_amd64_cee48bd6d33f95ab\\nvobjectloader64.dll": 0,
+            "C:\\WINDOWS\\System32\\DriverStore\\FileRepository\\nv_dispi.inf_amd64_cee48bd6d33f95ab\\nvldumdx.dll": 0,
+            "C:\\WINDOWS\\System32\\DriverStore\\FileRepository\\nv_dispi.inf_amd64_cee48bd6d33f95ab\\nvgpucomp64.dll": 0,
+            "C:\\WINDOWS\\System32\\DriverStore\\FileRepository\\nv_dispi.inf_amd64_cee48bd6d33f95ab\\NvMemMapStoragex.dll": 0,
+            "C:\\WINDOWS\\System32\\DriverStore\\FileRepository\\nv_dispi.inf_amd64_cee48bd6d33f95ab\\nvwgf2umx.dll": 632592,
+            "C:\\WINDOWS\\system32\\nvspcap64.dll": 0,
+            "C:\\WINDOWS\\System32\\DriverStore\\FileRepository\\nv_dispi.inf_amd64_cee48bd6d33f95ab\\nvppex.dll": 0,
+            "C:\\WINDOWS\\System32\\RPCRT4.dll": 0,
+            "C:\\WINDOWS\\System32\\bcryptprimitives.dll": 2128,
+            "C:\\WINDOWS\\System32\\WS2_32.dll": 264
+          },
+          "largest_observed_live_stacks": [
+            {
+              "kind": "stack",
+              "index": 554,
+              "allocated": 632592,
+              "freed": 0,
+              "live": 632592,
+              "allocations": 3438,
+              "live_count": 3438,
+              "frames": [
+                "0x7ffb30f06b6c",
+                "0x7ffb30ed46e5",
+                "0x7ffb30ed499b",
+                "0x7ffb30ed4df2",
+                "0x7ffb300f2802",
+                "0x7ffb4933147a",
+                "0x7ffb4922b2e3",
+                "0x7ffb4922b085",
+                "0x7ffb49292b53",
+                "0x7ffb49292a02",
+                "0x7ffb492eff5e"
+              ],
+              "resolved": [
+                {
+                  "module": "C:\\WINDOWS\\System32\\DriverStore\\FileRepository\\nv_dispi.inf_amd64_cee48bd6d33f95ab\\nvwgf2umx.dll",
+                  "offset": "0xfe6b6c"
+                },
+                {
+                  "module": "C:\\WINDOWS\\System32\\DriverStore\\FileRepository\\nv_dispi.inf_amd64_cee48bd6d33f95ab\\nvwgf2umx.dll",
+                  "offset": "0xfb46e5"
+                },
+                {
+                  "module": "C:\\WINDOWS\\System32\\DriverStore\\FileRepository\\nv_dispi.inf_amd64_cee48bd6d33f95ab\\nvwgf2umx.dll",
+                  "offset": "0xfb499b"
+                },
+                {
+                  "module": "C:\\WINDOWS\\System32\\DriverStore\\FileRepository\\nv_dispi.inf_amd64_cee48bd6d33f95ab\\nvwgf2umx.dll",
+                  "offset": "0xfb4df2"
+                },
+                {
+                  "module": "C:\\WINDOWS\\System32\\DriverStore\\FileRepository\\nv_dispi.inf_amd64_cee48bd6d33f95ab\\nvwgf2umx.dll",
+                  "offset": "0x1d2802"
+                },
+                {
+                  "module": "C:\\WINDOWS\\SYSTEM32\\ntdll.dll",
+                  "offset": "0x12147a"
+                },
+                {
+                  "module": "C:\\WINDOWS\\SYSTEM32\\ntdll.dll",
+                  "offset": "0x1b2e3"
+                },
+                {
+                  "module": "C:\\WINDOWS\\SYSTEM32\\ntdll.dll",
+                  "offset": "0x1b085"
+                },
+                {
+                  "module": "C:\\WINDOWS\\SYSTEM32\\ntdll.dll",
+                  "offset": "0x82b53"
+                },
+                {
+                  "module": "C:\\WINDOWS\\SYSTEM32\\ntdll.dll",
+                  "offset": "0x82a02"
+                },
+                {
+                  "module": "C:\\WINDOWS\\SYSTEM32\\ntdll.dll",
+                  "offset": "0xdff5e"
+                }
+              ]
+            },
+            {
+              "kind": "stack",
+              "index": 3901,
+              "allocated": 243864,
+              "freed": 0,
+              "live": 243864,
+              "allocations": 297,
+              "live_count": 297,
+              "frames": [
+                "0x7ffb466250d9",
+                "0x7ffaa74d2585",
+                "0x7ffaa724dd80",
+                "0x7ffaa74d1f56",
+                "0x7ffaa74d203e",
+                "0x7ffaa72f50e0",
+                "0x7ffaa72f45f5",
+                "0x7ffaa72f4398",
+                "0x7ffaa72f448f",
+                "0x7ffaa72f4398",
+                "0x7ffaa72f448f",
+                "0x7ffaa73263af",
+                "0x7ffaa7326339",
+                "0x7ffaa73262b7",
+                "0x7ffaa7255937",
+                "0x7ffaa7252cb7"
+              ],
+              "resolved": [
+                {
+                  "module": "C:\\WINDOWS\\System32\\ucrtbase.dll",
+                  "offset": "0x50d9"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x2b2585"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x2dd80"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x2b1f56"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x2b203e"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0xd50e0"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0xd45f5"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0xd4398"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0xd448f"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0xd4398"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0xd448f"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x1063af"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x106339"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x1062b7"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x35937"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x32cb7"
+                }
+              ]
+            },
+            {
+              "kind": "stack",
+              "index": 4620,
+              "allocated": 154144,
+              "freed": 4920,
+              "live": 149224,
+              "allocations": 156,
+              "live_count": 151,
+              "frames": [
+                "0x7ffb466250d9",
+                "0x7ffaa74d2585",
+                "0x7ffaa724dd80",
+                "0x7ffaa74d1f56",
+                "0x7ffaa74d203e",
+                "0x7ffaa724d9d7",
+                "0x7ffaa726c85a",
+                "0x7ffaa726c4b1",
+                "0x7ffaa726c56e",
+                "0x7ffaa726c6d7",
+                "0x7ffaa729a6d2",
+                "0x7ffaa72896af",
+                "0x7ffaa728922d",
+                "0x7ffaa7287fc7",
+                "0x7ffaa7287f69",
+                "0x7ffaa7287dfa"
+              ],
+              "resolved": [
+                {
+                  "module": "C:\\WINDOWS\\System32\\ucrtbase.dll",
+                  "offset": "0x50d9"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x2b2585"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x2dd80"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x2b1f56"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x2b203e"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x2d9d7"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x4c85a"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x4c4b1"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x4c56e"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x4c6d7"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x7a6d2"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x696af"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x6922d"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x67fc7"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x67f69"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x67dfa"
+                }
+              ]
+            },
+            {
+              "kind": "stack",
+              "index": 4633,
+              "allocated": 96000,
+              "freed": 3840,
+              "live": 92160,
+              "allocations": 125,
+              "live_count": 120,
+              "frames": [
+                "0x7ffb466250d9",
+                "0x7ffaa74d2585",
+                "0x7ffaa724dd80",
+                "0x7ffaa74d1f56",
+                "0x7ffaa74d203e",
+                "0x7ffaa7383eb2",
+                "0x7ffaa7263f15",
+                "0x7ffaa7264f6f",
+                "0x7ffaa726c591",
+                "0x7ffaa726c6d7",
+                "0x7ffaa729a6d2",
+                "0x7ffaa72896af",
+                "0x7ffaa728922d",
+                "0x7ffaa7287fc7",
+                "0x7ffaa7287f69",
+                "0x7ffaa7287dfa"
+              ],
+              "resolved": [
+                {
+                  "module": "C:\\WINDOWS\\System32\\ucrtbase.dll",
+                  "offset": "0x50d9"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x2b2585"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x2dd80"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x2b1f56"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x2b203e"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x163eb2"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x43f15"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x44f6f"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x4c591"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x4c6d7"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x7a6d2"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x696af"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x6922d"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x67fc7"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x67f69"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x67dfa"
+                }
+              ]
+            },
+            {
+              "kind": "stack",
+              "index": 4582,
+              "allocated": 78840,
+              "freed": 0,
+              "live": 78840,
+              "allocations": 1095,
+              "live_count": 1095,
+              "frames": [
+                "0x7ffb466250d9",
+                "0x7ffaa74d1c26",
+                "0x7ffaa74d1dde",
+                "0x7ffaa74d1f87",
+                "0x7ffaa74d203e",
+                "0x7ffaa7275568",
+                "0x7ffaa725769b",
+                "0x7ffaa7288e20",
+                "0x7ffaa7287dc4",
+                "0x7ffaa7252604",
+                "0x7ffaa7251f85",
+                "0x7ffaa7257081",
+                "0x7ffaa7288e20",
+                "0x7ffaa732e746",
+                "0x7ffaa732efb8",
+                "0x7ffaa732ee4e"
+              ],
+              "resolved": [
+                {
+                  "module": "C:\\WINDOWS\\System32\\ucrtbase.dll",
+                  "offset": "0x50d9"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x2b1c26"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x2b1dde"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x2b1f87"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x2b203e"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x55568"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x3769b"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x68e20"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x67dc4"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x32604"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x31f85"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x37081"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x68e20"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x10e746"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x10efb8"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x10ee4e"
+                }
+              ]
+            },
+            {
+              "kind": "stack",
+              "index": 5818,
+              "allocated": 146816,
+              "freed": 73072,
+              "live": 73744,
+              "allocations": 8,
+              "live_count": 1,
+              "frames": [
+                "0x7ffb466250d9",
+                "0x7ffaa74d2585",
+                "0x7ffaa724dd80",
+                "0x7ffaa74d1f56",
+                "0x7ffaa74d203e",
+                "0x7ffaa7358571",
+                "0x7ffaa7274bea",
+                "0x7ffaa7274db5",
+                "0x7ffaa6d610a4",
+                "0x7ffaa731baeb",
+                "0x7ffaa731b929",
+                "0x7ffaa73d0724",
+                "0x7ffaa724bbe1",
+                "0x7ffaa72a4145",
+                "0x7ffaa72a408f",
+                "0x7ffaa7259a9a"
+              ],
+              "resolved": [
+                {
+                  "module": "C:\\WINDOWS\\System32\\ucrtbase.dll",
+                  "offset": "0x50d9"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x2b2585"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x2dd80"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x2b1f56"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x2b203e"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x138571"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x54bea"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x54db5"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\DLLs\\_ssl.pyd",
+                  "offset": "0x10a4"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0xfbaeb"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0xfb929"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x1b0724"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x2bbe1"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x84145"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x8408f"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x39a9a"
+                }
+              ]
+            },
+            {
+              "kind": "stack",
+              "index": 6128,
+              "allocated": 68224,
+              "freed": 2880,
+              "live": 65344,
+              "allocations": 2132,
+              "live_count": 2042,
+              "frames": [
+                "0x7ffb466250d9",
+                "0x7ffaa72f0ee8",
+                "0x7ffaa74d1efe",
+                "0x7ffaa74d1f87",
+                "0x7ffaa74d203e",
+                "0x7ffaa733898b",
+                "0x7ffaa72561c9",
+                "0x7ffaa7252cb7",
+                "0x7ffaa7252190",
+                "0x7ffaa72ae2f1",
+                "0x7ffaa72ad5a3",
+                "0x7ffaa727da2d",
+                "0x7ffaa7252190",
+                "0x7ffaa7251f85",
+                "0x7ffaa725a278",
+                "0x7ffaa7288e20"
+              ],
+              "resolved": [
+                {
+                  "module": "C:\\WINDOWS\\System32\\ucrtbase.dll",
+                  "offset": "0x50d9"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0xd0ee8"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x2b1efe"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x2b1f87"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x2b203e"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x11898b"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x361c9"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x32cb7"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x32190"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x8e2f1"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x8d5a3"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x5da2d"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x32190"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x31f85"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x3a278"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x68e20"
+                }
+              ]
+            },
+            {
+              "kind": "stack",
+              "index": 5813,
+              "allocated": 53824,
+              "freed": 0,
+              "live": 53824,
+              "allocations": 1682,
+              "live_count": 1682,
+              "frames": [
+                "0x7ffb466250d9",
+                "0x7ffaa72f0ee8",
+                "0x7ffaa74d1efe",
+                "0x7ffaa74d1f87",
+                "0x7ffaa74d203e",
+                "0x7ffaa724d370",
+                "0x7ffaa724c6f8",
+                "0x7ffaa6d61069",
+                "0x7ffaa731baeb",
+                "0x7ffaa731b929",
+                "0x7ffaa73d0724",
+                "0x7ffaa724bbe1",
+                "0x7ffaa72a4145",
+                "0x7ffaa72a408f",
+                "0x7ffaa7259a9a",
+                "0x7ffaa7252cb7"
+              ],
+              "resolved": [
+                {
+                  "module": "C:\\WINDOWS\\System32\\ucrtbase.dll",
+                  "offset": "0x50d9"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0xd0ee8"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x2b1efe"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x2b1f87"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x2b203e"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x2d370"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x2c6f8"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\DLLs\\_ssl.pyd",
+                  "offset": "0x1069"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0xfbaeb"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0xfb929"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x1b0724"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x2bbe1"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x84145"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x8408f"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x39a9a"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x32cb7"
+                }
+              ]
+            }
+          ],
+          "limitations": "IAT coverage only; no release through cached function pointers or subsequently loaded imports. Unobserved releases can overstate live bytes; failed frees can understate them. Optimized tail calls can omit frames; no private NVIDIA symbols. Instrumentation changes allocation timing and has fixed native table overhead."
+        },
+        {
+          "file": "native-heap-20.jsonl",
+          "pid": 57372,
+          "patches": 221,
+          "stacks": 8192,
+          "object_capacity": 524288,
+          "dropped_objects": 0,
+          "dropped_stacks": 633131,
+          "unknown_frees": 718082,
+          "observed_allocated": 887120833,
+          "observed_freed": 877466267,
+          "scope": "default heap; existing IAT references only",
+          "observed_live_bytes": 9654566,
+          "live_by_first_captured_module": {
+            "C:\\WINDOWS\\System32\\ucrtbase.dll": 3002382,
+            "C:\\WINDOWS\\system32\\DriverStore\\FileRepository\\nv_dispi.inf_amd64_cee48bd6d33f95ab\\nvapi64_impl.dll": 1096,
+            "C:\\WINDOWS\\System32\\KERNELBASE.dll": 1096,
+            "F:\\project\\DLSS5Tool\\.venv\\Lib\\site-packages\\cv2\\cv2.pyd": 1728,
+            "C:\\WINDOWS\\System32\\DriverStore\\FileRepository\\nv_dispi.inf_amd64_cee48bd6d33f95ab\\Display.NvContainer\\NvMessageBus.dll": 1320,
+            "C:\\WINDOWS\\SYSTEM32\\nvcuda.DLL": 1096,
+            "C:\\WINDOWS\\system32\\DriverStore\\FileRepository\\nv_dispi.inf_amd64_cee48bd6d33f95ab\\nvcuda64.dll": 1096,
+            "C:\\WINDOWS\\SYSTEM32\\nvapi64.dll": 1096,
+            "C:\\WINDOWS\\System32\\DriverStore\\FileRepository\\nv_dispi.inf_amd64_cee48bd6d33f95ab\\nvdxgdmal64.dll": 1096,
+            "C:\\WINDOWS\\System32\\DriverStore\\FileRepository\\nv_dispi.inf_amd64_cee48bd6d33f95ab\\nvdiagclt64.dll": 1096,
+            "C:\\WINDOWS\\System32\\DriverStore\\FileRepository\\nv_dispi.inf_amd64_cee48bd6d33f95ab\\nvobjectloader64.dll": 1096,
+            "C:\\WINDOWS\\System32\\DriverStore\\FileRepository\\nv_dispi.inf_amd64_cee48bd6d33f95ab\\nvldumdx.dll": 1096,
+            "C:\\WINDOWS\\System32\\DriverStore\\FileRepository\\nv_dispi.inf_amd64_cee48bd6d33f95ab\\nvgpucomp64.dll": 0,
+            "C:\\WINDOWS\\System32\\DriverStore\\FileRepository\\nv_dispi.inf_amd64_cee48bd6d33f95ab\\NvMemMapStoragex.dll": 0,
+            "C:\\WINDOWS\\System32\\DriverStore\\FileRepository\\nv_dispi.inf_amd64_cee48bd6d33f95ab\\nvwgf2umx.dll": 6636880,
+            "C:\\WINDOWS\\system32\\nvspcap64.dll": 0,
+            "C:\\WINDOWS\\System32\\DriverStore\\FileRepository\\nv_dispi.inf_amd64_cee48bd6d33f95ab\\nvppex.dll": 0,
+            "C:\\WINDOWS\\System32\\RPCRT4.dll": 0,
+            "C:\\WINDOWS\\System32\\bcryptprimitives.dll": 2128,
+            "C:\\WINDOWS\\System32\\WS2_32.dll": 264
+          },
+          "largest_observed_live_stacks": [
+            {
+              "kind": "stack",
+              "index": 554,
+              "allocated": 6636880,
+              "freed": 0,
+              "live": 6636880,
+              "allocations": 36070,
+              "live_count": 36070,
+              "frames": [
+                "0x7ffb30f06b6c",
+                "0x7ffb30ed46e5",
+                "0x7ffb30ed499b",
+                "0x7ffb30ed4df2",
+                "0x7ffb300f2802",
+                "0x7ffb4933147a",
+                "0x7ffb4922b2e3",
+                "0x7ffb4922b085",
+                "0x7ffb49292b53",
+                "0x7ffb49292a02",
+                "0x7ffb492eff5e"
+              ],
+              "resolved": [
+                {
+                  "module": "C:\\WINDOWS\\System32\\DriverStore\\FileRepository\\nv_dispi.inf_amd64_cee48bd6d33f95ab\\nvwgf2umx.dll",
+                  "offset": "0xfe6b6c"
+                },
+                {
+                  "module": "C:\\WINDOWS\\System32\\DriverStore\\FileRepository\\nv_dispi.inf_amd64_cee48bd6d33f95ab\\nvwgf2umx.dll",
+                  "offset": "0xfb46e5"
+                },
+                {
+                  "module": "C:\\WINDOWS\\System32\\DriverStore\\FileRepository\\nv_dispi.inf_amd64_cee48bd6d33f95ab\\nvwgf2umx.dll",
+                  "offset": "0xfb499b"
+                },
+                {
+                  "module": "C:\\WINDOWS\\System32\\DriverStore\\FileRepository\\nv_dispi.inf_amd64_cee48bd6d33f95ab\\nvwgf2umx.dll",
+                  "offset": "0xfb4df2"
+                },
+                {
+                  "module": "C:\\WINDOWS\\System32\\DriverStore\\FileRepository\\nv_dispi.inf_amd64_cee48bd6d33f95ab\\nvwgf2umx.dll",
+                  "offset": "0x1d2802"
+                },
+                {
+                  "module": "C:\\WINDOWS\\SYSTEM32\\ntdll.dll",
+                  "offset": "0x12147a"
+                },
+                {
+                  "module": "C:\\WINDOWS\\SYSTEM32\\ntdll.dll",
+                  "offset": "0x1b2e3"
+                },
+                {
+                  "module": "C:\\WINDOWS\\SYSTEM32\\ntdll.dll",
+                  "offset": "0x1b085"
+                },
+                {
+                  "module": "C:\\WINDOWS\\SYSTEM32\\ntdll.dll",
+                  "offset": "0x82b53"
+                },
+                {
+                  "module": "C:\\WINDOWS\\SYSTEM32\\ntdll.dll",
+                  "offset": "0x82a02"
+                },
+                {
+                  "module": "C:\\WINDOWS\\SYSTEM32\\ntdll.dll",
+                  "offset": "0xdff5e"
+                }
+              ]
+            },
+            {
+              "kind": "stack",
+              "index": 3901,
+              "allocated": 243864,
+              "freed": 0,
+              "live": 243864,
+              "allocations": 297,
+              "live_count": 297,
+              "frames": [
+                "0x7ffb466250d9",
+                "0x7ffaa74d2585",
+                "0x7ffaa724dd80",
+                "0x7ffaa74d1f56",
+                "0x7ffaa74d203e",
+                "0x7ffaa72f50e0",
+                "0x7ffaa72f45f5",
+                "0x7ffaa72f4398",
+                "0x7ffaa72f448f",
+                "0x7ffaa72f4398",
+                "0x7ffaa72f448f",
+                "0x7ffaa73263af",
+                "0x7ffaa7326339",
+                "0x7ffaa73262b7",
+                "0x7ffaa7255937",
+                "0x7ffaa7252cb7"
+              ],
+              "resolved": [
+                {
+                  "module": "C:\\WINDOWS\\System32\\ucrtbase.dll",
+                  "offset": "0x50d9"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x2b2585"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x2dd80"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x2b1f56"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x2b203e"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0xd50e0"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0xd45f5"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0xd4398"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0xd448f"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0xd4398"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0xd448f"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x1063af"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x106339"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x1062b7"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x35937"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x32cb7"
+                }
+              ]
+            },
+            {
+              "kind": "stack",
+              "index": 4620,
+              "allocated": 154144,
+              "freed": 4920,
+              "live": 149224,
+              "allocations": 156,
+              "live_count": 151,
+              "frames": [
+                "0x7ffb466250d9",
+                "0x7ffaa74d2585",
+                "0x7ffaa724dd80",
+                "0x7ffaa74d1f56",
+                "0x7ffaa74d203e",
+                "0x7ffaa724d9d7",
+                "0x7ffaa726c85a",
+                "0x7ffaa726c4b1",
+                "0x7ffaa726c56e",
+                "0x7ffaa726c6d7",
+                "0x7ffaa729a6d2",
+                "0x7ffaa72896af",
+                "0x7ffaa728922d",
+                "0x7ffaa7287fc7",
+                "0x7ffaa7287f69",
+                "0x7ffaa7287dfa"
+              ],
+              "resolved": [
+                {
+                  "module": "C:\\WINDOWS\\System32\\ucrtbase.dll",
+                  "offset": "0x50d9"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x2b2585"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x2dd80"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x2b1f56"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x2b203e"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x2d9d7"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x4c85a"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x4c4b1"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x4c56e"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x4c6d7"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x7a6d2"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x696af"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x6922d"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x67fc7"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x67f69"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x67dfa"
+                }
+              ]
+            },
+            {
+              "kind": "stack",
+              "index": 4633,
+              "allocated": 96000,
+              "freed": 3840,
+              "live": 92160,
+              "allocations": 125,
+              "live_count": 120,
+              "frames": [
+                "0x7ffb466250d9",
+                "0x7ffaa74d2585",
+                "0x7ffaa724dd80",
+                "0x7ffaa74d1f56",
+                "0x7ffaa74d203e",
+                "0x7ffaa7383eb2",
+                "0x7ffaa7263f15",
+                "0x7ffaa7264f6f",
+                "0x7ffaa726c591",
+                "0x7ffaa726c6d7",
+                "0x7ffaa729a6d2",
+                "0x7ffaa72896af",
+                "0x7ffaa728922d",
+                "0x7ffaa7287fc7",
+                "0x7ffaa7287f69",
+                "0x7ffaa7287dfa"
+              ],
+              "resolved": [
+                {
+                  "module": "C:\\WINDOWS\\System32\\ucrtbase.dll",
+                  "offset": "0x50d9"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x2b2585"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x2dd80"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x2b1f56"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x2b203e"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x163eb2"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x43f15"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x44f6f"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x4c591"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x4c6d7"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x7a6d2"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x696af"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x6922d"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x67fc7"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x67f69"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x67dfa"
+                }
+              ]
+            },
+            {
+              "kind": "stack",
+              "index": 4582,
+              "allocated": 78840,
+              "freed": 0,
+              "live": 78840,
+              "allocations": 1095,
+              "live_count": 1095,
+              "frames": [
+                "0x7ffb466250d9",
+                "0x7ffaa74d1c26",
+                "0x7ffaa74d1dde",
+                "0x7ffaa74d1f87",
+                "0x7ffaa74d203e",
+                "0x7ffaa7275568",
+                "0x7ffaa725769b",
+                "0x7ffaa7288e20",
+                "0x7ffaa7287dc4",
+                "0x7ffaa7252604",
+                "0x7ffaa7251f85",
+                "0x7ffaa7257081",
+                "0x7ffaa7288e20",
+                "0x7ffaa732e746",
+                "0x7ffaa732efb8",
+                "0x7ffaa732ee4e"
+              ],
+              "resolved": [
+                {
+                  "module": "C:\\WINDOWS\\System32\\ucrtbase.dll",
+                  "offset": "0x50d9"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x2b1c26"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x2b1dde"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x2b1f87"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x2b203e"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x55568"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x3769b"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x68e20"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x67dc4"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x32604"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x31f85"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x37081"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x68e20"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x10e746"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x10efb8"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x10ee4e"
+                }
+              ]
+            },
+            {
+              "kind": "stack",
+              "index": 5818,
+              "allocated": 146816,
+              "freed": 73072,
+              "live": 73744,
+              "allocations": 8,
+              "live_count": 1,
+              "frames": [
+                "0x7ffb466250d9",
+                "0x7ffaa74d2585",
+                "0x7ffaa724dd80",
+                "0x7ffaa74d1f56",
+                "0x7ffaa74d203e",
+                "0x7ffaa7358571",
+                "0x7ffaa7274bea",
+                "0x7ffaa7274db5",
+                "0x7ffaa6d610a4",
+                "0x7ffaa731baeb",
+                "0x7ffaa731b929",
+                "0x7ffaa73d0724",
+                "0x7ffaa724bbe1",
+                "0x7ffaa72a4145",
+                "0x7ffaa72a408f",
+                "0x7ffaa7259a9a"
+              ],
+              "resolved": [
+                {
+                  "module": "C:\\WINDOWS\\System32\\ucrtbase.dll",
+                  "offset": "0x50d9"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x2b2585"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x2dd80"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x2b1f56"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x2b203e"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x138571"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x54bea"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x54db5"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\DLLs\\_ssl.pyd",
+                  "offset": "0x10a4"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0xfbaeb"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0xfb929"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x1b0724"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x2bbe1"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x84145"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x8408f"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x39a9a"
+                }
+              ]
+            },
+            {
+              "kind": "stack",
+              "index": 6128,
+              "allocated": 135072,
+              "freed": 69728,
+              "live": 65344,
+              "allocations": 4221,
+              "live_count": 2042,
+              "frames": [
+                "0x7ffb466250d9",
+                "0x7ffaa72f0ee8",
+                "0x7ffaa74d1efe",
+                "0x7ffaa74d1f87",
+                "0x7ffaa74d203e",
+                "0x7ffaa733898b",
+                "0x7ffaa72561c9",
+                "0x7ffaa7252cb7",
+                "0x7ffaa7252190",
+                "0x7ffaa72ae2f1",
+                "0x7ffaa72ad5a3",
+                "0x7ffaa727da2d",
+                "0x7ffaa7252190",
+                "0x7ffaa7251f85",
+                "0x7ffaa725a278",
+                "0x7ffaa7288e20"
+              ],
+              "resolved": [
+                {
+                  "module": "C:\\WINDOWS\\System32\\ucrtbase.dll",
+                  "offset": "0x50d9"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0xd0ee8"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x2b1efe"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x2b1f87"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x2b203e"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x11898b"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x361c9"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x32cb7"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x32190"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x8e2f1"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x8d5a3"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x5da2d"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x32190"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x31f85"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x3a278"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x68e20"
+                }
+              ]
+            },
+            {
+              "kind": "stack",
+              "index": 5813,
+              "allocated": 53824,
+              "freed": 0,
+              "live": 53824,
+              "allocations": 1682,
+              "live_count": 1682,
+              "frames": [
+                "0x7ffb466250d9",
+                "0x7ffaa72f0ee8",
+                "0x7ffaa74d1efe",
+                "0x7ffaa74d1f87",
+                "0x7ffaa74d203e",
+                "0x7ffaa724d370",
+                "0x7ffaa724c6f8",
+                "0x7ffaa6d61069",
+                "0x7ffaa731baeb",
+                "0x7ffaa731b929",
+                "0x7ffaa73d0724",
+                "0x7ffaa724bbe1",
+                "0x7ffaa72a4145",
+                "0x7ffaa72a408f",
+                "0x7ffaa7259a9a",
+                "0x7ffaa7252cb7"
+              ],
+              "resolved": [
+                {
+                  "module": "C:\\WINDOWS\\System32\\ucrtbase.dll",
+                  "offset": "0x50d9"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0xd0ee8"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x2b1efe"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x2b1f87"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x2b203e"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x2d370"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x2c6f8"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\DLLs\\_ssl.pyd",
+                  "offset": "0x1069"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0xfbaeb"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0xfb929"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x1b0724"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x2bbe1"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x84145"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x8408f"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x39a9a"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x32cb7"
+                }
+              ]
+            }
+          ],
+          "limitations": "IAT coverage only; no release through cached function pointers or subsequently loaded imports. Unobserved releases can overstate live bytes; failed frees can understate them. Optimized tail calls can omit frames; no private NVIDIA symbols. Instrumentation changes allocation timing and has fixed native table overhead."
+        },
+        {
+          "file": "native-heap-40.jsonl",
+          "pid": 57372,
+          "patches": 221,
+          "stacks": 8192,
+          "object_capacity": 524288,
+          "dropped_objects": 0,
+          "dropped_stacks": 950519,
+          "unknown_frees": 1109375,
+          "observed_allocated": 1602337678,
+          "observed_freed": 1587203820,
+          "scope": "default heap; existing IAT references only",
+          "observed_live_bytes": 15133858,
+          "live_by_first_captured_module": {
+            "C:\\WINDOWS\\System32\\ucrtbase.dll": 3008150,
+            "C:\\WINDOWS\\system32\\DriverStore\\FileRepository\\nv_dispi.inf_amd64_cee48bd6d33f95ab\\nvapi64_impl.dll": 3292,
+            "C:\\WINDOWS\\System32\\KERNELBASE.dll": 1096,
+            "F:\\project\\DLSS5Tool\\.venv\\Lib\\site-packages\\cv2\\cv2.pyd": 5816,
+            "C:\\WINDOWS\\System32\\DriverStore\\FileRepository\\nv_dispi.inf_amd64_cee48bd6d33f95ab\\Display.NvContainer\\NvMessageBus.dll": 6568,
+            "C:\\WINDOWS\\SYSTEM32\\nvcuda.DLL": 3288,
+            "C:\\WINDOWS\\system32\\DriverStore\\FileRepository\\nv_dispi.inf_amd64_cee48bd6d33f95ab\\nvcuda64.dll": 3288,
+            "C:\\WINDOWS\\SYSTEM32\\nvapi64.dll": 3288,
+            "C:\\WINDOWS\\System32\\DriverStore\\FileRepository\\nv_dispi.inf_amd64_cee48bd6d33f95ab\\nvdxgdmal64.dll": 3288,
+            "C:\\WINDOWS\\System32\\DriverStore\\FileRepository\\nv_dispi.inf_amd64_cee48bd6d33f95ab\\nvdiagclt64.dll": 3288,
+            "C:\\WINDOWS\\System32\\DriverStore\\FileRepository\\nv_dispi.inf_amd64_cee48bd6d33f95ab\\nvobjectloader64.dll": 3288,
+            "C:\\WINDOWS\\System32\\DriverStore\\FileRepository\\nv_dispi.inf_amd64_cee48bd6d33f95ab\\nvldumdx.dll": 3288,
+            "C:\\WINDOWS\\System32\\DriverStore\\FileRepository\\nv_dispi.inf_amd64_cee48bd6d33f95ab\\nvgpucomp64.dll": 3288,
+            "C:\\WINDOWS\\System32\\DriverStore\\FileRepository\\nv_dispi.inf_amd64_cee48bd6d33f95ab\\NvMemMapStoragex.dll": 3288,
+            "C:\\WINDOWS\\System32\\DriverStore\\FileRepository\\nv_dispi.inf_amd64_cee48bd6d33f95ab\\nvwgf2umx.dll": 12070376,
+            "C:\\WINDOWS\\system32\\nvspcap64.dll": 3288,
+            "C:\\WINDOWS\\System32\\DriverStore\\FileRepository\\nv_dispi.inf_amd64_cee48bd6d33f95ab\\nvppex.dll": 3288,
+            "C:\\WINDOWS\\System32\\RPCRT4.dll": 0,
+            "C:\\WINDOWS\\System32\\bcryptprimitives.dll": 2128,
+            "C:\\WINDOWS\\System32\\WS2_32.dll": 264
+          },
+          "largest_observed_live_stacks": [
+            {
+              "kind": "stack",
+              "index": 554,
+              "allocated": 12067088,
+              "freed": 0,
+              "live": 12067088,
+              "allocations": 65582,
+              "live_count": 65582,
+              "frames": [
+                "0x7ffb30f06b6c",
+                "0x7ffb30ed46e5",
+                "0x7ffb30ed499b",
+                "0x7ffb30ed4df2",
+                "0x7ffb300f2802",
+                "0x7ffb4933147a",
+                "0x7ffb4922b2e3",
+                "0x7ffb4922b085",
+                "0x7ffb49292b53",
+                "0x7ffb49292a02",
+                "0x7ffb492eff5e"
+              ],
+              "resolved": [
+                {
+                  "module": "C:\\WINDOWS\\System32\\DriverStore\\FileRepository\\nv_dispi.inf_amd64_cee48bd6d33f95ab\\nvwgf2umx.dll",
+                  "offset": "0xfe6b6c"
+                },
+                {
+                  "module": "C:\\WINDOWS\\System32\\DriverStore\\FileRepository\\nv_dispi.inf_amd64_cee48bd6d33f95ab\\nvwgf2umx.dll",
+                  "offset": "0xfb46e5"
+                },
+                {
+                  "module": "C:\\WINDOWS\\System32\\DriverStore\\FileRepository\\nv_dispi.inf_amd64_cee48bd6d33f95ab\\nvwgf2umx.dll",
+                  "offset": "0xfb499b"
+                },
+                {
+                  "module": "C:\\WINDOWS\\System32\\DriverStore\\FileRepository\\nv_dispi.inf_amd64_cee48bd6d33f95ab\\nvwgf2umx.dll",
+                  "offset": "0xfb4df2"
+                },
+                {
+                  "module": "C:\\WINDOWS\\System32\\DriverStore\\FileRepository\\nv_dispi.inf_amd64_cee48bd6d33f95ab\\nvwgf2umx.dll",
+                  "offset": "0x1d2802"
+                },
+                {
+                  "module": "C:\\WINDOWS\\SYSTEM32\\ntdll.dll",
+                  "offset": "0x12147a"
+                },
+                {
+                  "module": "C:\\WINDOWS\\SYSTEM32\\ntdll.dll",
+                  "offset": "0x1b2e3"
+                },
+                {
+                  "module": "C:\\WINDOWS\\SYSTEM32\\ntdll.dll",
+                  "offset": "0x1b085"
+                },
+                {
+                  "module": "C:\\WINDOWS\\SYSTEM32\\ntdll.dll",
+                  "offset": "0x82b53"
+                },
+                {
+                  "module": "C:\\WINDOWS\\SYSTEM32\\ntdll.dll",
+                  "offset": "0x82a02"
+                },
+                {
+                  "module": "C:\\WINDOWS\\SYSTEM32\\ntdll.dll",
+                  "offset": "0xdff5e"
+                }
+              ]
+            },
+            {
+              "kind": "stack",
+              "index": 3901,
+              "allocated": 243864,
+              "freed": 0,
+              "live": 243864,
+              "allocations": 297,
+              "live_count": 297,
+              "frames": [
+                "0x7ffb466250d9",
+                "0x7ffaa74d2585",
+                "0x7ffaa724dd80",
+                "0x7ffaa74d1f56",
+                "0x7ffaa74d203e",
+                "0x7ffaa72f50e0",
+                "0x7ffaa72f45f5",
+                "0x7ffaa72f4398",
+                "0x7ffaa72f448f",
+                "0x7ffaa72f4398",
+                "0x7ffaa72f448f",
+                "0x7ffaa73263af",
+                "0x7ffaa7326339",
+                "0x7ffaa73262b7",
+                "0x7ffaa7255937",
+                "0x7ffaa7252cb7"
+              ],
+              "resolved": [
+                {
+                  "module": "C:\\WINDOWS\\System32\\ucrtbase.dll",
+                  "offset": "0x50d9"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x2b2585"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x2dd80"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x2b1f56"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x2b203e"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0xd50e0"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0xd45f5"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0xd4398"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0xd448f"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0xd4398"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0xd448f"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x1063af"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x106339"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x1062b7"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x35937"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x32cb7"
+                }
+              ]
+            },
+            {
+              "kind": "stack",
+              "index": 4620,
+              "allocated": 154144,
+              "freed": 4920,
+              "live": 149224,
+              "allocations": 156,
+              "live_count": 151,
+              "frames": [
+                "0x7ffb466250d9",
+                "0x7ffaa74d2585",
+                "0x7ffaa724dd80",
+                "0x7ffaa74d1f56",
+                "0x7ffaa74d203e",
+                "0x7ffaa724d9d7",
+                "0x7ffaa726c85a",
+                "0x7ffaa726c4b1",
+                "0x7ffaa726c56e",
+                "0x7ffaa726c6d7",
+                "0x7ffaa729a6d2",
+                "0x7ffaa72896af",
+                "0x7ffaa728922d",
+                "0x7ffaa7287fc7",
+                "0x7ffaa7287f69",
+                "0x7ffaa7287dfa"
+              ],
+              "resolved": [
+                {
+                  "module": "C:\\WINDOWS\\System32\\ucrtbase.dll",
+                  "offset": "0x50d9"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x2b2585"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x2dd80"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x2b1f56"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x2b203e"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x2d9d7"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x4c85a"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x4c4b1"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x4c56e"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x4c6d7"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x7a6d2"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x696af"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x6922d"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x67fc7"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x67f69"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x67dfa"
+                }
+              ]
+            },
+            {
+              "kind": "stack",
+              "index": 4633,
+              "allocated": 96000,
+              "freed": 3840,
+              "live": 92160,
+              "allocations": 125,
+              "live_count": 120,
+              "frames": [
+                "0x7ffb466250d9",
+                "0x7ffaa74d2585",
+                "0x7ffaa724dd80",
+                "0x7ffaa74d1f56",
+                "0x7ffaa74d203e",
+                "0x7ffaa7383eb2",
+                "0x7ffaa7263f15",
+                "0x7ffaa7264f6f",
+                "0x7ffaa726c591",
+                "0x7ffaa726c6d7",
+                "0x7ffaa729a6d2",
+                "0x7ffaa72896af",
+                "0x7ffaa728922d",
+                "0x7ffaa7287fc7",
+                "0x7ffaa7287f69",
+                "0x7ffaa7287dfa"
+              ],
+              "resolved": [
+                {
+                  "module": "C:\\WINDOWS\\System32\\ucrtbase.dll",
+                  "offset": "0x50d9"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x2b2585"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x2dd80"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x2b1f56"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x2b203e"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x163eb2"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x43f15"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x44f6f"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x4c591"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x4c6d7"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x7a6d2"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x696af"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x6922d"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x67fc7"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x67f69"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x67dfa"
+                }
+              ]
+            },
+            {
+              "kind": "stack",
+              "index": 4582,
+              "allocated": 78840,
+              "freed": 0,
+              "live": 78840,
+              "allocations": 1095,
+              "live_count": 1095,
+              "frames": [
+                "0x7ffb466250d9",
+                "0x7ffaa74d1c26",
+                "0x7ffaa74d1dde",
+                "0x7ffaa74d1f87",
+                "0x7ffaa74d203e",
+                "0x7ffaa7275568",
+                "0x7ffaa725769b",
+                "0x7ffaa7288e20",
+                "0x7ffaa7287dc4",
+                "0x7ffaa7252604",
+                "0x7ffaa7251f85",
+                "0x7ffaa7257081",
+                "0x7ffaa7288e20",
+                "0x7ffaa732e746",
+                "0x7ffaa732efb8",
+                "0x7ffaa732ee4e"
+              ],
+              "resolved": [
+                {
+                  "module": "C:\\WINDOWS\\System32\\ucrtbase.dll",
+                  "offset": "0x50d9"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x2b1c26"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x2b1dde"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x2b1f87"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x2b203e"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x55568"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x3769b"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x68e20"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x67dc4"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x32604"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x31f85"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x37081"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x68e20"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x10e746"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x10efb8"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x10ee4e"
+                }
+              ]
+            },
+            {
+              "kind": "stack",
+              "index": 5818,
+              "allocated": 146816,
+              "freed": 73072,
+              "live": 73744,
+              "allocations": 8,
+              "live_count": 1,
+              "frames": [
+                "0x7ffb466250d9",
+                "0x7ffaa74d2585",
+                "0x7ffaa724dd80",
+                "0x7ffaa74d1f56",
+                "0x7ffaa74d203e",
+                "0x7ffaa7358571",
+                "0x7ffaa7274bea",
+                "0x7ffaa7274db5",
+                "0x7ffaa6d610a4",
+                "0x7ffaa731baeb",
+                "0x7ffaa731b929",
+                "0x7ffaa73d0724",
+                "0x7ffaa724bbe1",
+                "0x7ffaa72a4145",
+                "0x7ffaa72a408f",
+                "0x7ffaa7259a9a"
+              ],
+              "resolved": [
+                {
+                  "module": "C:\\WINDOWS\\System32\\ucrtbase.dll",
+                  "offset": "0x50d9"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x2b2585"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x2dd80"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x2b1f56"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x2b203e"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x138571"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x54bea"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x54db5"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\DLLs\\_ssl.pyd",
+                  "offset": "0x10a4"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0xfbaeb"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0xfb929"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x1b0724"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x2bbe1"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x84145"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x8408f"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x39a9a"
+                }
+              ]
+            },
+            {
+              "kind": "stack",
+              "index": 6128,
+              "allocated": 201952,
+              "freed": 136608,
+              "live": 65344,
+              "allocations": 6311,
+              "live_count": 2042,
+              "frames": [
+                "0x7ffb466250d9",
+                "0x7ffaa72f0ee8",
+                "0x7ffaa74d1efe",
+                "0x7ffaa74d1f87",
+                "0x7ffaa74d203e",
+                "0x7ffaa733898b",
+                "0x7ffaa72561c9",
+                "0x7ffaa7252cb7",
+                "0x7ffaa7252190",
+                "0x7ffaa72ae2f1",
+                "0x7ffaa72ad5a3",
+                "0x7ffaa727da2d",
+                "0x7ffaa7252190",
+                "0x7ffaa7251f85",
+                "0x7ffaa725a278",
+                "0x7ffaa7288e20"
+              ],
+              "resolved": [
+                {
+                  "module": "C:\\WINDOWS\\System32\\ucrtbase.dll",
+                  "offset": "0x50d9"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0xd0ee8"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x2b1efe"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x2b1f87"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x2b203e"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x11898b"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x361c9"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x32cb7"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x32190"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x8e2f1"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x8d5a3"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x5da2d"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x32190"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x31f85"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x3a278"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x68e20"
+                }
+              ]
+            },
+            {
+              "kind": "stack",
+              "index": 5813,
+              "allocated": 53824,
+              "freed": 0,
+              "live": 53824,
+              "allocations": 1682,
+              "live_count": 1682,
+              "frames": [
+                "0x7ffb466250d9",
+                "0x7ffaa72f0ee8",
+                "0x7ffaa74d1efe",
+                "0x7ffaa74d1f87",
+                "0x7ffaa74d203e",
+                "0x7ffaa724d370",
+                "0x7ffaa724c6f8",
+                "0x7ffaa6d61069",
+                "0x7ffaa731baeb",
+                "0x7ffaa731b929",
+                "0x7ffaa73d0724",
+                "0x7ffaa724bbe1",
+                "0x7ffaa72a4145",
+                "0x7ffaa72a408f",
+                "0x7ffaa7259a9a",
+                "0x7ffaa7252cb7"
+              ],
+              "resolved": [
+                {
+                  "module": "C:\\WINDOWS\\System32\\ucrtbase.dll",
+                  "offset": "0x50d9"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0xd0ee8"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x2b1efe"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x2b1f87"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x2b203e"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x2d370"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x2c6f8"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\DLLs\\_ssl.pyd",
+                  "offset": "0x1069"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0xfbaeb"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0xfb929"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x1b0724"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x2bbe1"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x84145"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x8408f"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x39a9a"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x32cb7"
+                }
+              ]
+            }
+          ],
+          "limitations": "IAT coverage only; no release through cached function pointers or subsequently loaded imports. Unobserved releases can overstate live bytes; failed frees can understate them. Optimized tail calls can omit frames; no private NVIDIA symbols. Instrumentation changes allocation timing and has fixed native table overhead."
+        },
+        {
+          "file": "native-heap-final.jsonl",
+          "pid": 57372,
+          "patches": 221,
+          "stacks": 8192,
+          "object_capacity": 524288,
+          "dropped_objects": 0,
+          "dropped_stacks": 1270266,
+          "unknown_frees": 1508130,
+          "observed_allocated": 2371252891,
+          "observed_freed": 2350300817,
+          "scope": "default heap; existing IAT references only",
+          "observed_live_bytes": 20952074,
+          "live_by_first_captured_module": {
+            "C:\\WINDOWS\\System32\\ucrtbase.dll": 3007674,
+            "C:\\WINDOWS\\system32\\DriverStore\\FileRepository\\nv_dispi.inf_amd64_cee48bd6d33f95ab\\nvapi64_impl.dll": 2192,
+            "C:\\WINDOWS\\System32\\KERNELBASE.dll": 1096,
+            "F:\\project\\DLSS5Tool\\.venv\\Lib\\site-packages\\cv2\\cv2.pyd": 3456,
+            "C:\\WINDOWS\\System32\\DriverStore\\FileRepository\\nv_dispi.inf_amd64_cee48bd6d33f95ab\\Display.NvContainer\\NvMessageBus.dll": 3920,
+            "C:\\WINDOWS\\SYSTEM32\\nvcuda.DLL": 2192,
+            "C:\\WINDOWS\\system32\\DriverStore\\FileRepository\\nv_dispi.inf_amd64_cee48bd6d33f95ab\\nvcuda64.dll": 2192,
+            "C:\\WINDOWS\\SYSTEM32\\nvapi64.dll": 2192,
+            "C:\\WINDOWS\\System32\\DriverStore\\FileRepository\\nv_dispi.inf_amd64_cee48bd6d33f95ab\\nvdxgdmal64.dll": 2192,
+            "C:\\WINDOWS\\System32\\DriverStore\\FileRepository\\nv_dispi.inf_amd64_cee48bd6d33f95ab\\nvdiagclt64.dll": 2192,
+            "C:\\WINDOWS\\System32\\DriverStore\\FileRepository\\nv_dispi.inf_amd64_cee48bd6d33f95ab\\nvobjectloader64.dll": 2192,
+            "C:\\WINDOWS\\System32\\DriverStore\\FileRepository\\nv_dispi.inf_amd64_cee48bd6d33f95ab\\nvldumdx.dll": 2192,
+            "C:\\WINDOWS\\System32\\DriverStore\\FileRepository\\nv_dispi.inf_amd64_cee48bd6d33f95ab\\nvgpucomp64.dll": 2192,
+            "C:\\WINDOWS\\System32\\DriverStore\\FileRepository\\nv_dispi.inf_amd64_cee48bd6d33f95ab\\NvMemMapStoragex.dll": 2192,
+            "C:\\WINDOWS\\System32\\DriverStore\\FileRepository\\nv_dispi.inf_amd64_cee48bd6d33f95ab\\nvwgf2umx.dll": 17907232,
+            "C:\\WINDOWS\\system32\\nvspcap64.dll": 2192,
+            "C:\\WINDOWS\\System32\\DriverStore\\FileRepository\\nv_dispi.inf_amd64_cee48bd6d33f95ab\\nvppex.dll": 2192,
+            "C:\\WINDOWS\\System32\\RPCRT4.dll": 0,
+            "C:\\WINDOWS\\System32\\bcryptprimitives.dll": 2128,
+            "C:\\WINDOWS\\System32\\WS2_32.dll": 264
+          },
+          "largest_observed_live_stacks": [
+            {
+              "kind": "stack",
+              "index": 554,
+              "allocated": 17905040,
+              "freed": 0,
+              "live": 17905040,
+              "allocations": 97310,
+              "live_count": 97310,
+              "frames": [
+                "0x7ffb30f06b6c",
+                "0x7ffb30ed46e5",
+                "0x7ffb30ed499b",
+                "0x7ffb30ed4df2",
+                "0x7ffb300f2802",
+                "0x7ffb4933147a",
+                "0x7ffb4922b2e3",
+                "0x7ffb4922b085",
+                "0x7ffb49292b53",
+                "0x7ffb49292a02",
+                "0x7ffb492eff5e"
+              ],
+              "resolved": [
+                {
+                  "module": "C:\\WINDOWS\\System32\\DriverStore\\FileRepository\\nv_dispi.inf_amd64_cee48bd6d33f95ab\\nvwgf2umx.dll",
+                  "offset": "0xfe6b6c"
+                },
+                {
+                  "module": "C:\\WINDOWS\\System32\\DriverStore\\FileRepository\\nv_dispi.inf_amd64_cee48bd6d33f95ab\\nvwgf2umx.dll",
+                  "offset": "0xfb46e5"
+                },
+                {
+                  "module": "C:\\WINDOWS\\System32\\DriverStore\\FileRepository\\nv_dispi.inf_amd64_cee48bd6d33f95ab\\nvwgf2umx.dll",
+                  "offset": "0xfb499b"
+                },
+                {
+                  "module": "C:\\WINDOWS\\System32\\DriverStore\\FileRepository\\nv_dispi.inf_amd64_cee48bd6d33f95ab\\nvwgf2umx.dll",
+                  "offset": "0xfb4df2"
+                },
+                {
+                  "module": "C:\\WINDOWS\\System32\\DriverStore\\FileRepository\\nv_dispi.inf_amd64_cee48bd6d33f95ab\\nvwgf2umx.dll",
+                  "offset": "0x1d2802"
+                },
+                {
+                  "module": "C:\\WINDOWS\\SYSTEM32\\ntdll.dll",
+                  "offset": "0x12147a"
+                },
+                {
+                  "module": "C:\\WINDOWS\\SYSTEM32\\ntdll.dll",
+                  "offset": "0x1b2e3"
+                },
+                {
+                  "module": "C:\\WINDOWS\\SYSTEM32\\ntdll.dll",
+                  "offset": "0x1b085"
+                },
+                {
+                  "module": "C:\\WINDOWS\\SYSTEM32\\ntdll.dll",
+                  "offset": "0x82b53"
+                },
+                {
+                  "module": "C:\\WINDOWS\\SYSTEM32\\ntdll.dll",
+                  "offset": "0x82a02"
+                },
+                {
+                  "module": "C:\\WINDOWS\\SYSTEM32\\ntdll.dll",
+                  "offset": "0xdff5e"
+                }
+              ]
+            },
+            {
+              "kind": "stack",
+              "index": 3901,
+              "allocated": 243864,
+              "freed": 0,
+              "live": 243864,
+              "allocations": 297,
+              "live_count": 297,
+              "frames": [
+                "0x7ffb466250d9",
+                "0x7ffaa74d2585",
+                "0x7ffaa724dd80",
+                "0x7ffaa74d1f56",
+                "0x7ffaa74d203e",
+                "0x7ffaa72f50e0",
+                "0x7ffaa72f45f5",
+                "0x7ffaa72f4398",
+                "0x7ffaa72f448f",
+                "0x7ffaa72f4398",
+                "0x7ffaa72f448f",
+                "0x7ffaa73263af",
+                "0x7ffaa7326339",
+                "0x7ffaa73262b7",
+                "0x7ffaa7255937",
+                "0x7ffaa7252cb7"
+              ],
+              "resolved": [
+                {
+                  "module": "C:\\WINDOWS\\System32\\ucrtbase.dll",
+                  "offset": "0x50d9"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x2b2585"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x2dd80"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x2b1f56"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x2b203e"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0xd50e0"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0xd45f5"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0xd4398"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0xd448f"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0xd4398"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0xd448f"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x1063af"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x106339"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x1062b7"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x35937"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x32cb7"
+                }
+              ]
+            },
+            {
+              "kind": "stack",
+              "index": 4620,
+              "allocated": 154144,
+              "freed": 4920,
+              "live": 149224,
+              "allocations": 156,
+              "live_count": 151,
+              "frames": [
+                "0x7ffb466250d9",
+                "0x7ffaa74d2585",
+                "0x7ffaa724dd80",
+                "0x7ffaa74d1f56",
+                "0x7ffaa74d203e",
+                "0x7ffaa724d9d7",
+                "0x7ffaa726c85a",
+                "0x7ffaa726c4b1",
+                "0x7ffaa726c56e",
+                "0x7ffaa726c6d7",
+                "0x7ffaa729a6d2",
+                "0x7ffaa72896af",
+                "0x7ffaa728922d",
+                "0x7ffaa7287fc7",
+                "0x7ffaa7287f69",
+                "0x7ffaa7287dfa"
+              ],
+              "resolved": [
+                {
+                  "module": "C:\\WINDOWS\\System32\\ucrtbase.dll",
+                  "offset": "0x50d9"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x2b2585"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x2dd80"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x2b1f56"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x2b203e"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x2d9d7"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x4c85a"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x4c4b1"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x4c56e"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x4c6d7"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x7a6d2"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x696af"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x6922d"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x67fc7"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x67f69"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x67dfa"
+                }
+              ]
+            },
+            {
+              "kind": "stack",
+              "index": 4633,
+              "allocated": 96000,
+              "freed": 3840,
+              "live": 92160,
+              "allocations": 125,
+              "live_count": 120,
+              "frames": [
+                "0x7ffb466250d9",
+                "0x7ffaa74d2585",
+                "0x7ffaa724dd80",
+                "0x7ffaa74d1f56",
+                "0x7ffaa74d203e",
+                "0x7ffaa7383eb2",
+                "0x7ffaa7263f15",
+                "0x7ffaa7264f6f",
+                "0x7ffaa726c591",
+                "0x7ffaa726c6d7",
+                "0x7ffaa729a6d2",
+                "0x7ffaa72896af",
+                "0x7ffaa728922d",
+                "0x7ffaa7287fc7",
+                "0x7ffaa7287f69",
+                "0x7ffaa7287dfa"
+              ],
+              "resolved": [
+                {
+                  "module": "C:\\WINDOWS\\System32\\ucrtbase.dll",
+                  "offset": "0x50d9"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x2b2585"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x2dd80"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x2b1f56"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x2b203e"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x163eb2"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x43f15"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x44f6f"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x4c591"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x4c6d7"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x7a6d2"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x696af"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x6922d"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x67fc7"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x67f69"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x67dfa"
+                }
+              ]
+            },
+            {
+              "kind": "stack",
+              "index": 4582,
+              "allocated": 78840,
+              "freed": 0,
+              "live": 78840,
+              "allocations": 1095,
+              "live_count": 1095,
+              "frames": [
+                "0x7ffb466250d9",
+                "0x7ffaa74d1c26",
+                "0x7ffaa74d1dde",
+                "0x7ffaa74d1f87",
+                "0x7ffaa74d203e",
+                "0x7ffaa7275568",
+                "0x7ffaa725769b",
+                "0x7ffaa7288e20",
+                "0x7ffaa7287dc4",
+                "0x7ffaa7252604",
+                "0x7ffaa7251f85",
+                "0x7ffaa7257081",
+                "0x7ffaa7288e20",
+                "0x7ffaa732e746",
+                "0x7ffaa732efb8",
+                "0x7ffaa732ee4e"
+              ],
+              "resolved": [
+                {
+                  "module": "C:\\WINDOWS\\System32\\ucrtbase.dll",
+                  "offset": "0x50d9"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x2b1c26"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x2b1dde"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x2b1f87"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x2b203e"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x55568"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x3769b"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x68e20"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x67dc4"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x32604"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x31f85"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x37081"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x68e20"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x10e746"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x10efb8"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x10ee4e"
+                }
+              ]
+            },
+            {
+              "kind": "stack",
+              "index": 5818,
+              "allocated": 146816,
+              "freed": 73072,
+              "live": 73744,
+              "allocations": 8,
+              "live_count": 1,
+              "frames": [
+                "0x7ffb466250d9",
+                "0x7ffaa74d2585",
+                "0x7ffaa724dd80",
+                "0x7ffaa74d1f56",
+                "0x7ffaa74d203e",
+                "0x7ffaa7358571",
+                "0x7ffaa7274bea",
+                "0x7ffaa7274db5",
+                "0x7ffaa6d610a4",
+                "0x7ffaa731baeb",
+                "0x7ffaa731b929",
+                "0x7ffaa73d0724",
+                "0x7ffaa724bbe1",
+                "0x7ffaa72a4145",
+                "0x7ffaa72a408f",
+                "0x7ffaa7259a9a"
+              ],
+              "resolved": [
+                {
+                  "module": "C:\\WINDOWS\\System32\\ucrtbase.dll",
+                  "offset": "0x50d9"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x2b2585"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x2dd80"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x2b1f56"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x2b203e"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x138571"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x54bea"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x54db5"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\DLLs\\_ssl.pyd",
+                  "offset": "0x10a4"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0xfbaeb"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0xfb929"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x1b0724"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x2bbe1"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x84145"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x8408f"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x39a9a"
+                }
+              ]
+            },
+            {
+              "kind": "stack",
+              "index": 6128,
+              "allocated": 268832,
+              "freed": 203488,
+              "live": 65344,
+              "allocations": 8401,
+              "live_count": 2042,
+              "frames": [
+                "0x7ffb466250d9",
+                "0x7ffaa72f0ee8",
+                "0x7ffaa74d1efe",
+                "0x7ffaa74d1f87",
+                "0x7ffaa74d203e",
+                "0x7ffaa733898b",
+                "0x7ffaa72561c9",
+                "0x7ffaa7252cb7",
+                "0x7ffaa7252190",
+                "0x7ffaa72ae2f1",
+                "0x7ffaa72ad5a3",
+                "0x7ffaa727da2d",
+                "0x7ffaa7252190",
+                "0x7ffaa7251f85",
+                "0x7ffaa725a278",
+                "0x7ffaa7288e20"
+              ],
+              "resolved": [
+                {
+                  "module": "C:\\WINDOWS\\System32\\ucrtbase.dll",
+                  "offset": "0x50d9"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0xd0ee8"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x2b1efe"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x2b1f87"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x2b203e"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x11898b"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x361c9"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x32cb7"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x32190"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x8e2f1"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x8d5a3"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x5da2d"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x32190"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x31f85"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x3a278"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x68e20"
+                }
+              ]
+            },
+            {
+              "kind": "stack",
+              "index": 5813,
+              "allocated": 53824,
+              "freed": 0,
+              "live": 53824,
+              "allocations": 1682,
+              "live_count": 1682,
+              "frames": [
+                "0x7ffb466250d9",
+                "0x7ffaa72f0ee8",
+                "0x7ffaa74d1efe",
+                "0x7ffaa74d1f87",
+                "0x7ffaa74d203e",
+                "0x7ffaa724d370",
+                "0x7ffaa724c6f8",
+                "0x7ffaa6d61069",
+                "0x7ffaa731baeb",
+                "0x7ffaa731b929",
+                "0x7ffaa73d0724",
+                "0x7ffaa724bbe1",
+                "0x7ffaa72a4145",
+                "0x7ffaa72a408f",
+                "0x7ffaa7259a9a",
+                "0x7ffaa7252cb7"
+              ],
+              "resolved": [
+                {
+                  "module": "C:\\WINDOWS\\System32\\ucrtbase.dll",
+                  "offset": "0x50d9"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0xd0ee8"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x2b1efe"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x2b1f87"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x2b203e"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x2d370"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x2c6f8"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\DLLs\\_ssl.pyd",
+                  "offset": "0x1069"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0xfbaeb"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0xfb929"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x1b0724"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x2bbe1"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x84145"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x8408f"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x39a9a"
+                },
+                {
+                  "module": "C:\\Users\\PC\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll",
+                  "offset": "0x32cb7"
+                }
+              ]
+            }
+          ],
+          "limitations": "IAT coverage only; no release through cached function pointers or subsequently loaded imports. Unobserved releases can overstate live bytes; failed frees can understate them. Optimized tail calls can omit frames; no private NVIDIA symbols. Instrumentation changes allocation timing and has fixed native table overhead."
+        }
+      ],
+      "long_term_memory_plateau_verified": false
+    },
+    {
+      "case": "native-device11-d3d11-only",
+      "pid": 52548,
+      "created": 134388484412131806,
+      "processing_and_exit_passed": true,
+      "source_runtime_unchanged": true,
+      "gpu_snapshots_enabled": false,
+      "remaining_before_recovery": [],
+      "safety_error": null,
+      "worker_private_mib_per_minute": 3.454010892831358,
+      "worker_private_window_delta": 2461696,
+      "measured_window_seconds": 40.78139281272888,
+      "default_heap_allocated_delta": 209502,
+      "default_heap_span": 59.81152009963989,
+      "thread_starts_delta": 2,
+      "thread_stops_delta": 1,
+      "unclassified_threads": 0,
+      "thread_groups": [
+        {
+          "module": "C:\\WINDOWS\\System32\\DriverStore\\FileRepository\\nv_dispi.inf_amd64_cee48bd6d33f95ab\\nvwgf2umx.dll",
+          "offset": "0xfd367c",
+          "started_delta": 0
+        },
+        {
+          "module": "C:\\WINDOWS\\SYSTEM32\\ntdll.dll",
+          "offset": "0x24990",
+          "started_delta": 2
+        }
+      ],
+      "modules": {
+        "nvcuda.dll": [],
+        "nvcuda64.dll": [],
+        "NvMessageBus.dll": [],
+        "nvwgf2umx.dll": [
+          "C:\\WINDOWS\\System32\\DriverStore\\FileRepository\\nv_dispi.inf_amd64_cee48bd6d33f95ab\\nvwgf2umx.dll"
+        ],
+        "nvdiagclt64.dll": []
+      },
+      "heap_traces": [],
+      "long_term_memory_plateau_verified": false
+    }
+  ],
+  "paired_driver_probes": [
+    {
+      "case": "driver-threads-paired-control-traced",
+      "processing_and_exit_passed": true,
+      "source_unchanged": true,
+      "target_unchanged": true,
+      "identity": {
+        "pid": 57400,
+        "parent": 38988,
+        "name": "native_driver_thread_probe.exe",
+        "created": 134388489955383091,
+        "path": "F:\\project\\DLSS5Tool\\tmp\\native-growth-rootcause-20261111\\build\\native_driver_thread_probe.exe"
+      },
+      "trace_enabled": true,
+      "threads_after_warmup": 20000,
+      "heap_allocated_delta_after_warmup": 0,
+      "heap_bytes_per_thread": 0.0,
+      "private_delta_after_warmup": 0,
+      "native_result": {
+        "kind": "result",
+        "completed": 30000,
+        "requested": 30000,
+        "trace_enabled": true,
+        "patches": 16,
+        "restored": 16,
+        "elapsed_ms": 1593,
+        "error": 0
+      },
+      "heap_trace": {
+        "file": "heap-after.jsonl",
+        "pid": 57400,
+        "patches": 16,
+        "stacks": 4,
+        "object_capacity": 524288,
+        "dropped_objects": 0,
+        "dropped_stacks": 0,
+        "unknown_frees": 60000,
+        "observed_allocated": 4768,
+        "observed_freed": 240,
+        "scope": "default heap; existing IAT references only",
+        "observed_live_bytes": 4528,
+        "live_by_first_captured_module": {
+          "F:\\project\\DLSS5Tool\\tmp\\native-growth-rootcause-20261111\\build\\native_driver_thread_probe.exe": 4528
+        },
+        "largest_observed_live_stacks": [
+          {
+            "kind": "stack",
+            "index": 1,
+            "allocated": 4096,
+            "freed": 0,
+            "live": 4096,
+            "allocations": 1,
+            "live_count": 1,
+            "frames": [
+              "0x7ff762c2d33b",
+              "0x7ff762c369a8",
+              "0x7ff762c350b5",
+              "0x7ff762c298a9",
+              "0x7ff762c2947a",
+              "0x7ff762c286ea",
+              "0x7ff762c2a7ce",
+              "0x7ff762c21cbb",
+              "0x7ff762c21d0b",
+              "0x7ff762c21c04",
+              "0x7ff762c21f17",
+              "0x7ff762c227bc",
+              "0x7ffb489fdda7",
+              "0x7ffb492d9c5c"
+            ],
+            "resolved": [
+              {
+                "module": "F:\\project\\DLSS5Tool\\tmp\\native-growth-rootcause-20261111\\build\\native_driver_thread_probe.exe",
+                "offset": "0xd33b"
+              },
+              {
+                "module": "F:\\project\\DLSS5Tool\\tmp\\native-growth-rootcause-20261111\\build\\native_driver_thread_probe.exe",
+                "offset": "0x169a8"
+              },
+              {
+                "module": "F:\\project\\DLSS5Tool\\tmp\\native-growth-rootcause-20261111\\build\\native_driver_thread_probe.exe",
+                "offset": "0x150b5"
+              },
+              {
+                "module": "F:\\project\\DLSS5Tool\\tmp\\native-growth-rootcause-20261111\\build\\native_driver_thread_probe.exe",
+                "offset": "0x98a9"
+              },
+              {
+                "module": "F:\\project\\DLSS5Tool\\tmp\\native-growth-rootcause-20261111\\build\\native_driver_thread_probe.exe",
+                "offset": "0x947a"
+              },
+              {
+                "module": "F:\\project\\DLSS5Tool\\tmp\\native-growth-rootcause-20261111\\build\\native_driver_thread_probe.exe",
+                "offset": "0x86ea"
+              },
+              {
+                "module": "F:\\project\\DLSS5Tool\\tmp\\native-growth-rootcause-20261111\\build\\native_driver_thread_probe.exe",
+                "offset": "0xa7ce"
+              },
+              {
+                "module": "F:\\project\\DLSS5Tool\\tmp\\native-growth-rootcause-20261111\\build\\native_driver_thread_probe.exe",
+                "offset": "0x1cbb"
+              },
+              {
+                "module": "F:\\project\\DLSS5Tool\\tmp\\native-growth-rootcause-20261111\\build\\native_driver_thread_probe.exe",
+                "offset": "0x1d0b"
+              },
+              {
+                "module": "F:\\project\\DLSS5Tool\\tmp\\native-growth-rootcause-20261111\\build\\native_driver_thread_probe.exe",
+                "offset": "0x1c04"
+              },
+              {
+                "module": "F:\\project\\DLSS5Tool\\tmp\\native-growth-rootcause-20261111\\build\\native_driver_thread_probe.exe",
+                "offset": "0x1f17"
+              },
+              {
+                "module": "F:\\project\\DLSS5Tool\\tmp\\native-growth-rootcause-20261111\\build\\native_driver_thread_probe.exe",
+                "offset": "0x27bc"
+              },
+              {
+                "module": "C:\\WINDOWS\\System32\\KERNEL32.DLL",
+                "offset": "0x2dda7"
+              },
+              {
+                "module": "C:\\WINDOWS\\SYSTEM32\\ntdll.dll",
+                "offset": "0xc9c5c"
+              }
+            ]
+          },
+          {
+            "kind": "stack",
+            "index": 3,
+            "allocated": 224,
+            "freed": 0,
+            "live": 224,
+            "allocations": 1,
+            "live_count": 1,
+            "frames": [
+              "0x7ff762c2eb44",
+              "0x7ff762c2244b",
+              "0x7ff762c21121",
+              "0x7ff762c214ae",
+              "0x7ff762c210b6",
+              "0x7ff762c22038",
+              "0x7ff762c227bc",
+              "0x7ffb489fdda7",
+              "0x7ffb492d9c5c"
+            ],
+            "resolved": [
+              {
+                "module": "F:\\project\\DLSS5Tool\\tmp\\native-growth-rootcause-20261111\\build\\native_driver_thread_probe.exe",
+                "offset": "0xeb44"
+              },
+              {
+                "module": "F:\\project\\DLSS5Tool\\tmp\\native-growth-rootcause-20261111\\build\\native_driver_thread_probe.exe",
+                "offset": "0x244b"
+              },
+              {
+                "module": "F:\\project\\DLSS5Tool\\tmp\\native-growth-rootcause-20261111\\build\\native_driver_thread_probe.exe",
+                "offset": "0x1121"
+              },
+              {
+                "module": "F:\\project\\DLSS5Tool\\tmp\\native-growth-rootcause-20261111\\build\\native_driver_thread_probe.exe",
+                "offset": "0x14ae"
+              },
+              {
+                "module": "F:\\project\\DLSS5Tool\\tmp\\native-growth-rootcause-20261111\\build\\native_driver_thread_probe.exe",
+                "offset": "0x10b6"
+              },
+              {
+                "module": "F:\\project\\DLSS5Tool\\tmp\\native-growth-rootcause-20261111\\build\\native_driver_thread_probe.exe",
+                "offset": "0x2038"
+              },
+              {
+                "module": "F:\\project\\DLSS5Tool\\tmp\\native-growth-rootcause-20261111\\build\\native_driver_thread_probe.exe",
+                "offset": "0x27bc"
+              },
+              {
+                "module": "C:\\WINDOWS\\System32\\KERNEL32.DLL",
+                "offset": "0x2dda7"
+              },
+              {
+                "module": "C:\\WINDOWS\\SYSTEM32\\ntdll.dll",
+                "offset": "0xc9c5c"
+              }
+            ]
+          },
+          {
+            "kind": "stack",
+            "index": 0,
+            "allocated": 208,
+            "freed": 0,
+            "live": 208,
+            "allocations": 1,
+            "live_count": 1,
+            "frames": [
+              "0x7ff762c2eb44",
+              "0x7ff762c2244b",
+              "0x7ff762c21121",
+              "0x7ff762c21204",
+              "0x7ff762c21408",
+              "0x7ff762c21f06",
+              "0x7ff762c227bc",
+              "0x7ffb489fdda7",
+              "0x7ffb492d9c5c"
+            ],
+            "resolved": [
+              {
+                "module": "F:\\project\\DLSS5Tool\\tmp\\native-growth-rootcause-20261111\\build\\native_driver_thread_probe.exe",
+                "offset": "0xeb44"
+              },
+              {
+                "module": "F:\\project\\DLSS5Tool\\tmp\\native-growth-rootcause-20261111\\build\\native_driver_thread_probe.exe",
+                "offset": "0x244b"
+              },
+              {
+                "module": "F:\\project\\DLSS5Tool\\tmp\\native-growth-rootcause-20261111\\build\\native_driver_thread_probe.exe",
+                "offset": "0x1121"
+              },
+              {
+                "module": "F:\\project\\DLSS5Tool\\tmp\\native-growth-rootcause-20261111\\build\\native_driver_thread_probe.exe",
+                "offset": "0x1204"
+              },
+              {
+                "module": "F:\\project\\DLSS5Tool\\tmp\\native-growth-rootcause-20261111\\build\\native_driver_thread_probe.exe",
+                "offset": "0x1408"
+              },
+              {
+                "module": "F:\\project\\DLSS5Tool\\tmp\\native-growth-rootcause-20261111\\build\\native_driver_thread_probe.exe",
+                "offset": "0x1f06"
+              },
+              {
+                "module": "F:\\project\\DLSS5Tool\\tmp\\native-growth-rootcause-20261111\\build\\native_driver_thread_probe.exe",
+                "offset": "0x27bc"
+              },
+              {
+                "module": "C:\\WINDOWS\\System32\\KERNEL32.DLL",
+                "offset": "0x2dda7"
+              },
+              {
+                "module": "C:\\WINDOWS\\SYSTEM32\\ntdll.dll",
+                "offset": "0xc9c5c"
+              }
+            ]
+          },
+          {
+            "kind": "stack",
+            "index": 2,
+            "allocated": 240,
+            "freed": 240,
+            "live": 0,
+            "allocations": 1,
+            "live_count": 0,
+            "frames": [
+              "0x7ff762c2eb44",
+              "0x7ff762c2244b",
+              "0x7ff762c21121",
+              "0x7ff762c214ae",
+              "0x7ff762c210b6",
+              "0x7ff762c21f39",
+              "0x7ff762c227bc",
+              "0x7ffb489fdda7",
+              "0x7ffb492d9c5c"
+            ],
+            "resolved": [
+              {
+                "module": "F:\\project\\DLSS5Tool\\tmp\\native-growth-rootcause-20261111\\build\\native_driver_thread_probe.exe",
+                "offset": "0xeb44"
+              },
+              {
+                "module": "F:\\project\\DLSS5Tool\\tmp\\native-growth-rootcause-20261111\\build\\native_driver_thread_probe.exe",
+                "offset": "0x244b"
+              },
+              {
+                "module": "F:\\project\\DLSS5Tool\\tmp\\native-growth-rootcause-20261111\\build\\native_driver_thread_probe.exe",
+                "offset": "0x1121"
+              },
+              {
+                "module": "F:\\project\\DLSS5Tool\\tmp\\native-growth-rootcause-20261111\\build\\native_driver_thread_probe.exe",
+                "offset": "0x14ae"
+              },
+              {
+                "module": "F:\\project\\DLSS5Tool\\tmp\\native-growth-rootcause-20261111\\build\\native_driver_thread_probe.exe",
+                "offset": "0x10b6"
+              },
+              {
+                "module": "F:\\project\\DLSS5Tool\\tmp\\native-growth-rootcause-20261111\\build\\native_driver_thread_probe.exe",
+                "offset": "0x1f39"
+              },
+              {
+                "module": "F:\\project\\DLSS5Tool\\tmp\\native-growth-rootcause-20261111\\build\\native_driver_thread_probe.exe",
+                "offset": "0x27bc"
+              },
+              {
+                "module": "C:\\WINDOWS\\System32\\KERNEL32.DLL",
+                "offset": "0x2dda7"
+              },
+              {
+                "module": "C:\\WINDOWS\\SYSTEM32\\ntdll.dll",
+                "offset": "0xc9c5c"
+              }
+            ]
+          }
+        ],
+        "limitations": "IAT coverage only; no release through cached function pointers or subsequently loaded imports. Unobserved releases can overstate live bytes; failed frees can understate them. Optimized tail calls can omit frames; no private NVIDIA symbols. Instrumentation changes allocation timing and has fixed native table overhead."
+      },
+      "remaining_before_cleanup": []
+    },
+    {
+      "case": "driver-threads-paired-control-untraced",
+      "processing_and_exit_passed": true,
+      "source_unchanged": true,
+      "target_unchanged": true,
+      "identity": {
+        "pid": 46164,
+        "parent": 38988,
+        "name": "native_driver_thread_probe.exe",
+        "created": 134388489916340381,
+        "path": "F:\\project\\DLSS5Tool\\tmp\\native-growth-rootcause-20261111\\build\\native_driver_thread_probe.exe"
+      },
+      "trace_enabled": false,
+      "threads_after_warmup": 20000,
+      "heap_allocated_delta_after_warmup": 0,
+      "heap_bytes_per_thread": 0.0,
+      "private_delta_after_warmup": 0,
+      "native_result": {
+        "kind": "result",
+        "completed": 30000,
+        "requested": 30000,
+        "trace_enabled": false,
+        "patches": 0,
+        "restored": 0,
+        "elapsed_ms": 1625,
+        "error": 0
+      },
+      "heap_trace": null,
+      "remaining_before_cleanup": []
+    },
+    {
+      "case": "driver-threads-paired-nvidia-traced",
+      "processing_and_exit_passed": true,
+      "source_unchanged": true,
+      "target_unchanged": true,
+      "identity": {
+        "pid": 5768,
+        "parent": 38988,
+        "name": "native_driver_thread_probe.exe",
+        "created": 134388489973645271,
+        "path": "F:\\project\\DLSS5Tool\\tmp\\native-growth-rootcause-20261111\\build\\native_driver_thread_probe.exe"
+      },
+      "trace_enabled": true,
+      "threads_after_warmup": 20000,
+      "heap_allocated_delta_after_warmup": 3682432,
+      "heap_bytes_per_thread": 184.1216,
+      "private_delta_after_warmup": 3854336,
+      "native_result": {
+        "kind": "result",
+        "completed": 30000,
+        "requested": 30000,
+        "trace_enabled": true,
+        "patches": 80,
+        "restored": 80,
+        "elapsed_ms": 2156,
+        "error": 0
+      },
+      "heap_trace": {
+        "file": "heap-after.jsonl",
+        "pid": 5768,
+        "patches": 80,
+        "stacks": 9,
+        "object_capacity": 524288,
+        "dropped_objects": 0,
+        "dropped_stacks": 0,
+        "unknown_frees": 60007,
+        "observed_allocated": 96489616,
+        "observed_freed": 90960224,
+        "scope": "default heap; existing IAT references only",
+        "observed_live_bytes": 5529392,
+        "live_by_first_captured_module": {
+          "F:\\project\\DLSS5Tool\\tmp\\native-growth-rootcause-20261111\\build\\native_driver_thread_probe.exe": 4528,
+          "C:\\WINDOWS\\System32\\bcryptprimitives.dll": 4864,
+          "C:\\WINDOWS\\System32\\DriverStore\\FileRepository\\nv_dispi.inf_amd64_cee48bd6d33f95ab\\nvwgf2umx.dll": 5520000,
+          "C:\\WINDOWS\\System32\\ucrtbase.dll": 0
+        },
+        "largest_observed_live_stacks": [
+          {
+            "kind": "stack",
+            "index": 6,
+            "allocated": 5520000,
+            "freed": 0,
+            "live": 5520000,
+            "allocations": 30000,
+            "live_count": 30000,
+            "frames": [
+              "0x7ffb30f06b6c",
+              "0x7ffb30ed46e5",
+              "0x7ffb30ed499b",
+              "0x7ffb30ed4df2",
+              "0x7ffb300f2802",
+              "0x7ffb4933147a",
+              "0x7ffb4922b2e3",
+              "0x7ffb4922b085",
+              "0x7ffb49292b53",
+              "0x7ffb49292a02",
+              "0x7ffb492eff5e"
+            ],
+            "resolved": [
+              {
+                "module": "C:\\WINDOWS\\System32\\DriverStore\\FileRepository\\nv_dispi.inf_amd64_cee48bd6d33f95ab\\nvwgf2umx.dll",
+                "offset": "0xfe6b6c"
+              },
+              {
+                "module": "C:\\WINDOWS\\System32\\DriverStore\\FileRepository\\nv_dispi.inf_amd64_cee48bd6d33f95ab\\nvwgf2umx.dll",
+                "offset": "0xfb46e5"
+              },
+              {
+                "module": "C:\\WINDOWS\\System32\\DriverStore\\FileRepository\\nv_dispi.inf_amd64_cee48bd6d33f95ab\\nvwgf2umx.dll",
+                "offset": "0xfb499b"
+              },
+              {
+                "module": "C:\\WINDOWS\\System32\\DriverStore\\FileRepository\\nv_dispi.inf_amd64_cee48bd6d33f95ab\\nvwgf2umx.dll",
+                "offset": "0xfb4df2"
+              },
+              {
+                "module": "C:\\WINDOWS\\System32\\DriverStore\\FileRepository\\nv_dispi.inf_amd64_cee48bd6d33f95ab\\nvwgf2umx.dll",
+                "offset": "0x1d2802"
+              },
+              {
+                "module": "C:\\WINDOWS\\SYSTEM32\\ntdll.dll",
+                "offset": "0x12147a"
+              },
+              {
+                "module": "C:\\WINDOWS\\SYSTEM32\\ntdll.dll",
+                "offset": "0x1b2e3"
+              },
+              {
+                "module": "C:\\WINDOWS\\SYSTEM32\\ntdll.dll",
+                "offset": "0x1b085"
+              },
+              {
+                "module": "C:\\WINDOWS\\SYSTEM32\\ntdll.dll",
+                "offset": "0x82b53"
+              },
+              {
+                "module": "C:\\WINDOWS\\SYSTEM32\\ntdll.dll",
+                "offset": "0x82a02"
+              },
+              {
+                "module": "C:\\WINDOWS\\SYSTEM32\\ntdll.dll",
+                "offset": "0xdff5e"
+              }
+            ]
+          },
+          {
+            "kind": "stack",
+            "index": 3,
+            "allocated": 4864,
+            "freed": 0,
+            "live": 4864,
+            "allocations": 16,
+            "live_count": 16,
+            "frames": [
+              "0x7ffb463fe742",
+              "0x7ffb462b6fda",
+              "0x7ffb462b7079",
+              "0x7ffb30100ad2",
+              "0x7ffb300f9d73",
+              "0x7ffb300fa7c3",
+              "0x7ffb300f27e2",
+              "0x7ffb4933147a",
+              "0x7ffb4922b2e3",
+              "0x7ffb4922b085",
+              "0x7ffb49292b53",
+              "0x7ffb49292a02",
+              "0x7ffb492eff5e"
+            ],
+            "resolved": [
+              {
+                "module": "C:\\WINDOWS\\System32\\bcryptprimitives.dll",
+                "offset": "0x2e742"
+              },
+              {
+                "module": "C:\\WINDOWS\\SYSTEM32\\bcrypt.dll",
+                "offset": "0x6fda"
+              },
+              {
+                "module": "C:\\WINDOWS\\SYSTEM32\\bcrypt.dll",
+                "offset": "0x7079"
+              },
+              {
+                "module": "C:\\WINDOWS\\System32\\DriverStore\\FileRepository\\nv_dispi.inf_amd64_cee48bd6d33f95ab\\nvwgf2umx.dll",
+                "offset": "0x1e0ad2"
+              },
+              {
+                "module": "C:\\WINDOWS\\System32\\DriverStore\\FileRepository\\nv_dispi.inf_amd64_cee48bd6d33f95ab\\nvwgf2umx.dll",
+                "offset": "0x1d9d73"
+              },
+              {
+                "module": "C:\\WINDOWS\\System32\\DriverStore\\FileRepository\\nv_dispi.inf_amd64_cee48bd6d33f95ab\\nvwgf2umx.dll",
+                "offset": "0x1da7c3"
+              },
+              {
+                "module": "C:\\WINDOWS\\System32\\DriverStore\\FileRepository\\nv_dispi.inf_amd64_cee48bd6d33f95ab\\nvwgf2umx.dll",
+                "offset": "0x1d27e2"
+              },
+              {
+                "module": "C:\\WINDOWS\\SYSTEM32\\ntdll.dll",
+                "offset": "0x12147a"
+              },
+              {
+                "module": "C:\\WINDOWS\\SYSTEM32\\ntdll.dll",
+                "offset": "0x1b2e3"
+              },
+              {
+                "module": "C:\\WINDOWS\\SYSTEM32\\ntdll.dll",
+                "offset": "0x1b085"
+              },
+              {
+                "module": "C:\\WINDOWS\\SYSTEM32\\ntdll.dll",
+                "offset": "0x82b53"
+              },
+              {
+                "module": "C:\\WINDOWS\\SYSTEM32\\ntdll.dll",
+                "offset": "0x82a02"
+              },
+              {
+                "module": "C:\\WINDOWS\\SYSTEM32\\ntdll.dll",
+                "offset": "0xdff5e"
+              }
+            ]
+          },
+          {
+            "kind": "stack",
+            "index": 1,
+            "allocated": 4096,
+            "freed": 0,
+            "live": 4096,
+            "allocations": 1,
+            "live_count": 1,
+            "frames": [
+              "0x7ff762c2d33b",
+              "0x7ff762c369a8",
+              "0x7ff762c350b5",
+              "0x7ff762c298a9",
+              "0x7ff762c2947a",
+              "0x7ff762c286ea",
+              "0x7ff762c2a7ce",
+              "0x7ff762c21cbb",
+              "0x7ff762c21d0b",
+              "0x7ff762c21c04",
+              "0x7ff762c21f17",
+              "0x7ff762c227bc",
+              "0x7ffb489fdda7",
+              "0x7ffb492d9c5c"
+            ],
+            "resolved": [
+              {
+                "module": "F:\\project\\DLSS5Tool\\tmp\\native-growth-rootcause-20261111\\build\\native_driver_thread_probe.exe",
+                "offset": "0xd33b"
+              },
+              {
+                "module": "F:\\project\\DLSS5Tool\\tmp\\native-growth-rootcause-20261111\\build\\native_driver_thread_probe.exe",
+                "offset": "0x169a8"
+              },
+              {
+                "module": "F:\\project\\DLSS5Tool\\tmp\\native-growth-rootcause-20261111\\build\\native_driver_thread_probe.exe",
+                "offset": "0x150b5"
+              },
+              {
+                "module": "F:\\project\\DLSS5Tool\\tmp\\native-growth-rootcause-20261111\\build\\native_driver_thread_probe.exe",
+                "offset": "0x98a9"
+              },
+              {
+                "module": "F:\\project\\DLSS5Tool\\tmp\\native-growth-rootcause-20261111\\build\\native_driver_thread_probe.exe",
+                "offset": "0x947a"
+              },
+              {
+                "module": "F:\\project\\DLSS5Tool\\tmp\\native-growth-rootcause-20261111\\build\\native_driver_thread_probe.exe",
+                "offset": "0x86ea"
+              },
+              {
+                "module": "F:\\project\\DLSS5Tool\\tmp\\native-growth-rootcause-20261111\\build\\native_driver_thread_probe.exe",
+                "offset": "0xa7ce"
+              },
+              {
+                "module": "F:\\project\\DLSS5Tool\\tmp\\native-growth-rootcause-20261111\\build\\native_driver_thread_probe.exe",
+                "offset": "0x1cbb"
+              },
+              {
+                "module": "F:\\project\\DLSS5Tool\\tmp\\native-growth-rootcause-20261111\\build\\native_driver_thread_probe.exe",
+                "offset": "0x1d0b"
+              },
+              {
+                "module": "F:\\project\\DLSS5Tool\\tmp\\native-growth-rootcause-20261111\\build\\native_driver_thread_probe.exe",
+                "offset": "0x1c04"
+              },
+              {
+                "module": "F:\\project\\DLSS5Tool\\tmp\\native-growth-rootcause-20261111\\build\\native_driver_thread_probe.exe",
+                "offset": "0x1f17"
+              },
+              {
+                "module": "F:\\project\\DLSS5Tool\\tmp\\native-growth-rootcause-20261111\\build\\native_driver_thread_probe.exe",
+                "offset": "0x27bc"
+              },
+              {
+                "module": "C:\\WINDOWS\\System32\\KERNEL32.DLL",
+                "offset": "0x2dda7"
+              },
+              {
+                "module": "C:\\WINDOWS\\SYSTEM32\\ntdll.dll",
+                "offset": "0xc9c5c"
+              }
+            ]
+          },
+          {
+            "kind": "stack",
+            "index": 8,
+            "allocated": 224,
+            "freed": 0,
+            "live": 224,
+            "allocations": 1,
+            "live_count": 1,
+            "frames": [
+              "0x7ff762c2eb44",
+              "0x7ff762c2244b",
+              "0x7ff762c21121",
+              "0x7ff762c214ae",
+              "0x7ff762c210b6",
+              "0x7ff762c22038",
+              "0x7ff762c227bc",
+              "0x7ffb489fdda7",
+              "0x7ffb492d9c5c"
+            ],
+            "resolved": [
+              {
+                "module": "F:\\project\\DLSS5Tool\\tmp\\native-growth-rootcause-20261111\\build\\native_driver_thread_probe.exe",
+                "offset": "0xeb44"
+              },
+              {
+                "module": "F:\\project\\DLSS5Tool\\tmp\\native-growth-rootcause-20261111\\build\\native_driver_thread_probe.exe",
+                "offset": "0x244b"
+              },
+              {
+                "module": "F:\\project\\DLSS5Tool\\tmp\\native-growth-rootcause-20261111\\build\\native_driver_thread_probe.exe",
+                "offset": "0x1121"
+              },
+              {
+                "module": "F:\\project\\DLSS5Tool\\tmp\\native-growth-rootcause-20261111\\build\\native_driver_thread_probe.exe",
+                "offset": "0x14ae"
+              },
+              {
+                "module": "F:\\project\\DLSS5Tool\\tmp\\native-growth-rootcause-20261111\\build\\native_driver_thread_probe.exe",
+                "offset": "0x10b6"
+              },
+              {
+                "module": "F:\\project\\DLSS5Tool\\tmp\\native-growth-rootcause-20261111\\build\\native_driver_thread_probe.exe",
+                "offset": "0x2038"
+              },
+              {
+                "module": "F:\\project\\DLSS5Tool\\tmp\\native-growth-rootcause-20261111\\build\\native_driver_thread_probe.exe",
+                "offset": "0x27bc"
+              },
+              {
+                "module": "C:\\WINDOWS\\System32\\KERNEL32.DLL",
+                "offset": "0x2dda7"
+              },
+              {
+                "module": "C:\\WINDOWS\\SYSTEM32\\ntdll.dll",
+                "offset": "0xc9c5c"
+              }
+            ]
+          },
+          {
+            "kind": "stack",
+            "index": 0,
+            "allocated": 208,
+            "freed": 0,
+            "live": 208,
+            "allocations": 1,
+            "live_count": 1,
+            "frames": [
+              "0x7ff762c2eb44",
+              "0x7ff762c2244b",
+              "0x7ff762c21121",
+              "0x7ff762c21204",
+              "0x7ff762c21408",
+              "0x7ff762c21f06",
+              "0x7ff762c227bc",
+              "0x7ffb489fdda7",
+              "0x7ffb492d9c5c"
+            ],
+            "resolved": [
+              {
+                "module": "F:\\project\\DLSS5Tool\\tmp\\native-growth-rootcause-20261111\\build\\native_driver_thread_probe.exe",
+                "offset": "0xeb44"
+              },
+              {
+                "module": "F:\\project\\DLSS5Tool\\tmp\\native-growth-rootcause-20261111\\build\\native_driver_thread_probe.exe",
+                "offset": "0x244b"
+              },
+              {
+                "module": "F:\\project\\DLSS5Tool\\tmp\\native-growth-rootcause-20261111\\build\\native_driver_thread_probe.exe",
+                "offset": "0x1121"
+              },
+              {
+                "module": "F:\\project\\DLSS5Tool\\tmp\\native-growth-rootcause-20261111\\build\\native_driver_thread_probe.exe",
+                "offset": "0x1204"
+              },
+              {
+                "module": "F:\\project\\DLSS5Tool\\tmp\\native-growth-rootcause-20261111\\build\\native_driver_thread_probe.exe",
+                "offset": "0x1408"
+              },
+              {
+                "module": "F:\\project\\DLSS5Tool\\tmp\\native-growth-rootcause-20261111\\build\\native_driver_thread_probe.exe",
+                "offset": "0x1f06"
+              },
+              {
+                "module": "F:\\project\\DLSS5Tool\\tmp\\native-growth-rootcause-20261111\\build\\native_driver_thread_probe.exe",
+                "offset": "0x27bc"
+              },
+              {
+                "module": "C:\\WINDOWS\\System32\\KERNEL32.DLL",
+                "offset": "0x2dda7"
+              },
+              {
+                "module": "C:\\WINDOWS\\SYSTEM32\\ntdll.dll",
+                "offset": "0xc9c5c"
+              }
+            ]
+          },
+          {
+            "kind": "stack",
+            "index": 2,
+            "allocated": 224,
+            "freed": 224,
+            "live": 0,
+            "allocations": 1,
+            "live_count": 0,
+            "frames": [
+              "0x7ff762c2eb44",
+              "0x7ff762c2244b",
+              "0x7ff762c21121",
+              "0x7ff762c214ae",
+              "0x7ff762c210b6",
+              "0x7ff762c21f39",
+              "0x7ff762c227bc",
+              "0x7ffb489fdda7",
+              "0x7ffb492d9c5c"
+            ],
+            "resolved": [
+              {
+                "module": "F:\\project\\DLSS5Tool\\tmp\\native-growth-rootcause-20261111\\build\\native_driver_thread_probe.exe",
+                "offset": "0xeb44"
+              },
+              {
+                "module": "F:\\project\\DLSS5Tool\\tmp\\native-growth-rootcause-20261111\\build\\native_driver_thread_probe.exe",
+                "offset": "0x244b"
+              },
+              {
+                "module": "F:\\project\\DLSS5Tool\\tmp\\native-growth-rootcause-20261111\\build\\native_driver_thread_probe.exe",
+                "offset": "0x1121"
+              },
+              {
+                "module": "F:\\project\\DLSS5Tool\\tmp\\native-growth-rootcause-20261111\\build\\native_driver_thread_probe.exe",
+                "offset": "0x14ae"
+              },
+              {
+                "module": "F:\\project\\DLSS5Tool\\tmp\\native-growth-rootcause-20261111\\build\\native_driver_thread_probe.exe",
+                "offset": "0x10b6"
+              },
+              {
+                "module": "F:\\project\\DLSS5Tool\\tmp\\native-growth-rootcause-20261111\\build\\native_driver_thread_probe.exe",
+                "offset": "0x1f39"
+              },
+              {
+                "module": "F:\\project\\DLSS5Tool\\tmp\\native-growth-rootcause-20261111\\build\\native_driver_thread_probe.exe",
+                "offset": "0x27bc"
+              },
+              {
+                "module": "C:\\WINDOWS\\System32\\KERNEL32.DLL",
+                "offset": "0x2dda7"
+              },
+              {
+                "module": "C:\\WINDOWS\\SYSTEM32\\ntdll.dll",
+                "offset": "0xc9c5c"
+              }
+            ]
+          },
+          {
+            "kind": "stack",
+            "index": 4,
+            "allocated": 3840000,
+            "freed": 3840000,
+            "live": 0,
+            "allocations": 30000,
+            "live_count": 0,
+            "frames": [
+              "0x7ffb30f06c5f",
+              "0x7ffb30edcedf",
+              "0x7ffb30edcd99",
+              "0x7ffb30ed99b1",
+              "0x7ffb30ed9c6d",
+              "0x7ffb300f27f2",
+              "0x7ffb4933147a",
+              "0x7ffb4922b2e3",
+              "0x7ffb4922b085",
+              "0x7ffb49292b53",
+              "0x7ffb49292a02",
+              "0x7ffb492eff5e"
+            ],
+            "resolved": [
+              {
+                "module": "C:\\WINDOWS\\System32\\DriverStore\\FileRepository\\nv_dispi.inf_amd64_cee48bd6d33f95ab\\nvwgf2umx.dll",
+                "offset": "0xfe6c5f"
+              },
+              {
+                "module": "C:\\WINDOWS\\System32\\DriverStore\\FileRepository\\nv_dispi.inf_amd64_cee48bd6d33f95ab\\nvwgf2umx.dll",
+                "offset": "0xfbcedf"
+              },
+              {
+                "module": "C:\\WINDOWS\\System32\\DriverStore\\FileRepository\\nv_dispi.inf_amd64_cee48bd6d33f95ab\\nvwgf2umx.dll",
+                "offset": "0xfbcd99"
+              },
+              {
+                "module": "C:\\WINDOWS\\System32\\DriverStore\\FileRepository\\nv_dispi.inf_amd64_cee48bd6d33f95ab\\nvwgf2umx.dll",
+                "offset": "0xfb99b1"
+              },
+              {
+                "module": "C:\\WINDOWS\\System32\\DriverStore\\FileRepository\\nv_dispi.inf_amd64_cee48bd6d33f95ab\\nvwgf2umx.dll",
+                "offset": "0xfb9c6d"
+              },
+              {
+                "module": "C:\\WINDOWS\\System32\\DriverStore\\FileRepository\\nv_dispi.inf_amd64_cee48bd6d33f95ab\\nvwgf2umx.dll",
+                "offset": "0x1d27f2"
+              },
+              {
+                "module": "C:\\WINDOWS\\SYSTEM32\\ntdll.dll",
+                "offset": "0x12147a"
+              },
+              {
+                "module": "C:\\WINDOWS\\SYSTEM32\\ntdll.dll",
+                "offset": "0x1b2e3"
+              },
+              {
+                "module": "C:\\WINDOWS\\SYSTEM32\\ntdll.dll",
+                "offset": "0x1b085"
+              },
+              {
+                "module": "C:\\WINDOWS\\SYSTEM32\\ntdll.dll",
+                "offset": "0x82b53"
+              },
+              {
+                "module": "C:\\WINDOWS\\SYSTEM32\\ntdll.dll",
+                "offset": "0x82a02"
+              },
+              {
+                "module": "C:\\WINDOWS\\SYSTEM32\\ntdll.dll",
+                "offset": "0xdff5e"
+              }
+            ]
+          },
+          {
+            "kind": "stack",
+            "index": 5,
+            "allocated": 29040000,
+            "freed": 29040000,
+            "live": 0,
+            "allocations": 30000,
+            "live_count": 0,
+            "frames": [
+              "0x7ffb30f06c5f",
+              "0x7ffb30f07212",
+              "0x7ffb30f06995",
+              "0x7ffb30ed99be",
+              "0x7ffb30ed9c6d",
+              "0x7ffb300f27f2",
+              "0x7ffb4933147a",
+              "0x7ffb4922b2e3",
+              "0x7ffb4922b085",
+              "0x7ffb49292b53",
+              "0x7ffb49292a02",
+              "0x7ffb492eff5e"
+            ],
+            "resolved": [
+              {
+                "module": "C:\\WINDOWS\\System32\\DriverStore\\FileRepository\\nv_dispi.inf_amd64_cee48bd6d33f95ab\\nvwgf2umx.dll",
+                "offset": "0xfe6c5f"
+              },
+              {
+                "module": "C:\\WINDOWS\\System32\\DriverStore\\FileRepository\\nv_dispi.inf_amd64_cee48bd6d33f95ab\\nvwgf2umx.dll",
+                "offset": "0xfe7212"
+              },
+              {
+                "module": "C:\\WINDOWS\\System32\\DriverStore\\FileRepository\\nv_dispi.inf_amd64_cee48bd6d33f95ab\\nvwgf2umx.dll",
+                "offset": "0xfe6995"
+              },
+              {
+                "module": "C:\\WINDOWS\\System32\\DriverStore\\FileRepository\\nv_dispi.inf_amd64_cee48bd6d33f95ab\\nvwgf2umx.dll",
+                "offset": "0xfb99be"
+              },
+              {
+                "module": "C:\\WINDOWS\\System32\\DriverStore\\FileRepository\\nv_dispi.inf_amd64_cee48bd6d33f95ab\\nvwgf2umx.dll",
+                "offset": "0xfb9c6d"
+              },
+              {
+                "module": "C:\\WINDOWS\\System32\\DriverStore\\FileRepository\\nv_dispi.inf_amd64_cee48bd6d33f95ab\\nvwgf2umx.dll",
+                "offset": "0x1d27f2"
+              },
+              {
+                "module": "C:\\WINDOWS\\SYSTEM32\\ntdll.dll",
+                "offset": "0x12147a"
+              },
+              {
+                "module": "C:\\WINDOWS\\SYSTEM32\\ntdll.dll",
+                "offset": "0x1b2e3"
+              },
+              {
+                "module": "C:\\WINDOWS\\SYSTEM32\\ntdll.dll",
+                "offset": "0x1b085"
+              },
+              {
+                "module": "C:\\WINDOWS\\SYSTEM32\\ntdll.dll",
+                "offset": "0x82b53"
+              },
+              {
+                "module": "C:\\WINDOWS\\SYSTEM32\\ntdll.dll",
+                "offset": "0x82a02"
+              },
+              {
+                "module": "C:\\WINDOWS\\SYSTEM32\\ntdll.dll",
+                "offset": "0xdff5e"
+              }
+            ]
+          }
+        ],
+        "limitations": "IAT coverage only; no release through cached function pointers or subsequently loaded imports. Unobserved releases can overstate live bytes; failed frees can understate them. Optimized tail calls can omit frames; no private NVIDIA symbols. Instrumentation changes allocation timing and has fixed native table overhead."
+      },
+      "remaining_before_cleanup": []
+    },
+    {
+      "case": "driver-threads-paired-nvidia-untraced",
+      "processing_and_exit_passed": true,
+      "source_unchanged": true,
+      "target_unchanged": true,
+      "identity": {
+        "pid": 54228,
+        "parent": 38988,
+        "name": "native_driver_thread_probe.exe",
+        "created": 134388489934610095,
+        "path": "F:\\project\\DLSS5Tool\\tmp\\native-growth-rootcause-20261111\\build\\native_driver_thread_probe.exe"
+      },
+      "trace_enabled": false,
+      "threads_after_warmup": 20000,
+      "heap_allocated_delta_after_warmup": 3680000,
+      "heap_bytes_per_thread": 184.0,
+      "private_delta_after_warmup": 3854336,
+      "native_result": {
+        "kind": "result",
+        "completed": 30000,
+        "requested": 30000,
+        "trace_enabled": false,
+        "patches": 0,
+        "restored": 0,
+        "elapsed_ms": 1890,
+        "error": 0
+      },
+      "heap_trace": null,
+      "remaining_before_cleanup": []
+    }
+  ],
+  "limitations": [
+    "One 60-second run per matrix condition; no long-term plateau certification.",
+    "Metadata/Python profiling adds a small baseline; thread rates are instrumentation-dependent.",
+    "Combined Python heap trace saturated stack capacity; use it for path matching only.",
+    "Standalone traced controls had no dropped objects/stacks; independent untraced HeapSummary confirms retention.",
+    "No official NVIDIA private symbols; addresses are verified module-relative offsets.",
+    "Does not isolate why NvMessageBus creates threads or prove all NR/VSR growth has one cause."
+  ],
+  "operational_notes": [
+    "An initial compile command failed to start because its cwd did not yet exist; no build/test ran.",
+    "The existing summarize_native_heap_trace.py top-level helper rejected mixed result schemas. This summary calls its per-case memory_map/heap_trace helpers only on matching case directories."
+  ],
+  "cuda_vsr_exploration": {
+    "processing_and_exit_passed": false,
+    "supervisor_error": "Traceback (most recent call last):\n  File \"F:\\project\\DLSS5Tool\\tmp\\native-growth-rootcause-20261111\\probe_cuda_vsr.py\", line 91, in supervise\n    raise RuntimeError('Diagnostic time/private/headroom limit')\nRuntimeError: Diagnostic time/private/headroom limit\n",
+    "returncode_after_job_cleanup": 0,
+    "elapsed_seconds": 120.20244819999789,
+    "default_heap_allocated_delta": 395393,
+    "profile_span_seconds": 61.13615155220032,
+    "thread_starts_delta": 426534,
+    "absent_in_module_snapshot": "nvwgf2umx.dll",
+    "limitations": "Three real SDR 2x frames then idle; native close timed out and Job recovery was required. Exit code after cleanup is not an application success. No close-blocking stack was captured."
+  },
+  "retirement_audit": {
+    "exact_identities": 17,
+    "still_live": []
+  }
+}

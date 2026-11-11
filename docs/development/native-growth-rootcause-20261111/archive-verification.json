@@ -1,0 +1,26 @@
+{
+  "archive": "observations.zip",
+  "archive_sha256": "0e74f355adf663dcbb2700a794b3476d401ff8af7b6bcc344688119719654117",
+  "verified_entries": 143,
+  "uncompressed_bytes": 16967537,
+  "compressed_bytes": 1199136,
+  "exact_identities_checked": 17,
+  "observed_still_live": [],
+  "exclusive_file_opens": 143,
+  "cleanup_pending": false,
+  "source_snapshots": 17,
+  "python_syntax_checked": true,
+  "no_installed_driver_copies": true,
+  "no_long_term_plateau_claim": true,
+  "cleanup": {
+    "task_path": "F:\\project\\DLSS5Tool\\tmp\\native-growth-rootcause-20261111",
+    "deleted_files": 142,
+    "deleted_logical_bytes": 16965738.0,
+    "free_bytes_before": 50516713472,
+    "free_bytes_after": 50533949440,
+    "observed_disk_free_increase": 17235968,
+    "remaining_bytes": 2186,
+    "retained": "TASK.md only; review 2026-11-18",
+    "note": "Whole-volume free-space change can include concurrent activity; exact task logical bytes and archive hashes checked separately."
+  }
+}

@@ -532,20 +532,21 @@ def supervise(args, work):
                     print(json.dumps(dict(case=args.case, elapsed=round(now-start), processes=len(current),
                         private_mib=round(private/1024**2, 1))), flush=True)
                     save(work/'memory-samples.json', samples)
-                    try:
-                        query = subprocess.run(['nvidia-smi',
-                            '--query-gpu=uuid,memory.used,memory.free,utilization.gpu',
-                            '--format=csv,noheader,nounits'], capture_output=True, text=True,
-                            check=True, timeout=8, creationflags=NO_WINDOW)
-                        devices = []
-                        for line in query.stdout.splitlines():
-                            uuid, used, free, utilization = [v.strip() for v in line.split(',')]
-                            devices.append(dict(uuid=uuid, used_mib=float(used),
-                                free_mib=float(free), utilization_percent=float(utilization)))
-                        gpu_snapshots.append(dict(wall=time.time(), devices=devices,
-                            scope='system GPU snapshot, not owned-process attribution'))
-                    except Exception as query_error:
-                        gpu_snapshots.append(dict(wall=time.time(), error=str(query_error)))
+                    if args.gpu_snapshots:
+                        try:
+                            query = subprocess.run(['nvidia-smi',
+                                '--query-gpu=uuid,memory.used,memory.free,utilization.gpu',
+                                '--format=csv,noheader,nounits'], capture_output=True, text=True,
+                                check=True, timeout=8, creationflags=NO_WINDOW)
+                            devices = []
+                            for line in query.stdout.splitlines():
+                                uuid, used, free, utilization = [v.strip() for v in line.split(',')]
+                                devices.append(dict(uuid=uuid, used_mib=float(used),
+                                    free_mib=float(free), utilization_percent=float(utilization)))
+                            gpu_snapshots.append(dict(wall=time.time(), devices=devices,
+                                scope='system GPU snapshot, not owned-process attribution'))
+                        except Exception as query_error:
+                            gpu_snapshots.append(dict(wall=time.time(), error=str(query_error)))
                     next_print += 20
                 if safety_error is None and (private > 8*GIB or now-start > args.timeout or
                         status and min(status['free_physical_bytes'], status['free_commit_bytes']) < 8*GIB or
@@ -582,6 +583,7 @@ def supervise(args, work):
                 safety_error=safety_error, peak_tree_private_bytes=max((s['private_bytes'] for s in samples), default=0),
                 peak_tree_working_set_bytes=max((s['working_set_bytes'] for s in samples), default=0),
                 observed_processes=list(observations.values()), gpu_snapshots=gpu_snapshots,
+                gpu_snapshots_enabled=args.gpu_snapshots,
                 remaining_before_recovery=remaining,
                 recovery=cleanup, samples=len(samples), scope='synthetic media; actual existing runtimes and production processing')
             events = ([json.loads(line) for line in (work/'events.jsonl').read_text(encoding='utf-8').splitlines()]
@@ -644,6 +646,8 @@ def main():
     parser.add_argument('--trim-heaps', action='store_true', help='Diagnostic-only LFH cache decommit')
     parser.add_argument('--vsr-host', type=Path, help='Diagnostic-only task-local candidate VSR DLL')
     parser.add_argument('--trace-gui', action='store_true', help='Diagnostic-only GUI heap/Tk image counters')
+    parser.add_argument('--gpu-snapshots', action=argparse.BooleanOptionalAction, default=True,
+                        help='Read optional whole-GPU nvidia-smi snapshots; disable for low-interference controls')
     parser.add_argument('--gui-idle-cycle', type=int, default=0,
                         help='Zero-based image cycle for the diagnostic idle observation')
     parser.add_argument('--device-work', action='store_true', help='One 32x32 D3D11 clear, without project native DLLs')
