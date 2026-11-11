@@ -1,0 +1,22 @@
+{
+  "archive_sha256": "c2d7fc0de1e9ea89f21a26e49e75f429fa3d76676c1a695ec68865729e5686af",
+  "archive_bytes": 6027676,
+  "entries": 185,
+  "uncompressed_bytes": 72353080,
+  "all_entry_sha256_and_lengths_verified": true,
+  "manifest_provenance_entries": 1156,
+  "reparse_checks_passed": true,
+  "known_process_identity_count": 57,
+  "active_owned_processes": [],
+  "omitted_rebuildable_media_bytes": 636940307,
+  "source_task_bytes": 708179508,
+  "cleanup_completed": true,
+  "exclusive_open_files_passed": true,
+  "cleaned_file_count": 150,
+  "cleaned_logical_bytes": 708178090,
+  "disk_free_before_bytes": 49808527360,
+  "disk_free_after_bytes": 50516914176,
+  "disk_free_delta_bytes": 708386816,
+  "remaining_task_bytes": 1196,
+  "remaining_reason": "Task registration and verified archive recovery link; review 2026-11-18"
+}

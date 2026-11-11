@@ -1,0 +1,725 @@
+{
+  "baseline_commit": "716a53f",
+  "memory_limits": {
+    "mib_per_minute": 0.25,
+    "absolute_window_delta_mib": 16
+  },
+  "long_runs": [
+    {
+      "case": "nr",
+      "actual_dimensions": [
+        1920,
+        1080
+      ],
+      "input_dimensions": [
+        1920,
+        1080
+      ],
+      "worker_pid": 56704,
+      "created": 134388662566869199,
+      "frames": 84296,
+      "elapsed_seconds": 1808.252,
+      "windows_after_warmup_seconds": {
+        "10": {
+          "samples": 6853,
+          "sufficient_samples": true,
+          "start_median_bytes": 1012838400.0,
+          "end_median_bytes": 1013805056.0,
+          "delta_bytes": 966656.0,
+          "median_time_span_seconds": 1429.7835938930511,
+          "mib_per_minute": 0.03868592438481807,
+          "range_bytes": 160677888,
+          "passed": true
+        },
+        "30": {
+          "samples": 6777,
+          "sufficient_samples": true,
+          "start_median_bytes": 1012838400,
+          "end_median_bytes": 1013805056,
+          "delta_bytes": 966656,
+          "median_time_span_seconds": 1413.8342728614807,
+          "mib_per_minute": 0.03912233637401659,
+          "range_bytes": 1847296,
+          "passed": true
+        },
+        "60": {
+          "samples": 6662,
+          "sufficient_samples": true,
+          "start_median_bytes": 1012838400.0,
+          "end_median_bytes": 1013805056.0,
+          "delta_bytes": 966656.0,
+          "median_time_span_seconds": 1389.7832627296448,
+          "mib_per_minute": 0.03979937122811643,
+          "range_bytes": 1032192,
+          "passed": true
+        }
+      },
+      "thread_activity": {
+        "checkpoints": 165,
+        "checkpoint_span_seconds": 1793.312905073166,
+        "first_bus_threads": 0,
+        "last_bus_threads": 0,
+        "messagebus_thread_delta": 0,
+        "all_thread_delta": 10
+      },
+      "source_runtime_unchanged": true,
+      "status": "passed",
+      "safety_error": null,
+      "remaining": [],
+      "recovery": [],
+      "peak_tree_private_bytes": 1237016576,
+      "passed": true
+    },
+    {
+      "case": "sr",
+      "actual_dimensions": [
+        1920,
+        1080
+      ],
+      "input_dimensions": [
+        960,
+        540
+      ],
+      "worker_pid": 51732,
+      "created": 134388662566873122,
+      "frames": 211968,
+      "elapsed_seconds": 1808.389,
+      "windows_after_warmup_seconds": {
+        "10": {
+          "samples": 6851,
+          "sufficient_samples": true,
+          "start_median_bytes": 538370048.0,
+          "end_median_bytes": 538898432.0,
+          "delta_bytes": 528384.0,
+          "median_time_span_seconds": 1429.5951721668243,
+          "mib_per_minute": 0.021148906759508732,
+          "range_bytes": 5849088,
+          "passed": true
+        },
+        "30": {
+          "samples": 6774,
+          "sufficient_samples": true,
+          "start_median_bytes": 538370048.0,
+          "end_median_bytes": 538898432.0,
+          "delta_bytes": 528384.0,
+          "median_time_span_seconds": 1413.6501696109772,
+          "mib_per_minute": 0.021387451895768673,
+          "range_bytes": 5849088,
+          "passed": true
+        },
+        "60": {
+          "samples": 6660,
+          "sufficient_samples": true,
+          "start_median_bytes": 538370048.0,
+          "end_median_bytes": 538898432.0,
+          "delta_bytes": 528384.0,
+          "median_time_span_seconds": 1389.6041445732117,
+          "mib_per_minute": 0.021757545210320212,
+          "range_bytes": 3043328,
+          "passed": true
+        }
+      },
+      "thread_activity": {
+        "checkpoints": 415,
+        "checkpoint_span_seconds": 1799.5537886619568,
+        "first_bus_threads": 3,
+        "last_bus_threads": 3,
+        "messagebus_thread_delta": 0,
+        "all_thread_delta": 9
+      },
+      "source_runtime_unchanged": true,
+      "status": "passed",
+      "safety_error": null,
+      "remaining": [],
+      "recovery": [],
+      "peak_tree_private_bytes": 598179840,
+      "passed": true
+    }
+  ],
+  "resident": [
+    {
+      "case": "resident-hdr96",
+      "status": "complete",
+      "passed": true,
+      "error": null,
+      "elapsed_seconds": 20.279746600004728,
+      "cancel_to_retirement_seconds": null,
+      "output_bytes": 9060988,
+      "output_sha256": "3b0d67d23e2a50431c4984ba09cbdf3a20c5ca45b18bb715f27cd8924cb2edd6",
+      "source_runtime_unchanged": true,
+      "workers_after_retirement": [
+        {
+          "present": false,
+          "pid": 55136
+        }
+      ],
+      "transaction_directories_remaining": [],
+      "worker_retirement": "forced_after_completed_output",
+      "output_media": {
+        "size": [
+          3840,
+          2160
+        ],
+        "rate": "30",
+        "frames": 96,
+        "pts_exact": true,
+        "dts_monotonic": true,
+        "audio_packets": 151,
+        "audio_sha256": "7dd2a50541809c8ed2143ddb2bd25b5835b43afa2184206396a0af8afd392fa6",
+        "audio_pts_sha256": "71b92d45d5679a10abf53fbc5ff9b840f5e0970c1a77b808c93a220d357e377d"
+      },
+      "parent_token_restricted": true
+    },
+    {
+      "case": "resident-hdr96repeat",
+      "status": "complete",
+      "passed": true,
+      "error": null,
+      "elapsed_seconds": 20.91913989999739,
+      "cancel_to_retirement_seconds": null,
+      "output_bytes": 9060988,
+      "output_sha256": "3b0d67d23e2a50431c4984ba09cbdf3a20c5ca45b18bb715f27cd8924cb2edd6",
+      "source_runtime_unchanged": true,
+      "workers_after_retirement": [
+        {
+          "present": false,
+          "pid": 50272
+        }
+      ],
+      "transaction_directories_remaining": [],
+      "worker_retirement": "forced_after_completed_output",
+      "output_media": {
+        "size": [
+          3840,
+          2160
+        ],
+        "rate": "30",
+        "frames": 96,
+        "pts_exact": true,
+        "dts_monotonic": true,
+        "audio_packets": 151,
+        "audio_sha256": "7dd2a50541809c8ed2143ddb2bd25b5835b43afa2184206396a0af8afd392fa6",
+        "audio_pts_sha256": "71b92d45d5679a10abf53fbc5ff9b840f5e0970c1a77b808c93a220d357e377d"
+      },
+      "parent_token_restricted": true
+    },
+    {
+      "case": "resident-hdrenhance",
+      "status": "failed",
+      "passed": false,
+      "error": "Traceback (most recent call last):\n  File \"F:\\project\\DLSS5Tool\\scripts\\verify_resident_acceptance.py\", line 104, in main\n    report=resident_sr.export_resident(source,output,plan,components,cancel=cancel,\n        frame_progress=on_frames,pool_name=pool.name,audit=args.audit,log_root=work/'logs')\n  File \"F:\\project\\DLSS5Tool\\dlss5tool\\resident_sr.py\", line 229, in export_resident\n    raise error\nRuntimeError: ValueError: Device enhancement requires neutral composition and no guidance\n",
+      "elapsed_seconds": 8.217855199996848,
+      "cancel_to_retirement_seconds": null,
+      "output_bytes": null,
+      "output_sha256": null,
+      "source_runtime_unchanged": true,
+      "workers_after_retirement": [
+        {
+          "present": false,
+          "pid": 36412
+        }
+      ],
+      "transaction_directories_remaining": [],
+      "worker_retirement": null,
+      "output_media": null,
+      "parent_token_restricted": true
+    },
+    {
+      "case": "resident-hdrenhance-r2",
+      "status": "complete",
+      "passed": true,
+      "error": null,
+      "elapsed_seconds": 39.527381199994124,
+      "cancel_to_retirement_seconds": null,
+      "output_bytes": 9020276,
+      "output_sha256": "b89835251821161d2527fd969a4c806df783a976bf330403cfc258a69fb8ae9e",
+      "source_runtime_unchanged": true,
+      "workers_after_retirement": [
+        {
+          "present": false,
+          "pid": 49428
+        }
+      ],
+      "transaction_directories_remaining": [],
+      "worker_retirement": "forced_after_completed_output",
+      "output_media": {
+        "size": [
+          3840,
+          2160
+        ],
+        "rate": "30",
+        "frames": 96,
+        "pts_exact": true,
+        "dts_monotonic": true,
+        "audio_packets": 151,
+        "audio_sha256": "7dd2a50541809c8ed2143ddb2bd25b5835b43afa2184206396a0af8afd392fa6",
+        "audio_pts_sha256": "71b92d45d5679a10abf53fbc5ff9b840f5e0970c1a77b808c93a220d357e377d"
+      },
+      "parent_token_restricted": true
+    },
+    {
+      "case": "resident-hdrenhance-r3",
+      "status": "complete",
+      "passed": true,
+      "error": null,
+      "elapsed_seconds": 38.32937340000353,
+      "cancel_to_retirement_seconds": null,
+      "output_bytes": 9020276,
+      "output_sha256": "b89835251821161d2527fd969a4c806df783a976bf330403cfc258a69fb8ae9e",
+      "source_runtime_unchanged": true,
+      "workers_after_retirement": [
+        {
+          "present": false,
+          "pid": 58996
+        }
+      ],
+      "transaction_directories_remaining": [],
+      "worker_retirement": "forced_after_completed_output",
+      "output_media": {
+        "size": [
+          3840,
+          2160
+        ],
+        "rate": "30",
+        "frames": 96,
+        "pts_exact": true,
+        "dts_monotonic": true,
+        "audio_packets": 151,
+        "audio_sha256": "7dd2a50541809c8ed2143ddb2bd25b5835b43afa2184206396a0af8afd392fa6",
+        "audio_pts_sha256": "71b92d45d5679a10abf53fbc5ff9b840f5e0970c1a77b808c93a220d357e377d"
+      },
+      "parent_token_restricted": true
+    },
+    {
+      "case": "resident-hdrenhanceordinary",
+      "status": "complete",
+      "passed": true,
+      "error": null,
+      "elapsed_seconds": 42.17140649999783,
+      "cancel_to_retirement_seconds": null,
+      "output_bytes": 9020276,
+      "output_sha256": "b89835251821161d2527fd969a4c806df783a976bf330403cfc258a69fb8ae9e",
+      "source_runtime_unchanged": true,
+      "workers_after_retirement": [
+        {
+          "present": false,
+          "pid": 42668
+        }
+      ],
+      "transaction_directories_remaining": [],
+      "worker_retirement": "normal",
+      "output_media": {
+        "size": [
+          3840,
+          2160
+        ],
+        "rate": "30",
+        "frames": 96,
+        "pts_exact": true,
+        "dts_monotonic": true,
+        "audio_packets": 151,
+        "audio_sha256": "7dd2a50541809c8ed2143ddb2bd25b5835b43afa2184206396a0af8afd392fa6",
+        "audio_pts_sha256": "71b92d45d5679a10abf53fbc5ff9b840f5e0970c1a77b808c93a220d357e377d"
+      },
+      "parent_token_restricted": false
+    },
+    {
+      "case": "resident-hdrordinary",
+      "status": "complete",
+      "passed": true,
+      "error": null,
+      "elapsed_seconds": 13.984532300004503,
+      "cancel_to_retirement_seconds": null,
+      "output_bytes": 9060988,
+      "output_sha256": "3b0d67d23e2a50431c4984ba09cbdf3a20c5ca45b18bb715f27cd8924cb2edd6",
+      "source_runtime_unchanged": true,
+      "workers_after_retirement": [
+        {
+          "present": false,
+          "pid": 58792
+        }
+      ],
+      "transaction_directories_remaining": [],
+      "worker_retirement": "normal",
+      "output_media": {
+        "size": [
+          3840,
+          2160
+        ],
+        "rate": "30",
+        "frames": 96,
+        "pts_exact": true,
+        "dts_monotonic": true,
+        "audio_packets": 151,
+        "audio_sha256": "7dd2a50541809c8ed2143ddb2bd25b5835b43afa2184206396a0af8afd392fa6",
+        "audio_pts_sha256": "71b92d45d5679a10abf53fbc5ff9b840f5e0970c1a77b808c93a220d357e377d"
+      },
+      "parent_token_restricted": false
+    },
+    {
+      "case": "resident-sdr1800",
+      "status": "complete",
+      "passed": true,
+      "error": null,
+      "elapsed_seconds": 48.9652070000011,
+      "cancel_to_retirement_seconds": null,
+      "output_bytes": 363137304,
+      "output_sha256": "acda138baa5cedef7c7f2380553dacab865f8280f77075854b7857b46d3c8f08",
+      "source_runtime_unchanged": true,
+      "workers_after_retirement": [
+        {
+          "present": false,
+          "pid": 52564
+        }
+      ],
+      "transaction_directories_remaining": [],
+      "worker_retirement": "forced_after_completed_output",
+      "output_media": {
+        "size": [
+          3840,
+          2160
+        ],
+        "rate": "30",
+        "frames": 1800,
+        "pts_exact": true,
+        "dts_monotonic": true,
+        "audio_packets": 2814,
+        "audio_sha256": "b2b5329efe0d573b8112e6f386791500168aabce0e70d27b9fca0de0007a85fe",
+        "audio_pts_sha256": "91bb88e3c9106a078e711913271d70b0a4ded2821a729d1f19edbb725f7cf9e8"
+      },
+      "parent_token_restricted": true
+    },
+    {
+      "case": "resident-sdr96",
+      "status": "complete",
+      "passed": true,
+      "error": null,
+      "elapsed_seconds": 19.19912459999614,
+      "cancel_to_retirement_seconds": null,
+      "output_bytes": 19606232,
+      "output_sha256": "452f8084610079a5072ee6326a935a92f7497472524bc21443c5975e61e2f1d4",
+      "source_runtime_unchanged": true,
+      "workers_after_retirement": [
+        {
+          "present": false,
+          "pid": 33556
+        }
+      ],
+      "transaction_directories_remaining": [],
+      "worker_retirement": "forced_after_completed_output",
+      "output_media": {
+        "size": [
+          3840,
+          2160
+        ],
+        "rate": "30",
+        "frames": 96,
+        "pts_exact": true,
+        "dts_monotonic": true,
+        "audio_packets": 151,
+        "audio_sha256": "7dd2a50541809c8ed2143ddb2bd25b5835b43afa2184206396a0af8afd392fa6",
+        "audio_pts_sha256": "71b92d45d5679a10abf53fbc5ff9b840f5e0970c1a77b808c93a220d357e377d"
+      },
+      "parent_token_restricted": true
+    },
+    {
+      "case": "resident-sdr96repeat",
+      "status": "complete",
+      "passed": true,
+      "error": null,
+      "elapsed_seconds": 19.862189100007527,
+      "cancel_to_retirement_seconds": null,
+      "output_bytes": 19606232,
+      "output_sha256": "452f8084610079a5072ee6326a935a92f7497472524bc21443c5975e61e2f1d4",
+      "source_runtime_unchanged": true,
+      "workers_after_retirement": [
+        {
+          "present": false,
+          "pid": 54928
+        }
+      ],
+      "transaction_directories_remaining": [],
+      "worker_retirement": "forced_after_completed_output",
+      "output_media": {
+        "size": [
+          3840,
+          2160
+        ],
+        "rate": "30",
+        "frames": 96,
+        "pts_exact": true,
+        "dts_monotonic": true,
+        "audio_packets": 151,
+        "audio_sha256": "7dd2a50541809c8ed2143ddb2bd25b5835b43afa2184206396a0af8afd392fa6",
+        "audio_pts_sha256": "71b92d45d5679a10abf53fbc5ff9b840f5e0970c1a77b808c93a220d357e377d"
+      },
+      "parent_token_restricted": true
+    },
+    {
+      "case": "resident-sdrcancel",
+      "status": "cancelled",
+      "passed": true,
+      "error": null,
+      "elapsed_seconds": 12.805776500012144,
+      "cancel_to_retirement_seconds": 0.15028470000834204,
+      "output_bytes": null,
+      "output_sha256": null,
+      "source_runtime_unchanged": true,
+      "workers_after_retirement": [
+        {
+          "present": false,
+          "pid": 50812
+        }
+      ],
+      "transaction_directories_remaining": [],
+      "worker_retirement": null,
+      "output_media": null,
+      "parent_token_restricted": true
+    },
+    {
+      "case": "resident-sdrenhance",
+      "status": "failed",
+      "passed": false,
+      "error": "Traceback (most recent call last):\n  File \"F:\\project\\DLSS5Tool\\scripts\\verify_resident_acceptance.py\", line 104, in main\n    report=resident_sr.export_resident(source,output,plan,components,cancel=cancel,\n        frame_progress=on_frames,pool_name=pool.name,audit=args.audit,log_root=work/'logs')\n  File \"F:\\project\\DLSS5Tool\\dlss5tool\\resident_sr.py\", line 229, in export_resident\n    raise error\nRuntimeError: ValueError: Device enhancement requires neutral composition and no guidance\n",
+      "elapsed_seconds": 7.769316499994602,
+      "cancel_to_retirement_seconds": null,
+      "output_bytes": null,
+      "output_sha256": null,
+      "source_runtime_unchanged": true,
+      "workers_after_retirement": [
+        {
+          "present": false,
+          "pid": 17212
+        }
+      ],
+      "transaction_directories_remaining": [],
+      "worker_retirement": null,
+      "output_media": null,
+      "parent_token_restricted": true
+    },
+    {
+      "case": "resident-sdrenhance-r2",
+      "status": "failed",
+      "passed": false,
+      "error": "Traceback (most recent call last):\n  File \"F:\\project\\DLSS5Tool\\scripts\\verify_resident_acceptance.py\", line 104, in main\n    report=resident_sr.export_resident(source,output,plan,components,cancel=cancel,\n        frame_progress=on_frames,pool_name=pool.name,audit=args.audit,log_root=work/'logs')\n  File \"F:\\project\\DLSS5Tool\\dlss5tool\\resident_sr.py\", line 229, in export_resident\n    raise error\nRuntimeError: HostProcessError: GPU input requires a compatible idle v2 host\nTraceback (most recent call last):\n  File \"F:\\project\\DLSS5Tool\\dlss5tool\\dlss_host_process.py\", line 164, in _host_worker_main\n    connection.send({'ok':True,'operation':operation,**live.gpu_input_create()})\n                                                       ~~~~~~~~~~~~~~~~~~~~~^^\n  File \"F:\\project\\DLSS5Tool\\dlss5tool\\dlss_engine.py\", line 552, in gpu_input_create\n    raise RuntimeError('GPU input requires a compatible idle v2 host')\nRuntimeError: GPU input requires a compatible idle v2 host\n",
+      "elapsed_seconds": 15.22132780001266,
+      "cancel_to_retirement_seconds": null,
+      "output_bytes": null,
+      "output_sha256": null,
+      "source_runtime_unchanged": true,
+      "workers_after_retirement": [
+        {
+          "present": false,
+          "pid": 34456
+        }
+      ],
+      "transaction_directories_remaining": [],
+      "worker_retirement": null,
+      "output_media": null,
+      "parent_token_restricted": true
+    },
+    {
+      "case": "resident-sdrenhance-r3",
+      "status": "complete",
+      "passed": true,
+      "error": null,
+      "elapsed_seconds": 30.811054299992975,
+      "cancel_to_retirement_seconds": null,
+      "output_bytes": 23469441,
+      "output_sha256": "0bf944bd6e183098c4c71819c241ad93a6ec2635e1e6be07ae2be9c33954a80e",
+      "source_runtime_unchanged": true,
+      "workers_after_retirement": [
+        {
+          "present": false,
+          "pid": 18228
+        }
+      ],
+      "transaction_directories_remaining": [],
+      "worker_retirement": "forced_after_completed_output",
+      "output_media": {
+        "size": [
+          3840,
+          2160
+        ],
+        "rate": "30",
+        "frames": 96,
+        "pts_exact": true,
+        "dts_monotonic": true,
+        "audio_packets": 151,
+        "audio_sha256": "7dd2a50541809c8ed2143ddb2bd25b5835b43afa2184206396a0af8afd392fa6",
+        "audio_pts_sha256": "71b92d45d5679a10abf53fbc5ff9b840f5e0970c1a77b808c93a220d357e377d"
+      },
+      "parent_token_restricted": true
+    },
+    {
+      "case": "resident-sdrenhanceordinary",
+      "status": "complete",
+      "passed": true,
+      "error": null,
+      "elapsed_seconds": 34.77960970001004,
+      "cancel_to_retirement_seconds": null,
+      "output_bytes": 23469441,
+      "output_sha256": "0bf944bd6e183098c4c71819c241ad93a6ec2635e1e6be07ae2be9c33954a80e",
+      "source_runtime_unchanged": true,
+      "workers_after_retirement": [
+        {
+          "present": false,
+          "pid": 4488
+        }
+      ],
+      "transaction_directories_remaining": [],
+      "worker_retirement": "normal",
+      "output_media": {
+        "size": [
+          3840,
+          2160
+        ],
+        "rate": "30",
+        "frames": 96,
+        "pts_exact": true,
+        "dts_monotonic": true,
+        "audio_packets": 151,
+        "audio_sha256": "7dd2a50541809c8ed2143ddb2bd25b5835b43afa2184206396a0af8afd392fa6",
+        "audio_pts_sha256": "71b92d45d5679a10abf53fbc5ff9b840f5e0970c1a77b808c93a220d357e377d"
+      },
+      "parent_token_restricted": false
+    },
+    {
+      "case": "resident-sdrordinary",
+      "status": "complete",
+      "passed": true,
+      "error": null,
+      "elapsed_seconds": 12.950535800002399,
+      "cancel_to_retirement_seconds": null,
+      "output_bytes": 19606232,
+      "output_sha256": "452f8084610079a5072ee6326a935a92f7497472524bc21443c5975e61e2f1d4",
+      "source_runtime_unchanged": true,
+      "workers_after_retirement": [
+        {
+          "present": false,
+          "pid": 39544
+        }
+      ],
+      "transaction_directories_remaining": [],
+      "worker_retirement": "normal",
+      "output_media": {
+        "size": [
+          3840,
+          2160
+        ],
+        "rate": "30",
+        "frames": 96,
+        "pts_exact": true,
+        "dts_monotonic": true,
+        "audio_packets": 151,
+        "audio_sha256": "7dd2a50541809c8ed2143ddb2bd25b5835b43afa2184206396a0af8afd392fa6",
+        "audio_pts_sha256": "71b92d45d5679a10abf53fbc5ff9b840f5e0970c1a77b808c93a220d357e377d"
+      },
+      "parent_token_restricted": false
+    }
+  ],
+  "repeats": [
+    {
+      "case": "sdr96",
+      "output_file_sha256_equal": true,
+      "frame_hashes_equal": true
+    },
+    {
+      "case": "hdr96",
+      "output_file_sha256_equal": true,
+      "frame_hashes_equal": true
+    }
+  ],
+  "direct_close": [
+    {
+      "case": "cuda-close-fixed-r2",
+      "processing_and_natural_close_passed": false,
+      "error": "natural_close_timeout",
+      "returncode": 0,
+      "elapsed_seconds": 60.20397950000188,
+      "compatibility": {
+        "status": "applied",
+        "scope": "owned_worker_primary_token",
+        "permission_mask": 131072,
+        "worker_pid": 42392,
+        "parent_token_id": 7097363831,
+        "worker_token_id": 7097592760,
+        "reason": "restricted_messagebus_read_control",
+        "old_dacl_sha256": "efc6612d54cf1807ef4b81eb256cb5c26f61d913e8e3cd3e3dd84dbd77e705c0",
+        "new_dacl_sha256": "72ad1a935cb35006a1046e69beb75a51b5c149308289b89e86c2c32759255139",
+        "parent_token_unchanged": true
+      },
+      "control_off": false,
+      "source_runtime_unchanged": true,
+      "remaining_before_supervisor_retirement": [
+        42392,
+        55460
+      ],
+      "supervisor_recovery": true,
+      "last_phase": "native-destroy-begin",
+      "frames": 3
+    },
+    {
+      "case": "cuda-close-ordinary",
+      "processing_and_natural_close_passed": true,
+      "error": null,
+      "returncode": 0,
+      "elapsed_seconds": 3.52991209999891,
+      "compatibility": {
+        "status": "unchanged",
+        "scope": "owned_worker_primary_token",
+        "permission_mask": 0,
+        "worker_pid": 45528,
+        "parent_token_id": 7214769711,
+        "worker_token_id": 7214984326,
+        "reason": "system_read_control_already_present"
+      },
+      "control_off": false,
+      "source_runtime_unchanged": true,
+      "remaining_before_supervisor_retirement": [
+        43944,
+        808,
+        58020,
+        14208,
+        54428,
+        46972,
+        4452,
+        48912
+      ],
+      "supervisor_recovery": true,
+      "last_phase": "cuda-close-end",
+      "frames": 3
+    },
+    {
+      "case": "cuda-close-syncdiag",
+      "processing_and_natural_close_passed": false,
+      "error": "natural_close_timeout",
+      "returncode": 0,
+      "elapsed_seconds": 60.29353529999207,
+      "compatibility": {
+        "status": "applied",
+        "scope": "owned_worker_primary_token",
+        "permission_mask": 131072,
+        "worker_pid": 36024,
+        "parent_token_id": 7682142576,
+        "worker_token_id": 7682444070,
+        "reason": "restricted_messagebus_read_control",
+        "old_dacl_sha256": "efc6612d54cf1807ef4b81eb256cb5c26f61d913e8e3cd3e3dd84dbd77e705c0",
+        "new_dacl_sha256": "72ad1a935cb35006a1046e69beb75a51b5c149308289b89e86c2c32759255139",
+        "parent_token_unchanged": true
+      },
+      "control_off": false,
+      "source_runtime_unchanged": true,
+      "remaining_before_supervisor_retirement": [
+        36024,
+        23452,
+        36008
+      ],
+      "supervisor_recovery": true,
+      "last_phase": "native-destroy-begin",
+      "frames": 3
+    }
+  ],
+  "protected_user_files_unchanged": true,
+  "task_current_bytes": 707843109
+}
