@@ -1,0 +1,437 @@
+{
+  "python_ast_passed": true,
+  "final_sources": [
+    {
+      "file": "scripts/windows_process_context.py",
+      "bytes": 6457,
+      "sha256": "9cbc93b96d1f9acf48c82f7611d2c268a8ce40cbdef2f0f24698fa10a7fa3b8c"
+    },
+    {
+      "file": "scripts/profile_native_frame_memory.py",
+      "bytes": 24472,
+      "sha256": "cbd300ebec986799bfccb8fd9908ed2a27ce6b98f27d40438bec7c9e182db69e"
+    },
+    {
+      "file": "scripts/verify_p0_stability.py",
+      "bytes": 39669,
+      "sha256": "ef873d5a377a72979053a239d047245189c396795cc11aada72d405ca05e8b85"
+    },
+    {
+      "file": "scripts/native_message_bus_trace.cpp",
+      "bytes": 17440,
+      "sha256": "1e80ab2248b5c3a73e1c40c82eceef02306c4671a13c8af8714420a45dc31a0b"
+    },
+    {
+      "file": "scripts/compare_p0_stability.py",
+      "bytes": 7384,
+      "sha256": "08a4d28b2b8feaaf06d58b0164a8822d114e9a47885b72955eb3862105ff19f8"
+    }
+  ],
+  "smokes": [
+    {
+      "case": "native-idle-context-smoke",
+      "context": {
+        "supported": true,
+        "pid": 13164,
+        "read_only": true,
+        "user_sid_sha256": "f741f07a20b34b3cc78acaa25503af4d14f868a4edcee3a6a5c8ce6974017b6f",
+        "token_restricted": true,
+        "primary_token_id": 6387324513,
+        "elevated": false,
+        "app_container": false,
+        "integrity_rid": 8192,
+        "session_id": 1,
+        "created_filetime": 134388575636710684,
+        "process_dacl": {
+          "query_error": 0,
+          "explicit_system_allow_mask": 0,
+          "explicit_system_deny_mask": 0,
+          "effective_access_calculated": false,
+          "ace_count": 2
+        },
+        "primary_token_dacl": {
+          "query_error": 0,
+          "explicit_system_allow_mask": 0,
+          "explicit_system_deny_mask": 0,
+          "effective_access_calculated": false,
+          "ace_count": 3
+        },
+        "query_complete": true
+      },
+      "exact_process_identity_matched": true,
+      "processing_and_exit_passed": true,
+      "source_runtime_unchanged": true
+    },
+    {
+      "case": "native-idle-context-ordinary-smoke",
+      "context": {
+        "supported": true,
+        "pid": 47760,
+        "read_only": true,
+        "user_sid_sha256": "d901e27183f6dbf8b9407a0db6a6bda19780cf34381bea3467f892e79f369ebd",
+        "token_restricted": false,
+        "primary_token_id": 6397410474,
+        "elevated": false,
+        "app_container": false,
+        "integrity_rid": 8192,
+        "session_id": 1,
+        "created_filetime": 134388577734946384,
+        "process_dacl": {
+          "query_error": 0,
+          "explicit_system_allow_mask": 2097151,
+          "explicit_system_deny_mask": 0,
+          "effective_access_calculated": false,
+          "ace_count": 3
+        },
+        "primary_token_dacl": {
+          "query_error": 0,
+          "explicit_system_allow_mask": 983551,
+          "explicit_system_deny_mask": 0,
+          "effective_access_calculated": false,
+          "ace_count": 4
+        },
+        "query_complete": true
+      },
+      "exact_process_identity_matched": true,
+      "processing_and_exit_passed": true,
+      "source_runtime_unchanged": true
+    }
+  ],
+  "protected_user_files_unchanged": true,
+  "git_diff_check_passed": true,
+  "audited_process_identity_count": 75,
+  "active_owned_processes": [],
+  "audited_process_identities": [
+    {
+      "pid": 556,
+      "created": 134388572368069128
+    },
+    {
+      "pid": 1244,
+      "created": 134388552573330082
+    },
+    {
+      "pid": 2556,
+      "created": 134388545642165488
+    },
+    {
+      "pid": 4452,
+      "created": 134388542582364354
+    },
+    {
+      "pid": 5760,
+      "created": 134388552573654776
+    },
+    {
+      "pid": 6840,
+      "created": 134388542582520476
+    },
+    {
+      "pid": 9860,
+      "created": 134388579311123327
+    },
+    {
+      "pid": 10392,
+      "created": 134388552573712812
+    },
+    {
+      "pid": 13164,
+      "created": 134388575636710684
+    },
+    {
+      "pid": 16200,
+      "created": 134388561551809551
+    },
+    {
+      "pid": 17068,
+      "created": 134388545618730237
+    },
+    {
+      "pid": 19944,
+      "created": 134388572701634737
+    },
+    {
+      "pid": 20648,
+      "created": 134388552573801965
+    },
+    {
+      "pid": 20696,
+      "created": 134388536267218106
+    },
+    {
+      "pid": 20696,
+      "created": 134388545642274144
+    },
+    {
+      "pid": 20964,
+      "created": 134388552525026321
+    },
+    {
+      "pid": 21456,
+      "created": 134388552530574802
+    },
+    {
+      "pid": 21484,
+      "created": 134388545612982290
+    },
+    {
+      "pid": 22836,
+      "created": 134388542524447915
+    },
+    {
+      "pid": 25628,
+      "created": 134388545642210651
+    },
+    {
+      "pid": 26808,
+      "created": 134388542582411807
+    },
+    {
+      "pid": 27228,
+      "created": 134388552687045221
+    },
+    {
+      "pid": 27736,
+      "created": 134388577735002831
+    },
+    {
+      "pid": 28568,
+      "created": 134388545642258524
+    },
+    {
+      "pid": 28748,
+      "created": 134388568566208236
+    },
+    {
+      "pid": 32000,
+      "created": 134388552715484387
+    },
+    {
+      "pid": 32260,
+      "created": 134388575636773196
+    },
+    {
+      "pid": 33448,
+      "created": 134388542582472099
+    },
+    {
+      "pid": 34648,
+      "created": 134388542582303861
+    },
+    {
+      "pid": 34956,
+      "created": 134388569233553659
+    },
+    {
+      "pid": 35136,
+      "created": 134388545641957116
+    },
+    {
+      "pid": 35224,
+      "created": 134388542582078090
+    },
+    {
+      "pid": 35600,
+      "created": 134388552715107952
+    },
+    {
+      "pid": 35800,
+      "created": 134388579331865884
+    },
+    {
+      "pid": 37032,
+      "created": 134388552573757878
+    },
+    {
+      "pid": 39884,
+      "created": 134388579347571594
+    },
+    {
+      "pid": 41196,
+      "created": 134388557379977563
+    },
+    {
+      "pid": 42556,
+      "created": 134388545642322007
+    },
+    {
+      "pid": 43524,
+      "created": 134388552573742836
+    },
+    {
+      "pid": 44884,
+      "created": 134388552715484464
+    },
+    {
+      "pid": 44916,
+      "created": 134388563500801427
+    },
+    {
+      "pid": 45084,
+      "created": 134388542530652650
+    },
+    {
+      "pid": 45288,
+      "created": 134388552715419977
+    },
+    {
+      "pid": 45716,
+      "created": 134388552573614940
+    },
+    {
+      "pid": 46128,
+      "created": 134388552715543386
+    },
+    {
+      "pid": 46592,
+      "created": 134388566831619944
+    },
+    {
+      "pid": 47284,
+      "created": 134388552715381007
+    },
+    {
+      "pid": 47760,
+      "created": 134388577734946384
+    },
+    {
+      "pid": 47932,
+      "created": 134388552573672042
+    },
+    {
+      "pid": 48260,
+      "created": 134388542536505900
+    },
+    {
+      "pid": 48956,
+      "created": 134388542524364773
+    },
+    {
+      "pid": 50448,
+      "created": 134388545641899281
+    },
+    {
+      "pid": 50488,
+      "created": 134388552519266335
+    },
+    {
+      "pid": 51616,
+      "created": 134388540483145652
+    },
+    {
+      "pid": 51816,
+      "created": 134388542582024542
+    },
+    {
+      "pid": 52196,
+      "created": 134388545612912790
+    },
+    {
+      "pid": 52820,
+      "created": 134388552715165105
+    },
+    {
+      "pid": 53876,
+      "created": 134388542582445389
+    },
+    {
+      "pid": 53880,
+      "created": 134388552530494374
+    },
+    {
+      "pid": 54156,
+      "created": 134388552573700387
+    },
+    {
+      "pid": 55336,
+      "created": 134388552573384893
+    },
+    {
+      "pid": 55508,
+      "created": 134388568899894241
+    },
+    {
+      "pid": 55844,
+      "created": 134388552687104545
+    },
+    {
+      "pid": 56172,
+      "created": 134388542582392934
+    },
+    {
+      "pid": 56384,
+      "created": 134388579295350823
+    },
+    {
+      "pid": 56820,
+      "created": 134388542330275007
+    },
+    {
+      "pid": 57688,
+      "created": 134388552692890908
+    },
+    {
+      "pid": 57724,
+      "created": 134388569564991664
+    },
+    {
+      "pid": 57764,
+      "created": 134388545642227467
+    },
+    {
+      "pid": 57992,
+      "created": 134388563837205437
+    },
+    {
+      "pid": 60288,
+      "created": 134388536600953136
+    },
+    {
+      "pid": 60356,
+      "created": 134388542536441584
+    },
+    {
+      "pid": 60620,
+      "created": 134388552715436327
+    },
+    {
+      "pid": 61116,
+      "created": 134388542582347474
+    },
+    {
+      "pid": 61348,
+      "created": 134388552519323897
+    }
+  ],
+  "reused_process_ids": [],
+  "unverified_process_ids": [],
+  "current_context": {
+    "supported": true,
+    "pid": 53872,
+    "read_only": true,
+    "user_sid_sha256": "f741f07a20b34b3cc78acaa25503af4d14f868a4edcee3a6a5c8ce6974017b6f",
+    "token_restricted": true,
+    "primary_token_id": 6471518253,
+    "elevated": false,
+    "app_container": false,
+    "integrity_rid": 8192,
+    "session_id": 1,
+    "created_filetime": 134388591364003308,
+    "process_dacl": {
+      "query_error": 0,
+      "explicit_system_allow_mask": 0,
+      "explicit_system_deny_mask": 0,
+      "effective_access_calculated": false,
+      "ace_count": 2
+    },
+    "primary_token_dacl": {
+      "query_error": 0,
+      "explicit_system_allow_mask": 0,
+      "explicit_system_deny_mask": 0,
+      "effective_access_calculated": false,
+      "ace_count": 3
+    },
+    "query_complete": true
+  },
+  "no_gpu_or_permission_mutation": true
+}

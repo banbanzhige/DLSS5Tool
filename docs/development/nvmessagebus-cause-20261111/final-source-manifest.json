@@ -1,0 +1,27 @@
+[
+  {
+    "file": "scripts/windows_process_context.py",
+    "bytes": 6457,
+    "sha256": "9cbc93b96d1f9acf48c82f7611d2c268a8ce40cbdef2f0f24698fa10a7fa3b8c"
+  },
+  {
+    "file": "scripts/profile_native_frame_memory.py",
+    "bytes": 24472,
+    "sha256": "cbd300ebec986799bfccb8fd9908ed2a27ce6b98f27d40438bec7c9e182db69e"
+  },
+  {
+    "file": "scripts/verify_p0_stability.py",
+    "bytes": 39669,
+    "sha256": "ef873d5a377a72979053a239d047245189c396795cc11aada72d405ca05e8b85"
+  },
+  {
+    "file": "scripts/native_message_bus_trace.cpp",
+    "bytes": 17440,
+    "sha256": "1e80ab2248b5c3a73e1c40c82eceef02306c4671a13c8af8714420a45dc31a0b"
+  },
+  {
+    "file": "scripts/compare_p0_stability.py",
+    "bytes": 7384,
+    "sha256": "08a4d28b2b8feaaf06d58b0164a8822d114e9a47885b72955eb3862105ff19f8"
+  }
+]

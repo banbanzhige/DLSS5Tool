@@ -1,0 +1,672 @@
+{
+  "archive": "docs\\development\\nvmessagebus-cause-20261111\\observations.zip",
+  "archive_sha256": "52006ece62992aedcb95157f8297a652b6462ad9ddd946f1c3afd454a42339bb",
+  "archive_bytes": 1941263,
+  "entries": 334,
+  "uncompressed_bytes": 33357648,
+  "all_entry_lengths_and_sha256_verified": true,
+  "source_bytes_equal": true,
+  "binary_whitelist_verified": true,
+  "binaries": [
+    {
+      "file": "measured-v1/native_message_bus_trace.dll",
+      "sha256": "6de46b8de4d553578053a9ec65e0f8ae39e50e9417be3aee3213d709186f9e96"
+    },
+    {
+      "file": "message_trace_fixture.dll",
+      "sha256": "f48ad62ef700d3600f4debb300bb4a1fae3bc12eaa795eb34fc89202d2bcdbf1"
+    },
+    {
+      "file": "native_message_bus_trace.dll",
+      "sha256": "71fc820f1f59f16a68f92474f57206558883f57bc56ebc63f97b8e2be8658389"
+    },
+    {
+      "file": "native_thread_activity.dll",
+      "sha256": "507db85d654eaffaf56e22d6927e30195fd46d4fd1daa5a04253860c1e2ce68c"
+    },
+    {
+      "file": "thread-driver-recheck/native_driver_thread_probe.exe",
+      "sha256": "91e1e2dc24c7ef28cf8c1493a7dcc4054f6b5d883c9b173341d4cb0ffef09e65"
+    },
+    {
+      "file": "thread-driver-recheck/native_heap_trace.dll",
+      "sha256": "89b4ca544bbb96c8c162865008c786814da1878d85cb9b42dc166190fc65d36d"
+    }
+  ],
+  "exclusive_open_all_files_passed": true,
+  "source_and_destination_reparse_check_passed": true,
+  "free_bytes_before_archive": 50494857216,
+  "free_bytes_after_archive": 50494840832,
+  "cleanup_completed": true,
+  "cleanup_plan": [
+    {
+      "path": "F:\\project\\DLSS5Tool\\tmp\\nvmessagebus-cause-20261111\\acl-ordinary-token.json",
+      "directory": false
+    },
+    {
+      "path": "F:\\project\\DLSS5Tool\\tmp\\nvmessagebus-cause-20261111\\acl-ordinary.json",
+      "directory": false
+    },
+    {
+      "path": "F:\\project\\DLSS5Tool\\tmp\\nvmessagebus-cause-20261111\\acl-sandbox-token.json",
+      "directory": false
+    },
+    {
+      "path": "F:\\project\\DLSS5Tool\\tmp\\nvmessagebus-cause-20261111\\acl-sandboxed.json",
+      "directory": false
+    },
+    {
+      "path": "F:\\project\\DLSS5Tool\\tmp\\nvmessagebus-cause-20261111\\app-broadcast-token-access.txt",
+      "directory": false
+    },
+    {
+      "path": "F:\\project\\DLSS5Tool\\tmp\\nvmessagebus-cause-20261111\\archive-source-audit.json",
+      "directory": false
+    },
+    {
+      "path": "F:\\project\\DLSS5Tool\\tmp\\nvmessagebus-cause-20261111\\archive_evidence.py",
+      "directory": false
+    },
+    {
+      "path": "F:\\project\\DLSS5Tool\\tmp\\nvmessagebus-cause-20261111\\build",
+      "directory": true
+    },
+    {
+      "path": "F:\\project\\DLSS5Tool\\tmp\\nvmessagebus-cause-20261111\\build-v2.cmd",
+      "directory": false
+    },
+    {
+      "path": "F:\\project\\DLSS5Tool\\tmp\\nvmessagebus-cause-20261111\\build.cmd",
+      "directory": false
+    },
+    {
+      "path": "F:\\project\\DLSS5Tool\\tmp\\nvmessagebus-cause-20261111\\context-helper-ordinary.json",
+      "directory": false
+    },
+    {
+      "path": "F:\\project\\DLSS5Tool\\tmp\\nvmessagebus-cause-20261111\\context-helper-sandbox.json",
+      "directory": false
+    },
+    {
+      "path": "F:\\project\\DLSS5Tool\\tmp\\nvmessagebus-cause-20261111\\driver-bus-config.json",
+      "directory": false
+    },
+    {
+      "path": "F:\\project\\DLSS5Tool\\tmp\\nvmessagebus-cause-20261111\\driver-bus-token-access.txt",
+      "directory": false
+    },
+    {
+      "path": "F:\\project\\DLSS5Tool\\tmp\\nvmessagebus-cause-20261111\\driver-threads-ordinary-confirm-control-traced",
+      "directory": true
+    },
+    {
+      "path": "F:\\project\\DLSS5Tool\\tmp\\nvmessagebus-cause-20261111\\driver-threads-ordinary-confirm-control-untraced",
+      "directory": true
+    },
+    {
+      "path": "F:\\project\\DLSS5Tool\\tmp\\nvmessagebus-cause-20261111\\driver-threads-ordinary-confirm-nvidia-traced",
+      "directory": true
+    },
+    {
+      "path": "F:\\project\\DLSS5Tool\\tmp\\nvmessagebus-cause-20261111\\driver-threads-ordinary-confirm-nvidia-untraced",
+      "directory": true
+    },
+    {
+      "path": "F:\\project\\DLSS5Tool\\tmp\\nvmessagebus-cause-20261111\\driver-threads-summary-ordinary-confirm.json",
+      "directory": false
+    },
+    {
+      "path": "F:\\project\\DLSS5Tool\\tmp\\nvmessagebus-cause-20261111\\final-checks.json",
+      "directory": false
+    },
+    {
+      "path": "F:\\project\\DLSS5Tool\\tmp\\nvmessagebus-cause-20261111\\final-source-manifest.json",
+      "directory": false
+    },
+    {
+      "path": "F:\\project\\DLSS5Tool\\tmp\\nvmessagebus-cause-20261111\\final-sources",
+      "directory": true
+    },
+    {
+      "path": "F:\\project\\DLSS5Tool\\tmp\\nvmessagebus-cause-20261111\\final_checks.py",
+      "directory": false
+    },
+    {
+      "path": "F:\\project\\DLSS5Tool\\tmp\\nvmessagebus-cause-20261111\\measured-common",
+      "directory": true
+    },
+    {
+      "path": "F:\\project\\DLSS5Tool\\tmp\\nvmessagebus-cause-20261111\\measured-factorial",
+      "directory": true
+    },
+    {
+      "path": "F:\\project\\DLSS5Tool\\tmp\\nvmessagebus-cause-20261111\\measured-process-token",
+      "directory": true
+    },
+    {
+      "path": "F:\\project\\DLSS5Tool\\tmp\\nvmessagebus-cause-20261111\\measured-v1",
+      "directory": true
+    },
+    {
+      "path": "F:\\project\\DLSS5Tool\\tmp\\nvmessagebus-cause-20261111\\message_trace_fixture.cpp",
+      "directory": false
+    },
+    {
+      "path": "F:\\project\\DLSS5Tool\\tmp\\nvmessagebus-cause-20261111\\message_trace_fixture.dll",
+      "directory": false
+    },
+    {
+      "path": "F:\\project\\DLSS5Tool\\tmp\\nvmessagebus-cause-20261111\\native-idle-context-ordinary-smoke",
+      "directory": true
+    },
+    {
+      "path": "F:\\project\\DLSS5Tool\\tmp\\nvmessagebus-cause-20261111\\native-idle-context-smoke",
+      "directory": true
+    },
+    {
+      "path": "F:\\project\\DLSS5Tool\\tmp\\nvmessagebus-cause-20261111\\native-nr-ordinary-long-nr",
+      "directory": true
+    },
+    {
+      "path": "F:\\project\\DLSS5Tool\\tmp\\nvmessagebus-cause-20261111\\native-nr-ordinary-nr",
+      "directory": true
+    },
+    {
+      "path": "F:\\project\\DLSS5Tool\\tmp\\nvmessagebus-cause-20261111\\native-sr-ordinary-long-vsr",
+      "directory": true
+    },
+    {
+      "path": "F:\\project\\DLSS5Tool\\tmp\\nvmessagebus-cause-20261111\\native-sr-ordinary-vsr",
+      "directory": true
+    },
+    {
+      "path": "F:\\project\\DLSS5Tool\\tmp\\nvmessagebus-cause-20261111\\native_message_bus_trace.dll",
+      "directory": false
+    },
+    {
+      "path": "F:\\project\\DLSS5Tool\\tmp\\nvmessagebus-cause-20261111\\native_thread_activity.dll",
+      "directory": false
+    },
+    {
+      "path": "F:\\project\\DLSS5Tool\\tmp\\nvmessagebus-cause-20261111\\pipe-identity-ordinary.json",
+      "directory": false
+    },
+    {
+      "path": "F:\\project\\DLSS5Tool\\tmp\\nvmessagebus-cause-20261111\\pipe-identity-sandboxed.json",
+      "directory": false
+    },
+    {
+      "path": "F:\\project\\DLSS5Tool\\tmp\\nvmessagebus-cause-20261111\\pipe_identity.py",
+      "directory": false
+    },
+    {
+      "path": "F:\\project\\DLSS5Tool\\tmp\\nvmessagebus-cause-20261111\\probe_calls.py",
+      "directory": false
+    },
+    {
+      "path": "F:\\project\\DLSS5Tool\\tmp\\nvmessagebus-cause-20261111\\process_acl.py",
+      "directory": false
+    },
+    {
+      "path": "F:\\project\\DLSS5Tool\\tmp\\nvmessagebus-cause-20261111\\protected-user-file-hashes.json",
+      "directory": false
+    },
+    {
+      "path": "F:\\project\\DLSS5Tool\\tmp\\nvmessagebus-cause-20261111\\restricted_pc.py",
+      "directory": false
+    },
+    {
+      "path": "F:\\project\\DLSS5Tool\\tmp\\nvmessagebus-cause-20261111\\restricted_pc_v1.py",
+      "directory": false
+    },
+    {
+      "path": "F:\\project\\DLSS5Tool\\tmp\\nvmessagebus-cause-20261111\\runtime-function-ranges.json",
+      "directory": false
+    },
+    {
+      "path": "F:\\project\\DLSS5Tool\\tmp\\nvmessagebus-cause-20261111\\scope.md",
+      "directory": false
+    },
+    {
+      "path": "F:\\project\\DLSS5Tool\\tmp\\nvmessagebus-cause-20261111\\security-api-xrefs.json",
+      "directory": false
+    },
+    {
+      "path": "F:\\project\\DLSS5Tool\\tmp\\nvmessagebus-cause-20261111\\self-check-api-v2.jsonl",
+      "directory": false
+    },
+    {
+      "path": "F:\\project\\DLSS5Tool\\tmp\\nvmessagebus-cause-20261111\\self-check-api.jsonl",
+      "directory": false
+    },
+    {
+      "path": "F:\\project\\DLSS5Tool\\tmp\\nvmessagebus-cause-20261111\\self-check-v2.json",
+      "directory": false
+    },
+    {
+      "path": "F:\\project\\DLSS5Tool\\tmp\\nvmessagebus-cause-20261111\\self-check.json",
+      "directory": false
+    },
+    {
+      "path": "F:\\project\\DLSS5Tool\\tmp\\nvmessagebus-cause-20261111\\self_check.py",
+      "directory": false
+    },
+    {
+      "path": "F:\\project\\DLSS5Tool\\tmp\\nvmessagebus-cause-20261111\\self_query_acl.py",
+      "directory": false
+    },
+    {
+      "path": "F:\\project\\DLSS5Tool\\tmp\\nvmessagebus-cause-20261111\\server-static-hints.json",
+      "directory": false
+    },
+    {
+      "path": "F:\\project\\DLSS5Tool\\tmp\\nvmessagebus-cause-20261111\\service-config-read-only.txt",
+      "directory": false
+    },
+    {
+      "path": "F:\\project\\DLSS5Tool\\tmp\\nvmessagebus-cause-20261111\\service-identities.json",
+      "directory": false
+    },
+    {
+      "path": "F:\\project\\DLSS5Tool\\tmp\\nvmessagebus-cause-20261111\\static-security-checks.json",
+      "directory": false
+    },
+    {
+      "path": "F:\\project\\DLSS5Tool\\tmp\\nvmessagebus-cause-20261111\\static-strings.json",
+      "directory": false
+    },
+    {
+      "path": "F:\\project\\DLSS5Tool\\tmp\\nvmessagebus-cause-20261111\\summarize.py",
+      "directory": false
+    },
+    {
+      "path": "F:\\project\\DLSS5Tool\\tmp\\nvmessagebus-cause-20261111\\support-sources",
+      "directory": true
+    },
+    {
+      "path": "F:\\project\\DLSS5Tool\\tmp\\nvmessagebus-cause-20261111\\thread-driver-recheck",
+      "directory": true
+    },
+    {
+      "path": "F:\\project\\DLSS5Tool\\tmp\\nvmessagebus-cause-20261111\\token-sandboxed.json",
+      "directory": false
+    },
+    {
+      "path": "F:\\project\\DLSS5Tool\\tmp\\nvmessagebus-cause-20261111\\token-unsandboxed.json",
+      "directory": false
+    },
+    {
+      "path": "F:\\project\\DLSS5Tool\\tmp\\nvmessagebus-cause-20261111\\token_context.py",
+      "directory": false
+    },
+    {
+      "path": "F:\\project\\DLSS5Tool\\tmp\\nvmessagebus-cause-20261111\\trace-combo",
+      "directory": true
+    },
+    {
+      "path": "F:\\project\\DLSS5Tool\\tmp\\nvmessagebus-cause-20261111\\trace-combo-sandbox-return",
+      "directory": true
+    },
+    {
+      "path": "F:\\project\\DLSS5Tool\\tmp\\nvmessagebus-cause-20261111\\trace-combo-security",
+      "directory": true
+    },
+    {
+      "path": "F:\\project\\DLSS5Tool\\tmp\\nvmessagebus-cause-20261111\\trace-combo-system-process-token",
+      "directory": true
+    },
+    {
+      "path": "F:\\project\\DLSS5Tool\\tmp\\nvmessagebus-cause-20261111\\trace-combo-system-query",
+      "directory": true
+    },
+    {
+      "path": "F:\\project\\DLSS5Tool\\tmp\\nvmessagebus-cause-20261111\\trace-combo-system-query-info",
+      "directory": true
+    },
+    {
+      "path": "F:\\project\\DLSS5Tool\\tmp\\nvmessagebus-cause-20261111\\trace-combo-system-read-control",
+      "directory": true
+    },
+    {
+      "path": "F:\\project\\DLSS5Tool\\tmp\\nvmessagebus-cause-20261111\\trace-combo-unsandboxed",
+      "directory": true
+    },
+    {
+      "path": "F:\\project\\DLSS5Tool\\tmp\\nvmessagebus-cause-20261111\\trace-cuda",
+      "directory": true
+    },
+    {
+      "path": "F:\\project\\DLSS5Tool\\tmp\\nvmessagebus-cause-20261111\\trace-factor-both",
+      "directory": true
+    },
+    {
+      "path": "F:\\project\\DLSS5Tool\\tmp\\nvmessagebus-cause-20261111\\trace-factor-none",
+      "directory": true
+    },
+    {
+      "path": "F:\\project\\DLSS5Tool\\tmp\\nvmessagebus-cause-20261111\\trace-factor-process",
+      "directory": true
+    },
+    {
+      "path": "F:\\project\\DLSS5Tool\\tmp\\nvmessagebus-cause-20261111\\trace-factor-token",
+      "directory": true
+    },
+    {
+      "path": "F:\\project\\DLSS5Tool\\tmp\\nvmessagebus-cause-20261111\\trace-restricted-pc",
+      "directory": true
+    },
+    {
+      "path": "F:\\project\\DLSS5Tool\\tmp\\nvmessagebus-cause-20261111\\trace-restricted-pc-allgroups",
+      "directory": true
+    },
+    {
+      "path": "F:\\project\\DLSS5Tool\\tmp\\nvmessagebus-cause-20261111\\trace-token-query-only",
+      "directory": true
+    },
+    {
+      "path": "F:\\project\\DLSS5Tool\\tmp\\nvmessagebus-cause-20261111\\trace-token-read-control-only",
+      "directory": true
+    },
+    {
+      "path": "F:\\project\\DLSS5Tool\\tmp\\nvmessagebus-cause-20261111\\verification.json",
+      "directory": false
+    }
+  ],
+  "retained_task_file": "TASK.md",
+  "review_date": "2026-11-18",
+  "replaced_previously_verified_archive_sha256": "a9612ff8be13c5f60db5167ff1e0311cf735b3540e00a6f56101142a2b0ffa21",
+  "measured_source_recovery_verified": [
+    {
+      "case": "trace-factor-none",
+      "recovered_source_files": [
+        {
+          "measured_path": "scripts\\native_message_bus_trace.cpp",
+          "archive_entry": "final-sources/native_message_bus_trace.cpp",
+          "sha256": "1e80ab2248b5c3a73e1c40c82eceef02306c4671a13c8af8714420a45dc31a0b"
+        },
+        {
+          "measured_path": "tmp\\nvmessagebus-cause-20261111\\probe_calls.py",
+          "archive_entry": "measured-factorial/probe_calls.py",
+          "sha256": "f88e9c0441b1ce5799c40b10147364d6129fa8f2a7c4328eb9fb5b954161ece6"
+        },
+        {
+          "measured_path": "scripts\\profile_native_frame_memory.py",
+          "archive_entry": "measured-common/profile_native_frame_memory.py",
+          "sha256": "97f3af75645fd1f0121f237bf7a81f7b1768bb445bc8c19ed818d052c32c3424"
+        },
+        {
+          "measured_path": "scripts\\native_thread_activity.cpp",
+          "archive_entry": "support-sources/scripts/native_thread_activity.cpp",
+          "sha256": "84cb453f95853a80f995170fbfd2b992b40b9b995314bbb29f274322a028a59b"
+        },
+        {
+          "measured_path": "tmp\\nvmessagebus-cause-20261111\\native_message_bus_trace.dll",
+          "archive_entry": "native_message_bus_trace.dll",
+          "sha256": "71fc820f1f59f16a68f92474f57206558883f57bc56ebc63f97b8e2be8658389"
+        },
+        {
+          "measured_path": "tmp\\nvmessagebus-cause-20261111\\native_thread_activity.dll",
+          "archive_entry": "native_thread_activity.dll",
+          "sha256": "507db85d654eaffaf56e22d6927e30195fd46d4fd1daa5a04253860c1e2ce68c"
+        },
+        {
+          "measured_path": "tmp\\nvmessagebus-cause-20261111\\self_query_acl.py",
+          "archive_entry": "measured-factorial/self_query_acl.py",
+          "sha256": "99c20ea3150285f976041fc40d7239d86d996b51972676a8c18e0388a731a07f"
+        }
+      ]
+    },
+    {
+      "case": "trace-factor-process",
+      "recovered_source_files": [
+        {
+          "measured_path": "scripts\\native_message_bus_trace.cpp",
+          "archive_entry": "final-sources/native_message_bus_trace.cpp",
+          "sha256": "1e80ab2248b5c3a73e1c40c82eceef02306c4671a13c8af8714420a45dc31a0b"
+        },
+        {
+          "measured_path": "tmp\\nvmessagebus-cause-20261111\\probe_calls.py",
+          "archive_entry": "measured-factorial/probe_calls.py",
+          "sha256": "f88e9c0441b1ce5799c40b10147364d6129fa8f2a7c4328eb9fb5b954161ece6"
+        },
+        {
+          "measured_path": "scripts\\profile_native_frame_memory.py",
+          "archive_entry": "measured-common/profile_native_frame_memory.py",
+          "sha256": "97f3af75645fd1f0121f237bf7a81f7b1768bb445bc8c19ed818d052c32c3424"
+        },
+        {
+          "measured_path": "scripts\\native_thread_activity.cpp",
+          "archive_entry": "support-sources/scripts/native_thread_activity.cpp",
+          "sha256": "84cb453f95853a80f995170fbfd2b992b40b9b995314bbb29f274322a028a59b"
+        },
+        {
+          "measured_path": "tmp\\nvmessagebus-cause-20261111\\native_message_bus_trace.dll",
+          "archive_entry": "native_message_bus_trace.dll",
+          "sha256": "71fc820f1f59f16a68f92474f57206558883f57bc56ebc63f97b8e2be8658389"
+        },
+        {
+          "measured_path": "tmp\\nvmessagebus-cause-20261111\\native_thread_activity.dll",
+          "archive_entry": "native_thread_activity.dll",
+          "sha256": "507db85d654eaffaf56e22d6927e30195fd46d4fd1daa5a04253860c1e2ce68c"
+        },
+        {
+          "measured_path": "tmp\\nvmessagebus-cause-20261111\\self_query_acl.py",
+          "archive_entry": "measured-factorial/self_query_acl.py",
+          "sha256": "99c20ea3150285f976041fc40d7239d86d996b51972676a8c18e0388a731a07f"
+        }
+      ]
+    },
+    {
+      "case": "trace-factor-token",
+      "recovered_source_files": [
+        {
+          "measured_path": "scripts\\native_message_bus_trace.cpp",
+          "archive_entry": "final-sources/native_message_bus_trace.cpp",
+          "sha256": "1e80ab2248b5c3a73e1c40c82eceef02306c4671a13c8af8714420a45dc31a0b"
+        },
+        {
+          "measured_path": "tmp\\nvmessagebus-cause-20261111\\probe_calls.py",
+          "archive_entry": "measured-factorial/probe_calls.py",
+          "sha256": "f88e9c0441b1ce5799c40b10147364d6129fa8f2a7c4328eb9fb5b954161ece6"
+        },
+        {
+          "measured_path": "scripts\\profile_native_frame_memory.py",
+          "archive_entry": "measured-common/profile_native_frame_memory.py",
+          "sha256": "97f3af75645fd1f0121f237bf7a81f7b1768bb445bc8c19ed818d052c32c3424"
+        },
+        {
+          "measured_path": "scripts\\native_thread_activity.cpp",
+          "archive_entry": "support-sources/scripts/native_thread_activity.cpp",
+          "sha256": "84cb453f95853a80f995170fbfd2b992b40b9b995314bbb29f274322a028a59b"
+        },
+        {
+          "measured_path": "tmp\\nvmessagebus-cause-20261111\\native_message_bus_trace.dll",
+          "archive_entry": "native_message_bus_trace.dll",
+          "sha256": "71fc820f1f59f16a68f92474f57206558883f57bc56ebc63f97b8e2be8658389"
+        },
+        {
+          "measured_path": "tmp\\nvmessagebus-cause-20261111\\native_thread_activity.dll",
+          "archive_entry": "native_thread_activity.dll",
+          "sha256": "507db85d654eaffaf56e22d6927e30195fd46d4fd1daa5a04253860c1e2ce68c"
+        },
+        {
+          "measured_path": "tmp\\nvmessagebus-cause-20261111\\self_query_acl.py",
+          "archive_entry": "measured-factorial/self_query_acl.py",
+          "sha256": "99c20ea3150285f976041fc40d7239d86d996b51972676a8c18e0388a731a07f"
+        }
+      ]
+    },
+    {
+      "case": "trace-factor-both",
+      "recovered_source_files": [
+        {
+          "measured_path": "scripts\\native_message_bus_trace.cpp",
+          "archive_entry": "final-sources/native_message_bus_trace.cpp",
+          "sha256": "1e80ab2248b5c3a73e1c40c82eceef02306c4671a13c8af8714420a45dc31a0b"
+        },
+        {
+          "measured_path": "tmp\\nvmessagebus-cause-20261111\\probe_calls.py",
+          "archive_entry": "measured-factorial/probe_calls.py",
+          "sha256": "f88e9c0441b1ce5799c40b10147364d6129fa8f2a7c4328eb9fb5b954161ece6"
+        },
+        {
+          "measured_path": "scripts\\profile_native_frame_memory.py",
+          "archive_entry": "measured-common/profile_native_frame_memory.py",
+          "sha256": "97f3af75645fd1f0121f237bf7a81f7b1768bb445bc8c19ed818d052c32c3424"
+        },
+        {
+          "measured_path": "scripts\\native_thread_activity.cpp",
+          "archive_entry": "support-sources/scripts/native_thread_activity.cpp",
+          "sha256": "84cb453f95853a80f995170fbfd2b992b40b9b995314bbb29f274322a028a59b"
+        },
+        {
+          "measured_path": "tmp\\nvmessagebus-cause-20261111\\native_message_bus_trace.dll",
+          "archive_entry": "native_message_bus_trace.dll",
+          "sha256": "71fc820f1f59f16a68f92474f57206558883f57bc56ebc63f97b8e2be8658389"
+        },
+        {
+          "measured_path": "tmp\\nvmessagebus-cause-20261111\\native_thread_activity.dll",
+          "archive_entry": "native_thread_activity.dll",
+          "sha256": "507db85d654eaffaf56e22d6927e30195fd46d4fd1daa5a04253860c1e2ce68c"
+        },
+        {
+          "measured_path": "tmp\\nvmessagebus-cause-20261111\\self_query_acl.py",
+          "archive_entry": "measured-factorial/self_query_acl.py",
+          "sha256": "99c20ea3150285f976041fc40d7239d86d996b51972676a8c18e0388a731a07f"
+        }
+      ]
+    },
+    {
+      "case": "trace-token-query-only",
+      "recovered_source_files": [
+        {
+          "measured_path": "scripts\\native_message_bus_trace.cpp",
+          "archive_entry": "final-sources/native_message_bus_trace.cpp",
+          "sha256": "1e80ab2248b5c3a73e1c40c82eceef02306c4671a13c8af8714420a45dc31a0b"
+        },
+        {
+          "measured_path": "tmp\\nvmessagebus-cause-20261111\\probe_calls.py",
+          "archive_entry": "probe_calls.py",
+          "sha256": "01f888fd241866e7ee12c72473854fca33e642e07964fb8614df3c3f97a65db6"
+        },
+        {
+          "measured_path": "scripts\\profile_native_frame_memory.py",
+          "archive_entry": "measured-common/profile_native_frame_memory.py",
+          "sha256": "97f3af75645fd1f0121f237bf7a81f7b1768bb445bc8c19ed818d052c32c3424"
+        },
+        {
+          "measured_path": "scripts\\native_thread_activity.cpp",
+          "archive_entry": "support-sources/scripts/native_thread_activity.cpp",
+          "sha256": "84cb453f95853a80f995170fbfd2b992b40b9b995314bbb29f274322a028a59b"
+        },
+        {
+          "measured_path": "tmp\\nvmessagebus-cause-20261111\\native_message_bus_trace.dll",
+          "archive_entry": "native_message_bus_trace.dll",
+          "sha256": "71fc820f1f59f16a68f92474f57206558883f57bc56ebc63f97b8e2be8658389"
+        },
+        {
+          "measured_path": "tmp\\nvmessagebus-cause-20261111\\native_thread_activity.dll",
+          "archive_entry": "native_thread_activity.dll",
+          "sha256": "507db85d654eaffaf56e22d6927e30195fd46d4fd1daa5a04253860c1e2ce68c"
+        },
+        {
+          "measured_path": "tmp\\nvmessagebus-cause-20261111\\self_query_acl.py",
+          "archive_entry": "self_query_acl.py",
+          "sha256": "c9d5a2004c91bee65e13883d4f7cd6a6cfdfdc1f34c317cc0011845a704659f5"
+        }
+      ]
+    },
+    {
+      "case": "trace-token-read-control-only",
+      "recovered_source_files": [
+        {
+          "measured_path": "scripts\\native_message_bus_trace.cpp",
+          "archive_entry": "final-sources/native_message_bus_trace.cpp",
+          "sha256": "1e80ab2248b5c3a73e1c40c82eceef02306c4671a13c8af8714420a45dc31a0b"
+        },
+        {
+          "measured_path": "tmp\\nvmessagebus-cause-20261111\\probe_calls.py",
+          "archive_entry": "probe_calls.py",
+          "sha256": "01f888fd241866e7ee12c72473854fca33e642e07964fb8614df3c3f97a65db6"
+        },
+        {
+          "measured_path": "scripts\\profile_native_frame_memory.py",
+          "archive_entry": "measured-common/profile_native_frame_memory.py",
+          "sha256": "97f3af75645fd1f0121f237bf7a81f7b1768bb445bc8c19ed818d052c32c3424"
+        },
+        {
+          "measured_path": "scripts\\native_thread_activity.cpp",
+          "archive_entry": "support-sources/scripts/native_thread_activity.cpp",
+          "sha256": "84cb453f95853a80f995170fbfd2b992b40b9b995314bbb29f274322a028a59b"
+        },
+        {
+          "measured_path": "tmp\\nvmessagebus-cause-20261111\\native_message_bus_trace.dll",
+          "archive_entry": "native_message_bus_trace.dll",
+          "sha256": "71fc820f1f59f16a68f92474f57206558883f57bc56ebc63f97b8e2be8658389"
+        },
+        {
+          "measured_path": "tmp\\nvmessagebus-cause-20261111\\native_thread_activity.dll",
+          "archive_entry": "native_thread_activity.dll",
+          "sha256": "507db85d654eaffaf56e22d6927e30195fd46d4fd1daa5a04253860c1e2ce68c"
+        },
+        {
+          "measured_path": "tmp\\nvmessagebus-cause-20261111\\self_query_acl.py",
+          "archive_entry": "self_query_acl.py",
+          "sha256": "c9d5a2004c91bee65e13883d4f7cd6a6cfdfdc1f34c317cc0011845a704659f5"
+        }
+      ]
+    },
+    {
+      "case": "trace-combo-system-process-token",
+      "recovered_source_files": [
+        {
+          "measured_path": "scripts\\native_message_bus_trace.cpp",
+          "archive_entry": "final-sources/native_message_bus_trace.cpp",
+          "sha256": "1e80ab2248b5c3a73e1c40c82eceef02306c4671a13c8af8714420a45dc31a0b"
+        },
+        {
+          "measured_path": "tmp\\nvmessagebus-cause-20261111\\probe_calls.py",
+          "archive_entry": "measured-process-token/probe_calls.py",
+          "sha256": "46a1330351be2ad0d8cebdbc47be06b014a703b3be126cc34b657d73bb18a80c"
+        },
+        {
+          "measured_path": "scripts\\profile_native_frame_memory.py",
+          "archive_entry": "measured-common/profile_native_frame_memory.py",
+          "sha256": "97f3af75645fd1f0121f237bf7a81f7b1768bb445bc8c19ed818d052c32c3424"
+        },
+        {
+          "measured_path": "scripts\\native_thread_activity.cpp",
+          "archive_entry": "support-sources/scripts/native_thread_activity.cpp",
+          "sha256": "84cb453f95853a80f995170fbfd2b992b40b9b995314bbb29f274322a028a59b"
+        },
+        {
+          "measured_path": "tmp\\nvmessagebus-cause-20261111\\native_message_bus_trace.dll",
+          "archive_entry": "native_message_bus_trace.dll",
+          "sha256": "71fc820f1f59f16a68f92474f57206558883f57bc56ebc63f97b8e2be8658389"
+        },
+        {
+          "measured_path": "tmp\\nvmessagebus-cause-20261111\\native_thread_activity.dll",
+          "archive_entry": "native_thread_activity.dll",
+          "sha256": "507db85d654eaffaf56e22d6927e30195fd46d4fd1daa5a04253860c1e2ce68c"
+        },
+        {
+          "measured_path": "tmp\\nvmessagebus-cause-20261111\\self_query_acl.py",
+          "archive_entry": "measured-process-token/self_query_acl.py",
+          "sha256": "f5f88138ced1b97b3cd2e0f2bb12470e9dee7f6809b3a21eeffd839f38d79df0"
+        }
+      ]
+    }
+  ],
+  "ordinary_driver_sources_recovery_verified": true,
+  "report_evidence_links_verified": true,
+  "cleanup_rechecked_archive_and_all_source_hashes": true,
+  "cleanup_rechecked_exclusive_opens": true,
+  "cleanup_rechecked_owned_identities_retired": true,
+  "cleanup_removed_top_level_count": 83,
+  "cleanup_logical_bytes_removed": 33354638.0,
+  "free_bytes_before_cleanup": 50494828544,
+  "free_bytes_after_cleanup": 50528849920,
+  "disk_free_delta_bytes": 34021376,
+  "remaining_task_bytes": 3010,
+  "remaining_reason": "Task registration and verified recovery links; review 2026-11-18."
+}

@@ -1,0 +1,6273 @@
+{
+  "traces": [
+    {
+      "case": "trace-combo",
+      "processing_and_exit_passed": true,
+      "error": null,
+      "source_unchanged": true,
+      "profile_span_seconds": 29.376482725143433,
+      "thread_starts_delta": 133626,
+      "messagebus_starts_delta": 133624,
+      "messagebus_total_observed": 150840,
+      "default_heap_allocated_delta": 25224054,
+      "api_summary": {
+        "kind": "summary",
+        "pid": 60288,
+        "patches": 19,
+        "entries": 8,
+        "dropped": 0
+      },
+      "api_entries": [
+        {
+          "kind": "api",
+          "api": 1,
+          "caller": {
+            "module": "NvMessageBus.dll",
+            "offset": "0x251932"
+          },
+          "value": 140716730946832,
+          "result": 1,
+          "error": 0,
+          "calls": 150726,
+          "total_us": 3799538.3,
+          "max_us": 265.0,
+          "path": "",
+          "frames": [
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x251932"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x63561"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x65d40"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x607e9"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x4b4d9"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x20389"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x1ed3b"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x1e672"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x206a8"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x17fea"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x25156a"
+            },
+            {
+              "module": "KERNEL32.DLL",
+              "offset": "0x2dda7"
+            },
+            {
+              "module": "ntdll.dll",
+              "offset": "0xc9c5c"
+            }
+          ]
+        },
+        {
+          "kind": "api",
+          "api": 2,
+          "caller": {
+            "module": "NvMessageBus.dll",
+            "offset": "0x6174d"
+          },
+          "value": 10,
+          "result": 1,
+          "error": 0,
+          "calls": 75363,
+          "total_us": 1723514.7,
+          "max_us": 612.0,
+          "path": "\\\\.\\pipe\\NvMessageBusBroadcastNVIDIA.Display.Driver",
+          "frames": [
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x6174d"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x5f41a"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x25156a"
+            },
+            {
+              "module": "KERNEL32.DLL",
+              "offset": "0x2dda7"
+            },
+            {
+              "module": "ntdll.dll",
+              "offset": "0xc9c5c"
+            }
+          ]
+        },
+        {
+          "kind": "api",
+          "api": 3,
+          "caller": {
+            "module": "NvMessageBus.dll",
+            "offset": "0x61792"
+          },
+          "value": 1179787,
+          "result": 1,
+          "error": 0,
+          "calls": 75362,
+          "total_us": 1726886.7,
+          "max_us": 1183.4,
+          "path": "\\\\.\\pipe\\NvMessageBusBroadcastNVIDIA.Display.Driver",
+          "frames": [
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x61792"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x5f41a"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x25156a"
+            },
+            {
+              "module": "KERNEL32.DLL",
+              "offset": "0x2dda7"
+            },
+            {
+              "module": "ntdll.dll",
+              "offset": "0xc9c5c"
+            }
+          ]
+        },
+        {
+          "kind": "api",
+          "api": 4,
+          "caller": {
+            "module": "NvMessageBus.dll",
+            "offset": "0x6b815"
+          },
+          "value": 4,
+          "result": 0,
+          "error": 997,
+          "calls": 60245,
+          "total_us": 83404.6,
+          "max_us": 55.0,
+          "path": "",
+          "frames": [
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x6b815"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x6b35a"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x66cb0"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x66979"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x63746"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x25156a"
+            },
+            {
+              "module": "KERNEL32.DLL",
+              "offset": "0x2dda7"
+            },
+            {
+              "module": "ntdll.dll",
+              "offset": "0xc9c5c"
+            }
+          ]
+        },
+        {
+          "kind": "api",
+          "api": 5,
+          "caller": {
+            "module": "NvMessageBus.dll",
+            "offset": "0x6bb2b"
+          },
+          "value": 66,
+          "result": 1,
+          "error": 0,
+          "calls": 49735,
+          "total_us": 252815.8,
+          "max_us": 211.9,
+          "path": "",
+          "frames": [
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x6bb2b"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x6c084"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x62646"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x24137"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x2401a"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x1e0c3"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x206a8"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x17fea"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x25156a"
+            },
+            {
+              "module": "KERNEL32.DLL",
+              "offset": "0x2dda7"
+            },
+            {
+              "module": "ntdll.dll",
+              "offset": "0xc9c5c"
+            }
+          ]
+        },
+        {
+          "kind": "api",
+          "api": 7,
+          "caller": {
+            "module": "NvMessageBus.dll",
+            "offset": "0x66faf"
+          },
+          "value": 0,
+          "result": 258,
+          "error": 0,
+          "calls": 75362,
+          "total_us": 48134.5,
+          "max_us": 121.6,
+          "path": "",
+          "frames": [
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x66faf"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x60d31"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x615f4"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x20337"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x1ed3b"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x1e672"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x206a8"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x17fea"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x25156a"
+            },
+            {
+              "module": "KERNEL32.DLL",
+              "offset": "0x2dda7"
+            },
+            {
+              "module": "ntdll.dll",
+              "offset": "0xc9c5c"
+            }
+          ]
+        },
+        {
+          "kind": "api",
+          "api": 5,
+          "caller": {
+            "module": "NvMessageBus.dll",
+            "offset": "0x6bb2b"
+          },
+          "value": 66,
+          "result": 0,
+          "error": 232,
+          "calls": 14422,
+          "total_us": 57888.4,
+          "max_us": 223.6,
+          "path": "",
+          "frames": [
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x6bb2b"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x6c084"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x62646"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x24137"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x2401a"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x1e0c3"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x206a8"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x17fea"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x25156a"
+            },
+            {
+              "module": "KERNEL32.DLL",
+              "offset": "0x2dda7"
+            },
+            {
+              "module": "ntdll.dll",
+              "offset": "0xc9c5c"
+            }
+          ]
+        },
+        {
+          "kind": "api",
+          "api": 4,
+          "caller": {
+            "module": "NvMessageBus.dll",
+            "offset": "0x6b815"
+          },
+          "value": 4,
+          "result": 0,
+          "error": 109,
+          "calls": 15117,
+          "total_us": 47621.5,
+          "max_us": 68.5,
+          "path": "",
+          "frames": [
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x6b815"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x6b35a"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x66cb0"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x66979"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x63746"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x25156a"
+            },
+            {
+              "module": "KERNEL32.DLL",
+              "offset": "0x2dda7"
+            },
+            {
+              "module": "ntdll.dll",
+              "offset": "0xc9c5c"
+            }
+          ]
+        }
+      ],
+      "messagebus_iat_covered": true
+    },
+    {
+      "case": "trace-combo-sandbox-return",
+      "processing_and_exit_passed": true,
+      "error": null,
+      "source_unchanged": true,
+      "profile_span_seconds": 29.38053011894226,
+      "thread_starts_delta": 191929,
+      "messagebus_starts_delta": 191927,
+      "messagebus_total_observed": 210686,
+      "default_heap_allocated_delta": 35777209,
+      "api_summary": {
+        "kind": "summary",
+        "pid": 56820,
+        "patches": 19,
+        "entries": 8,
+        "dropped": 0
+      },
+      "api_entries": [
+        {
+          "kind": "api",
+          "api": 2,
+          "caller": {
+            "module": "NvMessageBus.dll",
+            "offset": "0x6174d"
+          },
+          "value": 10,
+          "result": 1,
+          "error": 0,
+          "calls": 105292,
+          "total_us": 1638338.0,
+          "max_us": 2684.3,
+          "path": "\\\\.\\pipe\\NvMessageBusBroadcastNVIDIA.Display.Driver",
+          "frames": [
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x6174d"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x5f41a"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x25156a"
+            },
+            {
+              "module": "KERNEL32.DLL",
+              "offset": "0x2dda7"
+            },
+            {
+              "module": "ntdll.dll",
+              "offset": "0xc9c5c"
+            }
+          ]
+        },
+        {
+          "kind": "api",
+          "api": 3,
+          "caller": {
+            "module": "NvMessageBus.dll",
+            "offset": "0x61792"
+          },
+          "value": 1179787,
+          "result": 1,
+          "error": 0,
+          "calls": 105292,
+          "total_us": 1665303.0,
+          "max_us": 1647.1,
+          "path": "\\\\.\\pipe\\NvMessageBusBroadcastNVIDIA.Display.Driver",
+          "frames": [
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x61792"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x5f41a"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x25156a"
+            },
+            {
+              "module": "KERNEL32.DLL",
+              "offset": "0x2dda7"
+            },
+            {
+              "module": "ntdll.dll",
+              "offset": "0xc9c5c"
+            }
+          ]
+        },
+        {
+          "kind": "api",
+          "api": 4,
+          "caller": {
+            "module": "NvMessageBus.dll",
+            "offset": "0x6b815"
+          },
+          "value": 4,
+          "result": 0,
+          "error": 997,
+          "calls": 103309,
+          "total_us": 104994.2,
+          "max_us": 57.7,
+          "path": "",
+          "frames": [
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x6b815"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x6b35a"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x66cb0"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x66979"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x63746"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x25156a"
+            },
+            {
+              "module": "KERNEL32.DLL",
+              "offset": "0x2dda7"
+            },
+            {
+              "module": "ntdll.dll",
+              "offset": "0xc9c5c"
+            }
+          ]
+        },
+        {
+          "kind": "api",
+          "api": 5,
+          "caller": {
+            "module": "NvMessageBus.dll",
+            "offset": "0x6bb2b"
+          },
+          "value": 66,
+          "result": 1,
+          "error": 0,
+          "calls": 100338,
+          "total_us": 408673.7,
+          "max_us": 258.5,
+          "path": "",
+          "frames": [
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x6bb2b"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x6c084"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x62646"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x24137"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x2401a"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x1e0c3"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x206a8"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x17fea"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x25156a"
+            },
+            {
+              "module": "KERNEL32.DLL",
+              "offset": "0x2dda7"
+            },
+            {
+              "module": "ntdll.dll",
+              "offset": "0xc9c5c"
+            }
+          ]
+        },
+        {
+          "kind": "api",
+          "api": 7,
+          "caller": {
+            "module": "NvMessageBus.dll",
+            "offset": "0x66faf"
+          },
+          "value": 0,
+          "result": 258,
+          "error": 0,
+          "calls": 105292,
+          "total_us": 51037.7,
+          "max_us": 111.1,
+          "path": "",
+          "frames": [
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x66faf"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x60d31"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x615f4"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x20337"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x1ed3b"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x1e672"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x206a8"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x17fea"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x25156a"
+            },
+            {
+              "module": "KERNEL32.DLL",
+              "offset": "0x2dda7"
+            },
+            {
+              "module": "ntdll.dll",
+              "offset": "0xc9c5c"
+            }
+          ]
+        },
+        {
+          "kind": "api",
+          "api": 1,
+          "caller": {
+            "module": "NvMessageBus.dll",
+            "offset": "0x251932"
+          },
+          "value": 140716730946832,
+          "result": 1,
+          "error": 0,
+          "calls": 210583,
+          "total_us": 3641445.8,
+          "max_us": 268.8,
+          "path": "",
+          "frames": [
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x251932"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x63561"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x65d40"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x607e9"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x4b4d9"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x20389"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x1ed3b"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x1e672"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x206a8"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x17fea"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x25156a"
+            },
+            {
+              "module": "KERNEL32.DLL",
+              "offset": "0x2dda7"
+            },
+            {
+              "module": "ntdll.dll",
+              "offset": "0xc9c5c"
+            }
+          ]
+        },
+        {
+          "kind": "api",
+          "api": 5,
+          "caller": {
+            "module": "NvMessageBus.dll",
+            "offset": "0x6bb2b"
+          },
+          "value": 66,
+          "result": 0,
+          "error": 232,
+          "calls": 2923,
+          "total_us": 16445.9,
+          "max_us": 125.6,
+          "path": "",
+          "frames": [
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x6bb2b"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x6c084"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x62646"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x24137"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x2401a"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x1e0c3"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x206a8"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x17fea"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x25156a"
+            },
+            {
+              "module": "KERNEL32.DLL",
+              "offset": "0x2dda7"
+            },
+            {
+              "module": "ntdll.dll",
+              "offset": "0xc9c5c"
+            }
+          ]
+        },
+        {
+          "kind": "api",
+          "api": 4,
+          "caller": {
+            "module": "NvMessageBus.dll",
+            "offset": "0x6b815"
+          },
+          "value": 4,
+          "result": 0,
+          "error": 109,
+          "calls": 1983,
+          "total_us": 6034.2,
+          "max_us": 104.3,
+          "path": "",
+          "frames": [
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x6b815"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x6b35a"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x66cb0"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x66979"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x63746"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x25156a"
+            },
+            {
+              "module": "KERNEL32.DLL",
+              "offset": "0x2dda7"
+            },
+            {
+              "module": "ntdll.dll",
+              "offset": "0xc9c5c"
+            }
+          ]
+        }
+      ],
+      "messagebus_iat_covered": true
+    },
+    {
+      "case": "trace-combo-security",
+      "processing_and_exit_passed": true,
+      "error": null,
+      "source_unchanged": true,
+      "profile_span_seconds": 29.42023229598999,
+      "thread_starts_delta": 172202,
+      "messagebus_starts_delta": 172200,
+      "messagebus_total_observed": 189310,
+      "default_heap_allocated_delta": 32317574,
+      "api_summary": {
+        "kind": "summary",
+        "pid": 41196,
+        "patches": 32,
+        "entries": 12,
+        "dropped": 0
+      },
+      "api_entries": [
+        {
+          "kind": "api",
+          "api": 12,
+          "caller": {
+            "module": "NvMessageBus.dll",
+            "offset": "0x6aa9e"
+          },
+          "value": 1,
+          "result": 1,
+          "error": 0,
+          "calls": 94607,
+          "total_us": 510216.7,
+          "max_us": 115.1,
+          "path": "",
+          "frames": [
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x6aa9e"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x6a4eb"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x6b3a1"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x66cb0"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x66afe"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x63746"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x25156a"
+            },
+            {
+              "module": "KERNEL32.DLL",
+              "offset": "0x2dda7"
+            },
+            {
+              "module": "ntdll.dll",
+              "offset": "0xc9c5c"
+            }
+          ]
+        },
+        {
+          "kind": "api",
+          "api": 12,
+          "caller": {
+            "module": "NvMessageBus.dll",
+            "offset": "0x1ebc06"
+          },
+          "value": 0,
+          "result": 1,
+          "error": 0,
+          "calls": 189214,
+          "total_us": 260589.6,
+          "max_us": 102.6,
+          "path": "",
+          "frames": [
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x1ebc06"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x61bc5"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x60c70"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x615f4"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x20337"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x1ed3b"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x1e672"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x206a8"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x17fea"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x25156a"
+            },
+            {
+              "module": "KERNEL32.DLL",
+              "offset": "0x2dda7"
+            },
+            {
+              "module": "ntdll.dll",
+              "offset": "0xc9c5c"
+            }
+          ]
+        },
+        {
+          "kind": "api",
+          "api": 7,
+          "caller": {
+            "module": "NvMessageBus.dll",
+            "offset": "0x66faf"
+          },
+          "value": 0,
+          "result": 258,
+          "error": 0,
+          "calls": 94607,
+          "total_us": 42979.3,
+          "max_us": 141.3,
+          "path": "",
+          "frames": [
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x66faf"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x60d31"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x615f4"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x20337"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x1ed3b"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x1e672"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x206a8"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x17fea"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x25156a"
+            },
+            {
+              "module": "KERNEL32.DLL",
+              "offset": "0x2dda7"
+            },
+            {
+              "module": "ntdll.dll",
+              "offset": "0xc9c5c"
+            }
+          ]
+        },
+        {
+          "kind": "api",
+          "api": 12,
+          "caller": {
+            "module": "NvMessageBus.dll",
+            "offset": "0x671bf"
+          },
+          "value": 0,
+          "result": 1,
+          "error": 0,
+          "calls": 94607,
+          "total_us": 84989.2,
+          "max_us": 130.2,
+          "path": "",
+          "frames": [
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x671bf"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x60d31"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x615f4"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x20337"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x1ed3b"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x1e672"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x206a8"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x17fea"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x25156a"
+            },
+            {
+              "module": "KERNEL32.DLL",
+              "offset": "0x2dda7"
+            },
+            {
+              "module": "ntdll.dll",
+              "offset": "0xc9c5c"
+            }
+          ]
+        },
+        {
+          "kind": "api",
+          "api": 1,
+          "caller": {
+            "module": "NvMessageBus.dll",
+            "offset": "0x251932"
+          },
+          "value": 140716730946832,
+          "result": 1,
+          "error": 0,
+          "calls": 189214,
+          "total_us": 3666347.7,
+          "max_us": 269.0,
+          "path": "",
+          "frames": [
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x251932"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x63561"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x65d40"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x607e9"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x4b4d9"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x20389"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x1ed3b"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x1e672"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x206a8"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x17fea"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x25156a"
+            },
+            {
+              "module": "KERNEL32.DLL",
+              "offset": "0x2dda7"
+            },
+            {
+              "module": "ntdll.dll",
+              "offset": "0xc9c5c"
+            }
+          ]
+        },
+        {
+          "kind": "api",
+          "api": 2,
+          "caller": {
+            "module": "NvMessageBus.dll",
+            "offset": "0x6174d"
+          },
+          "value": 10,
+          "result": 1,
+          "error": 0,
+          "calls": 94606,
+          "total_us": 1632745.1,
+          "max_us": 1788.2,
+          "path": "\\\\.\\pipe\\NvMessageBusBroadcastNVIDIA.Display.Driver",
+          "frames": [
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x6174d"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x5f41a"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x25156a"
+            },
+            {
+              "module": "KERNEL32.DLL",
+              "offset": "0x2dda7"
+            },
+            {
+              "module": "ntdll.dll",
+              "offset": "0xc9c5c"
+            }
+          ]
+        },
+        {
+          "kind": "api",
+          "api": 3,
+          "caller": {
+            "module": "NvMessageBus.dll",
+            "offset": "0x61792"
+          },
+          "value": 1179787,
+          "result": 1,
+          "error": 0,
+          "calls": 94606,
+          "total_us": 1642730.5,
+          "max_us": 552.2,
+          "path": "\\\\.\\pipe\\NvMessageBusBroadcastNVIDIA.Display.Driver",
+          "frames": [
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x61792"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x5f41a"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x25156a"
+            },
+            {
+              "module": "KERNEL32.DLL",
+              "offset": "0x2dda7"
+            },
+            {
+              "module": "ntdll.dll",
+              "offset": "0xc9c5c"
+            }
+          ]
+        },
+        {
+          "kind": "api",
+          "api": 11,
+          "caller": {
+            "module": "NvMessageBus.dll",
+            "offset": "0x621ef"
+          },
+          "value": 3748,
+          "result": 1,
+          "error": 0,
+          "calls": 94606,
+          "total_us": 606636.4,
+          "max_us": 172.3,
+          "path": "",
+          "frames": [
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x621ef"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x6b352"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x66cb0"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x66979"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x63746"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x25156a"
+            },
+            {
+              "module": "KERNEL32.DLL",
+              "offset": "0x2dda7"
+            },
+            {
+              "module": "ntdll.dll",
+              "offset": "0xc9c5c"
+            }
+          ]
+        },
+        {
+          "kind": "api",
+          "api": 4,
+          "caller": {
+            "module": "NvMessageBus.dll",
+            "offset": "0x6b815"
+          },
+          "value": 4,
+          "result": 0,
+          "error": 997,
+          "calls": 91232,
+          "total_us": 97622.5,
+          "max_us": 57.9,
+          "path": "",
+          "frames": [
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x6b815"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x6b35a"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x66cb0"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x66979"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x63746"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x25156a"
+            },
+            {
+              "module": "KERNEL32.DLL",
+              "offset": "0x2dda7"
+            },
+            {
+              "module": "ntdll.dll",
+              "offset": "0xc9c5c"
+            }
+          ]
+        },
+        {
+          "kind": "api",
+          "api": 5,
+          "caller": {
+            "module": "NvMessageBus.dll",
+            "offset": "0x6bb2b"
+          },
+          "value": 66,
+          "result": 1,
+          "error": 0,
+          "calls": 85567,
+          "total_us": 403546.2,
+          "max_us": 207.9,
+          "path": "",
+          "frames": [
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x6bb2b"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x6c084"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x62646"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x24137"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x2401a"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x1e0c3"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x206a8"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x17fea"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x25156a"
+            },
+            {
+              "module": "KERNEL32.DLL",
+              "offset": "0x2dda7"
+            },
+            {
+              "module": "ntdll.dll",
+              "offset": "0xc9c5c"
+            }
+          ]
+        },
+        {
+          "kind": "api",
+          "api": 4,
+          "caller": {
+            "module": "NvMessageBus.dll",
+            "offset": "0x6b815"
+          },
+          "value": 4,
+          "result": 0,
+          "error": 109,
+          "calls": 3374,
+          "total_us": 10286.6,
+          "max_us": 51.5,
+          "path": "",
+          "frames": [
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x6b815"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x6b35a"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x66cb0"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x66979"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x63746"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x25156a"
+            },
+            {
+              "module": "KERNEL32.DLL",
+              "offset": "0x2dda7"
+            },
+            {
+              "module": "ntdll.dll",
+              "offset": "0xc9c5c"
+            }
+          ]
+        },
+        {
+          "kind": "api",
+          "api": 5,
+          "caller": {
+            "module": "NvMessageBus.dll",
+            "offset": "0x6bb2b"
+          },
+          "value": 66,
+          "result": 0,
+          "error": 232,
+          "calls": 5652,
+          "total_us": 32367.2,
+          "max_us": 97.0,
+          "path": "",
+          "frames": [
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x6bb2b"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x6c084"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x62646"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x24137"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x2401a"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x1e0c3"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x206a8"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x17fea"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x25156a"
+            },
+            {
+              "module": "KERNEL32.DLL",
+              "offset": "0x2dda7"
+            },
+            {
+              "module": "ntdll.dll",
+              "offset": "0xc9c5c"
+            }
+          ]
+        }
+      ],
+      "messagebus_iat_covered": true
+    },
+    {
+      "case": "trace-combo-system-process-token",
+      "processing_and_exit_passed": true,
+      "error": null,
+      "source_unchanged": true,
+      "profile_span_seconds": 29.355765342712402,
+      "thread_starts_delta": 2,
+      "messagebus_starts_delta": 0,
+      "messagebus_total_observed": 0,
+      "default_heap_allocated_delta": 630814,
+      "api_summary": {
+        "kind": "summary",
+        "pid": 46592,
+        "patches": 32,
+        "entries": 0,
+        "dropped": 0
+      },
+      "api_entries": [],
+      "messagebus_iat_covered": true,
+      "temporary_acl_variant": {
+        "scope": "current diagnostic process only",
+        "mask": "0x1000",
+        "account_or_token_changed": false,
+        "installed_files_changed": false,
+        "granted": true,
+        "restored": true,
+        "token_read_variant": true,
+        "token_granted": true,
+        "old_dacl_sha256": "2b9ac393912743fc12e602654714ea60c6b575532f6fd0ac86fda432977be042",
+        "primary_token_id": 6335233872,
+        "parent_primary_token_id": 6335196738,
+        "private_primary_token": true,
+        "old_token_dacl_sha256": "efc6612d54cf1807ef4b81eb256cb5c26f61d913e8e3cd3e3dd84dbd77e705c0",
+        "token_access_mask": "0x20008",
+        "restore_error": 0,
+        "restored_dacl_sha256": "2b9ac393912743fc12e602654714ea60c6b575532f6fd0ac86fda432977be042",
+        "token_restore_error": 0,
+        "restored_token_dacl_sha256": "efc6612d54cf1807ef4b81eb256cb5c26f61d913e8e3cd3e3dd84dbd77e705c0",
+        "token_restored": true
+      }
+    },
+    {
+      "case": "trace-combo-system-query",
+      "processing_and_exit_passed": true,
+      "error": null,
+      "source_unchanged": true,
+      "profile_span_seconds": 29.30116581916809,
+      "thread_starts_delta": 174006,
+      "messagebus_starts_delta": 174004,
+      "messagebus_total_observed": 191281,
+      "default_heap_allocated_delta": 32552798,
+      "api_summary": {
+        "kind": "summary",
+        "pid": 16200,
+        "patches": 32,
+        "entries": 12,
+        "dropped": 0
+      },
+      "api_entries": [
+        {
+          "kind": "api",
+          "api": 2,
+          "caller": {
+            "module": "NvMessageBus.dll",
+            "offset": "0x6174d"
+          },
+          "value": 10,
+          "result": 1,
+          "error": 0,
+          "calls": 95593,
+          "total_us": 1637654.2,
+          "max_us": 180.3,
+          "path": "\\\\.\\pipe\\NvMessageBusBroadcastNVIDIA.Display.Driver",
+          "frames": [
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x6174d"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x5f41a"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x25156a"
+            },
+            {
+              "module": "KERNEL32.DLL",
+              "offset": "0x2dda7"
+            },
+            {
+              "module": "ntdll.dll",
+              "offset": "0xc9c5c"
+            }
+          ]
+        },
+        {
+          "kind": "api",
+          "api": 3,
+          "caller": {
+            "module": "NvMessageBus.dll",
+            "offset": "0x61792"
+          },
+          "value": 1179787,
+          "result": 1,
+          "error": 0,
+          "calls": 95593,
+          "total_us": 1645119.2,
+          "max_us": 429.0,
+          "path": "\\\\.\\pipe\\NvMessageBusBroadcastNVIDIA.Display.Driver",
+          "frames": [
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x61792"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x5f41a"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x25156a"
+            },
+            {
+              "module": "KERNEL32.DLL",
+              "offset": "0x2dda7"
+            },
+            {
+              "module": "ntdll.dll",
+              "offset": "0xc9c5c"
+            }
+          ]
+        },
+        {
+          "kind": "api",
+          "api": 11,
+          "caller": {
+            "module": "NvMessageBus.dll",
+            "offset": "0x621ef"
+          },
+          "value": 3748,
+          "result": 1,
+          "error": 0,
+          "calls": 95593,
+          "total_us": 589227.0,
+          "max_us": 261.6,
+          "path": "",
+          "frames": [
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x621ef"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x6b352"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x66cb0"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x66979"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x63746"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x25156a"
+            },
+            {
+              "module": "KERNEL32.DLL",
+              "offset": "0x2dda7"
+            },
+            {
+              "module": "ntdll.dll",
+              "offset": "0xc9c5c"
+            }
+          ]
+        },
+        {
+          "kind": "api",
+          "api": 4,
+          "caller": {
+            "module": "NvMessageBus.dll",
+            "offset": "0x6b815"
+          },
+          "value": 4,
+          "result": 0,
+          "error": 997,
+          "calls": 92398,
+          "total_us": 95383.7,
+          "max_us": 57.9,
+          "path": "",
+          "frames": [
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x6b815"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x6b35a"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x66cb0"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x66979"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x63746"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x25156a"
+            },
+            {
+              "module": "KERNEL32.DLL",
+              "offset": "0x2dda7"
+            },
+            {
+              "module": "ntdll.dll",
+              "offset": "0xc9c5c"
+            }
+          ]
+        },
+        {
+          "kind": "api",
+          "api": 12,
+          "caller": {
+            "module": "NvMessageBus.dll",
+            "offset": "0x6aa9e"
+          },
+          "value": 1,
+          "result": 1,
+          "error": 0,
+          "calls": 95592,
+          "total_us": 506861.4,
+          "max_us": 170.4,
+          "path": "",
+          "frames": [
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x6aa9e"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x6a4eb"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x6b3a1"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x66cb0"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x66afe"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x63746"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x25156a"
+            },
+            {
+              "module": "KERNEL32.DLL",
+              "offset": "0x2dda7"
+            },
+            {
+              "module": "ntdll.dll",
+              "offset": "0xc9c5c"
+            }
+          ]
+        },
+        {
+          "kind": "api",
+          "api": 12,
+          "caller": {
+            "module": "NvMessageBus.dll",
+            "offset": "0x1ebc06"
+          },
+          "value": 0,
+          "result": 1,
+          "error": 0,
+          "calls": 191184,
+          "total_us": 262111.0,
+          "max_us": 126.5,
+          "path": "",
+          "frames": [
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x1ebc06"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x61bc5"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x60c70"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x615f4"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x20337"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x1ed3b"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x1e672"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x206a8"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x17fea"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x25156a"
+            },
+            {
+              "module": "KERNEL32.DLL",
+              "offset": "0x2dda7"
+            },
+            {
+              "module": "ntdll.dll",
+              "offset": "0xc9c5c"
+            }
+          ]
+        },
+        {
+          "kind": "api",
+          "api": 7,
+          "caller": {
+            "module": "NvMessageBus.dll",
+            "offset": "0x66faf"
+          },
+          "value": 0,
+          "result": 258,
+          "error": 0,
+          "calls": 95592,
+          "total_us": 42663.7,
+          "max_us": 130.0,
+          "path": "",
+          "frames": [
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x66faf"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x60d31"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x615f4"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x20337"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x1ed3b"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x1e672"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x206a8"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x17fea"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x25156a"
+            },
+            {
+              "module": "KERNEL32.DLL",
+              "offset": "0x2dda7"
+            },
+            {
+              "module": "ntdll.dll",
+              "offset": "0xc9c5c"
+            }
+          ]
+        },
+        {
+          "kind": "api",
+          "api": 12,
+          "caller": {
+            "module": "NvMessageBus.dll",
+            "offset": "0x671bf"
+          },
+          "value": 0,
+          "result": 1,
+          "error": 0,
+          "calls": 95592,
+          "total_us": 84370.0,
+          "max_us": 71.5,
+          "path": "",
+          "frames": [
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x671bf"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x60d31"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x615f4"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x20337"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x1ed3b"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x1e672"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x206a8"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x17fea"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x25156a"
+            },
+            {
+              "module": "KERNEL32.DLL",
+              "offset": "0x2dda7"
+            },
+            {
+              "module": "ntdll.dll",
+              "offset": "0xc9c5c"
+            }
+          ]
+        },
+        {
+          "kind": "api",
+          "api": 1,
+          "caller": {
+            "module": "NvMessageBus.dll",
+            "offset": "0x251932"
+          },
+          "value": 140716730946832,
+          "result": 1,
+          "error": 0,
+          "calls": 191184,
+          "total_us": 3622239.0,
+          "max_us": 284.0,
+          "path": "",
+          "frames": [
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x251932"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x63561"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x65d40"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x607e9"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x4b4d9"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x20389"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x1ed3b"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x1e672"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x206a8"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x17fea"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x25156a"
+            },
+            {
+              "module": "KERNEL32.DLL",
+              "offset": "0x2dda7"
+            },
+            {
+              "module": "ntdll.dll",
+              "offset": "0xc9c5c"
+            }
+          ]
+        },
+        {
+          "kind": "api",
+          "api": 5,
+          "caller": {
+            "module": "NvMessageBus.dll",
+            "offset": "0x6bb2b"
+          },
+          "value": 66,
+          "result": 1,
+          "error": 0,
+          "calls": 87568,
+          "total_us": 392276.1,
+          "max_us": 150.6,
+          "path": "",
+          "frames": [
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x6bb2b"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x6c084"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x62646"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x24137"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x2401a"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x1e0c3"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x206a8"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x17fea"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x25156a"
+            },
+            {
+              "module": "KERNEL32.DLL",
+              "offset": "0x2dda7"
+            },
+            {
+              "module": "ntdll.dll",
+              "offset": "0xc9c5c"
+            }
+          ]
+        },
+        {
+          "kind": "api",
+          "api": 5,
+          "caller": {
+            "module": "NvMessageBus.dll",
+            "offset": "0x6bb2b"
+          },
+          "value": 66,
+          "result": 0,
+          "error": 232,
+          "calls": 4853,
+          "total_us": 27527.3,
+          "max_us": 122.8,
+          "path": "",
+          "frames": [
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x6bb2b"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x6c084"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x62646"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x24137"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x2401a"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x1e0c3"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x206a8"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x17fea"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x25156a"
+            },
+            {
+              "module": "KERNEL32.DLL",
+              "offset": "0x2dda7"
+            },
+            {
+              "module": "ntdll.dll",
+              "offset": "0xc9c5c"
+            }
+          ]
+        },
+        {
+          "kind": "api",
+          "api": 4,
+          "caller": {
+            "module": "NvMessageBus.dll",
+            "offset": "0x6b815"
+          },
+          "value": 4,
+          "result": 0,
+          "error": 109,
+          "calls": 3195,
+          "total_us": 10186.6,
+          "max_us": 59.7,
+          "path": "",
+          "frames": [
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x6b815"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x6b35a"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x66cb0"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x66979"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x63746"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x25156a"
+            },
+            {
+              "module": "KERNEL32.DLL",
+              "offset": "0x2dda7"
+            },
+            {
+              "module": "ntdll.dll",
+              "offset": "0xc9c5c"
+            }
+          ]
+        }
+      ],
+      "messagebus_iat_covered": true,
+      "temporary_acl_variant": {
+        "scope": "current diagnostic process only",
+        "mask": "0x1000",
+        "account_or_token_changed": false,
+        "installed_files_changed": false,
+        "granted": true,
+        "restored": true,
+        "old_dacl_sha256": "2b9ac393912743fc12e602654714ea60c6b575532f6fd0ac86fda432977be042",
+        "restore_error": 0,
+        "restored_dacl_sha256": "2b9ac393912743fc12e602654714ea60c6b575532f6fd0ac86fda432977be042"
+      }
+    },
+    {
+      "case": "trace-combo-system-query-info",
+      "processing_and_exit_passed": true,
+      "error": null,
+      "source_unchanged": true,
+      "profile_span_seconds": 29.455304861068726,
+      "thread_starts_delta": 172743,
+      "messagebus_starts_delta": 172741,
+      "messagebus_total_observed": 187912,
+      "default_heap_allocated_delta": 32349014,
+      "api_summary": {
+        "kind": "summary",
+        "pid": 44916,
+        "patches": 32,
+        "entries": 12,
+        "dropped": 0
+      },
+      "api_entries": [
+        {
+          "kind": "api",
+          "api": 2,
+          "caller": {
+            "module": "NvMessageBus.dll",
+            "offset": "0x6174d"
+          },
+          "value": 10,
+          "result": 1,
+          "error": 0,
+          "calls": 93917,
+          "total_us": 1640685.7,
+          "max_us": 278.3,
+          "path": "\\\\.\\pipe\\NvMessageBusBroadcastNVIDIA.Display.Driver",
+          "frames": [
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x6174d"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x5f41a"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x25156a"
+            },
+            {
+              "module": "KERNEL32.DLL",
+              "offset": "0x2dda7"
+            },
+            {
+              "module": "ntdll.dll",
+              "offset": "0xc9c5c"
+            }
+          ]
+        },
+        {
+          "kind": "api",
+          "api": 3,
+          "caller": {
+            "module": "NvMessageBus.dll",
+            "offset": "0x61792"
+          },
+          "value": 1179787,
+          "result": 1,
+          "error": 0,
+          "calls": 93917,
+          "total_us": 1640758.8,
+          "max_us": 252.3,
+          "path": "\\\\.\\pipe\\NvMessageBusBroadcastNVIDIA.Display.Driver",
+          "frames": [
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x61792"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x5f41a"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x25156a"
+            },
+            {
+              "module": "KERNEL32.DLL",
+              "offset": "0x2dda7"
+            },
+            {
+              "module": "ntdll.dll",
+              "offset": "0xc9c5c"
+            }
+          ]
+        },
+        {
+          "kind": "api",
+          "api": 11,
+          "caller": {
+            "module": "NvMessageBus.dll",
+            "offset": "0x621ef"
+          },
+          "value": 3748,
+          "result": 1,
+          "error": 0,
+          "calls": 93916,
+          "total_us": 614224.8,
+          "max_us": 154.4,
+          "path": "",
+          "frames": [
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x621ef"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x6b352"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x66cb0"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x66979"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x63746"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x25156a"
+            },
+            {
+              "module": "KERNEL32.DLL",
+              "offset": "0x2dda7"
+            },
+            {
+              "module": "ntdll.dll",
+              "offset": "0xc9c5c"
+            }
+          ]
+        },
+        {
+          "kind": "api",
+          "api": 4,
+          "caller": {
+            "module": "NvMessageBus.dll",
+            "offset": "0x6b815"
+          },
+          "value": 4,
+          "result": 0,
+          "error": 997,
+          "calls": 90691,
+          "total_us": 99110.2,
+          "max_us": 105.6,
+          "path": "",
+          "frames": [
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x6b815"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x6b35a"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x66cb0"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x66979"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x63746"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x25156a"
+            },
+            {
+              "module": "KERNEL32.DLL",
+              "offset": "0x2dda7"
+            },
+            {
+              "module": "ntdll.dll",
+              "offset": "0xc9c5c"
+            }
+          ]
+        },
+        {
+          "kind": "api",
+          "api": 5,
+          "caller": {
+            "module": "NvMessageBus.dll",
+            "offset": "0x6bb2b"
+          },
+          "value": 66,
+          "result": 0,
+          "error": 232,
+          "calls": 5589,
+          "total_us": 32486.1,
+          "max_us": 101.7,
+          "path": "",
+          "frames": [
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x6bb2b"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x6c084"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x62646"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x24137"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x2401a"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x1e0c3"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x206a8"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x17fea"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x25156a"
+            },
+            {
+              "module": "KERNEL32.DLL",
+              "offset": "0x2dda7"
+            },
+            {
+              "module": "ntdll.dll",
+              "offset": "0xc9c5c"
+            }
+          ]
+        },
+        {
+          "kind": "api",
+          "api": 12,
+          "caller": {
+            "module": "NvMessageBus.dll",
+            "offset": "0x6aa9e"
+          },
+          "value": 1,
+          "result": 1,
+          "error": 0,
+          "calls": 93916,
+          "total_us": 509023.0,
+          "max_us": 109.9,
+          "path": "",
+          "frames": [
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x6aa9e"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x6a4eb"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x6b3a1"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x66cb0"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x66afe"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x63746"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x25156a"
+            },
+            {
+              "module": "KERNEL32.DLL",
+              "offset": "0x2dda7"
+            },
+            {
+              "module": "ntdll.dll",
+              "offset": "0xc9c5c"
+            }
+          ]
+        },
+        {
+          "kind": "api",
+          "api": 12,
+          "caller": {
+            "module": "NvMessageBus.dll",
+            "offset": "0x1ebc06"
+          },
+          "value": 0,
+          "result": 1,
+          "error": 0,
+          "calls": 187832,
+          "total_us": 261242.4,
+          "max_us": 140.5,
+          "path": "",
+          "frames": [
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x1ebc06"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x61bc5"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x60c70"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x615f4"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x20337"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x1ed3b"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x1e672"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x206a8"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x17fea"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x25156a"
+            },
+            {
+              "module": "KERNEL32.DLL",
+              "offset": "0x2dda7"
+            },
+            {
+              "module": "ntdll.dll",
+              "offset": "0xc9c5c"
+            }
+          ]
+        },
+        {
+          "kind": "api",
+          "api": 7,
+          "caller": {
+            "module": "NvMessageBus.dll",
+            "offset": "0x66faf"
+          },
+          "value": 0,
+          "result": 258,
+          "error": 0,
+          "calls": 93916,
+          "total_us": 42584.0,
+          "max_us": 103.0,
+          "path": "",
+          "frames": [
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x66faf"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x60d31"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x615f4"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x20337"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x1ed3b"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x1e672"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x206a8"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x17fea"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x25156a"
+            },
+            {
+              "module": "KERNEL32.DLL",
+              "offset": "0x2dda7"
+            },
+            {
+              "module": "ntdll.dll",
+              "offset": "0xc9c5c"
+            }
+          ]
+        },
+        {
+          "kind": "api",
+          "api": 12,
+          "caller": {
+            "module": "NvMessageBus.dll",
+            "offset": "0x671bf"
+          },
+          "value": 0,
+          "result": 1,
+          "error": 0,
+          "calls": 93916,
+          "total_us": 85932.0,
+          "max_us": 125.0,
+          "path": "",
+          "frames": [
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x671bf"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x60d31"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x615f4"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x20337"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x1ed3b"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x1e672"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x206a8"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x17fea"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x25156a"
+            },
+            {
+              "module": "KERNEL32.DLL",
+              "offset": "0x2dda7"
+            },
+            {
+              "module": "ntdll.dll",
+              "offset": "0xc9c5c"
+            }
+          ]
+        },
+        {
+          "kind": "api",
+          "api": 1,
+          "caller": {
+            "module": "NvMessageBus.dll",
+            "offset": "0x251932"
+          },
+          "value": 140716730946832,
+          "result": 1,
+          "error": 0,
+          "calls": 187832,
+          "total_us": 3683166.9,
+          "max_us": 439.2,
+          "path": "",
+          "frames": [
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x251932"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x63561"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x65d40"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x607e9"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x4b4d9"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x20389"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x1ed3b"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x1e672"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x206a8"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x17fea"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x25156a"
+            },
+            {
+              "module": "KERNEL32.DLL",
+              "offset": "0x2dda7"
+            },
+            {
+              "module": "ntdll.dll",
+              "offset": "0xc9c5c"
+            }
+          ]
+        },
+        {
+          "kind": "api",
+          "api": 5,
+          "caller": {
+            "module": "NvMessageBus.dll",
+            "offset": "0x6bb2b"
+          },
+          "value": 66,
+          "result": 1,
+          "error": 0,
+          "calls": 85157,
+          "total_us": 400117.0,
+          "max_us": 140.8,
+          "path": "",
+          "frames": [
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x6bb2b"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x6c084"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x62646"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x24137"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x2401a"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x1e0c3"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x206a8"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x17fea"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x25156a"
+            },
+            {
+              "module": "KERNEL32.DLL",
+              "offset": "0x2dda7"
+            },
+            {
+              "module": "ntdll.dll",
+              "offset": "0xc9c5c"
+            }
+          ]
+        },
+        {
+          "kind": "api",
+          "api": 4,
+          "caller": {
+            "module": "NvMessageBus.dll",
+            "offset": "0x6b815"
+          },
+          "value": 4,
+          "result": 0,
+          "error": 109,
+          "calls": 3225,
+          "total_us": 10456.8,
+          "max_us": 73.1,
+          "path": "",
+          "frames": [
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x6b815"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x6b35a"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x66cb0"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x66979"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x63746"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x25156a"
+            },
+            {
+              "module": "KERNEL32.DLL",
+              "offset": "0x2dda7"
+            },
+            {
+              "module": "ntdll.dll",
+              "offset": "0xc9c5c"
+            }
+          ]
+        }
+      ],
+      "messagebus_iat_covered": true,
+      "temporary_acl_variant": {
+        "scope": "current diagnostic process only",
+        "mask": "0x1400",
+        "account_or_token_changed": false,
+        "installed_files_changed": false,
+        "granted": true,
+        "restored": true,
+        "old_dacl_sha256": "2b9ac393912743fc12e602654714ea60c6b575532f6fd0ac86fda432977be042",
+        "restore_error": 0,
+        "restored_dacl_sha256": "2b9ac393912743fc12e602654714ea60c6b575532f6fd0ac86fda432977be042"
+      }
+    },
+    {
+      "case": "trace-combo-system-read-control",
+      "processing_and_exit_passed": true,
+      "error": null,
+      "source_unchanged": true,
+      "profile_span_seconds": 29.365952491760254,
+      "thread_starts_delta": 174776,
+      "messagebus_starts_delta": 174774,
+      "messagebus_total_observed": 191658,
+      "default_heap_allocated_delta": 32738906,
+      "api_summary": {
+        "kind": "summary",
+        "pid": 57992,
+        "patches": 32,
+        "entries": 12,
+        "dropped": 0
+      },
+      "api_entries": [
+        {
+          "kind": "api",
+          "api": 4,
+          "caller": {
+            "module": "NvMessageBus.dll",
+            "offset": "0x6b815"
+          },
+          "value": 4,
+          "result": 0,
+          "error": 997,
+          "calls": 92873,
+          "total_us": 95701.2,
+          "max_us": 88.6,
+          "path": "",
+          "frames": [
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x6b815"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x6b35a"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x66cb0"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x66979"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x63746"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x25156a"
+            },
+            {
+              "module": "KERNEL32.DLL",
+              "offset": "0x2dda7"
+            },
+            {
+              "module": "ntdll.dll",
+              "offset": "0xc9c5c"
+            }
+          ]
+        },
+        {
+          "kind": "api",
+          "api": 5,
+          "caller": {
+            "module": "NvMessageBus.dll",
+            "offset": "0x6bb2b"
+          },
+          "value": 66,
+          "result": 1,
+          "error": 0,
+          "calls": 88318,
+          "total_us": 402296.8,
+          "max_us": 148.4,
+          "path": "",
+          "frames": [
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x6bb2b"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x6c084"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x62646"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x24137"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x2401a"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x1e0c3"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x206a8"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x17fea"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x25156a"
+            },
+            {
+              "module": "KERNEL32.DLL",
+              "offset": "0x2dda7"
+            },
+            {
+              "module": "ntdll.dll",
+              "offset": "0xc9c5c"
+            }
+          ]
+        },
+        {
+          "kind": "api",
+          "api": 12,
+          "caller": {
+            "module": "NvMessageBus.dll",
+            "offset": "0x6aa9e"
+          },
+          "value": 1,
+          "result": 1,
+          "error": 0,
+          "calls": 95785,
+          "total_us": 499113.4,
+          "max_us": 108.8,
+          "path": "",
+          "frames": [
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x6aa9e"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x6a4eb"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x6b3a1"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x66cb0"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x66afe"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x63746"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x25156a"
+            },
+            {
+              "module": "KERNEL32.DLL",
+              "offset": "0x2dda7"
+            },
+            {
+              "module": "ntdll.dll",
+              "offset": "0xc9c5c"
+            }
+          ]
+        },
+        {
+          "kind": "api",
+          "api": 12,
+          "caller": {
+            "module": "NvMessageBus.dll",
+            "offset": "0x1ebc06"
+          },
+          "value": 0,
+          "result": 1,
+          "error": 0,
+          "calls": 191570,
+          "total_us": 260198.9,
+          "max_us": 109.4,
+          "path": "",
+          "frames": [
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x1ebc06"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x61bc5"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x60c70"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x615f4"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x20337"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x1ed3b"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x1e672"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x206a8"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x17fea"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x25156a"
+            },
+            {
+              "module": "KERNEL32.DLL",
+              "offset": "0x2dda7"
+            },
+            {
+              "module": "ntdll.dll",
+              "offset": "0xc9c5c"
+            }
+          ]
+        },
+        {
+          "kind": "api",
+          "api": 7,
+          "caller": {
+            "module": "NvMessageBus.dll",
+            "offset": "0x66faf"
+          },
+          "value": 0,
+          "result": 258,
+          "error": 0,
+          "calls": 95785,
+          "total_us": 42594.4,
+          "max_us": 91.7,
+          "path": "",
+          "frames": [
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x66faf"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x60d31"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x615f4"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x20337"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x1ed3b"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x1e672"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x206a8"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x17fea"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x25156a"
+            },
+            {
+              "module": "KERNEL32.DLL",
+              "offset": "0x2dda7"
+            },
+            {
+              "module": "ntdll.dll",
+              "offset": "0xc9c5c"
+            }
+          ]
+        },
+        {
+          "kind": "api",
+          "api": 12,
+          "caller": {
+            "module": "NvMessageBus.dll",
+            "offset": "0x671bf"
+          },
+          "value": 0,
+          "result": 1,
+          "error": 0,
+          "calls": 95785,
+          "total_us": 83913.6,
+          "max_us": 123.6,
+          "path": "",
+          "frames": [
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x671bf"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x60d31"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x615f4"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x20337"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x1ed3b"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x1e672"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x206a8"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x17fea"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x25156a"
+            },
+            {
+              "module": "KERNEL32.DLL",
+              "offset": "0x2dda7"
+            },
+            {
+              "module": "ntdll.dll",
+              "offset": "0xc9c5c"
+            }
+          ]
+        },
+        {
+          "kind": "api",
+          "api": 1,
+          "caller": {
+            "module": "NvMessageBus.dll",
+            "offset": "0x251932"
+          },
+          "value": 140716730946832,
+          "result": 1,
+          "error": 0,
+          "calls": 191570,
+          "total_us": 3626280.5,
+          "max_us": 203.0,
+          "path": "",
+          "frames": [
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x251932"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x63561"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x65d40"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x607e9"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x4b4d9"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x20389"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x1ed3b"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x1e672"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x206a8"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x17fea"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x25156a"
+            },
+            {
+              "module": "KERNEL32.DLL",
+              "offset": "0x2dda7"
+            },
+            {
+              "module": "ntdll.dll",
+              "offset": "0xc9c5c"
+            }
+          ]
+        },
+        {
+          "kind": "api",
+          "api": 2,
+          "caller": {
+            "module": "NvMessageBus.dll",
+            "offset": "0x6174d"
+          },
+          "value": 10,
+          "result": 1,
+          "error": 0,
+          "calls": 95784,
+          "total_us": 1620700.2,
+          "max_us": 289.6,
+          "path": "\\\\.\\pipe\\NvMessageBusBroadcastNVIDIA.Display.Driver",
+          "frames": [
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x6174d"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x5f41a"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x25156a"
+            },
+            {
+              "module": "KERNEL32.DLL",
+              "offset": "0x2dda7"
+            },
+            {
+              "module": "ntdll.dll",
+              "offset": "0xc9c5c"
+            }
+          ]
+        },
+        {
+          "kind": "api",
+          "api": 3,
+          "caller": {
+            "module": "NvMessageBus.dll",
+            "offset": "0x61792"
+          },
+          "value": 1179787,
+          "result": 1,
+          "error": 0,
+          "calls": 95784,
+          "total_us": 1636089.1,
+          "max_us": 153.9,
+          "path": "\\\\.\\pipe\\NvMessageBusBroadcastNVIDIA.Display.Driver",
+          "frames": [
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x61792"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x5f41a"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x25156a"
+            },
+            {
+              "module": "KERNEL32.DLL",
+              "offset": "0x2dda7"
+            },
+            {
+              "module": "ntdll.dll",
+              "offset": "0xc9c5c"
+            }
+          ]
+        },
+        {
+          "kind": "api",
+          "api": 11,
+          "caller": {
+            "module": "NvMessageBus.dll",
+            "offset": "0x621ef"
+          },
+          "value": 3748,
+          "result": 1,
+          "error": 0,
+          "calls": 95784,
+          "total_us": 582987.3,
+          "max_us": 169.7,
+          "path": "",
+          "frames": [
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x621ef"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x6b352"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x66cb0"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x66979"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x63746"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x25156a"
+            },
+            {
+              "module": "KERNEL32.DLL",
+              "offset": "0x2dda7"
+            },
+            {
+              "module": "ntdll.dll",
+              "offset": "0xc9c5c"
+            }
+          ]
+        },
+        {
+          "kind": "api",
+          "api": 5,
+          "caller": {
+            "module": "NvMessageBus.dll",
+            "offset": "0x6bb2b"
+          },
+          "value": 66,
+          "result": 0,
+          "error": 232,
+          "calls": 4574,
+          "total_us": 27179.7,
+          "max_us": 106.0,
+          "path": "",
+          "frames": [
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x6bb2b"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x6c084"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x62646"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x24137"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x2401a"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x1e0c3"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x206a8"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x17fea"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x25156a"
+            },
+            {
+              "module": "KERNEL32.DLL",
+              "offset": "0x2dda7"
+            },
+            {
+              "module": "ntdll.dll",
+              "offset": "0xc9c5c"
+            }
+          ]
+        },
+        {
+          "kind": "api",
+          "api": 4,
+          "caller": {
+            "module": "NvMessageBus.dll",
+            "offset": "0x6b815"
+          },
+          "value": 4,
+          "result": 0,
+          "error": 109,
+          "calls": 2912,
+          "total_us": 8804.9,
+          "max_us": 80.6,
+          "path": "",
+          "frames": [
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x6b815"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x6b35a"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x66cb0"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x66979"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x63746"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x25156a"
+            },
+            {
+              "module": "KERNEL32.DLL",
+              "offset": "0x2dda7"
+            },
+            {
+              "module": "ntdll.dll",
+              "offset": "0xc9c5c"
+            }
+          ]
+        }
+      ],
+      "messagebus_iat_covered": true,
+      "temporary_acl_variant": {
+        "scope": "current diagnostic process only",
+        "mask": "0x21000",
+        "account_or_token_changed": false,
+        "installed_files_changed": false,
+        "granted": true,
+        "restored": true,
+        "old_dacl_sha256": "2b9ac393912743fc12e602654714ea60c6b575532f6fd0ac86fda432977be042",
+        "restore_error": 0,
+        "restored_dacl_sha256": "2b9ac393912743fc12e602654714ea60c6b575532f6fd0ac86fda432977be042"
+      }
+    },
+    {
+      "case": "trace-combo-unsandboxed",
+      "processing_and_exit_passed": true,
+      "error": null,
+      "source_unchanged": true,
+      "profile_span_seconds": 29.31969141960144,
+      "thread_starts_delta": 2,
+      "messagebus_starts_delta": 0,
+      "messagebus_total_observed": 0,
+      "default_heap_allocated_delta": 630382,
+      "api_summary": {
+        "kind": "summary",
+        "pid": 51616,
+        "patches": 19,
+        "entries": 0,
+        "dropped": 0
+      },
+      "api_entries": [],
+      "messagebus_iat_covered": true
+    },
+    {
+      "case": "trace-cuda",
+      "processing_and_exit_passed": true,
+      "error": null,
+      "source_unchanged": true,
+      "profile_span_seconds": 29.676824808120728,
+      "thread_starts_delta": 215092,
+      "messagebus_starts_delta": 215090,
+      "messagebus_total_observed": 235719,
+      "default_heap_allocated_delta": 578701,
+      "api_summary": {
+        "kind": "summary",
+        "pid": 20696,
+        "patches": 12,
+        "entries": 1,
+        "dropped": 0
+      },
+      "api_entries": [
+        {
+          "kind": "api",
+          "api": 1,
+          "caller": {
+            "module": "nvdiagclt64.dll",
+            "offset": "0x995e2"
+          },
+          "value": 140714473394624,
+          "result": 1,
+          "error": 0,
+          "calls": 1,
+          "total_us": 13.6,
+          "max_us": 13.6,
+          "path": "",
+          "frames": [
+            {
+              "module": "nvdiagclt64.dll",
+              "offset": "0x995e2"
+            },
+            {
+              "module": "nvdiagclt64.dll",
+              "offset": "0x4083e"
+            },
+            {
+              "module": "nvdiagclt64.dll",
+              "offset": "0x365d8"
+            },
+            {
+              "module": "nvdiagclt64.dll",
+              "offset": "0x52a1e"
+            },
+            {
+              "module": "nvdiagclt64.dll",
+              "offset": "0x7bfe"
+            },
+            {
+              "module": "nvdiagclt64.dll",
+              "offset": "0x191c"
+            },
+            {
+              "module": "nvdiagclt64.dll",
+              "offset": "0x58b77"
+            },
+            {
+              "module": "nvdiagclt64.dll",
+              "offset": "0x9921a"
+            },
+            {
+              "module": "KERNEL32.DLL",
+              "offset": "0x2dda7"
+            },
+            {
+              "module": "ntdll.dll",
+              "offset": "0xc9c5c"
+            }
+          ]
+        }
+      ],
+      "messagebus_iat_covered": false
+    },
+    {
+      "case": "trace-factor-both",
+      "processing_and_exit_passed": true,
+      "error": null,
+      "source_unchanged": true,
+      "profile_span_seconds": 29.382282495498657,
+      "thread_starts_delta": 2,
+      "messagebus_starts_delta": 0,
+      "messagebus_total_observed": 0,
+      "default_heap_allocated_delta": 634194,
+      "api_summary": {
+        "kind": "summary",
+        "pid": 57724,
+        "patches": 32,
+        "entries": 0,
+        "dropped": 0
+      },
+      "api_entries": [],
+      "messagebus_iat_covered": true,
+      "temporary_acl_variant": {
+        "scope": "current diagnostic process only",
+        "mask": "0x1000",
+        "account_or_token_changed": false,
+        "installed_files_changed": false,
+        "granted": true,
+        "restored": true,
+        "token_read_variant": true,
+        "token_granted": true,
+        "old_dacl_sha256": "2b9ac393912743fc12e602654714ea60c6b575532f6fd0ac86fda432977be042",
+        "primary_token_id": 6353012600,
+        "parent_primary_token_id": 6352967080,
+        "private_primary_token": true,
+        "old_token_dacl_sha256": "efc6612d54cf1807ef4b81eb256cb5c26f61d913e8e3cd3e3dd84dbd77e705c0",
+        "token_access_mask": "0x20008",
+        "restore_error": 0,
+        "restored_dacl_sha256": "2b9ac393912743fc12e602654714ea60c6b575532f6fd0ac86fda432977be042",
+        "token_restore_error": 0,
+        "restored_token_dacl_sha256": "efc6612d54cf1807ef4b81eb256cb5c26f61d913e8e3cd3e3dd84dbd77e705c0",
+        "token_restored": true
+      }
+    },
+    {
+      "case": "trace-factor-none",
+      "processing_and_exit_passed": true,
+      "error": null,
+      "source_unchanged": true,
+      "profile_span_seconds": 29.3056960105896,
+      "thread_starts_delta": 174427,
+      "messagebus_starts_delta": 174425,
+      "messagebus_total_observed": 191774,
+      "default_heap_allocated_delta": 32827790,
+      "api_summary": {
+        "kind": "summary",
+        "pid": 28748,
+        "patches": 32,
+        "entries": 12,
+        "dropped": 0
+      },
+      "api_entries": [
+        {
+          "kind": "api",
+          "api": 12,
+          "caller": {
+            "module": "NvMessageBus.dll",
+            "offset": "0x1ebc06"
+          },
+          "value": 0,
+          "result": 1,
+          "error": 0,
+          "calls": 191679,
+          "total_us": 259204.4,
+          "max_us": 119.5,
+          "path": "",
+          "frames": [
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x1ebc06"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x6718b"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x60d31"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x615f4"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x20337"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x1ed3b"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x1e672"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x206a8"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x17fea"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x25156a"
+            },
+            {
+              "module": "KERNEL32.DLL",
+              "offset": "0x2dda7"
+            },
+            {
+              "module": "ntdll.dll",
+              "offset": "0xc9c5c"
+            }
+          ]
+        },
+        {
+          "kind": "api",
+          "api": 12,
+          "caller": {
+            "module": "NvMessageBus.dll",
+            "offset": "0x671bf"
+          },
+          "value": 0,
+          "result": 1,
+          "error": 0,
+          "calls": 95840,
+          "total_us": 83760.0,
+          "max_us": 134.6,
+          "path": "",
+          "frames": [
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x671bf"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x60d31"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x615f4"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x20337"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x1ed3b"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x1e672"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x206a8"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x17fea"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x25156a"
+            },
+            {
+              "module": "KERNEL32.DLL",
+              "offset": "0x2dda7"
+            },
+            {
+              "module": "ntdll.dll",
+              "offset": "0xc9c5c"
+            }
+          ]
+        },
+        {
+          "kind": "api",
+          "api": 1,
+          "caller": {
+            "module": "NvMessageBus.dll",
+            "offset": "0x251932"
+          },
+          "value": 140716730946832,
+          "result": 1,
+          "error": 0,
+          "calls": 191680,
+          "total_us": 3644807.5,
+          "max_us": 269.2,
+          "path": "",
+          "frames": [
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x251932"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x63561"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x65d40"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x607e9"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x4b4d9"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x20389"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x1ed3b"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x1e672"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x206a8"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x17fea"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x25156a"
+            },
+            {
+              "module": "KERNEL32.DLL",
+              "offset": "0x2dda7"
+            },
+            {
+              "module": "ntdll.dll",
+              "offset": "0xc9c5c"
+            }
+          ]
+        },
+        {
+          "kind": "api",
+          "api": 2,
+          "caller": {
+            "module": "NvMessageBus.dll",
+            "offset": "0x6174d"
+          },
+          "value": 10,
+          "result": 1,
+          "error": 0,
+          "calls": 95840,
+          "total_us": 1631890.6,
+          "max_us": 178.2,
+          "path": "\\\\.\\pipe\\NvMessageBusBroadcastNVIDIA.Display.Driver",
+          "frames": [
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x6174d"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x5f41a"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x25156a"
+            },
+            {
+              "module": "KERNEL32.DLL",
+              "offset": "0x2dda7"
+            },
+            {
+              "module": "ntdll.dll",
+              "offset": "0xc9c5c"
+            }
+          ]
+        },
+        {
+          "kind": "api",
+          "api": 3,
+          "caller": {
+            "module": "NvMessageBus.dll",
+            "offset": "0x61792"
+          },
+          "value": 1179787,
+          "result": 1,
+          "error": 0,
+          "calls": 95840,
+          "total_us": 1645418.7,
+          "max_us": 716.1,
+          "path": "\\\\.\\pipe\\NvMessageBusBroadcastNVIDIA.Display.Driver",
+          "frames": [
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x61792"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x5f41a"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x25156a"
+            },
+            {
+              "module": "KERNEL32.DLL",
+              "offset": "0x2dda7"
+            },
+            {
+              "module": "ntdll.dll",
+              "offset": "0xc9c5c"
+            }
+          ]
+        },
+        {
+          "kind": "api",
+          "api": 11,
+          "caller": {
+            "module": "NvMessageBus.dll",
+            "offset": "0x621ef"
+          },
+          "value": 3748,
+          "result": 1,
+          "error": 0,
+          "calls": 95840,
+          "total_us": 586046.0,
+          "max_us": 228.7,
+          "path": "",
+          "frames": [
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x621ef"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x6b352"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x66cb0"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x66979"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x63746"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x25156a"
+            },
+            {
+              "module": "KERNEL32.DLL",
+              "offset": "0x2dda7"
+            },
+            {
+              "module": "ntdll.dll",
+              "offset": "0xc9c5c"
+            }
+          ]
+        },
+        {
+          "kind": "api",
+          "api": 4,
+          "caller": {
+            "module": "NvMessageBus.dll",
+            "offset": "0x6b815"
+          },
+          "value": 4,
+          "result": 0,
+          "error": 109,
+          "calls": 3041,
+          "total_us": 9814.0,
+          "max_us": 69.0,
+          "path": "",
+          "frames": [
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x6b815"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x6b35a"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x66cb0"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x66979"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x63746"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x25156a"
+            },
+            {
+              "module": "KERNEL32.DLL",
+              "offset": "0x2dda7"
+            },
+            {
+              "module": "ntdll.dll",
+              "offset": "0xc9c5c"
+            }
+          ]
+        },
+        {
+          "kind": "api",
+          "api": 12,
+          "caller": {
+            "module": "NvMessageBus.dll",
+            "offset": "0x6aa9e"
+          },
+          "value": 1,
+          "result": 1,
+          "error": 0,
+          "calls": 95839,
+          "total_us": 502220.8,
+          "max_us": 183.6,
+          "path": "",
+          "frames": [
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x6aa9e"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x6a4eb"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x6b3c7"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x66cb0"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x66979"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x63746"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x25156a"
+            },
+            {
+              "module": "KERNEL32.DLL",
+              "offset": "0x2dda7"
+            },
+            {
+              "module": "ntdll.dll",
+              "offset": "0xc9c5c"
+            }
+          ]
+        },
+        {
+          "kind": "api",
+          "api": 7,
+          "caller": {
+            "module": "NvMessageBus.dll",
+            "offset": "0x66faf"
+          },
+          "value": 0,
+          "result": 258,
+          "error": 0,
+          "calls": 95839,
+          "total_us": 42500.6,
+          "max_us": 88.1,
+          "path": "",
+          "frames": [
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x66faf"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x60d31"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x615f4"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x20337"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x1ed3b"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x1e672"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x206a8"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x17fea"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x25156a"
+            },
+            {
+              "module": "KERNEL32.DLL",
+              "offset": "0x2dda7"
+            },
+            {
+              "module": "ntdll.dll",
+              "offset": "0xc9c5c"
+            }
+          ]
+        },
+        {
+          "kind": "api",
+          "api": 4,
+          "caller": {
+            "module": "NvMessageBus.dll",
+            "offset": "0x6b815"
+          },
+          "value": 4,
+          "result": 0,
+          "error": 997,
+          "calls": 92799,
+          "total_us": 95492.0,
+          "max_us": 58.0,
+          "path": "",
+          "frames": [
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x6b815"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x6b35a"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x66cb0"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x66979"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x63746"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x25156a"
+            },
+            {
+              "module": "KERNEL32.DLL",
+              "offset": "0x2dda7"
+            },
+            {
+              "module": "ntdll.dll",
+              "offset": "0xc9c5c"
+            }
+          ]
+        },
+        {
+          "kind": "api",
+          "api": 5,
+          "caller": {
+            "module": "NvMessageBus.dll",
+            "offset": "0x6bb2b"
+          },
+          "value": 66,
+          "result": 0,
+          "error": 232,
+          "calls": 4708,
+          "total_us": 27412.4,
+          "max_us": 120.2,
+          "path": "",
+          "frames": [
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x6bb2b"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x6c084"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x62646"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x24137"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x2401a"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x1e0c3"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x206a8"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x17fea"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x25156a"
+            },
+            {
+              "module": "KERNEL32.DLL",
+              "offset": "0x2dda7"
+            },
+            {
+              "module": "ntdll.dll",
+              "offset": "0xc9c5c"
+            }
+          ]
+        },
+        {
+          "kind": "api",
+          "api": 5,
+          "caller": {
+            "module": "NvMessageBus.dll",
+            "offset": "0x6bb2b"
+          },
+          "value": 66,
+          "result": 1,
+          "error": 0,
+          "calls": 88092,
+          "total_us": 395752.4,
+          "max_us": 104.7,
+          "path": "",
+          "frames": [
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x6bb2b"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x6c084"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x62646"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x24137"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x2401a"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x1e0c3"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x206a8"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x17fea"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x25156a"
+            },
+            {
+              "module": "KERNEL32.DLL",
+              "offset": "0x2dda7"
+            },
+            {
+              "module": "ntdll.dll",
+              "offset": "0xc9c5c"
+            }
+          ]
+        }
+      ],
+      "messagebus_iat_covered": true
+    },
+    {
+      "case": "trace-factor-process",
+      "processing_and_exit_passed": true,
+      "error": null,
+      "source_unchanged": true,
+      "profile_span_seconds": 29.355128049850464,
+      "thread_starts_delta": 176886,
+      "messagebus_starts_delta": 176884,
+      "messagebus_total_observed": 194073,
+      "default_heap_allocated_delta": 33121694,
+      "api_summary": {
+        "kind": "summary",
+        "pid": 55508,
+        "patches": 32,
+        "entries": 12,
+        "dropped": 0
+      },
+      "api_entries": [
+        {
+          "kind": "api",
+          "api": 12,
+          "caller": {
+            "module": "NvMessageBus.dll",
+            "offset": "0x1ebc06"
+          },
+          "value": 0,
+          "result": 1,
+          "error": 0,
+          "calls": 193983,
+          "total_us": 261531.4,
+          "max_us": 120.0,
+          "path": "",
+          "frames": [
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x1ebc06"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x61bc5"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x60c70"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x615f4"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x20337"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x1ed3b"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x1e672"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x206a8"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x17fea"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x25156a"
+            },
+            {
+              "module": "KERNEL32.DLL",
+              "offset": "0x2dda7"
+            },
+            {
+              "module": "ntdll.dll",
+              "offset": "0xc9c5c"
+            }
+          ]
+        },
+        {
+          "kind": "api",
+          "api": 7,
+          "caller": {
+            "module": "NvMessageBus.dll",
+            "offset": "0x66faf"
+          },
+          "value": 0,
+          "result": 258,
+          "error": 0,
+          "calls": 96992,
+          "total_us": 42689.3,
+          "max_us": 42.8,
+          "path": "",
+          "frames": [
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x66faf"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x60d31"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x615f4"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x20337"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x1ed3b"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x1e672"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x206a8"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x17fea"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x25156a"
+            },
+            {
+              "module": "KERNEL32.DLL",
+              "offset": "0x2dda7"
+            },
+            {
+              "module": "ntdll.dll",
+              "offset": "0xc9c5c"
+            }
+          ]
+        },
+        {
+          "kind": "api",
+          "api": 12,
+          "caller": {
+            "module": "NvMessageBus.dll",
+            "offset": "0x671bf"
+          },
+          "value": 0,
+          "result": 1,
+          "error": 0,
+          "calls": 96991,
+          "total_us": 84084.4,
+          "max_us": 154.3,
+          "path": "",
+          "frames": [
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x671bf"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x60d31"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x615f4"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x20337"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x1ed3b"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x1e672"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x206a8"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x17fea"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x25156a"
+            },
+            {
+              "module": "KERNEL32.DLL",
+              "offset": "0x2dda7"
+            },
+            {
+              "module": "ntdll.dll",
+              "offset": "0xc9c5c"
+            }
+          ]
+        },
+        {
+          "kind": "api",
+          "api": 1,
+          "caller": {
+            "module": "NvMessageBus.dll",
+            "offset": "0x251932"
+          },
+          "value": 140716730946832,
+          "result": 1,
+          "error": 0,
+          "calls": 193982,
+          "total_us": 3619399.9,
+          "max_us": 197.4,
+          "path": "",
+          "frames": [
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x251932"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x63561"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x65d40"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x607e9"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x4b4d9"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x20389"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x1ed3b"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x1e672"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x206a8"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x17fea"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x25156a"
+            },
+            {
+              "module": "KERNEL32.DLL",
+              "offset": "0x2dda7"
+            },
+            {
+              "module": "ntdll.dll",
+              "offset": "0xc9c5c"
+            }
+          ]
+        },
+        {
+          "kind": "api",
+          "api": 2,
+          "caller": {
+            "module": "NvMessageBus.dll",
+            "offset": "0x6174d"
+          },
+          "value": 10,
+          "result": 1,
+          "error": 0,
+          "calls": 96991,
+          "total_us": 1637470.0,
+          "max_us": 167.0,
+          "path": "\\\\.\\pipe\\NvMessageBusBroadcastNVIDIA.Display.Driver",
+          "frames": [
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x6174d"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x5f41a"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x25156a"
+            },
+            {
+              "module": "KERNEL32.DLL",
+              "offset": "0x2dda7"
+            },
+            {
+              "module": "ntdll.dll",
+              "offset": "0xc9c5c"
+            }
+          ]
+        },
+        {
+          "kind": "api",
+          "api": 3,
+          "caller": {
+            "module": "NvMessageBus.dll",
+            "offset": "0x61792"
+          },
+          "value": 1179787,
+          "result": 1,
+          "error": 0,
+          "calls": 96991,
+          "total_us": 1648696.0,
+          "max_us": 552.2,
+          "path": "\\\\.\\pipe\\NvMessageBusBroadcastNVIDIA.Display.Driver",
+          "frames": [
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x61792"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x5f41a"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x25156a"
+            },
+            {
+              "module": "KERNEL32.DLL",
+              "offset": "0x2dda7"
+            },
+            {
+              "module": "ntdll.dll",
+              "offset": "0xc9c5c"
+            }
+          ]
+        },
+        {
+          "kind": "api",
+          "api": 11,
+          "caller": {
+            "module": "NvMessageBus.dll",
+            "offset": "0x621ef"
+          },
+          "value": 3748,
+          "result": 1,
+          "error": 0,
+          "calls": 96991,
+          "total_us": 588229.5,
+          "max_us": 147.0,
+          "path": "",
+          "frames": [
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x621ef"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x6b352"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x66cb0"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x66979"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x63746"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x25156a"
+            },
+            {
+              "module": "KERNEL32.DLL",
+              "offset": "0x2dda7"
+            },
+            {
+              "module": "ntdll.dll",
+              "offset": "0xc9c5c"
+            }
+          ]
+        },
+        {
+          "kind": "api",
+          "api": 4,
+          "caller": {
+            "module": "NvMessageBus.dll",
+            "offset": "0x6b815"
+          },
+          "value": 4,
+          "result": 0,
+          "error": 997,
+          "calls": 93609,
+          "total_us": 94614.9,
+          "max_us": 86.3,
+          "path": "",
+          "frames": [
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x6b815"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x6b35a"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x66cb0"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x66979"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x63746"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x25156a"
+            },
+            {
+              "module": "KERNEL32.DLL",
+              "offset": "0x2dda7"
+            },
+            {
+              "module": "ntdll.dll",
+              "offset": "0xc9c5c"
+            }
+          ]
+        },
+        {
+          "kind": "api",
+          "api": 5,
+          "caller": {
+            "module": "NvMessageBus.dll",
+            "offset": "0x6bb2b"
+          },
+          "value": 66,
+          "result": 1,
+          "error": 0,
+          "calls": 88886,
+          "total_us": 397857.8,
+          "max_us": 170.2,
+          "path": "",
+          "frames": [
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x6bb2b"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x6c084"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x62646"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x24137"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x2401a"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x1e0c3"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x206a8"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x17fea"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x25156a"
+            },
+            {
+              "module": "KERNEL32.DLL",
+              "offset": "0x2dda7"
+            },
+            {
+              "module": "ntdll.dll",
+              "offset": "0xc9c5c"
+            }
+          ]
+        },
+        {
+          "kind": "api",
+          "api": 12,
+          "caller": {
+            "module": "NvMessageBus.dll",
+            "offset": "0x6aa9e"
+          },
+          "value": 1,
+          "result": 1,
+          "error": 0,
+          "calls": 96991,
+          "total_us": 509667.2,
+          "max_us": 115.5,
+          "path": "",
+          "frames": [
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x6aa9e"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x6a4eb"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x6b3a1"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x66cb0"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x66afe"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x63746"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x25156a"
+            },
+            {
+              "module": "KERNEL32.DLL",
+              "offset": "0x2dda7"
+            },
+            {
+              "module": "ntdll.dll",
+              "offset": "0xc9c5c"
+            }
+          ]
+        },
+        {
+          "kind": "api",
+          "api": 5,
+          "caller": {
+            "module": "NvMessageBus.dll",
+            "offset": "0x6bb2b"
+          },
+          "value": 66,
+          "result": 0,
+          "error": 232,
+          "calls": 4713,
+          "total_us": 27353.2,
+          "max_us": 154.0,
+          "path": "",
+          "frames": [
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x6bb2b"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x6c084"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x62646"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x24137"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x2401a"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x1e0c3"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x206a8"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x17fea"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x25156a"
+            },
+            {
+              "module": "KERNEL32.DLL",
+              "offset": "0x2dda7"
+            },
+            {
+              "module": "ntdll.dll",
+              "offset": "0xc9c5c"
+            }
+          ]
+        },
+        {
+          "kind": "api",
+          "api": 4,
+          "caller": {
+            "module": "NvMessageBus.dll",
+            "offset": "0x6b815"
+          },
+          "value": 4,
+          "result": 0,
+          "error": 109,
+          "calls": 3382,
+          "total_us": 9911.6,
+          "max_us": 73.9,
+          "path": "",
+          "frames": [
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x6b815"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x6b35a"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x66cb0"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x66979"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x63746"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x25156a"
+            },
+            {
+              "module": "KERNEL32.DLL",
+              "offset": "0x2dda7"
+            },
+            {
+              "module": "ntdll.dll",
+              "offset": "0xc9c5c"
+            }
+          ]
+        }
+      ],
+      "messagebus_iat_covered": true,
+      "temporary_acl_variant": {
+        "scope": "current diagnostic process only",
+        "mask": "0x1000",
+        "account_or_token_changed": false,
+        "installed_files_changed": false,
+        "granted": true,
+        "restored": true,
+        "token_read_variant": false,
+        "token_granted": false,
+        "old_dacl_sha256": "2b9ac393912743fc12e602654714ea60c6b575532f6fd0ac86fda432977be042",
+        "restore_error": 0,
+        "restored_dacl_sha256": "2b9ac393912743fc12e602654714ea60c6b575532f6fd0ac86fda432977be042"
+      }
+    },
+    {
+      "case": "trace-factor-token",
+      "processing_and_exit_passed": true,
+      "error": null,
+      "source_unchanged": true,
+      "profile_span_seconds": 29.27285099029541,
+      "thread_starts_delta": 2,
+      "messagebus_starts_delta": 0,
+      "messagebus_total_observed": 0,
+      "default_heap_allocated_delta": 629974,
+      "api_summary": {
+        "kind": "summary",
+        "pid": 34956,
+        "patches": 32,
+        "entries": 0,
+        "dropped": 0
+      },
+      "api_entries": [],
+      "messagebus_iat_covered": true,
+      "temporary_acl_variant": {
+        "scope": "current diagnostic process only",
+        "mask": "0x0",
+        "account_or_token_changed": false,
+        "installed_files_changed": false,
+        "granted": false,
+        "restored": true,
+        "token_read_variant": true,
+        "token_granted": true,
+        "old_dacl_sha256": "2b9ac393912743fc12e602654714ea60c6b575532f6fd0ac86fda432977be042",
+        "primary_token_id": 6351451166,
+        "parent_primary_token_id": 6351417148,
+        "private_primary_token": true,
+        "old_token_dacl_sha256": "efc6612d54cf1807ef4b81eb256cb5c26f61d913e8e3cd3e3dd84dbd77e705c0",
+        "token_access_mask": "0x20008",
+        "restore_error": 0,
+        "restored_dacl_sha256": "2b9ac393912743fc12e602654714ea60c6b575532f6fd0ac86fda432977be042",
+        "token_restore_error": 0,
+        "restored_token_dacl_sha256": "efc6612d54cf1807ef4b81eb256cb5c26f61d913e8e3cd3e3dd84dbd77e705c0",
+        "token_restored": true
+      }
+    },
+    {
+      "case": "trace-restricted-pc",
+      "processing_and_exit_passed": false,
+      "error": "Traceback (most recent call last):\n  File \"F:\\project\\DLSS5Tool\\tmp\\nvmessagebus-cause-20261111\\restricted_pc.py\", line 131, in <module>\n    assert code.value == 0 and record['remaining_before_cleanup'] == []\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError\n",
+      "source_unchanged": null
+    },
+    {
+      "case": "trace-restricted-pc-allgroups",
+      "processing_and_exit_passed": true,
+      "error": null,
+      "source_unchanged": null,
+      "profile_span_seconds": 29.29244828224182,
+      "thread_starts_delta": 2,
+      "messagebus_starts_delta": 0,
+      "messagebus_total_observed": 0,
+      "default_heap_allocated_delta": 631286,
+      "api_summary": {
+        "kind": "summary",
+        "pid": 57836,
+        "patches": 19,
+        "entries": 0,
+        "dropped": 0
+      },
+      "api_entries": [],
+      "messagebus_iat_covered": true
+    },
+    {
+      "case": "trace-token-query-only",
+      "processing_and_exit_passed": true,
+      "error": null,
+      "source_unchanged": true,
+      "profile_span_seconds": 29.298591375350952,
+      "thread_starts_delta": 200228,
+      "messagebus_starts_delta": 200226,
+      "messagebus_total_observed": 217870,
+      "default_heap_allocated_delta": 37195790,
+      "api_summary": {
+        "kind": "summary",
+        "pid": 556,
+        "patches": 32,
+        "entries": 12,
+        "dropped": 0
+      },
+      "api_entries": [
+        {
+          "kind": "api",
+          "api": 2,
+          "caller": {
+            "module": "NvMessageBus.dll",
+            "offset": "0x6174d"
+          },
+          "value": 10,
+          "result": 1,
+          "error": 0,
+          "calls": 108883,
+          "total_us": 1611769.5,
+          "max_us": 3224.9,
+          "path": "\\\\.\\pipe\\NvMessageBusBroadcastNVIDIA.Display.Driver",
+          "frames": [
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x6174d"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x5f41a"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x25156a"
+            },
+            {
+              "module": "KERNEL32.DLL",
+              "offset": "0x2dda7"
+            },
+            {
+              "module": "ntdll.dll",
+              "offset": "0xc9c5c"
+            }
+          ]
+        },
+        {
+          "kind": "api",
+          "api": 3,
+          "caller": {
+            "module": "NvMessageBus.dll",
+            "offset": "0x61792"
+          },
+          "value": 1179787,
+          "result": 1,
+          "error": 0,
+          "calls": 108883,
+          "total_us": 1664701.5,
+          "max_us": 1297.2,
+          "path": "\\\\.\\pipe\\NvMessageBusBroadcastNVIDIA.Display.Driver",
+          "frames": [
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x61792"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x5f41a"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x25156a"
+            },
+            {
+              "module": "KERNEL32.DLL",
+              "offset": "0x2dda7"
+            },
+            {
+              "module": "ntdll.dll",
+              "offset": "0xc9c5c"
+            }
+          ]
+        },
+        {
+          "kind": "api",
+          "api": 11,
+          "caller": {
+            "module": "NvMessageBus.dll",
+            "offset": "0x621ef"
+          },
+          "value": 3748,
+          "result": 1,
+          "error": 0,
+          "calls": 108883,
+          "total_us": 559210.6,
+          "max_us": 153.2,
+          "path": "",
+          "frames": [
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x621ef"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x6b352"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x66cb0"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x66979"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x63746"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x25156a"
+            },
+            {
+              "module": "KERNEL32.DLL",
+              "offset": "0x2dda7"
+            },
+            {
+              "module": "ntdll.dll",
+              "offset": "0xc9c5c"
+            }
+          ]
+        },
+        {
+          "kind": "api",
+          "api": 4,
+          "caller": {
+            "module": "NvMessageBus.dll",
+            "offset": "0x6b815"
+          },
+          "value": 4,
+          "result": 0,
+          "error": 997,
+          "calls": 107292,
+          "total_us": 95272.6,
+          "max_us": 55.2,
+          "path": "",
+          "frames": [
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x6b815"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x6b35a"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x66cb0"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x66979"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x63746"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x25156a"
+            },
+            {
+              "module": "KERNEL32.DLL",
+              "offset": "0x2dda7"
+            },
+            {
+              "module": "ntdll.dll",
+              "offset": "0xc9c5c"
+            }
+          ]
+        },
+        {
+          "kind": "api",
+          "api": 5,
+          "caller": {
+            "module": "NvMessageBus.dll",
+            "offset": "0x6bb2b"
+          },
+          "value": 64,
+          "result": 1,
+          "error": 0,
+          "calls": 104716,
+          "total_us": 385757.2,
+          "max_us": 140.9,
+          "path": "",
+          "frames": [
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x6bb2b"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x6c084"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x62646"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x24137"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x2401a"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x1e0c3"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x206a8"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x17fea"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x25156a"
+            },
+            {
+              "module": "KERNEL32.DLL",
+              "offset": "0x2dda7"
+            },
+            {
+              "module": "ntdll.dll",
+              "offset": "0xc9c5c"
+            }
+          ]
+        },
+        {
+          "kind": "api",
+          "api": 12,
+          "caller": {
+            "module": "NvMessageBus.dll",
+            "offset": "0x6aa9e"
+          },
+          "value": 1,
+          "result": 1,
+          "error": 0,
+          "calls": 108883,
+          "total_us": 487535.2,
+          "max_us": 135.4,
+          "path": "",
+          "frames": [
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x6aa9e"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x6a4eb"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x6b3a1"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x66cb0"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x66afe"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x63746"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x25156a"
+            },
+            {
+              "module": "KERNEL32.DLL",
+              "offset": "0x2dda7"
+            },
+            {
+              "module": "ntdll.dll",
+              "offset": "0xc9c5c"
+            }
+          ]
+        },
+        {
+          "kind": "api",
+          "api": 12,
+          "caller": {
+            "module": "NvMessageBus.dll",
+            "offset": "0x1ebc06"
+          },
+          "value": 0,
+          "result": 1,
+          "error": 0,
+          "calls": 217765,
+          "total_us": 254392.8,
+          "max_us": 127.0,
+          "path": "",
+          "frames": [
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x1ebc06"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x61bc5"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x60c70"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x615f4"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x20337"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x1ed3b"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x1e672"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x206a8"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x17fea"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x25156a"
+            },
+            {
+              "module": "KERNEL32.DLL",
+              "offset": "0x2dda7"
+            },
+            {
+              "module": "ntdll.dll",
+              "offset": "0xc9c5c"
+            }
+          ]
+        },
+        {
+          "kind": "api",
+          "api": 7,
+          "caller": {
+            "module": "NvMessageBus.dll",
+            "offset": "0x66faf"
+          },
+          "value": 0,
+          "result": 258,
+          "error": 0,
+          "calls": 108883,
+          "total_us": 46235.7,
+          "max_us": 93.6,
+          "path": "",
+          "frames": [
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x66faf"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x60d31"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x615f4"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x20337"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x1ed3b"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x1e672"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x206a8"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x17fea"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x25156a"
+            },
+            {
+              "module": "KERNEL32.DLL",
+              "offset": "0x2dda7"
+            },
+            {
+              "module": "ntdll.dll",
+              "offset": "0xc9c5c"
+            }
+          ]
+        },
+        {
+          "kind": "api",
+          "api": 12,
+          "caller": {
+            "module": "NvMessageBus.dll",
+            "offset": "0x671bf"
+          },
+          "value": 0,
+          "result": 1,
+          "error": 0,
+          "calls": 108882,
+          "total_us": 86279.9,
+          "max_us": 125.3,
+          "path": "",
+          "frames": [
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x671bf"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x60d31"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x615f4"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x20337"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x1ed3b"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x1e672"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x206a8"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x17fea"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x25156a"
+            },
+            {
+              "module": "KERNEL32.DLL",
+              "offset": "0x2dda7"
+            },
+            {
+              "module": "ntdll.dll",
+              "offset": "0xc9c5c"
+            }
+          ]
+        },
+        {
+          "kind": "api",
+          "api": 1,
+          "caller": {
+            "module": "NvMessageBus.dll",
+            "offset": "0x251932"
+          },
+          "value": 140716730946832,
+          "result": 1,
+          "error": 0,
+          "calls": 217764,
+          "total_us": 3744818.0,
+          "max_us": 495.8,
+          "path": "",
+          "frames": [
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x251932"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x63561"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x65d40"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x607e9"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x4b4d9"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x20389"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x1ed3b"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x1e672"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x206a8"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x17fea"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x25156a"
+            },
+            {
+              "module": "KERNEL32.DLL",
+              "offset": "0x2dda7"
+            },
+            {
+              "module": "ntdll.dll",
+              "offset": "0xc9c5c"
+            }
+          ]
+        },
+        {
+          "kind": "api",
+          "api": 4,
+          "caller": {
+            "module": "NvMessageBus.dll",
+            "offset": "0x6b815"
+          },
+          "value": 4,
+          "result": 0,
+          "error": 109,
+          "calls": 1591,
+          "total_us": 4527.3,
+          "max_us": 125.0,
+          "path": "",
+          "frames": [
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x6b815"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x6b35a"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x66cb0"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x66979"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x63746"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x25156a"
+            },
+            {
+              "module": "KERNEL32.DLL",
+              "offset": "0x2dda7"
+            },
+            {
+              "module": "ntdll.dll",
+              "offset": "0xc9c5c"
+            }
+          ]
+        },
+        {
+          "kind": "api",
+          "api": 5,
+          "caller": {
+            "module": "NvMessageBus.dll",
+            "offset": "0x6bb2b"
+          },
+          "value": 64,
+          "result": 0,
+          "error": 232,
+          "calls": 2492,
+          "total_us": 13726.0,
+          "max_us": 126.0,
+          "path": "",
+          "frames": [
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x6bb2b"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x6c084"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x62646"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x24137"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x2401a"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x1e0c3"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x206a8"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x17fea"
+            },
+            {
+              "module": "NvMessageBus.dll",
+              "offset": "0x25156a"
+            },
+            {
+              "module": "KERNEL32.DLL",
+              "offset": "0x2dda7"
+            },
+            {
+              "module": "ntdll.dll",
+              "offset": "0xc9c5c"
+            }
+          ]
+        }
+      ],
+      "messagebus_iat_covered": true,
+      "temporary_acl_variant": {
+        "scope": "current diagnostic process only",
+        "mask": "0x0",
+        "account_or_token_changed": false,
+        "installed_files_changed": false,
+        "granted": false,
+        "restored": true,
+        "token_read_variant": true,
+        "token_granted": true,
+        "old_dacl_sha256": "2b9ac393912743fc12e602654714ea60c6b575532f6fd0ac86fda432977be042",
+        "primary_token_id": 6369716299,
+        "parent_primary_token_id": 6369685837,
+        "private_primary_token": true,
+        "old_token_dacl_sha256": "efc6612d54cf1807ef4b81eb256cb5c26f61d913e8e3cd3e3dd84dbd77e705c0",
+        "token_access_mask": "0x8",
+        "restore_error": 0,
+        "restored_dacl_sha256": "2b9ac393912743fc12e602654714ea60c6b575532f6fd0ac86fda432977be042",
+        "token_restore_error": 0,
+        "restored_token_dacl_sha256": "efc6612d54cf1807ef4b81eb256cb5c26f61d913e8e3cd3e3dd84dbd77e705c0",
+        "token_restored": true
+      }
+    },
+    {
+      "case": "trace-token-read-control-only",
+      "processing_and_exit_passed": true,
+      "error": null,
+      "source_unchanged": true,
+      "profile_span_seconds": 29.356859922409058,
+      "thread_starts_delta": 2,
+      "messagebus_starts_delta": 0,
+      "messagebus_total_observed": 0,
+      "default_heap_allocated_delta": 629782,
+      "api_summary": {
+        "kind": "summary",
+        "pid": 19944,
+        "patches": 32,
+        "entries": 0,
+        "dropped": 0
+      },
+      "api_entries": [],
+      "messagebus_iat_covered": true,
+      "temporary_acl_variant": {
+        "scope": "current diagnostic process only",
+        "mask": "0x0",
+        "account_or_token_changed": false,
+        "installed_files_changed": false,
+        "granted": false,
+        "restored": true,
+        "token_read_variant": true,
+        "token_granted": true,
+        "old_dacl_sha256": "2b9ac393912743fc12e602654714ea60c6b575532f6fd0ac86fda432977be042",
+        "primary_token_id": 6373920646,
+        "parent_primary_token_id": 6373882581,
+        "private_primary_token": true,
+        "old_token_dacl_sha256": "efc6612d54cf1807ef4b81eb256cb5c26f61d913e8e3cd3e3dd84dbd77e705c0",
+        "token_access_mask": "0x20000",
+        "restore_error": 0,
+        "restored_dacl_sha256": "2b9ac393912743fc12e602654714ea60c6b575532f6fd0ac86fda432977be042",
+        "token_restore_error": 0,
+        "restored_token_dacl_sha256": "efc6612d54cf1807ef4b81eb256cb5c26f61d913e8e3cd3e3dd84dbd77e705c0",
+        "token_restored": true
+      }
+    }
+  ],
+  "ordinary_native": [
+    {
+      "case": "native-nr-ordinary-nr",
+      "processing_and_exit_passed": true,
+      "source_runtime_unchanged": true,
+      "safety_error": null,
+      "remaining_before_recovery": [],
+      "supervisor_recovery": [],
+      "frames": 32,
+      "configured_window_seconds": 300,
+      "elapsed_seconds": 308.467,
+      "worker_pid": 45084,
+      "worker_created": 134388542530652650,
+      "selection": "largest private commit at window end, exact PID+creation, cross-checked against native checkpoints",
+      "profile_private_match_median_error": 7364608,
+      "profile_private_match_max_error": 7364608,
+      "profile_private_match_min_candidate_separation": 826679296,
+      "profile_match_max_sample_offset_seconds": 0.07579684257507324,
+      "profile_count": 1,
+      "profile_span_seconds": 0.0,
+      "private_windows": {
+        "10": {
+          "samples": 1121,
+          "sufficient_samples": true,
+          "start_median_bytes": 878133248.0,
+          "end_median_bytes": 865341440.0,
+          "delta_bytes": -12791808.0,
+          "median_time_span_seconds": 232.26188468933105,
+          "mib_per_minute": -3.151413009409814,
+          "range_bytes": 12857344
+        }
+      },
+      "five_minute_private_medians": [
+        865341440
+      ],
+      "primary_window_gate_passed": true,
+      "gate": {
+        "max_growth_mib_per_minute": 0.25,
+        "max_absolute_window_delta_mib": 16
+      },
+      "messagebus_starts_delta": 0,
+      "messagebus_total_observed": 0,
+      "thread_activity_has_multiple_checkpoints": false,
+      "total_thread_starts_delta": 0,
+      "python_traced_delta": 0,
+      "source_scope": "existing production ProcessLive/ProcessSuperResolution, synthetic frames, ordinary account",
+      "all_user_scenarios_certified": false
+    },
+    {
+      "case": "native-sr-ordinary-vsr",
+      "processing_and_exit_passed": true,
+      "source_runtime_unchanged": true,
+      "safety_error": null,
+      "remaining_before_recovery": [],
+      "supervisor_recovery": [],
+      "frames": 32,
+      "configured_window_seconds": 300,
+      "elapsed_seconds": 305.568,
+      "worker_pid": 17068,
+      "worker_created": 134388545618730237,
+      "selection": "largest private commit at window end, exact PID+creation, cross-checked against native checkpoints",
+      "profile_private_match_median_error": 11642880.0,
+      "profile_private_match_max_error": 13672448,
+      "profile_private_match_min_candidate_separation": 244719616,
+      "profile_match_max_sample_offset_seconds": 0.11157584190368652,
+      "profile_count": 2,
+      "profile_span_seconds": 300.6494002342224,
+      "private_windows": {
+        "10": {
+          "samples": 1120,
+          "sufficient_samples": true,
+          "start_median_bytes": 417226752.0,
+          "end_median_bytes": 411316224.0,
+          "delta_bytes": -5910528.0,
+          "median_time_span_seconds": 231.9622163772583,
+          "mib_per_minute": -1.4580095425970314,
+          "range_bytes": 5910528
+        }
+      },
+      "five_minute_private_medians": [
+        411316224
+      ],
+      "primary_window_gate_passed": true,
+      "gate": {
+        "max_growth_mib_per_minute": 0.25,
+        "max_absolute_window_delta_mib": 16
+      },
+      "messagebus_starts_delta": 0,
+      "messagebus_total_observed": 3,
+      "thread_activity_has_multiple_checkpoints": true,
+      "total_thread_starts_delta": 3,
+      "python_traced_delta": -10732,
+      "source_scope": "existing production ProcessLive/ProcessSuperResolution, synthetic frames, ordinary account",
+      "all_user_scenarios_certified": false
+    },
+    {
+      "case": "native-nr-ordinary-long-nr",
+      "processing_and_exit_passed": true,
+      "source_runtime_unchanged": true,
+      "safety_error": null,
+      "remaining_before_recovery": [],
+      "supervisor_recovery": [],
+      "frames": 203845,
+      "configured_window_seconds": 1800,
+      "elapsed_seconds": 1807.1,
+      "worker_pid": 20964,
+      "worker_created": 134388552525026321,
+      "selection": "largest private commit at window end, exact PID+creation, cross-checked against native checkpoints",
+      "profile_private_match_median_error": 0,
+      "profile_private_match_max_error": 7114752,
+      "profile_private_match_min_candidate_separation": 677097472,
+      "profile_match_max_sample_offset_seconds": 0.12972164154052734,
+      "profile_count": 399,
+      "profile_span_seconds": 1799.0381889343262,
+      "private_windows": {
+        "10": {
+          "samples": 6902,
+          "sufficient_samples": true,
+          "start_median_bytes": 717320192.0,
+          "end_median_bytes": 718184448.0,
+          "delta_bytes": 864256.0,
+          "median_time_span_seconds": 1431.279378414154,
+          "mib_per_minute": 0.03455169252476317,
+          "range_bytes": 148008960
+        },
+        "30": {
+          "samples": 6825,
+          "sufficient_samples": true,
+          "start_median_bytes": 717320192,
+          "end_median_bytes": 718184448,
+          "delta_bytes": 864256,
+          "median_time_span_seconds": 1415.202359199524,
+          "mib_per_minute": 0.034944207574648195,
+          "range_bytes": 1781760
+        },
+        "60": {
+          "samples": 6709,
+          "sufficient_samples": true,
+          "start_median_bytes": 717320192,
+          "end_median_bytes": 718184448,
+          "delta_bytes": 864256,
+          "median_time_span_seconds": 1391.3142898082733,
+          "mib_per_minute": 0.03554417960216219,
+          "range_bytes": 1359872
+        }
+      },
+      "five_minute_private_medians": [
+        717320192.0,
+        717656064.0,
+        717656064.0,
+        718184448,
+        718184448,
+        718184448.0
+      ],
+      "primary_window_gate_passed": true,
+      "gate": {
+        "max_growth_mib_per_minute": 0.25,
+        "max_absolute_window_delta_mib": 16
+      },
+      "messagebus_starts_delta": 0,
+      "messagebus_total_observed": 0,
+      "thread_activity_has_multiple_checkpoints": true,
+      "total_thread_starts_delta": 9,
+      "python_traced_delta": 7979,
+      "source_scope": "existing production ProcessLive/ProcessSuperResolution, synthetic frames, ordinary account",
+      "all_user_scenarios_certified": false
+    },
+    {
+      "case": "native-sr-ordinary-long-vsr",
+      "processing_and_exit_passed": true,
+      "source_runtime_unchanged": true,
+      "safety_error": null,
+      "remaining_before_recovery": [],
+      "supervisor_recovery": [],
+      "frames": 728929,
+      "configured_window_seconds": 1800,
+      "elapsed_seconds": 1804.588,
+      "worker_pid": 57688,
+      "worker_created": 134388552692890908,
+      "selection": "largest private commit at window end, exact PID+creation, cross-checked against native checkpoints",
+      "profile_private_match_median_error": 0,
+      "profile_private_match_max_error": 15618048,
+      "profile_private_match_min_candidate_separation": 252911616,
+      "profile_match_max_sample_offset_seconds": 0.13747477531433105,
+      "profile_count": 1425,
+      "profile_span_seconds": 1799.754812002182,
+      "private_windows": {
+        "10": {
+          "samples": 6897,
+          "sufficient_samples": true,
+          "start_median_bytes": 418930688,
+          "end_median_bytes": 420810752,
+          "delta_bytes": 1880064,
+          "median_time_span_seconds": 1431.3670382499695,
+          "mib_per_minute": 0.0751576095615057,
+          "range_bytes": 4190208
+        },
+        "30": {
+          "samples": 6820,
+          "sufficient_samples": true,
+          "start_median_bytes": 418930688.0,
+          "end_median_bytes": 420810752.0,
+          "delta_bytes": 1880064.0,
+          "median_time_span_seconds": 1415.274231672287,
+          "mib_per_minute": 0.07601221204521315,
+          "range_bytes": 3002368
+        },
+        "60": {
+          "samples": 6704,
+          "sufficient_samples": true,
+          "start_median_bytes": 418914304.0,
+          "end_median_bytes": 420810752.0,
+          "delta_bytes": 1896448.0,
+          "median_time_span_seconds": 1391.394690990448,
+          "mib_per_minute": 0.0779905412192959,
+          "range_bytes": 3002368
+        }
+      },
+      "five_minute_private_medians": [
+        418897920,
+        418897920,
+        419405824.0,
+        419405824,
+        419405824.0,
+        420810752.0
+      ],
+      "primary_window_gate_passed": true,
+      "gate": {
+        "max_growth_mib_per_minute": 0.25,
+        "max_absolute_window_delta_mib": 16
+      },
+      "messagebus_starts_delta": 0,
+      "messagebus_total_observed": 3,
+      "thread_activity_has_multiple_checkpoints": true,
+      "total_thread_starts_delta": 10,
+      "python_traced_delta": 19956,
+      "source_scope": "existing production ProcessLive/ProcessSuperResolution, synthetic frames, ordinary account",
+      "all_user_scenarios_certified": false
+    }
+  ],
+  "ordinary_driver_thread_controls": [
+    {
+      "case": "driver-threads-ordinary-confirm-control-traced",
+      "processing_and_exit_passed": true,
+      "trace_enabled": true,
+      "source_unchanged": true,
+      "target_unchanged": true,
+      "heap_bytes_per_thread": 0.0
+    },
+    {
+      "case": "driver-threads-ordinary-confirm-control-untraced",
+      "processing_and_exit_passed": true,
+      "trace_enabled": false,
+      "source_unchanged": true,
+      "target_unchanged": true,
+      "heap_bytes_per_thread": 0.0
+    },
+    {
+      "case": "driver-threads-ordinary-confirm-nvidia-traced",
+      "processing_and_exit_passed": true,
+      "trace_enabled": true,
+      "source_unchanged": true,
+      "target_unchanged": true,
+      "heap_bytes_per_thread": 184.0152
+    },
+    {
+      "case": "driver-threads-ordinary-confirm-nvidia-untraced",
+      "processing_and_exit_passed": true,
+      "trace_enabled": false,
+      "source_unchanged": true,
+      "target_unchanged": true,
+      "heap_bytes_per_thread": 184.0
+    }
+  ],
+  "factorial_sources_identical": true,
+  "measured_common_source_snapshots": [
+    {
+      "source": "verify_p0_stability.py",
+      "sha256": "b6ac3cb23226e4858c07fe268e13a5b8e553f114597e905d974711d15a1b334e",
+      "matched_measured_manifest": true,
+      "matched_cases": [
+        "native-nr-ordinary-nr",
+        "native-sr-ordinary-vsr",
+        "native-nr-ordinary-long-nr",
+        "native-sr-ordinary-long-vsr"
+      ]
+    },
+    {
+      "source": "profile_native_frame_memory.py",
+      "sha256": "97f3af75645fd1f0121f237bf7a81f7b1768bb445bc8c19ed818d052c32c3424",
+      "matched_measured_manifest": true,
+      "matched_cases": [
+        "native-nr-ordinary-nr",
+        "native-sr-ordinary-vsr",
+        "native-nr-ordinary-long-nr",
+        "native-sr-ordinary-long-vsr"
+      ]
+    }
+  ],
+  "hypotheses": {
+    "process_query_rights_only_sufficient": false,
+    "token_read_control_boundary_validated": true,
+    "ordinary_account_fast_growth_reproduced": false,
+    "driver_per_thread_retention_remains": true
+  },
+  "limitations": [
+    "One local GPU/driver, synthetic low-resolution native loads.",
+    "NR/VSR 30-minute processing windows overlapped; compare memory, not performance.",
+    "No injection/stack capture inside the system broker; static family-code and causal permission controls support the token boundary.",
+    "Initial CUDA-only API trace missed late-loaded MessageBus; not used as evidence of absent API calls.",
+    "First restricted-PC token setup failed importing ctypes before CUDA; not a native-memory result.",
+    "No production permission changes, driver replacement or machine configuration changes."
+  ]
+}

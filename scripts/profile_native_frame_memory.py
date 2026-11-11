@@ -38,6 +38,7 @@ class Profile:
     def __init__(self, kind):
         from scripts.profile_thread_activity import load_counter
         self.path = Path(os.environ['TEMP'])/(kind+'-frame-memory.jsonl')
+        self.kind = kind
         self.count = 0
         self.thread_counter = load_counter()
         tracemalloc.start(5)
@@ -54,6 +55,11 @@ class Profile:
         if self.count == 1:
             loaded = loaded_modules()
             (self.path.parent/'native-modules.json').write_text(json.dumps(loaded,indent=2), encoding='utf-8')
+            from scripts.windows_process_context import current_context
+            context = current_context()
+            identity = str(context.get('created_filetime', 'unknown'))
+            target = self.path.parent / f'{self.kind}-execution-context-{os.getpid()}-{identity}.json'
+            target.write_text(json.dumps(context, indent=2), encoding='utf-8')
         before = memory_snapshot()
         python_before = tracemalloc.get_traced_memory()
         collected = gc.collect()

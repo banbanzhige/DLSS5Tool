@@ -65,7 +65,8 @@ def run_manifest(task=None):
         'shared_render_preview','residual_composition','local_preview_composition','preview_jobs','__main__')]
     names += ['gui.py','scripts/verify_p0_stability.py','scripts/profile_native_frame_memory.py',
               'scripts/inspect_native_allocations.py','scripts/profile_thread_activity.py',
-              'scripts/native_thread_activity.cpp','scripts/native_heap_trace.cpp']
+              'scripts/native_thread_activity.cpp','scripts/native_heap_trace.cpp',
+              'scripts/windows_process_context.py']
     names += ['native/realtime/'+name for name in ('quality_bridge.cpp','quality.cpp','quality.h',
         'quality_gpu_output.cpp','quality_gpu_output.h')]
     names += ['scripts/prepare_realtime_build.py', 'third_party/realtime/veyra/shaders/NrResidualComposite.hlsl',
@@ -436,10 +437,12 @@ def gui_images(args, work, config, event):
 
 def supervise(args, work):
     from scripts.ngx_updater_lifecycle_probe import Processes
+    from scripts.windows_process_context import current_context
     from dlss5tool.memory_budget import system_memory
     processes = Processes()
     memory = Memory(processes)
     initial = processes.snapshot()
+    supervisor_context = current_context()
     existed = {row['pid'] for row in initial}
     known, observations, samples, held = {}, {}, [], {}
     gpu_snapshots = []
@@ -584,6 +587,9 @@ def supervise(args, work):
                 peak_tree_working_set_bytes=max((s['working_set_bytes'] for s in samples), default=0),
                 observed_processes=list(observations.values()), gpu_snapshots=gpu_snapshots,
                 gpu_snapshots_enabled=args.gpu_snapshots,
+                supervisor_execution_context=supervisor_context,
+                native_execution_contexts=[json.loads(checked_path(path).read_text(encoding='utf-8'))
+                    for path in sorted(work.glob('*-execution-context-*.json'))],
                 remaining_before_recovery=remaining,
                 recovery=cleanup, samples=len(samples), scope='synthetic media; actual existing runtimes and production processing')
             events = ([json.loads(line) for line in (work/'events.jsonl').read_text(encoding='utf-8').splitlines()]
