@@ -1,0 +1,99 @@
+{
+  "date": "2026-11-11",
+  "product_commit": "e3f0d03",
+  "environment": {
+    "gpu": "RTX 4070 SUPER",
+    "driver": "621.14",
+    "ram_gib": 64,
+    "python": "3.13.3"
+  },
+  "formal_cases": [
+    "nr-hold-formal",
+    "nr-recycle-formal",
+    "sr-hold-formal",
+    "sr-recycle-formal",
+    "nr-parameters-formal",
+    "nr-rebuild-formal",
+    "sr-recycle-recovery-recheck"
+  ],
+  "formal_case_count": 7,
+  "formal_processed_frames": 219,
+  "all_formal_processing_and_exit_passed": true,
+  "all_case_source_and_runtime_manifests_unchanged": true,
+  "all_formal_closes_retired_workers_and_unlinked_shared_frames": true,
+  "native_feature_counts": {
+    "nr-parameters-formal": {
+      "create_calls": 1,
+      "resize_calls": 0
+    },
+    "nr-rebuild-formal": {
+      "create_calls": 31,
+      "resize_calls": 30
+    }
+  },
+  "long_term_memory_plateau_verified": false,
+  "observed_idle_plateau_passed": false,
+  "idle_plateau_limits": {
+    "max_absolute_mib_per_minute": 0.25,
+    "max_window_delta_mib": 16
+  },
+  "cpu_control_gpu_queries": false,
+  "upstream_application_binaries_executed": false,
+  "no_driver_global_settings_or_product_implementation_changed": true,
+  "diagnostic_safety_checks": {
+    "logical_boundary_checks": 6,
+    "real_guarded_pilot_passed": true
+  },
+  "failed_pilot": {
+    "case": "nr-rebuild-pilot",
+    "native_close_did_not_return": true,
+    "supervisor_timeout_seconds": 90,
+    "required_own_job_cleanup": true,
+    "included_in_formal_acceptance": false,
+    "root_cause_stack_not_captured": true
+  },
+  "limitations": [
+    "Small synthetic frames and finite three-by-60-second windows; no overnight or long-video acceptance",
+    "CPU idle controls do not query GPU status; GPU feature cases use external WDDM counters",
+    "One formal VSR system-commit close window rose while owned processes retired; preserved, not discarded",
+    "A separate VSR recheck observed a system-commit drop, but background allocation is not causally attributed",
+    "GPU counter disappearance alone does not certify every driver/kernel allocation was released",
+    "Parameter changes and native resize were measured; upstream application releases were not run"
+  ],
+  "measured_probe_sources": {
+    "4c0aa060f2c7ca068fda018c127cb3e4227298d0a6d0a880a25558ffd0e1f008": "sources/probe-4c0aa060f2c7ca068fda018c127cb3e4227298d0a6d0a880a25558ffd0e1f008.py.txt",
+    "7698155a11cdda9dd60c5c9bf5ac0b284ef9d36cc4b683f6924d2494589a4e71": "sources/probe-7698155a11cdda9dd60c5c9bf5ac0b284ef9d36cc4b683f6924d2494589a4e71.py.txt",
+    "5063840ea115e328b00f03dd5f46e92b3c947e9e5997106cd3086471e3df3f3b": "sources/probe-5063840ea115e328b00f03dd5f46e92b3c947e9e5997106cd3086471e3df3f3b.py.txt",
+    "6ea7f02027c12176d084168e4979d7819fb893851397f40d29f66f239eef253d": "sources/probe-6ea7f02027c12176d084168e4979d7819fb893851397f40d29f66f239eef253d.py.txt"
+  },
+  "artifacts": [
+    {
+      "file": "observations.zip",
+      "bytes": 318263,
+      "sha256": "59b85e5f81e08832caa717f36ee8c706d872d358ec5cd478d8026af96634ea71"
+    },
+    {
+      "file": "measurements.json",
+      "bytes": 85466,
+      "sha256": "a69eb249c06725798f5a5e0c0d0d6cc68ab6a755286e293fc1caecbb3320af2e"
+    },
+    {
+      "file": "archive-index.json",
+      "bytes": 13401,
+      "sha256": "85b16b407cf970668af783321a3d33b2fa1363bfe393b8021c85af4074af9524"
+    }
+  ],
+  "cleanup": {
+    "status": "completed",
+    "task": "F:\\project\\DLSS5Tool\\tmp\\nr-recycle-validation-20261111",
+    "removed_top_level_items": 17,
+    "removed_logical_bytes": 3075044.0,
+    "free_before_bytes": 50534498304,
+    "free_after_bytes": 50537746432,
+    "measured_free_change_bytes": 3248128,
+    "remaining_bytes_at_cleanup": 1676.0,
+    "remaining_reason": "TASK.md registration only; review 2026-11-18",
+    "checks": "Verified archive and source/runtime hashes; no exact test process identities alive; no source references; checked absolute boundaries, every ancestor and entry without reparse points; exclusive file opens.",
+    "disk_delta_note": "Whole-volume free-space change also includes background activity."
+  }
+}
