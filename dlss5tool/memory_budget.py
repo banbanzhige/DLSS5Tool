@@ -154,6 +154,46 @@ class MemoryPressureError(MemoryError):
         super().__init__(message)
 
 
+def copy_pressure_details(details):
+    """Keep bounded scalar diagnostics, never frames or arbitrary error attrs."""
+    if not isinstance(details, dict):
+        return None
+    copied = {}
+    for key in ('required_bytes', 'recommended_bytes', 'available_bytes',
+                'source_pid', 'physical_reserve_bytes', 'commit_reserve_bytes'):
+        value = details.get(key)
+        if value is None or type(value) is int and value >= 0:
+            copied[key] = value
+    for key in ('stage', 'failure', 'reason'):
+        value = details.get(key)
+        if type(value) is str:
+            copied[key] = value[:256]
+    if type(details.get('blocked_by_reserve')) is bool:
+        copied['blocked_by_reserve'] = details['blocked_by_reserve']
+    memory = details.get('memory')
+    if isinstance(memory, dict):
+        copied['memory'] = {key: memory[key] for key in
+            ('total_physical_bytes', 'free_physical_bytes', 'free_commit_bytes')
+            if type(memory.get(key)) is int and memory[key] >= 0}
+    return copied if type(copied.get('required_bytes')) is int else None
+
+
+def pressure_details(error):
+    """Recognize typed/transported RAM pressure; do not match error text."""
+    seen = set()
+    for _ in range(8):
+        if error is None or id(error) in seen:
+            break
+        seen.add(id(error))
+        details = copy_pressure_details(getattr(error, 'memory_pressure', None))
+        if details is None and isinstance(error, MemoryPressureError):
+            details = copy_pressure_details(error.details)
+        if details is not None:
+            return details
+        error = getattr(error, '__cause__', None) or getattr(error, '__context__', None)
+    return None
+
+
 def prefer_pool(pool):
     global _preferred_pool
     _preferred_pool = weakref.ref(pool)
@@ -300,8 +340,11 @@ def receive_worker_command(connection, frame_bytes, *, allocation_bytes=None):
     while not connection.poll(.5):
         # Idle work has no upcoming two-frame allocation. Coordinate reclaim at
         # the normal line, retaining prompt retirement at the critical line.
-        details = memory_details(required, stage='worker_idle')
-        if details['available_bytes'] is None or details['available_bytes'] >= required:
+        # Even a zero-allocation GPU command owner can retain growing driver
+        # heaps while idle. Zero headroom must still trigger its idle guard.
+        idle_required = max(1, required)
+        details = memory_details(idle_required, stage='worker_idle')
+        if details['available_bytes'] is None or details['available_bytes'] >= idle_required:
             pressure_since = None
             continue
         pool = current_pool(create=False)

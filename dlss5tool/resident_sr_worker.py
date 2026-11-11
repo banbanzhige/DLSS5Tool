@@ -203,7 +203,11 @@ def run(request, notify):
         # global shutdown blocks after feature destruction on this driver.
         notify('complete', result=result)
     except BaseException as error:
-        notify('failed', error=(type(error).__name__+': '+str(error))[:4000])
+        from dlss5tool.memory_budget import pressure_details
+        pressure = pressure_details(error)
+        if pressure is not None:
+            pressure['source_pid'] = os.getpid()
+        notify('failed', error=(type(error).__name__+': '+str(error))[:4000], memory_pressure=pressure)
         raise
     finally:
         if writer:
@@ -257,7 +261,11 @@ def worker_main(handle, nonce):
             else:
                 run(message['request'], notify)
         except BaseException as error:
-            notify('failed', error=(type(error).__name__+': '+str(error))[:4000])
+            from dlss5tool.memory_budget import pressure_details
+            pressure = pressure_details(error)
+            if pressure is not None:
+                pressure['source_pid'] = os.getpid()
+            notify('failed', error=(type(error).__name__+': '+str(error))[:4000], memory_pressure=pressure)
             raise SystemExit(1)
     finally:
         connection.close()

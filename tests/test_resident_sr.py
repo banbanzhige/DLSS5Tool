@@ -115,6 +115,17 @@ def test_cancel_retires_owner_and_cleans_only_its_transaction(transaction):
     assert not list(t['destination'].parent.glob('.sr-*'))
 
 
+def test_failed_worker_preserves_pressure_after_retirement(transaction):
+    from dlss5tool.memory_budget import memory_details, pressure_details
+    t=transaction
+    details=memory_details(1024,memory=dict(total_physical_bytes=32*1024**3,
+        free_physical_bytes=1,free_commit_bytes=1),stage='resident_sr_frame')
+    t['messages']=[dict(kind='failed',error='pressure',memory_pressure=details)]
+    with pytest.raises(RuntimeError) as error:t['export']()
+    assert pressure_details(error.value)['stage']=='resident_sr_frame'
+    assert t['retired'] and not t['destination'].exists()
+
+
 @pytest.mark.parametrize('message', [dict(kind='failed',error='native failure'),
     dict(kind='initialized',adapter_luid=999), dict(kind='progress',frames=9,total=8),
     dict(kind='complete',result=dict(status='complete',real_frames=7,output_rate='30',width=128,height=96))])

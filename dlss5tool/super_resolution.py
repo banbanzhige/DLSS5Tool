@@ -20,6 +20,7 @@ from dlss5tool.memory_budget import (
     bounded_frame_count, memory_headroom_bytes, receive_worker_command,
     require_memory_headroom,
     memory_allocation, current_pool, worker_with_memory_pool, record_memory_event,
+    copy_pressure_details,
 )
 from dlss5tool import i18n
 from dlss5tool import paths
@@ -481,6 +482,9 @@ class ProcessSuperResolution:
         ready = (self._connection.poll(0) if dead else
                  self._connection in wait([self._connection, self._process.sentinel], self.timeout))
         if not ready:
+            previous = getattr(self, '_last_memory_error', None)
+            if dead and previous is not None:
+                raise previous.exception()
             if self._process is not None and not self._process.is_alive():
                 detail = f"超分子进程异常退出（代码 {self._process.exitcode}）"
             else:
@@ -503,7 +507,12 @@ class ProcessSuperResolution:
             tail = self._log_tail()
             if tail:
                 detail += "\n超分日志末尾：\n" + tail
-            raise SuperResolutionError(detail)
+            error = SuperResolutionError(detail)
+            error.memory_pressure = copy_pressure_details(response.get('memory_pressure'))
+            if error.memory_pressure is not None:
+                from dlss5tool.deferred_error import ErrorSnapshot
+                self._last_memory_error = ErrorSnapshot(error)
+            raise error
         return response
 
     def process(self, rgba):

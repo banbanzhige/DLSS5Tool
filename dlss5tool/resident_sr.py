@@ -223,7 +223,10 @@ def export_resident(source, output, plan, components, *, cancel, progress=None,
                 raise RuntimeError('Invalid resident GPU export response')
             deadline = time.monotonic()+120
             if reply.get('kind') == 'failed':
-                raise RuntimeError(reply.get('error', 'Resident GPU export failed'))
+                from dlss5tool.memory_budget import copy_pressure_details
+                error = RuntimeError(reply.get('error', 'Resident GPU export failed'))
+                error.memory_pressure = copy_pressure_details(reply.get('memory_pressure'))
+                raise error
             if reply.get('kind') == 'progress':
                 done = reply.get('frames')
                 if type(done) is not int or not previous_frames <= done <= plan['frames'] or reply.get('total') != plan['frames']:

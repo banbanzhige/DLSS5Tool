@@ -3,7 +3,7 @@ import traceback
 
 
 class ErrorSnapshot:
-    """Keep text/type only; construct a fresh exception for every consumer.
+    """Keep text/type and scalar pressure data; rebuild exceptions per consumer.
 
     Keeping even a traceback-cleared exception is insufficient: raising that
     same object again would attach the consumer's frames to the stored object.
@@ -16,6 +16,8 @@ class ErrorSnapshot:
         original = getattr(error, 'diagnostic_traceback', None)
         if original:
             self.traceback += '\nOriginal worker traceback:\n' + original
+        from dlss5tool.memory_budget import pressure_details
+        self.memory_pressure = pressure_details(error)
 
     def __str__(self):
         return self.message
@@ -29,4 +31,7 @@ class ErrorSnapshot:
             # Some exception types require structured constructor arguments.
             error = RuntimeError(self.message)
         error.diagnostic_traceback = self.traceback
+        if self.memory_pressure is not None:
+            from dlss5tool.memory_budget import copy_pressure_details
+            error.memory_pressure = copy_pressure_details(self.memory_pressure)
         return error

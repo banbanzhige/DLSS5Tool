@@ -1,0 +1,158 @@
+[
+  {
+    "kind": "nr",
+    "attempts": [
+      {
+        "pid": 45304,
+        "created": 134388451078795685,
+        "output_sha256": "329a1278081892cfd4a09ed79152cea0fbfc7b13571689d9169440a178fe1d93",
+        "pressure": {
+          "required_bytes": 921600,
+          "recommended_bytes": null,
+          "available_bytes": 0,
+          "source_pid": 45304,
+          "physical_reserve_bytes": 4294967296,
+          "commit_reserve_bytes": 4294967296,
+          "stage": "worker_idle",
+          "failure": "idle",
+          "reason": "physical",
+          "blocked_by_reserve": true,
+          "memory": {
+            "total_physical_bytes": 34359738368,
+            "free_physical_bytes": 4294967296,
+            "free_commit_bytes": 21474836480
+          }
+        }
+      },
+      {
+        "pid": 4268,
+        "created": 134388451214856428,
+        "output_sha256": "329a1278081892cfd4a09ed79152cea0fbfc7b13571689d9169440a178fe1d93"
+      }
+    ],
+    "simulated_pressure_only": true,
+    "passed": true,
+    "queue_states": [
+      "completed",
+      "completed",
+      "completed"
+    ],
+    "completed_output_unchanged": true,
+    "events": [
+      {
+        "wall": 1794371507.8748982,
+        "message": "[队列] 开始: F:\\project\\DLSS5Tool\\tmp\\queue-memory-recovery-20261111\\native-final\\nr-current.png"
+      },
+      {
+        "wall": 1794371520.9744046,
+        "message": "[队列] nr-current.png 失败: 暂停期间内存余量持续不足，处理会话已安全退出。释放内存后请重新开始任务。 本阶段需要 1 MiB，保护预留后可用 0 MiB；实际可用物理内存 4.00 GiB，可提交内存 20.00 GiB。\nTraceback (most recent call last):\n  File \"F:\\project\\DLSS5Tool\\dlss5tool\\dlss_host_process.py\", line 132, in _host_worker_main\n    message = receive_worker_command(connection, input_frame.nbytes,\n                                     allocation_bytes=input_frame.nbytes)\n  File \"F:\\project\\DLSS5Tool\\dlss5tool\\memory_budget.py\", line 361, in receive_worker_command\n    raise MemoryPressureError(details)\ndlss5tool.memory_budget.MemoryPressureError: 暂停期间内存余量持续不足，处理会话已安全退出。释放内存后请重新开始任务。 本阶段需要 1 MiB，保护预留后可用 0 MiB；实际可用物理内存 4.00 GiB，可提交内存 20.00 GiB。"
+      },
+      {
+        "wall": 1794371520.974426,
+        "message": "[队列] 内存不足，正在回收并等待恢复（1/2）"
+      },
+      {
+        "wall": 1794371520.9744265,
+        "message": "内存不足，正在回收并等待恢复（1/2）"
+      },
+      {
+        "wall": 1794371521.4789515,
+        "message": "[队列] 内存已恢复，正在重新处理当前任务（1/2）"
+      },
+      {
+        "wall": 1794371521.4789522,
+        "message": "内存已恢复，正在重新处理当前任务（1/2）"
+      },
+      {
+        "wall": 1794371521.4832428,
+        "message": "[队列] 开始: F:\\project\\DLSS5Tool\\tmp\\queue-memory-recovery-20261111\\native-final\\nr-current.png"
+      },
+      {
+        "wall": 1794371528.1822224,
+        "message": "[队列] 开始: F:\\project\\DLSS5Tool\\tmp\\queue-memory-recovery-20261111\\native-final\\nr-later.png"
+      },
+      {
+        "wall": 1794371528.2055697,
+        "message": "[队列] 队列处理结束：完成 3，失败 0，取消 0。"
+      }
+    ]
+  },
+  {
+    "kind": "vsr",
+    "attempts": [
+      {
+        "pid": 43652,
+        "created": 134388451283215054,
+        "output_sha256": "3e2d1dbac7ed4ab2210b824fac94c9b2135fbda20ae78d0f5df96f4efd85bb72",
+        "pressure": {
+          "required_bytes": 1,
+          "recommended_bytes": null,
+          "available_bytes": 0,
+          "source_pid": 43652,
+          "physical_reserve_bytes": 4294967296,
+          "commit_reserve_bytes": 4294967296,
+          "stage": "worker_idle",
+          "failure": "idle",
+          "reason": "physical",
+          "blocked_by_reserve": true,
+          "memory": {
+            "total_physical_bytes": 34359738368,
+            "free_physical_bytes": 4294967296,
+            "free_commit_bytes": 21474836480
+          }
+        }
+      },
+      {
+        "pid": 30588,
+        "created": 134388451395877470,
+        "output_sha256": "3e2d1dbac7ed4ab2210b824fac94c9b2135fbda20ae78d0f5df96f4efd85bb72"
+      }
+    ],
+    "simulated_pressure_only": true,
+    "passed": true,
+    "queue_states": [
+      "completed",
+      "completed",
+      "completed"
+    ],
+    "completed_output_unchanged": true,
+    "events": [
+      {
+        "wall": 1794371528.320019,
+        "message": "[队列] 开始: F:\\project\\DLSS5Tool\\tmp\\queue-memory-recovery-20261111\\native-final\\vsr-current.png"
+      },
+      {
+        "wall": 1794371539.0761454,
+        "message": "[队列] vsr-current.png 失败: MemoryPressureError: 暂停期间内存余量持续不足，处理会话已安全退出。释放内存后请重新开始任务。 本阶段需要 1 MiB，保护预留后可用 0 MiB；实际可用物理内存 4.00 GiB，可提交内存 20.00 GiB。\n超分日志末尾：\nVSR init input=320x180 output=640x360 hdr=0 quality=4\nadapter: NVIDIA GeForce RTX 4070 SUPER\nadapter LUID=00000000:000137E9\nHDR conversion: CPU compatibility\nNGX init -> 0x00000001\nCreate VSR -> 0x00000001 feature=00000145EC0D5F40"
+      },
+      {
+        "wall": 1794371539.0761745,
+        "message": "[队列] 内存不足，正在回收并等待恢复（1/2）"
+      },
+      {
+        "wall": 1794371539.0761755,
+        "message": "内存不足，正在回收并等待恢复（1/2）"
+      },
+      {
+        "wall": 1794371539.5818658,
+        "message": "[队列] 内存已恢复，正在重新处理当前任务（1/2）"
+      },
+      {
+        "wall": 1794371539.5818665,
+        "message": "内存已恢复，正在重新处理当前任务（1/2）"
+      },
+      {
+        "wall": 1794371539.586517,
+        "message": "[队列] 开始: F:\\project\\DLSS5Tool\\tmp\\queue-memory-recovery-20261111\\native-final\\vsr-current.png"
+      },
+      {
+        "wall": 1794371543.1917284,
+        "message": "[队列] 开始: F:\\project\\DLSS5Tool\\tmp\\queue-memory-recovery-20261111\\native-final\\vsr-later.png"
+      },
+      {
+        "wall": 1794371543.2151713,
+        "message": "[队列] 队列处理结束：完成 3，失败 0，取消 0。"
+      }
+    ]
+  }
+]

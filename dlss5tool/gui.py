@@ -55,7 +55,9 @@ from dlss5tool.image_alpha import (
 )
 from dlss5tool.shared_cache_budget import SharedCacheBudget
 from dlss5tool.memory_budget import (bounded_frame_count, cache_limit_bytes, system_memory,
-    require_memory_headroom, prefer_pool, memory_events, memory_policy)
+    require_memory_headroom, prefer_pool, memory_events, memory_policy,
+    pressure_details, copy_pressure_details)
+from dlss5tool.queue_memory_recovery import QueueMemoryRecovery
 from dlss5tool.export_metrics import FrameRate
 from dlss5tool.export_preflight import assess_video_export
 from dlss5tool.residual_composition import release_native_composer
@@ -751,7 +753,7 @@ def compose_preview_frame(original, processed, output_view=0, output_mix=1.0, *,
 
 
 
-class App(GpuResourceGuard, SharedRenderPreview, LocalPreviewComposition, PreviewComparison, GuidanceExportUI):
+class App(QueueMemoryRecovery, GpuResourceGuard, SharedRenderPreview, LocalPreviewComposition, PreviewComparison, GuidanceExportUI):
     def __init__(self, root):
         self.root = root
         self._saved_settings = app_settings.startup_settings(app_settings.load())
@@ -899,6 +901,10 @@ class App(GpuResourceGuard, SharedRenderPreview, LocalPreviewComposition, Previe
         self._queue_running = False
         self._queue_pause_requested = False
         self._queue_active_job_id = None
+        self._queue_memory_recovery = None
+        self._queue_recovery_after = None
+        self._queue_memory_attempts = {}
+        self._queue_cleanup_pending = False
         self._queue_last_summary = None
         self.view_var = tk.StringVar(value=self._saved_settings["preview_view"])
         self._init_comparison()
@@ -2767,8 +2773,8 @@ class App(GpuResourceGuard, SharedRenderPreview, LocalPreviewComposition, Previe
             self.queue_cancel_btn,
             self._queue_running
             and active_job is not None
-            and active_job.media_kind == "video"
-            and self._exporting,
+            and ((active_job.media_kind == "video" and self._exporting)
+                 or getattr(self, '_queue_memory_recovery', None) is not None),
         )
         resume = startable and self._queue_last_summary == "paused"
         self.queue_start_btn.config(
@@ -3230,11 +3236,20 @@ class App(GpuResourceGuard, SharedRenderPreview, LocalPreviewComposition, Previe
         return changed
 
     def start_export_queue(self):
-        if not self._gpu_admit('queue'):
-            return
         if getattr(self, '_switching_backend', False):
             return
         if self._queue_running or self._exporting:
+            return
+        if getattr(self, '_queue_cleanup_pending', False):
+            try:
+                if not self._retire_queue_memory_owners():
+                    self.set_status(tr('queue.memory_cleanup'))
+                    return
+            except Exception as error:
+                self.logln('[队列] '+str(error))
+                self.set_status(tr('queue.memory_cleanup'))
+                return
+        if not self._gpu_admit('queue'):
             return
         if not any(job.state in QUEUE_STARTABLE_STATES for job in self._queue_jobs):
             self.logln("[队列] 没有等待处理的任务")
@@ -3294,6 +3309,7 @@ class App(GpuResourceGuard, SharedRenderPreview, LocalPreviewComposition, Previe
         self._prepare_queue_jobs_for_start()
         self.pause()
         self._queue_running = True
+        self._queue_memory_attempts = {}
         self._queue_pause_requested = False
         self._queue_last_summary = None
         self.workspace_tabs.select(self.queue_tab)
@@ -3309,6 +3325,8 @@ class App(GpuResourceGuard, SharedRenderPreview, LocalPreviewComposition, Previe
 
     def _run_next_queue_job(self):
         if not self._queue_running:
+            return
+        if getattr(self, '_queue_memory_recovery', None) is not None:
             return
         if self._queue_pause_requested:
             self._finish_queue_run(paused=True)
@@ -3328,6 +3346,7 @@ class App(GpuResourceGuard, SharedRenderPreview, LocalPreviewComposition, Previe
         job.progress_label = tr("status.preparing_export")
         job.started_at = time.time()
         job.finished_at = 0.0
+        memory_pressure = None
         try:
             job.output_path = self._normalize_queue_output_path(job)
             output_dir = os.path.dirname(job.output_path) or os.getcwd()
@@ -3379,11 +3398,15 @@ class App(GpuResourceGuard, SharedRenderPreview, LocalPreviewComposition, Previe
             else:
                 job.state = "failed"
                 job.error = result.get("error") or "导出未完成，请查看日志。"
+                memory_pressure = copy_pressure_details(result.get('memory_pressure'))
         except Exception as ex:
             traceback.print_exc()
             job.state = "failed"
             job.error = str(ex)
+            memory_pressure = pressure_details(ex)
             self.logln(f"[队列] {os.path.basename(job.source_path)} 失败: {ex}")
+        if job.state == 'failed' and self._begin_queue_memory_recovery(job, memory_pressure):
+            return
         job.finished_at = time.time()
         self._queue_active_job_id = None
         self._save_queue_state()
@@ -3418,11 +3441,15 @@ class App(GpuResourceGuard, SharedRenderPreview, LocalPreviewComposition, Previe
     def pause_export_queue_after_current(self):
         if not self._queue_running:
             return
+        if self._cancel_queue_memory_wait(cancelled=False):
+            return
         self._queue_pause_requested = True
         self._update_queue_action_states()
 
     def cancel_current_queue_job(self):
         if not self._queue_running or self._queue_active_job_id is None:
+            return
+        if self._cancel_queue_memory_wait(cancelled=True):
             return
         self._queue_pause_requested = True
         self.cancel_export()
@@ -6239,13 +6266,20 @@ class App(GpuResourceGuard, SharedRenderPreview, LocalPreviewComposition, Previe
                         self.logln(f"[DLSS GPU] {adapter_name}")
                 else:
                     self._live.update(settings)
+                self._live_failure = None
                 return self._live
             except Exception as ex:
                 display_error = _format_dlss_error(ex)
                 self._live_error = display_error
+                self._live_failure = ErrorSnapshot(ex)
                 if threading.current_thread() is threading.main_thread():
                     self.logln("[DLSS] " + display_error)
                 return None
+
+    def _live_exception(self):
+        failure = getattr(self, '_live_failure', None)
+        return (failure.exception() if isinstance(failure, ErrorSnapshot) else
+                RuntimeError(getattr(self, '_live_error', tr('message.dlss_host_unavailable'))))
 
     def _close_live(self):
         try:
@@ -10328,9 +10362,7 @@ class App(GpuResourceGuard, SharedRenderPreview, LocalPreviewComposition, Previe
                 _large_image_host_settings(width, height, settings),
             )
             if live is None:
-                raise RuntimeError(
-                    getattr(self, "_live_error", tr("message.dlss_host_unavailable"))
-                )
+                raise self._live_exception()
             processed_rgba = live.process(rgba, reset=True)
             self._last_dlss_frame = -1
         if processed_rgba is None:
@@ -10393,9 +10425,10 @@ class App(GpuResourceGuard, SharedRenderPreview, LocalPreviewComposition, Previe
             if notify:
                 messagebox.showinfo(tr('dialog.busy'), str(error), parent=self.root)
             return {'success': False, 'cancelled': False, 'error': str(error),
-                    'output_path': out_path, 'frames': 0}
+                    'output_path': out_path, 'frames': 0, 'memory_pressure': pressure_details(error)}
         success = False
         error_message = ""
+        memory_pressure = None
         started_at = self._export_t0
         try:
             orig = inference_color(orig, alpha)
@@ -10419,6 +10452,7 @@ class App(GpuResourceGuard, SharedRenderPreview, LocalPreviewComposition, Previe
         except Exception as ex:
             traceback.print_exc()
             error_message = str(ex)
+            memory_pressure = pressure_details(ex)
             self.logln(tr("log.export_error", error=_format_dlss_error(error_message)))
         self._end_export_ui(
             success, out_path, tr("common.completed"),
@@ -10429,6 +10463,7 @@ class App(GpuResourceGuard, SharedRenderPreview, LocalPreviewComposition, Previe
         result = {
             "success": success, "cancelled": False, "error": error_message,
             "output_path": out_path, "frames": 1 if success else 0,
+            'memory_pressure': memory_pressure,
         }
         if success:
             planned = (w, h)
@@ -10960,7 +10995,7 @@ class App(GpuResourceGuard, SharedRenderPreview, LocalPreviewComposition, Previe
             if notify:
                 messagebox.showinfo(tr('dialog.busy'), str(error), parent=self.root)
             return {'success': False, 'cancelled': False, 'error': str(error),
-                    'output_path': out_path, 'frames': 0}
+                    'output_path': out_path, 'frames': 0, 'memory_pressure': pressure_details(error)}
         success = False
         cancelled = False
         started_at = self._export_t0
@@ -10969,6 +11004,7 @@ class App(GpuResourceGuard, SharedRenderPreview, LocalPreviewComposition, Previe
         if hdr_active or super_resolution_scale > 1:
             export_settings['mode'] = 'single'
         error_message = ""
+        memory_pressure = None
         try:
             self._cleanup_video_export()
             timeline = None
@@ -11131,12 +11167,7 @@ class App(GpuResourceGuard, SharedRenderPreview, LocalPreviewComposition, Previe
                         if live is None:
                             live = self._ensure_live(ww, hh, settings)
                             if live is None:
-                                raise RuntimeError(
-                                    getattr(
-                                        self, "_live_error",
-                                        tr("message.dlss_host_unavailable"),
-                                    )
-                                )
+                                raise self._live_exception()
                             live.update(settings)
                             if live.adapter_info:
                                 settings = dict(settings, _composition_adapter=live.adapter_info)
@@ -11186,6 +11217,7 @@ class App(GpuResourceGuard, SharedRenderPreview, LocalPreviewComposition, Previe
         except Exception as ex:
             traceback.print_exc()
             error_message = str(ex)
+            memory_pressure = pressure_details(ex)
             self.logln(tr("log.export_error", error=_format_dlss_error(error_message)))
         finally:
             actions = []
@@ -11212,6 +11244,7 @@ class App(GpuResourceGuard, SharedRenderPreview, LocalPreviewComposition, Previe
             "success": success,
             "cancelled": cancelled,
             "error": error_message,
+            'memory_pressure': memory_pressure,
             "output_path": out_path,
             "frames": exported_frames,
         }

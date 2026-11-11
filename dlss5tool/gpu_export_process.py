@@ -96,7 +96,12 @@ def _worker(connection,input_name,args,kwargs):
             connection.send(dict(ok=True,**response))
     except EOFError:pass
     except BaseException as error:
-        try:connection.send(dict(ok=False,error=str(error),traceback=traceback.format_exc()[-5000:]))
+        from dlss5tool.memory_budget import pressure_details
+        pressure = pressure_details(error)
+        if pressure is not None:
+            pressure['source_pid'] = os.getpid()
+        try:connection.send(dict(ok=False,error=str(error),traceback=traceback.format_exc()[-5000:],
+                                 memory_pressure=pressure))
         except (OSError,EOFError):pass
     finally:
         if writer:
@@ -166,7 +171,10 @@ class ProcessGpuVideoWriter:
                 except (EOFError,OSError) as error:
                     self._terminate();raise RuntimeError('GPU export worker exited') from error
                 if not reply.get('ok'):
-                    self._terminate();raise RuntimeError('GPU export worker: '+reply.get('error','unknown'))
+                    from dlss5tool.memory_budget import copy_pressure_details
+                    error = RuntimeError('GPU export worker: '+reply.get('error','unknown'))
+                    error.memory_pressure = copy_pressure_details(reply.get('memory_pressure'))
+                    self._terminate();raise error
                 return reply
             if not self._proc.is_alive() or time.monotonic()>=deadline:
                 self._terminate();raise RuntimeError('GPU export worker exited or timed out; job stopped without fallback')

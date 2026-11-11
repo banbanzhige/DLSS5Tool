@@ -53,6 +53,8 @@ class GpuResourceGuard:
             items.append(Occupancy('release', 'failed', str(error)))
         elif self._gpu_thread_alive(release) or self._gpu_thread_alive(getattr(self, '_shared_retiring', None)):
             items.append(Occupancy('release', 'releasing'))
+        if getattr(self, '_queue_cleanup_pending', False):
+            items.append(Occupancy('release', 'releasing'))
         for flag, owner in (('_exporting', 'export'), ('_queue_running', 'queue'),
                             ('_deep_diagnosing', 'diagnostics'), ('_switching_backend', 'backend'),
                             ('_module_reload_thread', 'backend'), ('_clear_preview_pending', 'release')):

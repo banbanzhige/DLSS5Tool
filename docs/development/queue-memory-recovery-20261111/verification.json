@@ -1,0 +1,97 @@
+{
+  "date": "2026-11-11",
+  "base_commit": "cfc58fc",
+  "implemented": "bounded whole-item queue recovery after structured memory pressure",
+  "environment": {
+    "gpu": "RTX 4070 SUPER",
+    "driver": "621.14",
+    "python": "3.13.3",
+    "ram_gib": 64
+  },
+  "final_tests": {
+    "passed_items": 224,
+    "passed_subtests": 89,
+    "failures": 0
+  },
+  "automatic_retry_limit": 2,
+  "wait_timeout_seconds": 120,
+  "poll_milliseconds": 250,
+  "recovery_margin_bytes": 268435456,
+  "stable_headroom_seconds": 0.5,
+  "existing_memory_safety_reserves_unchanged": true,
+  "native": {
+    "passed": true,
+    "exit_code": 0,
+    "remaining_before_supervisor_cleanup": [],
+    "error": null,
+    "source_and_runtime_unchanged": true,
+    "elapsed_seconds": 39.66566939999757
+  },
+  "real_pressure_allocated": false,
+  "simulated_snapshot_in_first_worker_only": true,
+  "final_probe_scope": "headless widget/export fixtures; actual queue dispatcher, recovery callbacks, owners and native runtimes",
+  "native_output_hashes_equal": true,
+  "completed_output_unchanged": true,
+  "baseline_before_fixture_isolation": {
+    "xml_tests": 190,
+    "failures": [
+      {
+        "classname": "tests.test_memory_budget.MemoryBudgetTests",
+        "name": "test_unpooled_raw_cache_releases_under_pressure_and_can_fill_again"
+      }
+    ]
+  },
+  "current_before_fixture_isolation": {
+    "xml_tests": 216,
+    "failures": [
+      {
+        "classname": "tests.test_memory_budget.MemoryBudgetTests",
+        "name": "test_unpooled_raw_cache_releases_under_pressure_and_can_fill_again"
+      }
+    ]
+  },
+  "fixture_change": "Explicitly disable the shared pool in the named unpooled cache test; assertions unchanged",
+  "invalid_baseline_run_excluded": true,
+  "first_real_vsr_run_failed_idle_zero_allocation_guard": true,
+  "subsequent_fixed_and_final_runs_passed": true,
+  "original_memory_plateau_p0_closed": false,
+  "mid_video_continuation_implemented": false,
+  "no_driver_runtime_precision_or_global_settings_changed": true,
+  "archived_files": 101,
+  "archived_source_and_observation_bytes": 3790646,
+  "artifacts": [
+    {
+      "file": "observations.zip",
+      "bytes": 1433700,
+      "sha256": "e832707e14a9dcbf9394a72f06b45bfadfec77f1dff20a41dc9374df0f8957d9"
+    },
+    {
+      "file": "archive-index.json",
+      "bytes": 16135,
+      "sha256": "603c4e9a75c043369dd38907de268b16eafd384d55b50860101aafd3930b4328"
+    },
+    {
+      "file": "tests.json",
+      "bytes": 915,
+      "sha256": "6d47b43093db3e63b2e83934c14f5cab1ff3dfa3eef8ba9c5b10337d6393abf9"
+    },
+    {
+      "file": "native-result.json",
+      "bytes": 6400,
+      "sha256": "77c0dad0701a71af4807a3abbb3aea4e08dbe29217ef91b1f04e557c4e13ad31"
+    }
+  ],
+  "cleanup": {
+    "status": "completed",
+    "task": "F:\\project\\DLSS5Tool\\tmp\\queue-memory-recovery-20261111",
+    "removed_top_level_items": 36,
+    "removed_logical_bytes": 2140034.0,
+    "free_before_bytes": 50535493632,
+    "free_after_bytes": 50537947136,
+    "measured_free_change_bytes": 2453504,
+    "remaining_bytes": 1426,
+    "remaining_reason": "TASK.md registration only; review 2026-11-18",
+    "checks": "Verified archive, artifacts and measured final source/runtime hashes; all known native test process identities exited; no product/script references; checked exact paths, ancestors and all entries without reparse points; exclusive file opens.",
+    "disk_delta_note": "Whole-volume free-space change may include background activity."
+  }
+}

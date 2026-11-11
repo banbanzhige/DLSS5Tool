@@ -1,0 +1,41 @@
+{
+  "core.xml": {
+    "xml_tests": 19,
+    "failures": []
+  },
+  "related.xml": {
+    "xml_tests": 213,
+    "failures": [
+      {
+        "classname": "tests.test_memory_budget.MemoryBudgetTests",
+        "name": "test_unpooled_raw_cache_releases_under_pressure_and_can_fill_again"
+      }
+    ]
+  },
+  "final.xml": {
+    "xml_tests": 216,
+    "failures": [
+      {
+        "classname": "tests.test_memory_budget.MemoryBudgetTests",
+        "name": "test_unpooled_raw_cache_releases_under_pressure_and_can_fill_again"
+      }
+    ]
+  },
+  "baseline-fixed.xml": {
+    "xml_tests": 190,
+    "failures": [
+      {
+        "classname": "tests.test_memory_budget.MemoryBudgetTests",
+        "name": "test_unpooled_raw_cache_releases_under_pressure_and_can_fill_again"
+      }
+    ]
+  },
+  "admission.xml": {
+    "xml_tests": 37,
+    "failures": []
+  },
+  "verified.xml": {
+    "xml_tests": 224,
+    "failures": []
+  }
+}

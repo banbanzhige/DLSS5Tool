@@ -68,7 +68,10 @@ class MemoryBudgetTests(unittest.TestCase):
             owner.close()
 
     def test_unpooled_raw_cache_releases_under_pressure_and_can_fill_again(self):
-        cache = RawGuidanceCache(1024)
+        # This case explicitly exercises the unpooled policy, independently of
+        # a default pool left by earlier process/GUI tests and its hysteresis.
+        with mock.patch('dlss5tool.guidance_cache.current_pool', return_value=None):
+            cache = RawGuidanceCache(1024)
         with mock.patch.object(mb, 'system_memory', return_value=memory()):
             cache.put('first', np.zeros(128, np.float32))
             self.assertEqual(cache.bytes, 512)

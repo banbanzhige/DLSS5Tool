@@ -12,7 +12,8 @@ import multiprocessing
 from multiprocessing import shared_memory
 from multiprocessing.connection import wait
 from dlss5tool.memory_budget import (require_memory_headroom, receive_worker_command,
-    memory_allocation, current_pool, worker_with_memory_pool, record_memory_event)
+    memory_allocation, current_pool, worker_with_memory_pool, record_memory_event,
+    copy_pressure_details, pressure_details)
 import os
 import tempfile
 import traceback
@@ -350,8 +351,7 @@ class _HostSession:
             % (operation, timeout)
         )
 
-    @staticmethod
-    def _check_response(response):
+    def _check_response(self, response):
         if response.get("ok"):
             return
         if response.get('memory_pressure'):
@@ -360,7 +360,11 @@ class _HostSession:
         trace = str(response.get("traceback", "")).strip()
         if trace:
             detail += "\n" + trace
-        raise HostProcessError(detail)
+        error = HostProcessError(detail)
+        error.memory_pressure = copy_pressure_details(response.get('memory_pressure'))
+        if error.memory_pressure is not None:
+            self._last_memory_error = ErrorSnapshot(error)
+        raise error
 
     def _apply_metadata(self, response):
         if 'runtime_path' in response:
@@ -383,6 +387,9 @@ class _HostSession:
         if self._process is None or not self._process.is_alive():
             # An idle host may have retired under memory pressure. Preserve its
             # reported reason instead of replacing it with a generic dead PID.
+            previous = getattr(self, '_last_memory_error', None)
+            if previous is not None:
+                raise previous.exception()
             if self._connection is not None and self._connection.poll(0):
                 response = self._receive(0, operation)
                 self._check_response(response)
@@ -621,6 +628,10 @@ class ProcessLive:
                 # RAM exhaustion must not trigger another backend allocation.
                 raise
             except Exception as exception:
+                if pressure_details(exception) is not None:
+                    # A worker-side admission failure must reach the queue;
+                    # allocating a fallback backend would defeat recovery.
+                    raise
                 failures.append("%s: %s" % (backend, exception))
                 if backend == "v2" and dlss_engine.is_render_adapter_error(exception):
                     break
