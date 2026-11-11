@@ -14,7 +14,9 @@ MODULES = ('gui', 'app_version', 'residual_composition', 'shared_cache_budget',
            'memory_budget', 'frame_generation', 'render_cache', 'device_cached',
            'resident_preview', 'resident_hdr', 'resident_sr', 'cuda_vsr', 'device_sr_plan',
            'dlss_runtime', 'mod_paths', 'adapter_probe', 'dlss_engine', 'dlss_host_process',
-           'video_timeline', 'resident_sr_worker', 'resident_preview_worker', 'realtime')
+           'video_timeline', 'resident_sr_worker', 'resident_preview_worker', 'realtime',
+           'nvidia_token_compat', 'process_job', 'queue_memory_recovery',
+           'parallel_export', 'parallel_export_worker', 'super_resolution', 'gpu_export_process')
 
 
 def identity(value):
