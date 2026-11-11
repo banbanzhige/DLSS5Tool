@@ -1,0 +1,607 @@
+{
+  "archive_sha256": "7390d6bac62545dc40b2c85b096385cf4134191f04a5f01b7f91bd2541f4f635",
+  "archive_bytes": 946294,
+  "entries": 241,
+  "uncompressed_bytes": 7475970,
+  "all_entry_sha256_and_lengths_verified": true,
+  "source_bytes_equal": true,
+  "reparse_checks_passed": true,
+  "exclusive_open_files_passed": true,
+  "known_process_identity_count": 157,
+  "active_owned_processes": [],
+  "omitted_rebuildable_files": [
+    {
+      "file": "frozen-dist/TokenCompatFixture/TokenCompatFixture.exe",
+      "bytes": 2298030,
+      "sha256": "3342b79d707bc2e30980261019acd863f5e96bb9c016420cd681e638fa34368f"
+    },
+    {
+      "file": "frozen-dist/TokenCompatFixture/_internal/api-ms-win-core-console-l1-1-0.dll",
+      "bytes": 22872,
+      "sha256": "015bd08815c7b934a8952c3a7578e9ce59f21136e8a880d42bbd414bec2c6058"
+    },
+    {
+      "file": "frozen-dist/TokenCompatFixture/_internal/api-ms-win-core-datetime-l1-1-0.dll",
+      "bytes": 22896,
+      "sha256": "5534812cdbdae94ba45cb216e5eb9af686b853948df54365103555abbbaf9d9a"
+    },
+    {
+      "file": "frozen-dist/TokenCompatFixture/_internal/api-ms-win-core-debug-l1-1-0.dll",
+      "bytes": 22872,
+      "sha256": "837d2b1b2cd03e03fc6ccb050698b6b5763af17c201304872342a5eae9e0a2d2"
+    },
+    {
+      "file": "frozen-dist/TokenCompatFixture/_internal/api-ms-win-core-errorhandling-l1-1-0.dll",
+      "bytes": 22872,
+      "sha256": "de43b165f568c276c00e95acd454e3092f352a18e95874595f4f4658c06d2ec7"
+    },
+    {
+      "file": "frozen-dist/TokenCompatFixture/_internal/api-ms-win-core-fibers-l1-1-0.dll",
+      "bytes": 22872,
+      "sha256": "3cebc45bf479ad74cfabf2c6bfd4994d7ad639ed1221025981d19cedf9ce0416"
+    },
+    {
+      "file": "frozen-dist/TokenCompatFixture/_internal/api-ms-win-core-fibers-l1-1-1.dll",
+      "bytes": 22872,
+      "sha256": "5ef70308bcca628ce6b0e2856b15b1c7ae340c3f9bbbc4c1071d8c191a34a5c3"
+    },
+    {
+      "file": "frozen-dist/TokenCompatFixture/_internal/api-ms-win-core-file-l1-1-0.dll",
+      "bytes": 27008,
+      "sha256": "250ac829f2617bcac1c6e5b8c4f630462e20765863ba573526a3e11bbfb94a9a"
+    },
+    {
+      "file": "frozen-dist/TokenCompatFixture/_internal/api-ms-win-core-file-l1-2-0.dll",
+      "bytes": 22888,
+      "sha256": "ae14079a114733f60ce87b92cba42acd8083c2cd67594e53bc37dc0b97a4b465"
+    },
+    {
+      "file": "frozen-dist/TokenCompatFixture/_internal/api-ms-win-core-file-l2-1-0.dll",
+      "bytes": 22912,
+      "sha256": "914bf26a298713119477ea0a8e7bd43171b91344ebe24fb47ad77c49686e3d87"
+    },
+    {
+      "file": "frozen-dist/TokenCompatFixture/_internal/api-ms-win-core-handle-l1-1-0.dll",
+      "bytes": 22896,
+      "sha256": "ab5489955e371b15f77906c08ec3c7affe2c7a46a08c514ca628768b4478974b"
+    },
+    {
+      "file": "frozen-dist/TokenCompatFixture/_internal/api-ms-win-core-heap-l1-1-0.dll",
+      "bytes": 22872,
+      "sha256": "c70f9644d8377fa39c5b71f2e9734c1400d7598904fdeb772e8502099982dcb7"
+    },
+    {
+      "file": "frozen-dist/TokenCompatFixture/_internal/api-ms-win-core-interlocked-l1-1-0.dll",
+      "bytes": 22888,
+      "sha256": "f8129710188e407bb0e6f46d30aeba277d67b947ece5fe09e883fde2323f3ae6"
+    },
+    {
+      "file": "frozen-dist/TokenCompatFixture/_internal/api-ms-win-core-kernel32-legacy-l1-1-1.dll",
+      "bytes": 22888,
+      "sha256": "5200b16cb2ddc61cfc07373a9a84aa85a3ab50806ca96c879c883275832944c1"
+    },
+    {
+      "file": "frozen-dist/TokenCompatFixture/_internal/api-ms-win-core-libraryloader-l1-1-0.dll",
+      "bytes": 22872,
+      "sha256": "48786fb88b001dcd1f63acea903d3ca9cc0b3060d5a325e3f2f3cbc3bfd53166"
+    },
+    {
+      "file": "frozen-dist/TokenCompatFixture/_internal/api-ms-win-core-localization-l1-2-0.dll",
+      "bytes": 22872,
+      "sha256": "9ec3898f7eba91faa28b51616c211a2689e3a13aeef8de6e13cb674e49d689eb"
+    },
+    {
+      "file": "frozen-dist/TokenCompatFixture/_internal/api-ms-win-core-memory-l1-1-0.dll",
+      "bytes": 22896,
+      "sha256": "3a6cbc524c99e1cd80d5368f5601402a37ad602528b1ab628093573ef638eb3b"
+    },
+    {
+      "file": "frozen-dist/TokenCompatFixture/_internal/api-ms-win-core-namedpipe-l1-1-0.dll",
+      "bytes": 22888,
+      "sha256": "97145ef89c44949fcf0f04ac834a8bc7d687ef49ee73ae9fc32f3c11136b7201"
+    },
+    {
+      "file": "frozen-dist/TokenCompatFixture/_internal/api-ms-win-core-processenvironment-l1-1-0.dll",
+      "bytes": 22872,
+      "sha256": "8bc7c10b1851aea644e9c9f381cdb935e091fee6b0be3d3aedc6fffaac96adb7"
+    },
+    {
+      "file": "frozen-dist/TokenCompatFixture/_internal/api-ms-win-core-processthreads-l1-1-0.dll",
+      "bytes": 22912,
+      "sha256": "d8030b777617c71f0f94564607699dbf7561487d779db9756aed378c5675213f"
+    },
+    {
+      "file": "frozen-dist/TokenCompatFixture/_internal/api-ms-win-core-processthreads-l1-1-1.dll",
+      "bytes": 22872,
+      "sha256": "f5e676713340f73a03a3d41a6ec9883b431da7d16c7f07bd0a920fb80e6c0753"
+    },
+    {
+      "file": "frozen-dist/TokenCompatFixture/_internal/api-ms-win-core-profile-l1-1-0.dll",
+      "bytes": 22872,
+      "sha256": "f023d47e44d3eea6b0743580f57e8c6ba81e79d5ebfa7da26250076c647b980e"
+    },
+    {
+      "file": "frozen-dist/TokenCompatFixture/_internal/api-ms-win-core-rtlsupport-l1-1-0.dll",
+      "bytes": 22888,
+      "sha256": "9746d8930704153578a628c010638a5f818ffe5a927e25591b108e256dc6afca"
+    },
+    {
+      "file": "frozen-dist/TokenCompatFixture/_internal/api-ms-win-core-string-l1-1-0.dll",
+      "bytes": 22896,
+      "sha256": "7c53ae24c982d16ffd1bf7f918d115b11b7f30e57bc7feaa18cb9781e4abb926"
+    },
+    {
+      "file": "frozen-dist/TokenCompatFixture/_internal/api-ms-win-core-synch-l1-1-0.dll",
+      "bytes": 22896,
+      "sha256": "56d9d62ca5dba79a6581b8d574a7d8b2a64a5ecb71e47dcf06ed0285708b1859"
+    },
+    {
+      "file": "frozen-dist/TokenCompatFixture/_internal/api-ms-win-core-synch-l1-2-0.dll",
+      "bytes": 22888,
+      "sha256": "f6482bbec5612c39ecb4822787a333f2b7570f7a5f922a4059be41ba957bb372"
+    },
+    {
+      "file": "frozen-dist/TokenCompatFixture/_internal/api-ms-win-core-sysinfo-l1-1-0.dll",
+      "bytes": 22896,
+      "sha256": "272d02765fdd3582618236c2d309abba069642f9bc1062ede069d0c144e17007"
+    },
+    {
+      "file": "frozen-dist/TokenCompatFixture/_internal/api-ms-win-core-sysinfo-l1-2-0.dll",
+      "bytes": 22912,
+      "sha256": "8a0900788859d0eb51c2f48f50cc6ed376a120b518100fa20e11d7702ccde260"
+    },
+    {
+      "file": "frozen-dist/TokenCompatFixture/_internal/api-ms-win-core-timezone-l1-1-0.dll",
+      "bytes": 22896,
+      "sha256": "ff35de6c03812b332e140f17dade25c5dd4775156da9eeb1eaae3fddd27236ec"
+    },
+    {
+      "file": "frozen-dist/TokenCompatFixture/_internal/api-ms-win-core-util-l1-1-0.dll",
+      "bytes": 22896,
+      "sha256": "191ef3e98641a57296f19d572d8eb62489470ff1ef6030d136af170c2f835173"
+    },
+    {
+      "file": "frozen-dist/TokenCompatFixture/_internal/api-ms-win-crt-conio-l1-1-0.dll",
+      "bytes": 22872,
+      "sha256": "54ee5ec719a051496ff60aa00dbeaa94b9a7d2cdac27fe9b7317f1a666b6a2aa"
+    },
+    {
+      "file": "frozen-dist/TokenCompatFixture/_internal/api-ms-win-crt-convert-l1-1-0.dll",
+      "bytes": 26992,
+      "sha256": "8b94662429171019fcd63c70bbf2095a075170599704a5e7dcdbe3da13f3a429"
+    },
+    {
+      "file": "frozen-dist/TokenCompatFixture/_internal/api-ms-win-crt-environment-l1-1-0.dll",
+      "bytes": 22912,
+      "sha256": "39e5929593709e8af3bc9e0a75ec1155778d6f4a247f4cdfc58928ad6db88434"
+    },
+    {
+      "file": "frozen-dist/TokenCompatFixture/_internal/api-ms-win-crt-filesystem-l1-1-0.dll",
+      "bytes": 22872,
+      "sha256": "5a8ecebac32edf4e1f3c5c6c1c8ea1a1add6cda4f9c9cb26f752fb295bea6865"
+    },
+    {
+      "file": "frozen-dist/TokenCompatFixture/_internal/api-ms-win-crt-heap-l1-1-0.dll",
+      "bytes": 22872,
+      "sha256": "c71080cbcb43bf1f8f3e391deb12a582eb0abefc80946f340675a2c616e4feb4"
+    },
+    {
+      "file": "frozen-dist/TokenCompatFixture/_internal/api-ms-win-crt-locale-l1-1-0.dll",
+      "bytes": 22896,
+      "sha256": "6c68648e524187e03c4ad9aaa4a99113c6ee9f29fb39cc0ed93f951975138e63"
+    },
+    {
+      "file": "frozen-dist/TokenCompatFixture/_internal/api-ms-win-crt-math-l1-1-0.dll",
+      "bytes": 31064,
+      "sha256": "d4fbcccbe29371cbce431e43b2eb4f7ba9a6f04a3d740a071f02457a505e9dc8"
+    },
+    {
+      "file": "frozen-dist/TokenCompatFixture/_internal/api-ms-win-crt-process-l1-1-0.dll",
+      "bytes": 22896,
+      "sha256": "47c1935942e3ac0812e4dcf18c0e265e565f0194a3349111c299712f5565f7ac"
+    },
+    {
+      "file": "frozen-dist/TokenCompatFixture/_internal/api-ms-win-crt-runtime-l1-1-0.dll",
+      "bytes": 26968,
+      "sha256": "72adc1b3677e0814d9c4ebf0964000e84bb2acf67336c8963061665e44f78029"
+    },
+    {
+      "file": "frozen-dist/TokenCompatFixture/_internal/api-ms-win-crt-stdio-l1-1-0.dll",
+      "bytes": 26968,
+      "sha256": "900afc3989673c9bb1a687ed38c192f46db9e6ba6d11a668898a539e7fc23798"
+    },
+    {
+      "file": "frozen-dist/TokenCompatFixture/_internal/api-ms-win-crt-string-l1-1-0.dll",
+      "bytes": 26968,
+      "sha256": "fcf12466cc12fd3b73611fc0763a5a1f9d44e90349513c34a0c83b0f36421793"
+    },
+    {
+      "file": "frozen-dist/TokenCompatFixture/_internal/api-ms-win-crt-time-l1-1-0.dll",
+      "bytes": 22912,
+      "sha256": "886e57c4a6adb299b38f02945369f590a67da4e79a798359fc60aaa067212d7c"
+    },
+    {
+      "file": "frozen-dist/TokenCompatFixture/_internal/api-ms-win-crt-utility-l1-1-0.dll",
+      "bytes": 22912,
+      "sha256": "5f8f26b216ade615b67a41f6fbbb910972fc6153315a65bb8f09912be50215b1"
+    },
+    {
+      "file": "frozen-dist/TokenCompatFixture/_internal/base_library.zip",
+      "bytes": 1399388,
+      "sha256": "e3cebc5340d738513c16f5c8f24307bfb55bf913237b2e06ff0536c5fdecebdc"
+    },
+    {
+      "file": "frozen-dist/TokenCompatFixture/_internal/libcrypto-3.dll",
+      "bytes": 5231472,
+      "sha256": "ccfffddcd3defb8d899026298af9af43bc186130f8483d77e97c93233d5f27d7"
+    },
+    {
+      "file": "frozen-dist/TokenCompatFixture/_internal/libffi-8.dll",
+      "bytes": 39696,
+      "sha256": "eff52743773eb550fcc6ce3efc37c85724502233b6b002a35496d828bd7b280a"
+    },
+    {
+      "file": "frozen-dist/TokenCompatFixture/_internal/libssl-3.dll",
+      "bytes": 794992,
+      "sha256": "007142039f04d04e0ed607bda53de095e5bc6a8a10d26ecedde94ea7d2d7eefe"
+    },
+    {
+      "file": "frozen-dist/TokenCompatFixture/_internal/pyexpat.pyd",
+      "bytes": 205680,
+      "sha256": "554bbc65bfe8c19ba9bbd94f18977a8131109c6a4d64306778bd12250c2c5c56"
+    },
+    {
+      "file": "frozen-dist/TokenCompatFixture/_internal/python313.dll",
+      "bytes": 6099960,
+      "sha256": "69fd86ea29370697c203f7e12830084f920f490766a8e3045af52c036a9ad529"
+    },
+    {
+      "file": "frozen-dist/TokenCompatFixture/_internal/select.pyd",
+      "bytes": 32248,
+      "sha256": "6393121130a3e85d0f6562948024d8614c4c144b84ab102af711c638344d1599"
+    },
+    {
+      "file": "frozen-dist/TokenCompatFixture/_internal/ucrtbase.dll",
+      "bytes": 1362264,
+      "sha256": "3239227d27667ba20d10a880751924e5719de0078f9fce232d149d383f7681f6"
+    },
+    {
+      "file": "frozen-dist/TokenCompatFixture/_internal/unicodedata.pyd",
+      "bytes": 712048,
+      "sha256": "071494856fdad0042964769aa2fb1de4ea95c2cfcbe27cc7132293c68d13d710"
+    },
+    {
+      "file": "frozen-dist/TokenCompatFixture/_internal/VCRUNTIME140.dll",
+      "bytes": 120400,
+      "sha256": "052ad6a20d375957e82aa6a3c441ea548d89be0981516ca7eb306e063d5027f4"
+    },
+    {
+      "file": "frozen-dist/TokenCompatFixture/_internal/VCRUNTIME140_1.dll",
+      "bytes": 49776,
+      "sha256": "6a99bc0128e0c7d6cbbf615fcc26909565e17d4ca3451b97f8987f9c6acbc6c8"
+    },
+    {
+      "file": "frozen-dist/TokenCompatFixture/_internal/_bz2.pyd",
+      "bytes": 86008,
+      "sha256": "449058efc99fccb9e24d640084d845c78f3f86dd34c5c126cf69e523d6320d75"
+    },
+    {
+      "file": "frozen-dist/TokenCompatFixture/_internal/_ctypes.pyd",
+      "bytes": 133992,
+      "sha256": "5c0d5082fba1a2a3eb8d5e23073be25164c19f21304b09cecaab340dc7198815"
+    },
+    {
+      "file": "frozen-dist/TokenCompatFixture/_internal/_decimal.pyd",
+      "bytes": 280568,
+      "sha256": "4e27c06b84401039d10f800a0f06446b58508784ee366c7c8324d8fe9794e1a5"
+    },
+    {
+      "file": "frozen-dist/TokenCompatFixture/_internal/_hashlib.pyd",
+      "bytes": 65528,
+      "sha256": "52f29aebe9886e830dedc363cd64eb53b6830d84b26e14f1b6faa655a0900b5d"
+    },
+    {
+      "file": "frozen-dist/TokenCompatFixture/_internal/_lzma.pyd",
+      "bytes": 159224,
+      "sha256": "48f16b587c6faa44a9e073365b19599200b0f0a0ccb70121e76c2dac4ed53281"
+    },
+    {
+      "file": "frozen-dist/TokenCompatFixture/_internal/_multiprocessing.pyd",
+      "bytes": 38256,
+      "sha256": "82253e2d6ec717b317e26ed7dd141aadaea6cb55a9d0fee022a67d52b404fd06"
+    },
+    {
+      "file": "frozen-dist/TokenCompatFixture/_internal/_queue.pyd",
+      "bytes": 35176,
+      "sha256": "af8ac8ab8b39f53b5dc192fbf58ad704a709db34e69753b97b83d087202e3a36"
+    },
+    {
+      "file": "frozen-dist/TokenCompatFixture/_internal/_socket.pyd",
+      "bytes": 86008,
+      "sha256": "bced17d6f081d81ea7cd92f1e071e38f8840e61ee0fe1524221b776bcfa78650"
+    },
+    {
+      "file": "frozen-dist/TokenCompatFixture/_internal/_ssl.pyd",
+      "bytes": 181608,
+      "sha256": "3301ff340d26495c95108199b67fdf3402742d13070af8b6bf4eb2e0c5e13781"
+    },
+    {
+      "file": "frozen-dist/TokenCompatFixture/_internal/_uuid.pyd",
+      "bytes": 27128,
+      "sha256": "17c7856bda73348ca541d01ba4881e4b327b15fb3d2cb90a92ca2bf0e6c4bafe"
+    },
+    {
+      "file": "frozen-dist/TokenCompatFixture/_internal/_wmi.pyd",
+      "bytes": 39416,
+      "sha256": "ebd252d21af9c84128fca04c994093a5bd6ee857f1581f06f4026fdd6a2c40e0"
+    },
+    {
+      "file": "frozen-build/TokenCompatFixture/Analysis-00.toc",
+      "bytes": 56003,
+      "sha256": "9d3fc5c3ae0efc245e9fe521c201efe3b86544c6baba3e36401a8a5cef13cfc0"
+    },
+    {
+      "file": "frozen-build/TokenCompatFixture/base_library.zip",
+      "bytes": 1399388,
+      "sha256": "e3cebc5340d738513c16f5c8f24307bfb55bf913237b2e06ff0536c5fdecebdc"
+    },
+    {
+      "file": "frozen-build/TokenCompatFixture/COLLECT-00.toc",
+      "bytes": 11614,
+      "sha256": "82baede855cf1c0cf59fa982a39257e366ecaaf0d32a12a12d7038b072313e3c"
+    },
+    {
+      "file": "frozen-build/TokenCompatFixture/EXE-00.toc",
+      "bytes": 3913,
+      "sha256": "8fe351479f58c2a52c9e3a5523fb4975a81d57eb3bb855bf3441387f5bf91acb"
+    },
+    {
+      "file": "frozen-build/TokenCompatFixture/PKG-00.toc",
+      "bytes": 2156,
+      "sha256": "fc722bbc094e81f5f2c977ff321c0a1b544eb4f0cd135f70c1dc0433d4241003"
+    },
+    {
+      "file": "frozen-build/TokenCompatFixture/PYZ-00.pyz",
+      "bytes": 1920678,
+      "sha256": "198bd6b03e2f68fb1a99812b804b86b6085e8bd759881fd6537a64f67be87b26"
+    },
+    {
+      "file": "frozen-build/TokenCompatFixture/PYZ-00.toc",
+      "bytes": 22781,
+      "sha256": "22b5fd0d288df45099bec5adb1cfada70a47dc280e75a7e09abd5a0af1e7afc7"
+    },
+    {
+      "file": "frozen-build/TokenCompatFixture/TokenCompatFixture.exe",
+      "bytes": 2298030,
+      "sha256": "3342b79d707bc2e30980261019acd863f5e96bb9c016420cd681e638fa34368f"
+    },
+    {
+      "file": "frozen-build/TokenCompatFixture/TokenCompatFixture.pkg",
+      "bytes": 1949358,
+      "sha256": "42cd888b94a2536f2c3c1725357ae9b4df44c0796966b7f1e3e3158cf1e049be"
+    },
+    {
+      "file": "frozen-build/TokenCompatFixture/warn-TokenCompatFixture.txt",
+      "bytes": 3644,
+      "sha256": "3242c44925f5f70fec77856c6422c1ee9ed39de6bb7d7635299c7a57cf3f7c19"
+    },
+    {
+      "file": "frozen-build/TokenCompatFixture/xref-TokenCompatFixture.html",
+      "bytes": 357744,
+      "sha256": "7f11f284b7e0544b60590e3c61c1bc0cf81063d09cf2417bb6805aad4c5efe06"
+    },
+    {
+      "file": "frozen-build/TokenCompatFixture/localpycs/pyimod01_archive.pyc",
+      "bytes": 4930,
+      "sha256": "95bc75fb1815443c6a51c4470dc254f44e2de2b66bb7dfd0c13541ff789c69e1"
+    },
+    {
+      "file": "frozen-build/TokenCompatFixture/localpycs/pyimod02_importers.pyc",
+      "bytes": 31802,
+      "sha256": "cc024a23c19a0ec13491f67cc7bf4a33c6947439f965d3154b03d46708da0801"
+    },
+    {
+      "file": "frozen-build/TokenCompatFixture/localpycs/pyimod03_ctypes.pyc",
+      "bytes": 6450,
+      "sha256": "e6017d5cef7ecb021c243170082978de1d699d1d0c27d2bd1ef221a9a169c69e"
+    },
+    {
+      "file": "frozen-build/TokenCompatFixture/localpycs/pyimod04_pywin32.pyc",
+      "bytes": 1679,
+      "sha256": "8956b968293913eaeb67654b56b65a955a4fa06e6179579738c6a460b6e6debb"
+    },
+    {
+      "file": "frozen-build/TokenCompatFixture/localpycs/struct.pyc",
+      "bytes": 305,
+      "sha256": "dc46cdfab7ea5bfd78e20ce81838a7a17666060827028564b0a2de0198aca964"
+    }
+  ],
+  "omitted_roots": [
+    "frozen-build",
+    "frozen-dist",
+    "pyinstaller-cache"
+  ],
+  "free_bytes_before_archive": 50490130432,
+  "free_bytes_after_archive": 50488778752,
+  "cleanup_completed": true,
+  "cleanup_plan": [
+    {
+      "path": "F:\\project\\DLSS5Tool\\tmp\\nvidia-token-compat-20261111\\archive_and_audit.py",
+      "directory": false
+    },
+    {
+      "path": "F:\\project\\DLSS5Tool\\tmp\\nvidia-token-compat-20261111\\final-audit.json",
+      "directory": false
+    },
+    {
+      "path": "F:\\project\\DLSS5Tool\\tmp\\nvidia-token-compat-20261111\\final-source-manifest.json",
+      "directory": false
+    },
+    {
+      "path": "F:\\project\\DLSS5Tool\\tmp\\nvidia-token-compat-20261111\\final-sources",
+      "directory": true
+    },
+    {
+      "path": "F:\\project\\DLSS5Tool\\tmp\\nvidia-token-compat-20261111\\freezer-artifact-manifest.json",
+      "directory": false
+    },
+    {
+      "path": "F:\\project\\DLSS5Tool\\tmp\\nvidia-token-compat-20261111\\frozen-build",
+      "directory": true
+    },
+    {
+      "path": "F:\\project\\DLSS5Tool\\tmp\\nvidia-token-compat-20261111\\frozen-dist",
+      "directory": true
+    },
+    {
+      "path": "F:\\project\\DLSS5Tool\\tmp\\nvidia-token-compat-20261111\\frozen-ordinary.json",
+      "directory": false
+    },
+    {
+      "path": "F:\\project\\DLSS5Tool\\tmp\\nvidia-token-compat-20261111\\frozen-sandbox.json",
+      "directory": false
+    },
+    {
+      "path": "F:\\project\\DLSS5Tool\\tmp\\nvidia-token-compat-20261111\\frozen_token_fixture.py",
+      "directory": false
+    },
+    {
+      "path": "F:\\project\\DLSS5Tool\\tmp\\nvidia-token-compat-20261111\\launch-contexts.json",
+      "directory": false
+    },
+    {
+      "path": "F:\\project\\DLSS5Tool\\tmp\\nvidia-token-compat-20261111\\measured-source-manifest.json",
+      "directory": false
+    },
+    {
+      "path": "F:\\project\\DLSS5Tool\\tmp\\nvidia-token-compat-20261111\\measured-sources",
+      "directory": true
+    },
+    {
+      "path": "F:\\project\\DLSS5Tool\\tmp\\nvidia-token-compat-20261111\\native-idle-manifest-off-smoke",
+      "directory": true
+    },
+    {
+      "path": "F:\\project\\DLSS5Tool\\tmp\\nvidia-token-compat-20261111\\native-nr-ordinary-fixed",
+      "directory": true
+    },
+    {
+      "path": "F:\\project\\DLSS5Tool\\tmp\\nvidia-token-compat-20261111\\native-nr-sandbox-control-off",
+      "directory": true
+    },
+    {
+      "path": "F:\\project\\DLSS5Tool\\tmp\\nvidia-token-compat-20261111\\native-nr-sandbox-fixed",
+      "directory": true
+    },
+    {
+      "path": "F:\\project\\DLSS5Tool\\tmp\\nvidia-token-compat-20261111\\native-nr-sandbox-long-idle",
+      "directory": true
+    },
+    {
+      "path": "F:\\project\\DLSS5Tool\\tmp\\nvidia-token-compat-20261111\\native-sr-ordinary-fixed",
+      "directory": true
+    },
+    {
+      "path": "F:\\project\\DLSS5Tool\\tmp\\nvidia-token-compat-20261111\\native-sr-sandbox-fixed",
+      "directory": true
+    },
+    {
+      "path": "F:\\project\\DLSS5Tool\\tmp\\nvidia-token-compat-20261111\\native_thread_activity.dll",
+      "directory": false
+    },
+    {
+      "path": "F:\\project\\DLSS5Tool\\tmp\\nvidia-token-compat-20261111\\protected-user-file-hashes.json",
+      "directory": false
+    },
+    {
+      "path": "F:\\project\\DLSS5Tool\\tmp\\nvidia-token-compat-20261111\\pytest-recovery",
+      "directory": true
+    },
+    {
+      "path": "F:\\project\\DLSS5Tool\\tmp\\nvidia-token-compat-20261111\\pytest-related",
+      "directory": true
+    },
+    {
+      "path": "F:\\project\\DLSS5Tool\\tmp\\nvidia-token-compat-20261111\\recovery-fixed",
+      "directory": true
+    },
+    {
+      "path": "F:\\project\\DLSS5Tool\\tmp\\nvidia-token-compat-20261111\\recovery-fixed-console.log",
+      "directory": false
+    },
+    {
+      "path": "F:\\project\\DLSS5Tool\\tmp\\nvidia-token-compat-20261111\\recovery-fixed-manifest-after.json",
+      "directory": false
+    },
+    {
+      "path": "F:\\project\\DLSS5Tool\\tmp\\nvidia-token-compat-20261111\\recovery-fixed-manifest-before.json",
+      "directory": false
+    },
+    {
+      "path": "F:\\project\\DLSS5Tool\\tmp\\nvidia-token-compat-20261111\\recovery-fixed-samples.json",
+      "directory": false
+    },
+    {
+      "path": "F:\\project\\DLSS5Tool\\tmp\\nvidia-token-compat-20261111\\recovery-fixed-verification.json",
+      "directory": false
+    },
+    {
+      "path": "F:\\project\\DLSS5Tool\\tmp\\nvidia-token-compat-20261111\\recovery.xml",
+      "directory": false
+    },
+    {
+      "path": "F:\\project\\DLSS5Tool\\tmp\\nvidia-token-compat-20261111\\related.xml",
+      "directory": false
+    },
+    {
+      "path": "F:\\project\\DLSS5Tool\\tmp\\nvidia-token-compat-20261111\\summarize.py",
+      "directory": false
+    },
+    {
+      "path": "F:\\project\\DLSS5Tool\\tmp\\nvidia-token-compat-20261111\\token-contents-ordinary.json",
+      "directory": false
+    },
+    {
+      "path": "F:\\project\\DLSS5Tool\\tmp\\nvidia-token-compat-20261111\\token-contents-sandbox.json",
+      "directory": false
+    },
+    {
+      "path": "F:\\project\\DLSS5Tool\\tmp\\nvidia-token-compat-20261111\\token-ordinary.json",
+      "directory": false
+    },
+    {
+      "path": "F:\\project\\DLSS5Tool\\tmp\\nvidia-token-compat-20261111\\token-sandbox.json",
+      "directory": false
+    },
+    {
+      "path": "F:\\project\\DLSS5Tool\\tmp\\nvidia-token-compat-20261111\\TokenCompatFixture.spec",
+      "directory": false
+    },
+    {
+      "path": "F:\\project\\DLSS5Tool\\tmp\\nvidia-token-compat-20261111\\unit.xml",
+      "directory": false
+    },
+    {
+      "path": "F:\\project\\DLSS5Tool\\tmp\\nvidia-token-compat-20261111\\updater-lifetime",
+      "directory": true
+    },
+    {
+      "path": "F:\\project\\DLSS5Tool\\tmp\\nvidia-token-compat-20261111\\verification.json",
+      "directory": false
+    },
+    {
+      "path": "F:\\project\\DLSS5Tool\\tmp\\nvidia-token-compat-20261111\\verify_token_contents.py",
+      "directory": false
+    }
+  ],
+  "review_date": "2026-11-18",
+  "cleanup_source_and_omitted_hashes_rechecked": true,
+  "cleanup_exclusive_opens_rechecked": true,
+  "cleanup_owned_identities_retired": true,
+  "cleanup_logical_bytes_removed": 36011869.0,
+  "free_bytes_before_cleanup": 50488750080,
+  "free_bytes_after_cleanup": 50525237248,
+  "disk_free_delta_bytes": 36487168,
+  "remaining_task_bytes": 3378,
+  "remaining_reason": "Task registration and verified archive recovery links; review 2026-11-18."
+}

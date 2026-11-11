@@ -60,7 +60,7 @@ def checked_path(path):
 
 
 def run_manifest(task=None):
-    names = ['dlss5tool/'+name+'.py' for name in ('adapter_probe','adapter_inventory','process_job','dlss_engine',
+    names = ['dlss5tool/'+name+'.py' for name in ('adapter_probe','adapter_inventory','process_job','nvidia_token_compat','dlss_engine',
         'gui','dlss_host_process','memory_budget','super_resolution','render_cache',
         'shared_render_preview','residual_composition','local_preview_composition','preview_jobs','__main__')]
     names += ['gui.py','scripts/verify_p0_stability.py','scripts/profile_native_frame_memory.py',
@@ -98,6 +98,7 @@ def run_manifest(task=None):
     return dict(files=manifest, diagnostic_environment={key:os.environ.get(key) for key in
         ('DLSS5TOOL_P0_MEMORY_MAP','DLSS5TOOL_P0_HEAP_TRACE','DLSS5TOOL_P0_DISABLE_EXTENSIONS',
          'DLSS5TOOL_P0_THREAD_ACTIVITY',
+         'DLSS5TOOL_NVIDIA_TOKEN_COMPAT',
          'DLSS5TOOL_P0_COMPOSER_HOST','DLSS5TOOL_DISABLE_NATIVE_COMPOSER')})
 
 

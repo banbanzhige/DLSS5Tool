@@ -22,24 +22,25 @@ class KillOnCloseJob:
     Callers keep the Popen process handle and must gate child native work until
     assignment succeeds. This class never opens a process by name or PID.
     """
-    def __init__(self, process):
-        self._initialize(int(process._handle))
+    def __init__(self, process, *, nvidia_compat=False):
+        self._initialize(int(process._handle), nvidia_compat=nvidia_compat)
 
     @classmethod
-    def from_handle(cls, handle):
+    def from_handle(cls, handle, *, nvidia_compat=False):
         """Borrow an owned process handle, including a Windows Process.sentinel.
 
         The caller retains the process handle until its exit watcher has joined.
         No process is opened by PID and this job handle is never inheritable.
         """
         job = cls.__new__(cls)
-        job._initialize(int(handle))
+        job._initialize(int(handle), nvidia_compat=nvidia_compat)
         return job
 
-    def _initialize(self, process_handle):
+    def _initialize(self, process_handle, *, nvidia_compat=False):
         if os.name!='nt':
             raise OSError('Windows job required')
         self._lock = threading.Lock()
+        self.token_compatibility = None
         self._kernel=C.WinDLL('kernel32',use_last_error=True)
         for name,args,result in (
             ('CreateJobObjectW',[C.c_void_p,C.c_wchar_p],C.c_void_p),
@@ -56,6 +57,11 @@ class KillOnCloseJob:
                 raise C.WinError(C.get_last_error())
             if not self._kernel.AssignProcessToJobObject(self._handle,process_handle):
                 raise C.WinError(C.get_last_error())
+            if nvidia_compat:
+                from dlss5tool.nvidia_token_compat import prepare_worker_token
+                from dlss5tool.memory_budget import record_memory_event
+                self.token_compatibility = prepare_worker_token(process_handle)
+                record_memory_event('nvidia_token_compatibility', **self.token_compatibility)
         except BaseException:
             self.close()
             raise
@@ -75,10 +81,11 @@ class ProcessTreeJob:
     The process must wait at a start gate until construction succeeds. Call
     close() before releasing its process handle, including after natural exit.
     """
-    def __init__(self, process):
+    def __init__(self, process, *, nvidia_compat=False):
         handle = (process.sentinel if hasattr(process, 'sentinel')
                   else int(process._handle))
-        self._job = KillOnCloseJob.from_handle(handle)
+        self._job = KillOnCloseJob.from_handle(handle, nvidia_compat=nvidia_compat)
+        self.token_compatibility = self._job.token_compatibility
         self._pid = process.pid
         try:
             self._watcher = threading.Thread(
@@ -109,9 +116,9 @@ class ProcessTreeJob:
             raise OSError('NGX worker process tree is still retiring; retry close')
 
 
-def create_process_job(process):
+def create_process_job(process, *, nvidia_compat=False):
     """Arm a Windows worker before its native initialization is released."""
-    return ProcessTreeJob(process) if os.name == 'nt' else None
+    return ProcessTreeJob(process, nvidia_compat=nvidia_compat) if os.name == 'nt' else None
 
 
 def process_record(pid):

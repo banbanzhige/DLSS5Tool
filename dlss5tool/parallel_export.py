@@ -213,7 +213,7 @@ def export_parallel(
                 cwd=None if getattr(sys, "frozen", False) else str(project_root()),
             )
             processes.append(process)
-            lifetime_jobs.append(create_process_job(process))
+            lifetime_jobs.append(create_process_job(process, nvidia_compat=True))
             # A fresh task-private gate is published only after job assignment.
             with open(start_gate, 'x', encoding='ascii') as gate:
                 gate.write('start')

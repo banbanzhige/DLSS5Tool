@@ -464,7 +464,7 @@ class ProcessSuperResolution:
         self._process.start()
         self._child_connection.close()
         self._child_connection = None
-        self._job = create_process_job(self._process)
+        self._job = create_process_job(self._process, nvidia_compat=True)
         self._connection.send({"operation": "initialize"})
         response = self._receive("initialize")
         if isinstance(response, dict):

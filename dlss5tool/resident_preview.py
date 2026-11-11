@@ -78,7 +78,7 @@ def render_preview(source, output=None, *, multiplier=1, scale=2, enhance=True, 
         receiver, sender = multiprocessing.Pipe(duplex=True)
         log = safe_path(directory/'worker.log').open('xb')
         process = _spawn(sender, nonce, log)
-        job = KillOnCloseJob(process)
+        job = KillOnCloseJob(process, nvidia_compat=True)
         sender.close(); sender = None
         request = dict(mode='preview', source=str(source), source_identity=source_identity(source),
             plan=plan, components=components, pool=pool.name if pool else None,

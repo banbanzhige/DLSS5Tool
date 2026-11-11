@@ -37,7 +37,8 @@ def test_parent_publishes_start_only_after_job_assignment(controller, tmp_path,
                                                          monkeypatch, fail_assignment):
     lifetimes, gates = [], []
 
-    def arm(process):
+    def arm(process, *, nvidia_compat=False):
+        assert nvidia_compat is True
         command = controller.call_args.args[0]
         gate = Path(command[command.index('--start-gate') + 1])
         assert not gate.exists()

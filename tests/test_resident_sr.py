@@ -80,7 +80,10 @@ def transaction(tmp_path, monkeypatch):
     job.close.side_effect = lambda: setattr(process, 'returncode', -9) if process.returncode is None else None
     monkeypatch.setattr(sr, '_spawn', spawn)
     monkeypatch.setattr(sr.multiprocessing, 'Pipe', lambda **_: (receiver,sender))
-    monkeypatch.setattr('dlss5tool.process_job.KillOnCloseJob', lambda _: job)
+    def arm(_, *, nvidia_compat=False):
+        assert nvidia_compat is True
+        return job
+    monkeypatch.setattr('dlss5tool.process_job.KillOnCloseJob', arm)
     monkeypatch.setattr('dlss5tool.process_job.confirm_retired', retire)
     monkeypatch.setattr('dlss5tool.process_job.private_commit', lambda _: 1024**3)
     monkeypatch.setattr('dlss5tool.memory_budget.current_pool', lambda **_: None)
@@ -152,7 +155,9 @@ def test_source_mutation_after_preflight_cannot_publish(transaction,monkeypatch)
 def test_job_assignment_failure_sends_no_native_start(transaction,monkeypatch):
     t = transaction
     receiver,sender = sr.multiprocessing.Pipe()
-    def fail(_): raise OSError('job assignment denied')
+    def fail(_, *, nvidia_compat=False):
+        assert nvidia_compat is True
+        raise OSError('job assignment denied')
     monkeypatch.setattr('dlss5tool.process_job.KillOnCloseJob',fail)
     with pytest.raises(OSError,match='assignment'): t['export']()
     receiver.send_bytes.assert_not_called()

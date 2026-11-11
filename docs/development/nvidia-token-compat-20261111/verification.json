@@ -1,0 +1,579 @@
+{
+  "scope": "Worker-token source compatibility fix, not all original user/P0 scenarios.",
+  "native_cases": [
+    {
+      "case": "native-nr-ordinary-fixed",
+      "configured_idle_seconds": 30,
+      "frames": 1024,
+      "elapsed_seconds": 48.51,
+      "worker_context": {
+        "supported": true,
+        "pid": 10228,
+        "read_only": true,
+        "user_sid_sha256": "d901e27183f6dbf8b9407a0db6a6bda19780cf34381bea3467f892e79f369ebd",
+        "token_restricted": false,
+        "primary_token_id": 6790518406,
+        "elevated": false,
+        "app_container": false,
+        "integrity_rid": 8192,
+        "session_id": 1,
+        "created_filetime": 134388640537793236,
+        "process_dacl": {
+          "query_error": 0,
+          "explicit_system_allow_mask": 2097151,
+          "explicit_system_deny_mask": 0,
+          "effective_access_calculated": false,
+          "ace_count": 3
+        },
+        "primary_token_dacl": {
+          "query_error": 0,
+          "explicit_system_allow_mask": 983551,
+          "explicit_system_deny_mask": 0,
+          "effective_access_calculated": false,
+          "ace_count": 4
+        },
+        "query_complete": true
+      },
+      "private_window": {
+        "samples": 77,
+        "sufficient_samples": true,
+        "start_median_bytes": 878587904,
+        "end_median_bytes": 878608384,
+        "delta_bytes": 20480,
+        "median_time_span_seconds": 16.077025651931763,
+        "mib_per_minute": 0.07289128134588697,
+        "range_bytes": 20480
+      },
+      "five_minute_gate_passed": null,
+      "messagebus_total_observed": 0,
+      "messagebus_checkpoint_delta": 0,
+      "profile_count": 3,
+      "profile_span_seconds": 40.16941690444946,
+      "source_runtime_unchanged": true,
+      "processing_and_exit_passed": true,
+      "first_output_matches_baseline": true,
+      "first_output_sha256": "b2eab2e96e1c94751425a42d1e435e41f8c48a5f1cd41ff4defb3931323ddc07",
+      "remaining": [],
+      "supervisor_recovery": []
+    },
+    {
+      "case": "native-nr-sandbox-control-off",
+      "configured_idle_seconds": 30,
+      "frames": 1024,
+      "elapsed_seconds": 49.336,
+      "worker_context": {
+        "supported": true,
+        "pid": 53324,
+        "read_only": true,
+        "user_sid_sha256": "f741f07a20b34b3cc78acaa25503af4d14f868a4edcee3a6a5c8ce6974017b6f",
+        "token_restricted": true,
+        "primary_token_id": 6762315138,
+        "elevated": false,
+        "app_container": false,
+        "integrity_rid": 8192,
+        "session_id": 1,
+        "created_filetime": 134388639967853898,
+        "process_dacl": {
+          "query_error": 0,
+          "explicit_system_allow_mask": 0,
+          "explicit_system_deny_mask": 0,
+          "effective_access_calculated": false,
+          "ace_count": 2
+        },
+        "primary_token_dacl": {
+          "query_error": 0,
+          "explicit_system_allow_mask": 0,
+          "explicit_system_deny_mask": 0,
+          "effective_access_calculated": false,
+          "ace_count": 3
+        },
+        "query_complete": true
+      },
+      "private_window": {
+        "samples": 77,
+        "sufficient_samples": true,
+        "start_median_bytes": 882974720,
+        "end_median_bytes": 898457600,
+        "delta_bytes": 15482880,
+        "median_time_span_seconds": 16.12666153907776,
+        "mib_per_minute": 54.93619977409561,
+        "range_bytes": 19046400
+      },
+      "five_minute_gate_passed": null,
+      "messagebus_total_observed": 192624,
+      "messagebus_checkpoint_delta": 189568,
+      "profile_count": 3,
+      "profile_span_seconds": 40.32547187805176,
+      "source_runtime_unchanged": true,
+      "processing_and_exit_passed": true,
+      "first_output_matches_baseline": true,
+      "first_output_sha256": "b2eab2e96e1c94751425a42d1e435e41f8c48a5f1cd41ff4defb3931323ddc07",
+      "remaining": [],
+      "supervisor_recovery": []
+    },
+    {
+      "case": "native-nr-sandbox-fixed",
+      "configured_idle_seconds": 60,
+      "frames": 32,
+      "elapsed_seconds": 68.503,
+      "worker_context": {
+        "supported": true,
+        "pid": 21736,
+        "read_only": true,
+        "user_sid_sha256": "f741f07a20b34b3cc78acaa25503af4d14f868a4edcee3a6a5c8ce6974017b6f",
+        "token_restricted": true,
+        "primary_token_id": 6704042554,
+        "elevated": false,
+        "app_container": false,
+        "integrity_rid": 8192,
+        "session_id": 1,
+        "created_filetime": 134388637080196233,
+        "process_dacl": {
+          "query_error": 0,
+          "explicit_system_allow_mask": 0,
+          "explicit_system_deny_mask": 0,
+          "effective_access_calculated": false,
+          "ace_count": 2
+        },
+        "primary_token_dacl": {
+          "query_error": 0,
+          "explicit_system_allow_mask": 131072,
+          "explicit_system_deny_mask": 0,
+          "effective_access_calculated": false,
+          "ace_count": 4
+        },
+        "query_complete": true
+      },
+      "private_window": {
+        "samples": 194,
+        "sufficient_samples": true,
+        "start_median_bytes": 881364992.0,
+        "end_median_bytes": 881274880.0,
+        "delta_bytes": -90112.0,
+        "median_time_span_seconds": 40.39579772949219,
+        "mib_per_minute": -0.1276432275091704,
+        "range_bytes": 110592
+      },
+      "five_minute_gate_passed": null,
+      "messagebus_total_observed": 0,
+      "messagebus_checkpoint_delta": 0,
+      "profile_count": 1,
+      "profile_span_seconds": 0.0,
+      "source_runtime_unchanged": true,
+      "processing_and_exit_passed": true,
+      "first_output_matches_baseline": true,
+      "first_output_sha256": "b2eab2e96e1c94751425a42d1e435e41f8c48a5f1cd41ff4defb3931323ddc07",
+      "remaining": [],
+      "supervisor_recovery": []
+    },
+    {
+      "case": "native-nr-sandbox-long-idle",
+      "configured_idle_seconds": 300,
+      "frames": 1024,
+      "elapsed_seconds": 321.633,
+      "worker_context": {
+        "supported": true,
+        "pid": 53160,
+        "read_only": true,
+        "user_sid_sha256": "f741f07a20b34b3cc78acaa25503af4d14f868a4edcee3a6a5c8ce6974017b6f",
+        "token_restricted": true,
+        "primary_token_id": 6729199997,
+        "elevated": false,
+        "app_container": false,
+        "integrity_rid": 8192,
+        "session_id": 1,
+        "created_filetime": 134388639147951421,
+        "process_dacl": {
+          "query_error": 0,
+          "explicit_system_allow_mask": 0,
+          "explicit_system_deny_mask": 0,
+          "effective_access_calculated": false,
+          "ace_count": 2
+        },
+        "primary_token_dacl": {
+          "query_error": 0,
+          "explicit_system_allow_mask": 131072,
+          "explicit_system_deny_mask": 0,
+          "effective_access_calculated": false,
+          "ace_count": 4
+        },
+        "query_complete": true
+      },
+      "private_window": {
+        "samples": 1116,
+        "sufficient_samples": true,
+        "start_median_bytes": 885379072,
+        "end_median_bytes": 872591360,
+        "delta_bytes": -12787712,
+        "median_time_span_seconds": 232.15793538093567,
+        "mib_per_minute": -3.151814512820169,
+        "range_bytes": 12808192
+      },
+      "five_minute_gate_passed": true,
+      "messagebus_total_observed": 0,
+      "messagebus_checkpoint_delta": 0,
+      "profile_count": 3,
+      "profile_span_seconds": 313.06283617019653,
+      "source_runtime_unchanged": true,
+      "processing_and_exit_passed": true,
+      "first_output_matches_baseline": true,
+      "first_output_sha256": "b2eab2e96e1c94751425a42d1e435e41f8c48a5f1cd41ff4defb3931323ddc07",
+      "remaining": [],
+      "supervisor_recovery": []
+    },
+    {
+      "case": "native-sr-ordinary-fixed",
+      "configured_idle_seconds": 30,
+      "frames": 1024,
+      "elapsed_seconds": 40.386,
+      "worker_context": {
+        "supported": true,
+        "pid": 36364,
+        "read_only": true,
+        "user_sid_sha256": "d901e27183f6dbf8b9407a0db6a6bda19780cf34381bea3467f892e79f369ebd",
+        "token_restricted": false,
+        "primary_token_id": 6827349417,
+        "elevated": false,
+        "app_container": false,
+        "integrity_rid": 8192,
+        "session_id": 1,
+        "created_filetime": 134388641473124404,
+        "process_dacl": {
+          "query_error": 0,
+          "explicit_system_allow_mask": 2097151,
+          "explicit_system_deny_mask": 0,
+          "effective_access_calculated": false,
+          "ace_count": 3
+        },
+        "primary_token_dacl": {
+          "query_error": 0,
+          "explicit_system_allow_mask": 983551,
+          "explicit_system_deny_mask": 0,
+          "effective_access_calculated": false,
+          "ace_count": 4
+        },
+        "query_complete": true
+      },
+      "private_window": {
+        "samples": 76,
+        "sufficient_samples": true,
+        "start_median_bytes": 421650432,
+        "end_median_bytes": 421670912,
+        "delta_bytes": 20480,
+        "median_time_span_seconds": 15.960323572158813,
+        "mib_per_minute": 0.07342426328023942,
+        "range_bytes": 20480
+      },
+      "five_minute_gate_passed": null,
+      "messagebus_total_observed": 3,
+      "messagebus_checkpoint_delta": 0,
+      "profile_count": 4,
+      "profile_span_seconds": 34.52809119224548,
+      "source_runtime_unchanged": true,
+      "processing_and_exit_passed": true,
+      "first_output_matches_baseline": true,
+      "first_output_sha256": "07a889d24caaa48b68fa35f8e6cfa64ecd74378d2f09f2b702fc4c2f26f8f903",
+      "remaining": [],
+      "supervisor_recovery": []
+    },
+    {
+      "case": "native-sr-sandbox-fixed",
+      "configured_idle_seconds": 300,
+      "frames": 1024,
+      "elapsed_seconds": 312.734,
+      "worker_context": {
+        "supported": true,
+        "pid": 33900,
+        "read_only": true,
+        "user_sid_sha256": "f741f07a20b34b3cc78acaa25503af4d14f868a4edcee3a6a5c8ce6974017b6f",
+        "token_restricted": true,
+        "primary_token_id": 6729202606,
+        "elevated": false,
+        "app_container": false,
+        "integrity_rid": 8192,
+        "session_id": 1,
+        "created_filetime": 134388639148061589,
+        "process_dacl": {
+          "query_error": 0,
+          "explicit_system_allow_mask": 0,
+          "explicit_system_deny_mask": 0,
+          "effective_access_calculated": false,
+          "ace_count": 2
+        },
+        "primary_token_dacl": {
+          "query_error": 0,
+          "explicit_system_allow_mask": 131072,
+          "explicit_system_deny_mask": 0,
+          "effective_access_calculated": false,
+          "ace_count": 4
+        },
+        "query_complete": true
+      },
+      "private_window": {
+        "samples": 1114,
+        "sufficient_samples": true,
+        "start_median_bytes": 428105728.0,
+        "end_median_bytes": 422191104.0,
+        "delta_bytes": -5914624.0,
+        "median_time_span_seconds": 232.1303424835205,
+        "mib_per_minute": -1.4579632131634257,
+        "range_bytes": 5914624
+      },
+      "five_minute_gate_passed": true,
+      "messagebus_total_observed": 3,
+      "messagebus_checkpoint_delta": 0,
+      "profile_count": 3,
+      "profile_span_seconds": 303.86346650123596,
+      "source_runtime_unchanged": true,
+      "processing_and_exit_passed": true,
+      "first_output_matches_baseline": true,
+      "first_output_sha256": "07a889d24caaa48b68fa35f8e6cfa64ecd74378d2f09f2b702fc4c2f26f8f903",
+      "remaining": [],
+      "supervisor_recovery": []
+    }
+  ],
+  "test_items_passed": 197,
+  "subtests_passed": 5,
+  "tests": [
+    {
+      "file": "unit.xml",
+      "xml_cases": 37,
+      "passed": true
+    },
+    {
+      "file": "related.xml",
+      "xml_cases": 139,
+      "passed": true
+    },
+    {
+      "file": "recovery.xml",
+      "xml_cases": 26,
+      "passed": true
+    }
+  ],
+  "token_probes": [
+    {
+      "file": "token-sandbox.json",
+      "passed": true,
+      "cycles": 6
+    },
+    {
+      "file": "token-ordinary.json",
+      "passed": true,
+      "cycles": 6
+    },
+    {
+      "file": "frozen-sandbox.json",
+      "passed": true,
+      "cycles": 3
+    },
+    {
+      "file": "frozen-ordinary.json",
+      "passed": true,
+      "cycles": 3
+    },
+    {
+      "file": "token-contents-sandbox.json",
+      "passed": true,
+      "cycles": 3
+    },
+    {
+      "file": "token-contents-ordinary.json",
+      "passed": true,
+      "cycles": 3
+    }
+  ],
+  "protected_user_files_unchanged": true,
+  "all_five_minute_fixed_windows_passed": true,
+  "product_entry_points": [
+    "NR",
+    "legacy VSR",
+    "resident GPU export",
+    "resident GPU preview",
+    "parallel export"
+  ],
+  "frozen_scope": "Minimal real PyInstaller onedir fixture, not a rebuilt product release.",
+  "limitations": [
+    "One GPU/621.14 driver and small synthetic native inputs.",
+    "Post-fix five-minute idle and short processing; no new thirty-minute or overnight product validation.",
+    "Token compatibility only matches the observed restricted medium-integrity allow-only ACL shape.",
+    "Driver 184-byte-per-thread retention itself remains an upstream issue."
+  ],
+  "real_pressure_recovery": {
+    "verification": {
+      "passed": true,
+      "exit_code": 0,
+      "remaining_before_supervisor_cleanup": [],
+      "error": null,
+      "source_and_runtime_unchanged": true,
+      "elapsed_seconds": 41.588652200007346
+    },
+    "details": [
+      {
+        "kind": "nr",
+        "attempts": [
+          {
+            "pid": 37480,
+            "created": 134388646706464682,
+            "output_sha256": "329a1278081892cfd4a09ed79152cea0fbfc7b13571689d9169440a178fe1d93",
+            "pressure": {
+              "required_bytes": 921600,
+              "recommended_bytes": null,
+              "available_bytes": 0,
+              "source_pid": 37480,
+              "physical_reserve_bytes": 4294967296,
+              "commit_reserve_bytes": 4294967296,
+              "stage": "worker_idle",
+              "failure": "idle",
+              "reason": "physical",
+              "blocked_by_reserve": true,
+              "memory": {
+                "total_physical_bytes": 34359738368,
+                "free_physical_bytes": 4294967296,
+                "free_commit_bytes": 21474836480
+              }
+            }
+          },
+          {
+            "pid": 4920,
+            "created": 134388646841408149,
+            "output_sha256": "329a1278081892cfd4a09ed79152cea0fbfc7b13571689d9169440a178fe1d93"
+          }
+        ],
+        "simulated_pressure_only": true,
+        "passed": true,
+        "queue_states": [
+          "completed",
+          "completed",
+          "completed"
+        ],
+        "completed_output_unchanged": true,
+        "events": [
+          {
+            "wall": 1794391070.6402035,
+            "message": "[\u961f\u5217] \u5f00\u59cb: F:\\project\\DLSS5Tool\\tmp\\nvidia-token-compat-20261111\\recovery-fixed\\nr-current.png"
+          },
+          {
+            "wall": 1794391083.6225648,
+            "message": "[\u961f\u5217] nr-current.png \u5931\u8d25: \u6682\u505c\u671f\u95f4\u5185\u5b58\u4f59\u91cf\u6301\u7eed\u4e0d\u8db3\uff0c\u5904\u7406\u4f1a\u8bdd\u5df2\u5b89\u5168\u9000\u51fa\u3002\u91ca\u653e\u5185\u5b58\u540e\u8bf7\u91cd\u65b0\u5f00\u59cb\u4efb\u52a1\u3002 \u672c\u9636\u6bb5\u9700\u8981 1 MiB\uff0c\u4fdd\u62a4\u9884\u7559\u540e\u53ef\u7528 0 MiB\uff1b\u5b9e\u9645\u53ef\u7528\u7269\u7406\u5185\u5b58 4.00 GiB\uff0c\u53ef\u63d0\u4ea4\u5185\u5b58 20.00 GiB\u3002\nTraceback (most recent call last):\n  File \"F:\\project\\DLSS5Tool\\dlss5tool\\dlss_host_process.py\", line 132, in _host_worker_main\n    message = receive_worker_command(connection, input_frame.nbytes,\n                                     allocation_bytes=input_frame.nbytes)\n  File \"F:\\project\\DLSS5Tool\\dlss5tool\\memory_budget.py\", line 361, in receive_worker_command\n    raise MemoryPressureError(details)\ndlss5tool.memory_budget.MemoryPressureError: \u6682\u505c\u671f\u95f4\u5185\u5b58\u4f59\u91cf\u6301\u7eed\u4e0d\u8db3\uff0c\u5904\u7406\u4f1a\u8bdd\u5df2\u5b89\u5168\u9000\u51fa\u3002\u91ca\u653e\u5185\u5b58\u540e\u8bf7\u91cd\u65b0\u5f00\u59cb\u4efb\u52a1\u3002 \u672c\u9636\u6bb5\u9700\u8981 1 MiB\uff0c\u4fdd\u62a4\u9884\u7559\u540e\u53ef\u7528 0 MiB\uff1b\u5b9e\u9645\u53ef\u7528\u7269\u7406\u5185\u5b58 4.00 GiB\uff0c\u53ef\u63d0\u4ea4\u5185\u5b58 20.00 GiB\u3002"
+          },
+          {
+            "wall": 1794391083.6225996,
+            "message": "[\u961f\u5217] \u5185\u5b58\u4e0d\u8db3\uff0c\u6b63\u5728\u56de\u6536\u5e76\u7b49\u5f85\u6062\u590d\uff081/2\uff09"
+          },
+          {
+            "wall": 1794391083.6226008,
+            "message": "\u5185\u5b58\u4e0d\u8db3\uff0c\u6b63\u5728\u56de\u6536\u5e76\u7b49\u5f85\u6062\u590d\uff081/2\uff09"
+          },
+          {
+            "wall": 1794391084.1303945,
+            "message": "[\u961f\u5217] \u5185\u5b58\u5df2\u6062\u590d\uff0c\u6b63\u5728\u91cd\u65b0\u5904\u7406\u5f53\u524d\u4efb\u52a1\uff081/2\uff09"
+          },
+          {
+            "wall": 1794391084.1303954,
+            "message": "\u5185\u5b58\u5df2\u6062\u590d\uff0c\u6b63\u5728\u91cd\u65b0\u5904\u7406\u5f53\u524d\u4efb\u52a1\uff081/2\uff09"
+          },
+          {
+            "wall": 1794391084.1374338,
+            "message": "[\u961f\u5217] \u5f00\u59cb: F:\\project\\DLSS5Tool\\tmp\\nvidia-token-compat-20261111\\recovery-fixed\\nr-current.png"
+          },
+          {
+            "wall": 1794391091.9207668,
+            "message": "[\u961f\u5217] \u5f00\u59cb: F:\\project\\DLSS5Tool\\tmp\\nvidia-token-compat-20261111\\recovery-fixed\\nr-later.png"
+          },
+          {
+            "wall": 1794391091.9438531,
+            "message": "[\u961f\u5217] \u961f\u5217\u5904\u7406\u7ed3\u675f\uff1a\u5b8c\u6210 3\uff0c\u5931\u8d25 0\uff0c\u53d6\u6d88 0\u3002"
+          }
+        ]
+      },
+      {
+        "kind": "vsr",
+        "attempts": [
+          {
+            "pid": 26008,
+            "created": 134388646920788173,
+            "output_sha256": "3e2d1dbac7ed4ab2210b824fac94c9b2135fbda20ae78d0f5df96f4efd85bb72",
+            "pressure": {
+              "required_bytes": 1,
+              "recommended_bytes": null,
+              "available_bytes": 0,
+              "source_pid": 26008,
+              "physical_reserve_bytes": 4294967296,
+              "commit_reserve_bytes": 4294967296,
+              "stage": "worker_idle",
+              "failure": "idle",
+              "reason": "physical",
+              "blocked_by_reserve": true,
+              "memory": {
+                "total_physical_bytes": 34359738368,
+                "free_physical_bytes": 4294967296,
+                "free_commit_bytes": 21474836480
+              }
+            }
+          },
+          {
+            "pid": 19644,
+            "created": 134388647040630288,
+            "output_sha256": "3e2d1dbac7ed4ab2210b824fac94c9b2135fbda20ae78d0f5df96f4efd85bb72"
+          }
+        ],
+        "simulated_pressure_only": true,
+        "passed": true,
+        "queue_states": [
+          "completed",
+          "completed",
+          "completed"
+        ],
+        "completed_output_unchanged": true,
+        "events": [
+          {
+            "wall": 1794391092.0772884,
+            "message": "[\u961f\u5217] \u5f00\u59cb: F:\\project\\DLSS5Tool\\tmp\\nvidia-token-compat-20261111\\recovery-fixed\\vsr-current.png"
+          },
+          {
+            "wall": 1794391103.5509899,
+            "message": "[\u961f\u5217] vsr-current.png \u5931\u8d25: MemoryPressureError: \u6682\u505c\u671f\u95f4\u5185\u5b58\u4f59\u91cf\u6301\u7eed\u4e0d\u8db3\uff0c\u5904\u7406\u4f1a\u8bdd\u5df2\u5b89\u5168\u9000\u51fa\u3002\u91ca\u653e\u5185\u5b58\u540e\u8bf7\u91cd\u65b0\u5f00\u59cb\u4efb\u52a1\u3002 \u672c\u9636\u6bb5\u9700\u8981 1 MiB\uff0c\u4fdd\u62a4\u9884\u7559\u540e\u53ef\u7528 0 MiB\uff1b\u5b9e\u9645\u53ef\u7528\u7269\u7406\u5185\u5b58 4.00 GiB\uff0c\u53ef\u63d0\u4ea4\u5185\u5b58 20.00 GiB\u3002\n\u8d85\u5206\u65e5\u5fd7\u672b\u5c3e\uff1a\nVSR init input=320x180 output=640x360 hdr=0 quality=4\nadapter: NVIDIA GeForce RTX 4070 SUPER\nadapter LUID=00000000:000137E9\nHDR conversion: CPU compatibility\nNGX init -> 0x00000001\nCreate VSR -> 0x00000001 feature=000001883C88CD40"
+          },
+          {
+            "wall": 1794391103.5510068,
+            "message": "[\u961f\u5217] \u5185\u5b58\u4e0d\u8db3\uff0c\u6b63\u5728\u56de\u6536\u5e76\u7b49\u5f85\u6062\u590d\uff081/2\uff09"
+          },
+          {
+            "wall": 1794391103.551007,
+            "message": "\u5185\u5b58\u4e0d\u8db3\uff0c\u6b63\u5728\u56de\u6536\u5e76\u7b49\u5f85\u6062\u590d\uff081/2\uff09"
+          },
+          {
+            "wall": 1794391104.0554268,
+            "message": "[\u961f\u5217] \u5185\u5b58\u5df2\u6062\u590d\uff0c\u6b63\u5728\u91cd\u65b0\u5904\u7406\u5f53\u524d\u4efb\u52a1\uff081/2\uff09"
+          },
+          {
+            "wall": 1794391104.0554278,
+            "message": "\u5185\u5b58\u5df2\u6062\u590d\uff0c\u6b63\u5728\u91cd\u65b0\u5904\u7406\u5f53\u524d\u4efb\u52a1\uff081/2\uff09"
+          },
+          {
+            "wall": 1794391104.0616503,
+            "message": "[\u961f\u5217] \u5f00\u59cb: F:\\project\\DLSS5Tool\\tmp\\nvidia-token-compat-20261111\\recovery-fixed\\vsr-current.png"
+          },
+          {
+            "wall": 1794391107.9967809,
+            "message": "[\u961f\u5217] \u5f00\u59cb: F:\\project\\DLSS5Tool\\tmp\\nvidia-token-compat-20261111\\recovery-fixed\\vsr-later.png"
+          },
+          {
+            "wall": 1794391108.020178,
+            "message": "[\u961f\u5217] \u961f\u5217\u5904\u7406\u7ed3\u675f\uff1a\u5b8c\u6210 3\uff0c\u5931\u8d25 0\uff0c\u53d6\u6d88 0\u3002"
+          }
+        ]
+      }
+    ]
+  },
+  "real_updater_lifetime": {
+    "workload_exit": 0,
+    "cycles": 1,
+    "peak_owned": 5,
+    "final": [],
+    "cleanup": [],
+    "app_exit_observation_seconds": 20
+  },
+  "final_manifest_smoke_passed": true
+}

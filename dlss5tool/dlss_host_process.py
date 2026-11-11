@@ -40,7 +40,7 @@ class HostProcessError(RuntimeError):
 
 def _make_worker_job(process):
     from dlss5tool.process_job import create_process_job
-    return create_process_job(process)
+    return create_process_job(process, nvidia_compat=True)
 
 
 def _open_shared_memory(*, name=None, create=False, size=0, track=True):

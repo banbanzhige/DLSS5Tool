@@ -197,7 +197,7 @@ def export_resident(source, output, plan, components, *, cancel, progress=None,
         log = safe_path(log_root/(nonce+'.log')).open('xb')
         receiver, sender = multiprocessing.Pipe(duplex=True)
         process = _spawn(sender, nonce, log)
-        job = KillOnCloseJob(process)
+        job = KillOnCloseJob(process, nvidia_compat=True)
         sender.close()
         receiver.send_bytes(json.dumps(dict(version=1, nonce=nonce, operation='start', request=request)).encode('utf-8'))
         deadline = time.monotonic()+120
