@@ -16,7 +16,8 @@ MODULES = ('gui', 'app_version', 'residual_composition', 'shared_cache_budget',
            'dlss_runtime', 'mod_paths', 'adapter_probe', 'dlss_engine', 'dlss_host_process',
            'video_timeline', 'resident_sr_worker', 'resident_preview_worker', 'realtime',
            'nvidia_token_compat', 'process_job', 'queue_memory_recovery',
-           'parallel_export', 'parallel_export_worker', 'super_resolution', 'gpu_export_process')
+           'parallel_export', 'parallel_export_worker', 'super_resolution', 'gpu_export_process',
+           'window_backing_store', 'export_memory_ui', 'ui_widgets')
 
 
 def identity(value):
