@@ -21,6 +21,7 @@ import threading
 import time
 import traceback
 import webbrowser
+import weakref
 from collections import deque
 from fractions import Fraction
 from pathlib import Path
@@ -58,6 +59,7 @@ from dlss5tool.memory_budget import (bounded_frame_count, cache_limit_bytes, sys
     require_memory_headroom, prefer_pool, memory_events, memory_policy,
     pressure_details, copy_pressure_details)
 from dlss5tool.queue_memory_recovery import QueueMemoryRecovery
+from dlss5tool.export_memory_ui import ExportMemoryUI, ExportRetry
 from dlss5tool.export_metrics import FrameRate
 from dlss5tool.export_preflight import assess_video_export
 from dlss5tool.residual_composition import release_native_composer
@@ -91,6 +93,7 @@ from dlss5tool.video_export import (
 from dlss5tool.gpu_export_runtime import create_video_writer as FFmpegVideoWriter
 from dlss5tool.video_timeline import inspect_video_timeline
 from dlss5tool import ui_theme
+from dlss5tool.window_backing_store import WindowBackingStore
 from dlss5tool.divider_preview import DividerPreview
 from dlss5tool.ui_widgets import (
     AccentSlider, CheckToggle, ChipGroup, ChromeButton, ChromeCombobox,
@@ -753,7 +756,7 @@ def compose_preview_frame(original, processed, output_view=0, output_mix=1.0, *,
 
 
 
-class App(QueueMemoryRecovery, GpuResourceGuard, SharedRenderPreview, LocalPreviewComposition, PreviewComparison, GuidanceExportUI):
+class App(ExportMemoryUI, QueueMemoryRecovery, GpuResourceGuard, SharedRenderPreview, LocalPreviewComposition, PreviewComparison, GuidanceExportUI):
     def __init__(self, root):
         self.root = root
         self._saved_settings = app_settings.startup_settings(app_settings.load())
@@ -783,6 +786,7 @@ class App(QueueMemoryRecovery, GpuResourceGuard, SharedRenderPreview, LocalPrevi
         root.geometry(initial_geometry)
         root.minsize(*minimum_size)
         self._settings_save_after = None
+        self._scrollregion_after = {}
         self.video = None
         self.nframes = 0
         self.fps = 30.0
@@ -1182,6 +1186,30 @@ class App(QueueMemoryRecovery, GpuResourceGuard, SharedRenderPreview, LocalPrevi
             self.check_for_updates(manual=False)
 
         self._restore_guidance_mode()
+        self._window_backing_store = self._create_window_backing_store(root)
+
+    def _create_window_backing_store(self, window):
+        owner, target = weakref.ref(self), weakref.ref(window)
+
+        def exclusions():
+            app, host = owner(), target()
+            if app is None or host is None:
+                return ()
+            canvases = []
+            if app.video:
+                for pane in (app._docked_preview_pane, app._detached_preview_pane):
+                    if pane is not None:
+                        canvas = pane['canvas']
+                        if canvas.winfo_toplevel() is host:
+                            canvases.append(canvas)
+            realtime = app._realtime_workspace
+            if realtime is not None and app._workbench_mode == 'realtime':
+                canvases.append(realtime.region_preview)
+            return canvases
+
+        store = WindowBackingStore(window, exclusions=exclusions)
+        window._window_backing_store = store
+        return store
 
     def _restore_guidance_mode(self):
         """Check the remembered mode asynchronously before allowing inference."""
@@ -1755,6 +1783,10 @@ class App(QueueMemoryRecovery, GpuResourceGuard, SharedRenderPreview, LocalPrevi
         # Commit every client palette in one event-loop turn. In particular,
         # never flush idle redraws between ttk styles and Canvas/Tk widgets:
         # that exposes a frame containing both the old and the new theme.
+        for host in (self.root, getattr(self, '_detached_preview_window', None)):
+            store = getattr(host, '_window_backing_store', None)
+            if store is not None:
+                store.invalidate()
         if name is not None:
             self._ui_theme_name = ui_theme.normalize_theme_name(name)
         self._ui = ui_theme.tokens(self._ui_theme_name)
@@ -1859,6 +1891,9 @@ class App(QueueMemoryRecovery, GpuResourceGuard, SharedRenderPreview, LocalPrevi
                 )
             except Exception:
                 pass
+            store = getattr(window, '_window_backing_store', None)
+            if store is not None:
+                store.refresh_palette()
 
     def _refresh_status_chips(self):
         self._update_queue_depth_status()
@@ -2143,6 +2178,7 @@ class App(QueueMemoryRecovery, GpuResourceGuard, SharedRenderPreview, LocalPrevi
         self._preview_host.pack_forget()
         self._detached_preview_window = window
         self._detached_preview_pane = pane
+        self._create_window_backing_store(window)
         self._preview_detached = True
         self._activate_preview_pane(pane)
         self._sync_preview_chrome(timeline_state)
@@ -2207,13 +2243,27 @@ class App(QueueMemoryRecovery, GpuResourceGuard, SharedRenderPreview, LocalPrevi
         """Keep the settings content flush with the viewport width."""
         width = max(getattr(event, "width", self._preview_canvas.winfo_width()), 1)
         self._preview_canvas.itemconfigure(self._preview_window, width=width)
-        self.root.after_idle(self._sync_preview_scrollregion)
+        self._schedule_scrollregion_sync('preview')
+
+    def _schedule_scrollregion_sync(self, page):
+        # Configure arrives for both viewport and content during restore.
+        # Measure only once after geometry has settled, without a nested paint.
+        if page not in self._scrollregion_after:
+            self._scrollregion_after[page] = self.root.after_idle(
+                lambda: self._flush_scrollregion_sync(page),
+            )
+
+    def _flush_scrollregion_sync(self, page):
+        self._scrollregion_after.pop(page, None)
+        getattr(self, f'_sync_{page}_scrollregion')()
 
     def _sync_preview_scrollregion(self, event=None):
         """Update the scroll range and only show the bar when content overflows."""
+        if event is not None:
+            self._schedule_scrollregion_sync('preview')
+            return
         if not hasattr(self, "_preview_canvas"):
             return
-        self._preview_canvas.update_idletasks()
         content_height = self.preview_tab.winfo_reqheight()
         viewport_height = self._preview_canvas.winfo_height()
         self._preview_canvas.configure(
@@ -2232,13 +2282,15 @@ class App(QueueMemoryRecovery, GpuResourceGuard, SharedRenderPreview, LocalPrevi
     def _resize_export_content(self, event=None):
         width = max(getattr(event, "width", self._export_canvas.winfo_width()), 1)
         self._export_canvas.itemconfigure(self._export_window, width=width)
-        self.root.after_idle(self._sync_export_scrollregion)
+        self._schedule_scrollregion_sync('export')
 
     def _sync_export_scrollregion(self, event=None):
+        if event is not None:
+            self._schedule_scrollregion_sync('export')
+            return
         if not hasattr(self, "_export_canvas"):
             return
         inner = self._export_section.master
-        self._export_canvas.update_idletasks()
         content_height = inner.winfo_reqheight()
         viewport_height = self._export_canvas.winfo_height()
         self._export_canvas.configure(
@@ -2257,9 +2309,12 @@ class App(QueueMemoryRecovery, GpuResourceGuard, SharedRenderPreview, LocalPrevi
     def _resize_guidance_content(self, event=None):
         width = max(getattr(event, 'width', self._guidance_canvas.winfo_width()), 1)
         self._guidance_canvas.itemconfigure(self._guidance_window, width=width)
-        self.root.after_idle(self._sync_guidance_scrollregion)
+        self._schedule_scrollregion_sync('guidance')
 
     def _sync_guidance_scrollregion(self, event=None):
+        if event is not None:
+            self._schedule_scrollregion_sync('guidance')
+            return
         content_height = self._guidance_inner.winfo_reqheight()
         self._guidance_canvas.configure(
             scrollregion=(0, 0, self._guidance_canvas.winfo_width(), content_height),
@@ -6017,6 +6072,7 @@ class App(QueueMemoryRecovery, GpuResourceGuard, SharedRenderPreview, LocalPrevi
         self._select_workbench_mode('realtime')
 
     def _on_close(self):
+        self._cancel_export_memory_retry()
         if self._gpu_thread_alive(getattr(self, '_gpu_release_thread', None)):
             self.root.after(50, self._on_close)
             return
@@ -6106,6 +6162,10 @@ class App(QueueMemoryRecovery, GpuResourceGuard, SharedRenderPreview, LocalPrevi
         self._cancel_after('_render_gpu_scan_after')
         self._clear_preview_wait()
         self._cancel_after('_viewport_repaint_after')
+        scrollregion_after = getattr(self, '_scrollregion_after', {})
+        for handle in scrollregion_after.values():
+            self.root.after_cancel(handle)
+        scrollregion_after.clear()
         self._save_settings_now()
         self._save_queue_state()
         self.pause()
@@ -9765,6 +9825,11 @@ class App(QueueMemoryRecovery, GpuResourceGuard, SharedRenderPreview, LocalPrevi
         return getattr(event, "action", None)
 
     def _begin_source_load(self, *, reuse_composition=False):
+        for host in (getattr(self, 'root', None), getattr(self, '_detached_preview_window', None)):
+            store = getattr(host, '_window_backing_store', None)
+            if store is not None:
+                store.invalidate()
+        self._cancel_export_memory_retry()
         self._clear_preview_wait()
         self._shared_progress_token = None
         self._shared_progress_binding = None
@@ -10165,7 +10230,7 @@ class App(QueueMemoryRecovery, GpuResourceGuard, SharedRenderPreview, LocalPrevi
 
     def _end_export_ui(
         self, success, out_path, done_label=None, done_message=None, cancelled=False,
-        completed_items=1, notify=True, error_message="",
+        completed_items=1, notify=True, error_message="", memory_pressure=None, retry_request=None,
     ):
         done_label = done_label or tr("common.completed")
         self._exporting = False
@@ -10204,7 +10269,9 @@ class App(QueueMemoryRecovery, GpuResourceGuard, SharedRenderPreview, LocalPrevi
                 pass
             self.set_status(tr("status.export_failed_log"))
             if notify:
-                if not self._show_dlss_error(error_message):
+                if memory_pressure is not None and retry_request is not None:
+                    self._offer_export_memory_actions(memory_pressure, retry_request)
+                elif not self._show_dlss_error(error_message):
                     messagebox.showerror(
                         tr("dialog.export_failed"), tr("message.export_incomplete")
                     )
@@ -10459,6 +10526,8 @@ class App(QueueMemoryRecovery, GpuResourceGuard, SharedRenderPreview, LocalPrevi
             tr("status.exported_image", path=out_path) if success else None,
             error_message=error_message,
             notify=notify,
+            memory_pressure=memory_pressure,
+            retry_request=ExportRetry('image', source_path, out_path, dict(settings)),
         )
         result = {
             "success": success, "cancelled": False, "error": error_message,
@@ -11239,6 +11308,9 @@ class App(QueueMemoryRecovery, GpuResourceGuard, SharedRenderPreview, LocalPrevi
             completed_items=exported_frames,
             error_message=error_message,
             notify=notify,
+            memory_pressure=memory_pressure,
+            retry_request=ExportRetry('video', source_path, out_path, dict(settings),
+                                      dict(export_settings), dict(color_info)),
         )
         result = {
             "success": success,

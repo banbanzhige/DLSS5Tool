@@ -50,7 +50,7 @@ class QueueMemoryRecovery:
                 self._retire_queue_memory_owners()
             except Exception as error:
                 self.logln('[队列] '+str(error))
-            self._pause_queue_memory_failure(job, tr('queue.memory_exhausted'))
+            self._pause_queue_memory_failure(job, tr('queue.memory_exhausted'), details)
             return True
         attempts[job.job_id] = attempt
         self._queue_memory_recovery = Recovery(job.job_id, details, attempt, time.monotonic())
@@ -144,7 +144,9 @@ class QueueMemoryRecovery:
             return
         self._queue_recovery_after = self.root.after(POLL_MS, self._poll_queue_memory_recovery)
 
-    def _pause_queue_memory_failure(self, job, reason):
+    def _pause_queue_memory_failure(self, job, reason, details=None):
+        recovery = getattr(self, '_queue_memory_recovery', None)
+        details = details or (recovery.details if recovery is not None else None)
         self._cancel_after('_queue_recovery_after')
         self._queue_memory_recovery = None
         job.state = 'failed'
@@ -155,6 +157,10 @@ class QueueMemoryRecovery:
         self._save_queue_state()
         self._refresh_queue_tree()
         self._finish_queue_run(paused=True)
+        if details is not None:
+            from dlss5tool.export_memory_ui import ExportRetry
+            self._offer_export_memory_actions(details,
+                ExportRetry('queue', job.source_path, job.output_path, job_id=job.job_id))
 
     def _cancel_queue_memory_wait(self, *, cancelled):
         recovery = getattr(self, '_queue_memory_recovery', None)

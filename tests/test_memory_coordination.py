@@ -116,7 +116,7 @@ def test_concurrent_processing_cannot_double_spend_and_waiter_recovers():
 
 
 @pytest.mark.parametrize('release_ledger',[False,True])
-def test_acknowledgement_and_actual_free_memory_are_both_required(release_ledger):
+def test_cache_acknowledgement_does_not_replace_actual_free_memory(release_ledger):
     owner=SharedCacheBudget(limit_bytes=GIB)
     cache=SharedCacheBudget(owner.name)
     with cache.locked():cache.publish_locked(512*MIB)
@@ -252,3 +252,97 @@ def test_idle_critical_pressure_still_retires_before_reading_command(monkeypatch
     monkeypatch.setattr(mb,'system_memory',lambda:memory(128*MIB))
     with pytest.raises(mb.MemoryPressureError):mb.receive_worker_command(connection,1024)
     connection.recv.assert_not_called()
+
+
+@pytest.mark.parametrize('legacy',[False,True])
+@pytest.mark.parametrize('limiting',['free_physical_bytes','free_commit_bytes'])
+def test_recovered_headroom_does_not_wait_for_unrelated_cache_ack(monkeypatch,legacy,limiting):
+    import os
+    owner=SharedCacheBudget(limit_bytes=GIB)
+    cache=SharedCacheBudget(owner.name)
+    healthy=memory(8*GIB)
+    low=dict(healthy,**{limiting:mb.reserve_bytes(healthy)})
+    with cache.locked():
+        if legacy:
+            cache._clear_slot(cache.slot)
+            CACHE_RECORD.pack_into(cache.cache_mapping,CACHE_HEADER+cache.slot*CACHE_RECORD.size,
+                                   os.getpid(),512*MIB,0)
+        else:cache.publish_locked(512*MIB)
+    monkeypatch.setattr(mb,'system_memory',lambda:dict(healthy if owner.reclaim_epoch else low))
+    # This cache never acknowledges or releases its data. Only a fresh
+    # sufficient OS snapshot permits the allocation.
+    try:
+        with owner.processing(14*MIB,timeout=.1):
+            assert owner.snapshot()['reserved_processing_bytes']==14*MIB
+            assert cache.read(cache.slot)[1]==512*MIB
+            if not legacy:assert cache._record(cache.slot)[5]<owner.reclaim_epoch
+        event=mb.memory_events()[-1]
+        assert event['event']=='admitted_after_wait'
+        assert event['reclaim_acknowledged'] is False
+        assert owner.snapshot()['waiting_processing_bytes']==0
+    finally:cache.close();owner.close()
+
+
+def test_queue_order_alone_does_not_request_reclaim(monkeypatch):
+    import struct
+    from dlss5tool import shared_cache_budget as shared
+    owner=SharedCacheBudget(limit_bytes=GIB)
+    cache=SharedCacheBudget(owner.name)
+    previous=SharedCacheBudget(owner.name,_processing=True)
+    with owner.locked():
+        cache.publish_locked(128)
+        previous._write(previous.slot,pending=MIB,order=1,kind=shared.PROCESSING)
+        struct.pack_into('<Q',owner.mapping,48,1)
+    monkeypatch.setattr(mb,'system_memory',lambda:memory(8*GIB))
+    monkeypatch.setattr(shared,'service_reclaims',previous.close)
+    try:
+        with owner.processing(MIB,timeout=.1):assert owner.reclaim_epoch==0
+        assert owner.snapshot()['reserved_processing_bytes']==0
+    finally:previous.close();cache.close();owner.close()
+
+
+def test_last_reclaim_is_rechecked_before_deadline_rejection(monkeypatch):
+    from types import SimpleNamespace
+    from dlss5tool import shared_cache_budget as shared
+    owner=SharedCacheBudget(limit_bytes=GIB)
+    cache=SharedCacheBudget(owner.name)
+    with cache.locked():cache.publish_locked(128)
+    state=memory(mb.reserve_bytes(memory(0)))
+    clock=[0.0]
+    def reclaim():
+        clock[0]=2.0  # service completes after the one-second request limit
+        state['free_physical_bytes']=8*GIB
+        with cache.locked():cache.publish_locked(0)
+    monkeypatch.setattr(mb,'system_memory',lambda:dict(state))
+    monkeypatch.setattr(shared,'time',SimpleNamespace(monotonic=lambda:clock[0],
+        monotonic_ns=lambda:int(clock[0]*1e9),sleep=lambda _:None))
+    monkeypatch.setattr(shared,'service_reclaims',reclaim)
+    try:
+        with owner.processing(14*MIB,timeout=1):assert mb.memory_headroom_bytes()>=14*MIB
+    finally:cache.close();owner.close()
+
+
+def test_unknown_snapshot_after_pressure_does_not_waive_missing_ack(monkeypatch):
+    owner=SharedCacheBudget(limit_bytes=GIB)
+    cache=SharedCacheBudget(owner.name)
+    with cache.locked():cache.publish_locked(128)
+    monkeypatch.setattr(mb,'system_memory',lambda:
+        None if owner.reclaim_epoch else memory(mb.reserve_bytes(memory(0))))
+    try:
+        with pytest.raises(mb.MemoryPressureError) as error:
+            with owner.processing(MIB,timeout=.05):pytest.fail('admitted without evidence')
+        assert error.value.details['wait_reason']=='unknown_snapshot'
+        assert error.value.details['reclaim_acknowledged'] is False
+        assert owner.snapshot()['reserved_processing_bytes']==0
+    finally:cache.close();owner.close()
+
+
+def test_pressure_diagnostics_survive_error_snapshot_without_frames():
+    from dlss5tool.deferred_error import ErrorSnapshot
+    details=mb.memory_details(MIB,memory=memory(4*GIB),stage='nr_output')
+    values=dict(reserved_processing_bytes=3*GIB,net_available_bytes=0,cache_bytes=128,
+                reclaim_epoch=3,reclaim_acknowledged=False,elapsed_ms=1500,wait_reason='reserved')
+    details.update(values,failure='busy',frame=object())
+    restored=ErrorSnapshot(mb.MemoryPressureError(details)).exception().memory_pressure
+    assert all(restored[key]==value for key,value in values.items())
+    assert 'frame' not in restored

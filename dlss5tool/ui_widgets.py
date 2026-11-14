@@ -1004,7 +1004,9 @@ class ChromeButton(tk.Canvas):
         return "break"
 
     def _on_map(self, _event=None):
-        self._schedule_idle_redraw()
+        # Tk retains Canvas items while minimized. Rebuilding every button on
+        # restore needlessly deletes valid chrome before the native repaint.
+        self._queue_stale_sync()
 
     def _on_destroy(self, _event=None):
         if self._idle_redraw is None:

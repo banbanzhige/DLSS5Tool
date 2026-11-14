@@ -1114,7 +1114,7 @@ class PreviewQueueTests(unittest.TestCase):
         app._cap = None
 
         app._begin_source_load()
-        self.assertEqual(events[0], "pause")
+        self.assertEqual(events[:2], [("cancel", "_export_memory_retry_after"), "pause"])
         self.assertIn(("freeze", None), events)
         self.assertNotIn("join", events)
         self.assertIsNone(app.video)

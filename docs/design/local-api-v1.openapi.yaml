@@ -1,0 +1,819 @@
+openapi: 3.1.1
+info:
+  title: DLSS5Tool 本机视频任务 API
+  version: 1.0.0-draft
+  description: >-
+    2026-11-12 接口设计，尚未实现服务。由桌面应用手动启用的 loopback API。
+    当前合同以 LOCAL_API_V1.md 为配套行为说明。202 表示任务和去重映射已持久化，
+    不表示处理成功。所有接口要求 Bearer token。输入为本地视频路径，不接受上传或 URL。
+servers:
+  - url: http://127.0.0.1:17865/api/v1
+    description: 默认本机地址，端口可在本地设置修改
+security:
+  - LocalBearer: []
+tags:
+  - name: Service
+  - name: Jobs
+  - name: Queue
+paths:
+  /openapi.json:
+    get:
+      tags: [Service]
+      operationId: getOpenApi
+      summary: 获取与当前服务一致的接口规格
+      responses:
+        '200':
+          description: 本规格的 JSON 表示，不包含 token 或本地配置
+          headers:
+            X-Request-Id: {$ref: '#/components/headers/RequestId'}
+            Cache-Control: {$ref: '#/components/headers/NoStore'}
+          content:
+            application/json:
+              schema: {type: object}
+        default: {$ref: '#/components/responses/Problem'}
+  /status:
+    get:
+      tags: [Service]
+      operationId: getStatus
+      summary: 查询服务、API 队列及应用 GPU 占用
+      responses:
+        '200':
+          description: 准入状态快照，不保证其他应用没有占用 GPU
+          headers:
+            X-Request-Id: {$ref: '#/components/headers/RequestId'}
+            Cache-Control: {$ref: '#/components/headers/NoStore'}
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/ServiceStatus'}
+              example:
+                app_version: 3.1.3
+                api_version: v1
+                accepting_jobs: true
+                queue: {state: running, pause_reason: null, pending_count: 0, active_job_id: null}
+                gpu: {state: idle, owner: null, scope: this-application}
+        default: {$ref: '#/components/responses/Problem'}
+  /capabilities:
+    get:
+      tags: [Service]
+      operationId: getCapabilities
+      summary: 查询功能状态、固定默认参数和限制
+      description: >-
+        不初始化 GPU，不下载或替换组件；读取已有检查快照。
+        ready 不代表所有组合都支持；执行阶段还会重新校验。
+      responses:
+        '200':
+          description: 当前安装的可用性快照
+          headers:
+            X-Request-Id: {$ref: '#/components/headers/RequestId'}
+            Cache-Control: {$ref: '#/components/headers/NoStore'}
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Capabilities'}
+        default: {$ref: '#/components/responses/Problem'}
+  /jobs:
+    post:
+      tags: [Jobs]
+      operationId: createJob
+      summary: 提交本地视频任务
+      description: >-
+        显式参数加 API 固定默认值，不读取 GUI 滑条补齐请求。
+        接收阶段不运行 GPU；媒体解码和完整兼容性检查可异步失败。
+        同键同原始 JSON 结构重放第一次创建的任务；同键不同请求返回 409。
+        去重判断先于重新检查源文件、容量和组件状态。
+      parameters:
+        - {$ref: '#/components/parameters/IdempotencyKey'}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/JobRequest'}
+            examples:
+              minimal:
+                value: {input: {path: 'D:/Videos/demo.mp4'}}
+              enhanceAndUpscale:
+                value:
+                  input: {path: 'D:/Videos/demo.mp4'}
+                  processing:
+                    enhancement:
+                      enabled: true
+                      style: natural
+                      intensity: 0.8
+                      local_tone: 1
+                      local_struct: 1
+                      use_auto_mask: true
+                      skin_struct: 1
+                      output_mix: 1
+                    super_resolution: {scale: 2}
+                    frame_generation: {multiplier: 1}
+                    optical_flow: 'off'
+                  output:
+                    container: mp4
+                    file_name: demo_enhanced.mp4
+                    dynamic_range: preserve
+                    encoding: {mode: quality, quality_profile: high, preset: p5}
+                  client_tag: video-pipeline-001
+      responses:
+        '202': {$ref: '#/components/responses/AcceptedJob'}
+        '409': {$ref: '#/components/responses/Problem'}
+        '422': {$ref: '#/components/responses/Problem'}
+        '429': {$ref: '#/components/responses/RetryableProblem'}
+        '503': {$ref: '#/components/responses/RetryableProblem'}
+        default: {$ref: '#/components/responses/Problem'}
+    get:
+      tags: [Jobs]
+      operationId: listJobs
+      summary: 分页查询 API 创建的任务
+      description: 按 created_at、job_id 倒序；游标绑定过滤条件；不包含桌面手动任务。
+      parameters:
+        - name: state
+          in: query
+          schema: {$ref: '#/components/schemas/JobState'}
+        - name: client_tag
+          in: query
+          description: 精确匹配
+          schema: {type: string, maxLength: 128}
+        - name: limit
+          in: query
+          schema: {type: integer, minimum: 1, maximum: 100, default: 20}
+        - name: cursor
+          in: query
+          description: 上次返回的不透明游标，失效或过滤条件不符时返回 400
+          schema: {type: string, minLength: 1, maxLength: 2048}
+      responses:
+        '200':
+          description: 任务页
+          headers:
+            X-Request-Id: {$ref: '#/components/headers/RequestId'}
+            Cache-Control: {$ref: '#/components/headers/NoStore'}
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/JobPage'}
+        default: {$ref: '#/components/responses/Problem'}
+  /jobs/{job_id}:
+    parameters:
+      - {$ref: '#/components/parameters/JobId'}
+    get:
+      tags: [Jobs]
+      operationId: getJob
+      summary: 查询任务、进度和结果
+      description: >-
+        只查询 origin=api 的任务。任务执行失败时本查询仍返回 200，
+        调用方读取 state 和 error。progress.fraction=1 不表示封装或退休完成。
+      responses:
+        '200': {$ref: '#/components/responses/Job'}
+        '404': {$ref: '#/components/responses/Problem'}
+        default: {$ref: '#/components/responses/Problem'}
+  /jobs/{job_id}/cancel:
+    parameters:
+      - {$ref: '#/components/parameters/JobId'}
+    post:
+      tags: [Jobs]
+      operationId: cancelJob
+      summary: 取消等待任务或请求停止运行任务
+      description: >-
+        无正文，按任务 ID 幂等。pending 直接变 cancelled；running 变 cancelling；
+        已 cancelling 不重复发起停止，已 cancelled 返回原记录。
+        其他终态返回 409。取消与最终输出提交串行仲裁；确认所有者退出后才报告 cancelled。
+      responses:
+        '200': {$ref: '#/components/responses/Job'}
+        '202':
+          description: 取消意图已持久化，资源回收尚未确认
+          headers:
+            X-Request-Id: {$ref: '#/components/headers/RequestId'}
+            Cache-Control: {$ref: '#/components/headers/NoStore'}
+            Location: {$ref: '#/components/headers/JobLocation'}
+            Retry-After: {$ref: '#/components/headers/PollAfter'}
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Job'}
+        '409': {$ref: '#/components/responses/Problem'}
+        default: {$ref: '#/components/responses/Problem'}
+  /jobs/{job_id}/retry:
+    parameters:
+      - {$ref: '#/components/parameters/JobId'}
+    post:
+      tags: [Jobs]
+      operationId: retryJob
+      summary: 使用原快照新建重试任务
+      description: >-
+        无正文，仅允许 failed、cancelled、interrupted。需要新的去重键。
+        同键重放先于旧任务的当前源/组件状态检查。
+        新 job_id 的 retry_of 指向原任务，原历史不变；重新核对原源身份和运行库身份。
+        不从中断帧继续，不自动恢复暂停队列，不允许覆盖参数。
+      parameters:
+        - {$ref: '#/components/parameters/IdempotencyKey'}
+      responses:
+        '202': {$ref: '#/components/responses/AcceptedJob'}
+        '409': {$ref: '#/components/responses/Problem'}
+        '422': {$ref: '#/components/responses/Problem'}
+        '429': {$ref: '#/components/responses/RetryableProblem'}
+        '503': {$ref: '#/components/responses/RetryableProblem'}
+        default: {$ref: '#/components/responses/Problem'}
+  /jobs/{job_id}/result:
+    parameters:
+      - {$ref: '#/components/parameters/JobId'}
+    get:
+      tags: [Jobs]
+      operationId: downloadResult
+      summary: 下载该任务已经提交的完整结果视频
+      description: >-
+        要求 state=completed 且输出身份有效，认证方式与其他接口相同。
+        不接受文件路径参数，不支持分段下载；Range 头被忽略，返回完整 200。
+        输出移动/替换/修改后返回 410。仅流式传输，不占 GPU 槽。
+      responses:
+        '200':
+          description: 完整视频流
+          headers:
+            X-Request-Id: {$ref: '#/components/headers/RequestId'}
+            Cache-Control: {$ref: '#/components/headers/NoStore'}
+            Content-Length:
+              description: 文件字节数
+              schema: {type: integer, minimum: 0}
+            Content-Disposition:
+              description: attachment，正确编码实际文件名
+              schema: {type: string}
+          content:
+            video/mp4: {schema: {}}
+            video/x-matroska: {schema: {}}
+            video/quicktime: {schema: {}}
+        '409': {$ref: '#/components/responses/Problem'}
+        '410': {$ref: '#/components/responses/Problem'}
+        '429': {$ref: '#/components/responses/RetryableProblem'}
+        default: {$ref: '#/components/responses/Problem'}
+  /queue/pause:
+    post:
+      tags: [Queue]
+      operationId: pauseApiQueue
+      summary: 当前 API 任务结束后暂停后续调度
+      description: >-
+        无正文，幂等。不会取消当前项，包括当前项已开始的有限内存恢复。
+        不影响桌面队列的启停，pending 仍可接收。
+      responses:
+        '200': {$ref: '#/components/responses/Queue'}
+        default: {$ref: '#/components/responses/Problem'}
+  /queue/resume:
+    post:
+      tags: [Queue]
+      operationId: resumeApiQueue
+      summary: 恢复 API 队列调度
+      description: >-
+        无正文，幂等。普通 GPU 忙进入等待；已知回收失败仍未排除时返回 409。
+        不启动尚未由用户点击开始的桌面队列。
+      responses:
+        '200': {$ref: '#/components/responses/Queue'}
+        '409': {$ref: '#/components/responses/Problem'}
+        default: {$ref: '#/components/responses/Problem'}
+components:
+  securitySchemes:
+    LocalBearer:
+      type: http
+      scheme: bearer
+      description: 本机生成的随机 token，非 JWT，不放入 URL 或日志
+  parameters:
+    JobId:
+      name: job_id
+      in: path
+      required: true
+      schema: {$ref: '#/components/schemas/JobId'}
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: true
+      description: >-
+        每次业务提交保存一个键；请求超时重发复用同键和原 JSON。
+        至少保留 7 天，按安装数据域、HTTP 方法及规范路径分区。
+        同键同请求返回原任务，同键不同请求 409。未成功创建不占用键。
+      schema:
+        type: string
+        minLength: 16
+        maxLength: 128
+        pattern: '^[A-Za-z0-9._-]+$'
+      example: 649af056-bbe5-4197-9fa6-9832226ea6d0
+  headers:
+    RequestId:
+      description: 请求追踪 ID，所有响应包含
+      schema: {type: string}
+    NoStore:
+      description: 所有响应禁止缓存
+      schema: {type: string, const: no-store}
+    JobLocation:
+      description: 查询任务的同源相对地址
+      schema: {type: string, format: uri-reference}
+    PollAfter:
+      description: 建议下次轮询前等待的秒数
+      schema: {type: integer, const: 2}
+    RetryAfter:
+      description: 重试前至少等待的秒数
+      schema: {type: integer, minimum: 1}
+    Replayed:
+      description: true 表示根据去重记录重放第一次创建的任务
+      schema: {type: boolean}
+  responses:
+    Job:
+      description: 当前任务状态
+      headers:
+        X-Request-Id: {$ref: '#/components/headers/RequestId'}
+        Cache-Control: {$ref: '#/components/headers/NoStore'}
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/Job'}
+    AcceptedJob:
+      description: 任务及去重记录已持久化；重复请求返回同一任务的当前状态
+      headers:
+        X-Request-Id: {$ref: '#/components/headers/RequestId'}
+        Cache-Control: {$ref: '#/components/headers/NoStore'}
+        Location: {$ref: '#/components/headers/JobLocation'}
+        Retry-After: {$ref: '#/components/headers/PollAfter'}
+        Idempotency-Replayed: {$ref: '#/components/headers/Replayed'}
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/Job'}
+          example:
+            job_id: 61be504e3a8948e29b5dd98b27533d0a
+            retry_of: null
+            client_tag: null
+            state: pending
+            phase: queued
+            queue_position: 1
+            blocked_reason: null
+            attempt: 0
+            defaults_version: 1
+            progress: {done_frames: 0, total_frames: null, fraction: null}
+            created_at: '2026-11-12T02:00:00Z'
+            started_at: null
+            updated_at: '2026-11-12T02:00:00Z'
+            finished_at: null
+            request:
+              input: {path: 'D:/Videos/demo.mp4'}
+              processing:
+                enhancement:
+                  enabled: true
+                  style: default
+                  intensity: 1
+                  local_tone: 1
+                  local_struct: 1
+                  use_auto_mask: true
+                  skin_struct: 1
+                  output_mix: 1
+                super_resolution: {scale: 1}
+                frame_generation: {multiplier: 1}
+                optical_flow: 'off'
+              output:
+                container: mp4
+                file_name: demo_dlss.mp4
+                dynamic_range: preserve
+                encoding: {mode: quality, quality_profile: high, preset: p5}
+              client_tag: null
+            warnings: []
+            result: null
+            error: null
+    Queue:
+      description: API 逻辑队列状态
+      headers:
+        X-Request-Id: {$ref: '#/components/headers/RequestId'}
+        Cache-Control: {$ref: '#/components/headers/NoStore'}
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/QueueStatus'}
+    Problem:
+      description: >-
+        HTTP 错误，正文 status 等于实际 HTTP 状态。401 另外包含 WWW-Authenticate: Bearer。
+        根据 code 判断，不解析本地化 detail。异步处理失败通过成功的 GET Job 响应内 error 报告。
+      headers:
+        X-Request-Id: {$ref: '#/components/headers/RequestId'}
+        Cache-Control: {$ref: '#/components/headers/NoStore'}
+        WWW-Authenticate:
+          description: 仅在 401 时必需，值为 Bearer
+          schema: {type: string}
+      content:
+        application/problem+json:
+          schema: {$ref: '#/components/schemas/Problem'}
+          example:
+            type: urn:dlss5tool:problem:validation-failed
+            title: 请求参数无效
+            status: 422
+            detail: 超分倍率只能为 1、2 或 4。
+            instance: /api/v1/jobs
+            code: VALIDATION_FAILED
+            request_id: af2d9903d1f441b69265bf7473de8331
+            invalid_params:
+              - {name: /processing/super_resolution/scale, reason: 取值不在允许范围内}
+    RetryableProblem:
+      description: 临时不可接收，429 或 503，按 Retry-After 和原去重键重试
+      headers:
+        X-Request-Id: {$ref: '#/components/headers/RequestId'}
+        Cache-Control: {$ref: '#/components/headers/NoStore'}
+        Retry-After: {$ref: '#/components/headers/RetryAfter'}
+      content:
+        application/problem+json:
+          schema: {$ref: '#/components/schemas/Problem'}
+  schemas:
+    JobId:
+      type: string
+      pattern: '^[0-9a-f]{32}$'
+      example: 61be504e3a8948e29b5dd98b27533d0a
+    NullableJobId:
+      oneOf:
+        - {$ref: '#/components/schemas/JobId'}
+        - {type: 'null'}
+    JobState:
+      type: string
+      enum: [pending, running, cancelling, completed, failed, cancelled, interrupted]
+    JobPhase:
+      type: string
+      enum: [queued, waiting_gpu, preparing, inspecting_timestamps, processing, encoding, muxing, waiting_memory, finalizing, releasing, finished]
+      description: 主要阶段，不保证完整出现或严格线性；finished 用于终态
+    ClientTag:
+      type: [string, 'null']
+      maxLength: 128
+      default: null
+    Input:
+      type: object
+      additionalProperties: false
+      required: [path]
+      properties:
+        path:
+          type: string
+          minLength: 4
+          maxLength: 32767
+          pattern: '^[A-Za-z]:[/\\]'
+          description: >-
+            本机视频绝对路径，必须在允许读取目录内。服务还须校验规范化路径、文件身份、
+            重解析点、设备路径、NTFS ADS 等，不能仅依靠此正则。
+    Enhancement:
+      type: object
+      additionalProperties: false
+      properties:
+        enabled: {type: boolean, default: true}
+        style: {type: string, enum: [default, natural, cinema], default: default}
+        intensity: {type: number, minimum: 0, maximum: 5, default: 1}
+        local_tone: {type: number, minimum: 0, maximum: 5, default: 1}
+        local_struct: {type: number, minimum: 0, maximum: 5, default: 1}
+        use_auto_mask: {type: boolean, default: true}
+        skin_struct:
+          type: number
+          minimum: 0
+          maximum: 5
+          default: 1
+          description: 仅 use_auto_mask=true 时参与处理
+        output_mix:
+          type: number
+          minimum: 0
+          maximum: 5
+          default: 1
+          description: 沿用现有合成语义，不是百分比
+    SuperResolution:
+      type: object
+      additionalProperties: false
+      properties:
+        scale: {type: integer, enum: [1, 2, 4], default: 1}
+    FrameGeneration:
+      type: object
+      additionalProperties: false
+      properties:
+        multiplier: {type: integer, enum: [1, 2], default: 1}
+    Processing:
+      type: object
+      additionalProperties: false
+      description: 默认启用增强，其余关闭；组合约束还需本机组件和执行选路校验
+      properties:
+        enhancement: {$ref: '#/components/schemas/Enhancement'}
+        super_resolution: {$ref: '#/components/schemas/SuperResolution'}
+        frame_generation: {$ref: '#/components/schemas/FrameGeneration'}
+        optical_flow:
+          type: string
+          enum: ['off', nvofa, raft]
+          default: 'off'
+          description: 增强时序引导，增强关闭时必须为 off；不能代替插帧开关
+      allOf:
+        - if:
+            required: [enhancement]
+            properties:
+              enhancement:
+                required: [enabled]
+                properties:
+                  enabled: {const: false}
+          then:
+            properties:
+              optical_flow: {const: 'off'}
+    EncodingPreset:
+      type: string
+      enum: [p1, p3, p5, p7]
+      default: p5
+    QualityEncoding:
+      type: object
+      additionalProperties: false
+      required: [mode]
+      properties:
+        mode: {type: string, const: quality}
+        quality_profile:
+          type: string
+          enum: [maximum, high, balanced, compact]
+          default: high
+        preset: {$ref: '#/components/schemas/EncodingPreset'}
+    BitrateEncoding:
+      type: object
+      additionalProperties: false
+      required: [mode, bitrate_mbps]
+      properties:
+        mode: {type: string, const: bitrate}
+        bitrate_mbps: {type: number, minimum: 0.5, maximum: 500}
+        preset: {$ref: '#/components/schemas/EncodingPreset'}
+    Encoding:
+      oneOf:
+        - {$ref: '#/components/schemas/QualityEncoding'}
+        - {$ref: '#/components/schemas/BitrateEncoding'}
+      discriminator:
+        propertyName: mode
+        mapping:
+          quality: '#/components/schemas/QualityEncoding'
+          bitrate: '#/components/schemas/BitrateEncoding'
+      default: {mode: quality, quality_profile: high, preset: p5}
+    Output:
+      type: object
+      additionalProperties: false
+      properties:
+        container: {type: string, enum: [mp4, mkv, mov], default: mp4}
+        file_name:
+          type: string
+          minLength: 5
+          maxLength: 200
+          pattern: '^[^<>:"/\\|?*\x00-\x1F]+\.(mp4|mkv|mov)$'
+          description: >-
+            单文件名，不接受目录；服务还须拒绝 Windows 保留名并校验后缀与容器一致。
+            省略时按源文件名生成安全的 <stem>_dlss.<container>，输出位于 job_id 子目录。
+        dynamic_range:
+          type: string
+          enum: [preserve, sdr]
+          default: preserve
+          description: 保留现有 HDR10/HLG 合同或显式转 SDR，SDR 源保持 SDR
+        encoding: {$ref: '#/components/schemas/Encoding'}
+    JobRequest:
+      type: object
+      additionalProperties: false
+      required: [input]
+      properties:
+        input: {$ref: '#/components/schemas/Input'}
+        processing: {$ref: '#/components/schemas/Processing'}
+        output: {$ref: '#/components/schemas/Output'}
+        client_tag: {$ref: '#/components/schemas/ClientTag'}
+    Progress:
+      type: object
+      additionalProperties: false
+      required: [done_frames, total_frames, fraction]
+      properties:
+        done_frames: {type: integer, minimum: 0}
+        total_frames: {type: [integer, 'null'], minimum: 0}
+        fraction:
+          type: [number, 'null']
+          minimum: 0
+          maximum: 1
+          description: 源帧处理进度，非整个任务完成度；自动重试后归零
+    JobError:
+      type: object
+      additionalProperties: false
+      required: [code, message, retryable]
+      properties:
+        code:
+          type: string
+          pattern: '^[A-Z][A-Z0-9_]*$'
+          examples: [INPUT_CHANGED, DECODE_FAILED, COMPONENT_UNAVAILABLE, UNSUPPORTED_COMBINATION, MEMORY_RECOVERY_EXHAUSTED, OUTPUT_COMMIT_FAILED]
+        message: {type: string}
+        retryable: {type: boolean}
+    Warning:
+      type: object
+      additionalProperties: false
+      required: [code, message]
+      properties:
+        code: {type: string, pattern: '^[A-Z][A-Z0-9_]*$'}
+        message: {type: string}
+    FrameRate:
+      type: object
+      additionalProperties: false
+      required: [numerator, denominator]
+      properties:
+        numerator: {type: integer, minimum: 1}
+        denominator: {type: integer, minimum: 1}
+    Result:
+      type: object
+      additionalProperties: false
+      required: [output_path, download_url, content_type, size_bytes, width, height, frame_count, frame_rate, duration_seconds, dynamic_range, codec, audio_mode]
+      properties:
+        output_path: {type: string, description: 由服务分配的本地绝对输出路径}
+        download_url:
+          type: string
+          format: uri-reference
+          pattern: '^/api/v1/jobs/[0-9a-f]{32}/result$'
+          description: 相对地址，仍需认证头
+        content_type: {type: string, enum: [video/mp4, video/x-matroska, video/quicktime]}
+        size_bytes: {type: integer, minimum: 1}
+        width: {type: integer, minimum: 1}
+        height: {type: integer, minimum: 1}
+        frame_count: {type: integer, minimum: 1}
+        frame_rate:
+          oneOf:
+            - {$ref: '#/components/schemas/FrameRate'}
+            - {type: 'null'}
+          description: CFR 有理数帧率，VFR 返回 null
+        duration_seconds: {type: number, exclusiveMinimum: 0}
+        dynamic_range: {type: string, enum: [sdr, hdr10, hlg]}
+        codec: {type: string, enum: [h264, hevc]}
+        audio_mode: {type: string, enum: [copied, transcoded, none]}
+    Job:
+      type: object
+      additionalProperties: false
+      required: [job_id, retry_of, client_tag, state, phase, queue_position, blocked_reason, attempt, defaults_version, progress, created_at, started_at, updated_at, finished_at, request, warnings, result, error]
+      properties:
+        job_id: {$ref: '#/components/schemas/JobId'}
+        retry_of: {$ref: '#/components/schemas/NullableJobId'}
+        client_tag: {$ref: '#/components/schemas/ClientTag'}
+        state: {$ref: '#/components/schemas/JobState'}
+        phase: {$ref: '#/components/schemas/JobPhase'}
+        queue_position: {type: [integer, 'null'], minimum: 1, description: API 等待队列中 1 基快照，非 pending 时 null}
+        blocked_reason:
+          type: [string, 'null']
+          enum: [gpu_busy, queue_paused, cleanup_pending, null]
+        attempt: {type: integer, minimum: 0, maximum: 3, description: 尚未执行为 0，首次执行为 1，最多两次自动内存重试}
+        defaults_version: {type: integer, const: 1}
+        progress: {$ref: '#/components/schemas/Progress'}
+        created_at: {type: string, format: date-time}
+        started_at: {type: [string, 'null'], format: date-time}
+        updated_at: {type: string, format: date-time}
+        finished_at: {type: [string, 'null'], format: date-time}
+        request:
+          $ref: '#/components/schemas/JobRequest'
+          description: 已补齐 API 默认值及实际文件名的公共参数快照，始终包含 processing / output / client_tag
+        warnings:
+          type: array
+          items: {$ref: '#/components/schemas/Warning'}
+        result:
+          oneOf:
+            - {$ref: '#/components/schemas/Result'}
+            - {type: 'null'}
+        error:
+          oneOf:
+            - {$ref: '#/components/schemas/JobError'}
+            - {type: 'null'}
+      allOf:
+        - if:
+            properties:
+              state: {const: completed}
+          then:
+            properties:
+              result: {$ref: '#/components/schemas/Result'}
+              error: {type: 'null'}
+          else:
+            properties:
+              result: {type: 'null'}
+        - if:
+            properties:
+              state: {enum: [failed, interrupted]}
+          then:
+            properties:
+              error: {$ref: '#/components/schemas/JobError'}
+          else:
+            properties:
+              error: {type: 'null'}
+        - if:
+            properties:
+              state: {enum: [completed, failed, cancelled, interrupted]}
+          then:
+            properties:
+              phase: {const: finished}
+              finished_at: {type: string, format: date-time}
+          else:
+            properties:
+              finished_at: {type: 'null'}
+        - if:
+            properties:
+              state: {const: pending}
+          then:
+            properties:
+              queue_position: {type: integer, minimum: 1}
+          else:
+            properties:
+              queue_position: {type: 'null'}
+    JobPage:
+      type: object
+      additionalProperties: false
+      required: [items, next_cursor]
+      properties:
+        items:
+          type: array
+          maxItems: 100
+          items: {$ref: '#/components/schemas/Job'}
+        next_cursor: {type: [string, 'null']}
+    QueueStatus:
+      type: object
+      additionalProperties: false
+      required: [state, pause_reason, pending_count, active_job_id]
+      properties:
+        state: {type: string, enum: [running, paused]}
+        pause_reason:
+          type: [string, 'null']
+          enum: [user, service_restart, memory_recovery_exhausted, resource_cleanup, null]
+        pending_count: {type: integer, minimum: 0, maximum: 100}
+        active_job_id: {$ref: '#/components/schemas/NullableJobId'}
+    GpuStatus:
+      type: object
+      additionalProperties: false
+      required: [state, owner, scope]
+      properties:
+        state: {type: string, enum: [idle, busy, releasing]}
+        owner:
+          type: [string, 'null']
+          enum: [api, desktop_export, desktop_queue, realtime, diagnostics, backend, preview, release, null]
+        scope: {type: string, const: this-application}
+    ServiceStatus:
+      type: object
+      additionalProperties: false
+      required: [app_version, api_version, accepting_jobs, queue, gpu]
+      properties:
+        app_version: {type: string}
+        api_version: {type: string, const: v1}
+        accepting_jobs: {type: boolean, description: false 时新提交返回 503；队列满仍可显示 true 并用 429 区分}
+        queue: {$ref: '#/components/schemas/QueueStatus'}
+        gpu: {$ref: '#/components/schemas/GpuStatus'}
+    FeatureStatus:
+      type: object
+      additionalProperties: false
+      required: [state, reason_code]
+      properties:
+        state: {type: string, enum: [ready, unavailable, unknown]}
+        reason_code: {type: [string, 'null'], description: 例如 COMPONENT_MISSING 或 NOT_CHECKED；不包含本地 DLL 路径}
+    Features:
+      type: object
+      additionalProperties: false
+      required: [enhancement, super_resolution, frame_generation_2x, optical_flow_nvofa, optical_flow_raft, hdr_preserve]
+      properties:
+        enhancement: {$ref: '#/components/schemas/FeatureStatus'}
+        super_resolution: {$ref: '#/components/schemas/FeatureStatus'}
+        frame_generation_2x: {$ref: '#/components/schemas/FeatureStatus'}
+        optical_flow_nvofa: {$ref: '#/components/schemas/FeatureStatus'}
+        optical_flow_raft: {$ref: '#/components/schemas/FeatureStatus'}
+        hdr_preserve: {$ref: '#/components/schemas/FeatureStatus'}
+    Defaults:
+      type: object
+      additionalProperties: false
+      required: [processing, output]
+      description: 递归补齐公共参数；file_name 按源名生成，因此不出现在默认值中
+      properties:
+        processing: {$ref: '#/components/schemas/Processing'}
+        output: {$ref: '#/components/schemas/Output'}
+    Limits:
+      type: object
+      additionalProperties: false
+      required: [max_request_bytes, max_pending_jobs, max_api_running_jobs, max_application_exports, max_concurrent_downloads, poll_interval_seconds, idempotency_retention_seconds, automatic_memory_retries, memory_wait_timeout_seconds]
+      properties:
+        max_request_bytes: {type: integer, const: 65536}
+        max_pending_jobs: {type: integer, const: 100}
+        max_api_running_jobs: {type: integer, const: 1}
+        max_application_exports: {type: integer, const: 1}
+        max_concurrent_downloads: {type: integer, const: 2}
+        poll_interval_seconds: {type: integer, const: 2}
+        idempotency_retention_seconds: {type: integer, minimum: 604800}
+        automatic_memory_retries: {type: integer, const: 2}
+        memory_wait_timeout_seconds: {type: integer, const: 120}
+    Capabilities:
+      type: object
+      additionalProperties: false
+      required: [defaults_version, defaults, request_schema_url, execution_profile_id, input_roots, output_root, features, limits]
+      properties:
+        defaults_version: {type: integer, const: 1}
+        defaults: {$ref: '#/components/schemas/Defaults'}
+        request_schema_url:
+          type: string
+          format: uri-reference
+          const: /api/v1/openapi.json#/components/schemas/JobRequest
+          description: 同源受认证的 OpenAPI JSON 中的请求 schema
+        execution_profile_id:
+          type: string
+          description: 当前本地执行配置的只读身份；排队时快照 GPU、运行库身份，不是请求参数
+        input_roots:
+          type: array
+          items: {type: string}
+          description: 本地用户配置的允许读取目录，默认不开放整盘
+        output_root: {type: string, description: API 专用输出根，服务启用前必须已配置}
+        features: {$ref: '#/components/schemas/Features'}
+        limits: {$ref: '#/components/schemas/Limits'}
+    Problem:
+      type: object
+      description: RFC 9457 加项目错误码，status 必须等于实际 HTTP 状态
+      required: [type, title, status, detail, instance, code, request_id]
+      properties:
+        type: {type: string, format: uri-reference}
+        title: {type: string}
+        status: {type: integer, minimum: 400, maximum: 599}
+        detail: {type: string}
+        instance: {type: string, format: uri-reference}
+        code: {type: string, pattern: '^[A-Z][A-Z0-9_]*$'}
+        request_id: {type: string}
+        invalid_params:
+          type: array
+          items:
+            type: object
+            additionalProperties: false
+            required: [name, reason]
+            properties:
+              name: {type: string, description: 出错字段的 JSON Pointer}
+              reason: {type: string}

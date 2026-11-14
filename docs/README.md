@@ -49,6 +49,7 @@
 
 ## 文档导航
 
+- 本机自动化接口：[视频任务 API v1 设计（尚未实现）](design/LOCAL_API_V1.md)、[OpenAPI 规格](design/local-api-v1.openapi.yaml)
 - 本机窗口实时增强：[当前使用说明](REALTIME_USER_GUIDE.md)、[实现与验收台账](development/REALTIME_IMPLEMENTATION_20261003.md)；[Magpie / Veyra 原始研究清单（历史计划）](development/MAGPIE_VEYRA_REUSE_CHECKLIST_20261003.md)
 - 双模式复用与资源协调：[P3 收尾记录](development/P3_CLOSEOUT_20261011.md)、[参数交互优化](development/PARAMETER_RESPONSE_20261010.md)
 - 下一轮研究交接：[光流性能与质量 TODO（用户决策、缓存收益、异步时序安全）](development/TODO_FLOW_PERFORMANCE_20260915.md)

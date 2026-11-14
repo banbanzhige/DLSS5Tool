@@ -160,16 +160,19 @@ def copy_pressure_details(details):
         return None
     copied = {}
     for key in ('required_bytes', 'recommended_bytes', 'available_bytes',
-                'source_pid', 'physical_reserve_bytes', 'commit_reserve_bytes'):
+                'source_pid', 'physical_reserve_bytes', 'commit_reserve_bytes',
+                'reserved_processing_bytes', 'net_available_bytes', 'cache_bytes',
+                'reclaim_epoch', 'elapsed_ms'):
         value = details.get(key)
         if value is None or type(value) is int and value >= 0:
             copied[key] = value
-    for key in ('stage', 'failure', 'reason'):
+    for key in ('stage', 'failure', 'reason', 'wait_reason'):
         value = details.get(key)
         if type(value) is str:
             copied[key] = value[:256]
-    if type(details.get('blocked_by_reserve')) is bool:
-        copied['blocked_by_reserve'] = details['blocked_by_reserve']
+    for key in ('blocked_by_reserve', 'reclaim_acknowledged'):
+        if type(details.get(key)) is bool:
+            copied[key] = details[key]
     memory = details.get('memory')
     if isinstance(memory, dict):
         copied['memory'] = {key: memory[key] for key in

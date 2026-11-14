@@ -73,6 +73,7 @@ def app(tmp_path, monkeypatch):
     monkeypatch.setattr(gui.traceback, 'print_exc', mock.Mock())
     a._export_image_source = mock.Mock()
     a._export_video_source = a._export_image_source
+    a._offer_export_memory_actions = mock.Mock()
     return a
 
 

@@ -239,6 +239,15 @@ class SharedCacheBudget:
     def request_reclaim(self,required):
         with self.locked():return self._request_locked(required)
 
+    def _reclaim_acknowledged_locked(self,epoch):
+        if epoch is None:return True
+        records=[(i,self._record(i)) for i in range(SLOTS)]
+        total=sum(r[1] for _,r in records)
+        target=struct.unpack_from('<Q',self.mapping,32)[0]
+        return all(not r[0] or not r[1] or r[4]&PROCESSING or
+            (r[5]>=epoch if self._has_metadata(i) else total<=target)
+            for i,r in records)
+
     @property
     def under_pressure(self):
         with self.locked():
@@ -275,29 +284,43 @@ class SharedCacheBudget:
                     details['recommended_bytes']=recommended_bytes
                     available=details['available_bytes']
                     turn=not required or not waiting or waiting[0][1]==ticket.slot
-                    cache_total=sum(ticket.read(i)[1] for i in range(SLOTS))
-                    cache_target=struct.unpack_from('<Q',ticket.mapping,32)[0]
-                    acknowledgements=all(not r[0] or not r[1] or r[4]&PROCESSING or
-                        (r[5]>=epoch if ticket._has_metadata(i) else cache_total<=cache_target)
-                        for i,r in ((i,ticket._record(i)) for i in range(SLOTS))) if epoch is not None else True
-                    if turn and acknowledgements and (not required or available is None or required+reserved<=available):
-                        ticket._write(ticket.slot,kind=PROCESSING|ADMITTED)
-                        break
-                    if epoch is None:
-                        epoch=ticket._request_locked(required+reserved)
+                    acknowledgements=ticket._reclaim_acknowledged_locked(epoch)
+                    fits=not required or available is None or required+reserved<=available
+                    # A known sufficient snapshot already includes live cache
+                    # pages. An unrelated busy cache need not ACK before we can
+                    # reserve this allocation. Unknown snapshots retain the old
+                    # ACK requirement after a known pressure request.
+                    observable=not required or available is not None or acknowledgements
                     details.update(reserved_processing_bytes=reserved,reclaim_epoch=epoch,
                         cache_bytes=sum(ticket.read(i)[1] for i in range(SLOTS)),
-                        reclaim_acknowledged=acknowledgements)
+                        reclaim_acknowledged=acknowledgements,
+                        net_available_bytes=None if available is None else max(0,available-reserved),
+                        elapsed_ms=max(0,int((time.monotonic()-started)*1000)))
+                    if turn and fits and observable:
+                        ticket._write(ticket.slot,kind=PROCESSING|ADMITTED)
+                        break
+                    # Queue ordering alone does not require cache reclamation.
+                    if turn and not fits and epoch is None:
+                        epoch=ticket._request_locked(required+reserved)
+                        details['reclaim_epoch']=epoch
+                        details['reclaim_acknowledged']=ticket._reclaim_acknowledged_locked(epoch)
+                    details['wait_reason']=('turn' if not turn else 'reserved' if
+                        available is not None and required<=available<required+reserved else
+                        'unknown_snapshot' if available is None else 'headroom')
                     no_reclaim_possible=not details['cache_bytes'] and not reserved and turn
-                service_reclaims()
-                if no_reclaim_possible or time.monotonic()>=deadline:
-                    if not acknowledgements:details['failure']='reclaim_timeout'
-                    elif not turn or (available is not None and required<=available<required+reserved):details['failure']='busy'
+                    rejected=no_reclaim_possible or time.monotonic()>=deadline
+                # Rejection follows a fresh decision, including after the last
+                # service call. That call may have recovered memory at deadline.
+                if rejected:
+                    if details['wait_reason'] in ('turn','reserved'):details['failure']='busy'
+                    elif not details['reclaim_acknowledged']:details['failure']='reclaim_timeout'
                     mb.record_memory_event('rejected',**details)
                     raise mb.MemoryPressureError(details)
+                service_reclaims()
                 time.sleep(.025)
             if epoch is not None:
-                mb.record_memory_event('reclaimed',elapsed_seconds=time.monotonic()-started,**details)
+                event='reclaimed' if details['reclaim_acknowledged'] else 'admitted_after_wait'
+                mb.record_memory_event(event,elapsed_seconds=time.monotonic()-started,**details)
             yield ticket
         finally:
             if not getattr(ticket,'_deferred_release',False):ticket.close()
