@@ -232,9 +232,7 @@ def test_preview_crossing_bypass_uses_model_refresh_but_regular_look_does_not():
     app.on_settings_change.assert_called_once()
 
 
-@pytest.mark.parametrize('profile', PROFILES)
-@pytest.mark.parametrize('scale', (1, 2))
-def test_real_cache_pipeline_zero_keeps_sr_source_and_restores_nr(tmp_path, monkeypatch, profile, scale):
+def _run_cache_pipeline_zero_and_restore(tmp_path, monkeypatch, profile, scale, route='classic'):
     source = tmp_path / 'source.mp4'
     source.touch()
     monkeypatch.setenv('DLSS5TOOL_FG_LOG_ROOT', str(tmp_path / 'logs'))
@@ -247,11 +245,17 @@ def test_real_cache_pipeline_zero_keeps_sr_source_and_restores_nr(tmp_path, monk
     monkeypatch.setattr(fg, 'open_capture', lambda *_: capture)
     monkeypatch.setattr(fg, 'FFmpegHDRVideoReader', lambda *_: capture)
     monkeypatch.setattr('dlss5tool.super_resolution.query_gpu_memory', lambda **_: None)
+    # Component discovery is a separate contract. These cache tests select their
+    # route explicitly and never depend on locally installed GPU components.
+    components = object() if route != 'classic' else None
+    monkeypatch.setattr('dlss5tool.resident_hdr_runtime.load_components', lambda: components)
 
+    sr_frames = []
     class SR:
         def __init__(self, *_, **__):
             pass
         def process(self, rgba):
+            sr_frames.append(rgba.shape)
             result = resize_original(rgba, (128*scale, 128*scale)).copy()
             result[..., :3] += .1 if hdr else 1
             return result
@@ -271,26 +275,75 @@ def test_real_cache_pipeline_zero_keeps_sr_source_and_restores_nr(tmp_path, monk
             pass
     monkeypatch.setattr('dlss5tool.super_resolution.ProcessSuperResolution', SR)
     monkeypatch.setattr(host, 'ProcessLive', NR)
+    if route != 'classic':
+        def resident_renderer(source, output=None, *, scale, frame_sink, metadata_sink,
+                              render_gate, cancel, components, **kwargs):
+            if route == 'resident-fallback':
+                return fg.export_video(source, output, scale=scale, frame_sink=frame_sink,
+                    metadata_sink=metadata_sink, render_gate=render_gate, cancel=cancel, **kwargs)
+            # Model the resident producer's combined SR/source snapshot without
+            # loading CUDA. The real cache owns and migrates these pixels.
+            processed = SR().process(frame)
+            reference = resize_original(frame, (128*scale, 128*scale))
+            metadata_sink(dict(source_frames=1, source_rate='24', output_rate='24',
+                source_metadata=meta, width=128*scale, height=128*scale, hdr_metadata=meta if hdr else None))
+            render_gate(0)
+            fg.check_cancel(cancel)
+            frame_sink(0, processed, reference, mix_source=processed)
+            return dict(real_frames=1, output_frames=1)
+        monkeypatch.setattr('dlss5tool.resident_preview.render_preview', resident_renderer)
     manager = rc.RenderCache(32*1024**2)
     manager.inspect = lambda *a, **k: (meta, Fraction(24), 128, 128, 1)
     values = dict(super_resolution_scale=scale, hdr_mode=True, nr_quality={'total': 0}, frame_generation_multiplier=1)
     try:
         session = manager.session(source, values)
         result, reference = session.wait(0, threading.Event())
-        expected = SR().process(frame) if scale > 1 else frame
+        expected = resize_original(frame, (128*scale, 128*scale)).copy() if scale > 1 else frame
+        if scale > 1:
+            expected[..., :3] += .1 if hdr else 1
         np.testing.assert_array_equal(result, expected)
         np.testing.assert_array_equal(reference, resize_original(frame, (128*scale, 128*scale)))
         assert not nr_frames
+        assert len(sr_frames) == int(scale > 1)
         raw, spatial = manager.base, manager.spatial
+        if route != 'classic':
+            assert raw.device_preview and spatial is None
         if scale > 1:
             np.testing.assert_array_equal(raw.peek(0).mix_source, expected)
         session = manager.session(source, {**values, 'nr_quality': {'total': .5}})
         result, _ = session.wait(0, threading.Event())
-        assert raw.closed and manager.base is not raw and manager.spatial is spatial
+        assert raw.closed and manager.base is not raw
+        if route == 'classic':
+            assert manager.spatial is spatial
+        else:
+            # The resident branch seeds a new cache owner; pixel reuse and call
+            # counts are the contract, rather than the previous None identity.
+            assert manager.spatial is not None
+            np.testing.assert_array_equal(manager.spatial.peek(0)[0], expected)
+        assert len(sr_frames) == int(scale > 1)
         assert nr_frames == [True]
         assert manager.base.settings['_nr_bypass'] is None
+        return result.copy()
     finally:
         manager.close()
+
+
+@pytest.mark.parametrize('profile', PROFILES)
+@pytest.mark.parametrize('scale', (1, 2))
+def test_real_cache_pipeline_zero_keeps_sr_source_and_restores_nr(tmp_path, monkeypatch, profile, scale):
+    _run_cache_pipeline_zero_and_restore(tmp_path, monkeypatch, profile, scale)
+
+
+@pytest.mark.parametrize('profile', PROFILES)
+@pytest.mark.parametrize('route', ('resident', 'resident-fallback'))
+def test_resident_cache_migration_reuses_sr_pixels_and_matches_classic(tmp_path, monkeypatch, profile, route):
+    results = []
+    for selected in ('classic', route):
+        directory = tmp_path/selected
+        directory.mkdir()
+        with monkeypatch.context() as patch:
+            results.append(_run_cache_pipeline_zero_and_restore(directory, patch, profile, 2, selected))
+    np.testing.assert_array_equal(results[0], results[1])
 
 
 @pytest.mark.parametrize('profile', PROFILES)
