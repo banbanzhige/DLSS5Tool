@@ -23,9 +23,9 @@ from scripts.release_updates import plan_updates, build_updates, verify_upload_u
 from scripts.realtime_packaging import validate_runtime, validate_feature_runtimes
 from scripts.release_paths import release_paths
 
-# CUDA RAFT worker rebuilt from v3.0.0 source; frozen RAFT handshake verified.
-# Build inputs and final edition acceptance: docs/release/V300_PACKAGING_20261011.md.
-WORKER_SHA = 'f376f68ddef901c23a5809336304d438c9dd30cc73fbfdeb5c17948808dd6b0d'
+# CUDA RAFT worker rebuilt for v3.1.5; frozen geometry negotiation and fresh-output equivalence verified.
+# Build inputs and final edition acceptance: docs/release/V315_PACKAGING_20261116.md.
+WORKER_SHA = '716f811b3726ecea941522157272adac49fd322e145e2a5901841422578c3616'
 MODELS = ('raft_large_C_T_SKHT_V2-ff5fadd5.pth',)
 
 
