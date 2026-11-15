@@ -56,3 +56,25 @@ def test_only_ready_unchanged_probe_can_resume_after_bootloader_failure(tmp_path
     assert report['resumed_ready_transaction']
     with pytest.raises(ValueError, match='Only an unchanged ready transaction'):
         verify_upgrade(before, after, asset, 'lite', output, resume_ready=True)
+
+
+def test_release_verifier_separates_documents_from_required_installation_integrity(tmp_path):
+    before, after, _ = endpoints(tmp_path)
+    (before / 'README.md').write_bytes(b'old official readme')
+    (after / 'README.md').write_bytes(b'new official readme')
+    asset = build(before, after, tmp_path / 'document-payload', 'v3.0.1', 'v3.0.2', 'lite')
+    prepare = delta.prepare
+
+    def prepare_used_install(root, *args, **kwargs):
+        (root / 'README.md').write_bytes(b'my local notes')
+        return prepare(root, *args, **kwargs)
+
+    with patch('scripts.verify_release_upgrade.delta.prepare', side_effect=prepare_used_install), \
+         patch('scripts.verify_release_upgrade.subprocess.Popen', return_value=Mock(pid=123)), \
+         patch('scripts.verify_release_upgrade.subprocess.run', side_effect=simulated_helper):
+        report = verify_upgrade(before, after, asset, 'lite', tmp_path / 'used-install')
+    assert report['state']['phase'] == 'complete'
+    assert report['managed_target_files_verified'] == 3
+    assert report['rollback_backup_files_verified'] == 2
+    assert report['documents_excluded_from_installation_integrity'] == ['README.md']
+    assert (tmp_path / 'used-install/installed/README.md').read_bytes() == b'my local notes'

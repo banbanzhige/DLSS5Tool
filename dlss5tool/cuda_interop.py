@@ -1,5 +1,6 @@
 """Scoped import of one validated D3D12 shared buffer into a CUDA session."""
 import ctypes as C
+import weakref
 
 from dlss5tool.cuda_session import bind,check
 
@@ -28,6 +29,7 @@ class SharedCudaBuffer:
         self.session=session;self.pointer=C.c_uint64();self.external=C.c_void_p();self.size=size
         self.producer_pid,self.handle=producer_pid,handle
         self._image_owners=0;self._failed=False
+        self._images=weakref.WeakSet()
         self._free=bind(session.cuda,'cuMemFree_v2',[C.c_uint64])
         self._destroy=bind(session.cuda,'cuDestroyExternalMemory',[C.c_void_p])
         imp=bind(session.cuda,'cuImportExternalMemory',[C.POINTER(C.c_void_p),C.POINTER(_MemoryDesc)])
@@ -51,6 +53,59 @@ class SharedCudaBuffer:
         finally:
             if copied:close(copied)
             close(process)
+        from dlss5tool.gpu_reconfigure import register
+        register(self)
+
+    def check_reconfigure(self):
+        self.session._check()
+        if self._failed or not self.pointer.value:
+            raise RuntimeError('Shared GPU mapping is unavailable')
+        images = list(self._images)
+        if len(images) != self._image_owners or any(image._leases for image in images):
+            raise RuntimeError('Finish GPU frame consumers before reconfiguration')
+
+    def suspend_reconfigure(self):
+        self.check_reconfigure()
+        self.session.synchronize()
+        for image in self._images:
+            image._suspended = True
+            image._ready = False
+            image._generation += 1
+        try:
+            with self.session.current():
+                if self.pointer.value:
+                    check(self._free(self.pointer), 'CUDA reconfiguration unmap')
+                    self.pointer = C.c_uint64()
+                if self.external.value:
+                    check(self._destroy(self.external), 'CUDA reconfiguration release')
+                    self.external = C.c_void_p()
+        except BaseException:
+            self._failed = True
+            raise
+
+    def resume_reconfigure(self, descriptor, width, height, layout, profile):
+        from dlss5tool.gpu_reconfigure import register, unregister
+        if self.pointer.value or self.external.value:
+            raise RuntimeError('Old GPU mapping was not retired')
+        values = dict(descriptor)
+        pitch = values.pop('pitch')
+        replacement = SharedCudaBuffer(self.session, **values)
+        images, count = self._images, self._image_owners
+        unregister(self)
+        unregister(replacement)
+        self.__dict__.update(replacement.__dict__)
+        self._images, self._image_owners = images, count
+        replacement.pointer, replacement.external = C.c_uint64(), C.c_void_p()
+        register(self)
+        for image in list(images):
+            generation = image._generation+1
+            self._image_owners -= 1
+            try:
+                image.__init__(self, width, height, pitch, layout=layout, color_profile=profile)
+            except BaseException:
+                self._image_owners += 1
+                raise
+            image._generation = generation
 
     def copy_from(self,frame,destination_pitch):
         """Complete one D2D upload before the D3D input owner is called."""
@@ -78,10 +133,15 @@ class SharedCudaBuffer:
     def close(self):
         errors=[]
         if self._image_owners:raise RuntimeError('Shared GPU buffer still has image owners')
-        if not self.pointer.value and not self.external.value:return
+        if not self.pointer.value and not self.external.value:
+            from dlss5tool.gpu_reconfigure import unregister
+            unregister(self)
+            return
         with self.session.current():
             if self.pointer.value:
                 errors.append(self._free(self.pointer));self.pointer=C.c_uint64()
             if self.external.value:
                 errors.append(self._destroy(self.external));self.external=C.c_void_p()
         if any(errors):raise RuntimeError(f'Shared GPU buffer cleanup failed: {errors}')
+        from dlss5tool.gpu_reconfigure import unregister
+        unregister(self)

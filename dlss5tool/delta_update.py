@@ -1,7 +1,8 @@
 """Version-pair file updates. No third-party dependencies; shared by the helper.
 
-Only explicitly allowlisted release files are owned by the updater. Baseline
-hash mismatches fail closed except for an unchanged, user-replaceable DLSS runtime.
+Only explicitly allowlisted release files are owned by the updater. Local
+documents are not an installation integrity requirement. Runtime mismatches
+fail closed except for an unchanged, user-replaceable DLSS runtime.
 The updater never executes anything from a downloaded archive.
 """
 from __future__ import annotations
@@ -139,6 +140,14 @@ def file_record(path):
                 'sha256': hashlib.file_digest(source, 'sha256').hexdigest()}
 
 
+def _installed_record(path):
+    if path.is_file():
+        return file_record(path)
+    if path.exists():
+        raise DeltaError(f'Installed path is not a regular file: {path}')
+    return None
+
+
 def read_json(path):
     with Path(path).open('rb') as source:
         raw = source.read(MAX_MANIFEST + 1)
@@ -207,8 +216,52 @@ def changes(manifest):
     return sorted(p for p in before.keys() | after.keys() if before.get(p) != after.get(p))
 
 
+def is_document(name):
+    """Non-runtime documents only; never exempt all TXT files or license trees.
+
+    Dependency metadata, configuration, code and models remain required even
+    when stored under licenses/ or named README/License with a runtime suffix.
+    """
+    basename = name.rsplit('/', 1)[-1].lower()
+    suffix = Path(basename).suffix
+    if suffix in {'.md', '.rst', '.pdf'}:
+        return True
+    if basename in {'distribution-review.txt', 'addon-install.txt'}:
+        return True
+    if suffix not in {'', '.txt', '.terms', '.apache', '.bsd', '.mit', '.lib',
+                      '.lgplv3', '.gplv2', '.gplv3', '.fdl', '.runtime', '.img',
+                      '.html', '.tex', '.texi', '.info-zip', '.1'}:
+        return False
+    if suffix == '.txt' and any(part.lower() in {'licenses', 'notices'}
+                                for part in name.split('/')[:-1]):
+        return True
+    return bool(re.search(r'(^|[._-])(readme|changelog|license|licence|copying|'
+                          r'copyright|notice|notices|authors)($|[._-])', basename))
+
+
+def installation_changes(root, manifest):
+    """Choose optional document writes without making local edits an error.
+
+    Hashes here only decide whether to preserve a local document. They are not
+    baseline checks: a missing, edited or unreadable document is left alone.
+    Payload integrity is checked separately, including preserved documents.
+    """
+    selected = []
+    for name in changes(manifest):
+        if is_document(name):
+            path = safe_path(root, name)
+            try:
+                actual = _installed_record(path)
+            except OSError:
+                continue
+            if actual != manifest['before'].get(name):
+                continue
+        selected.append(name)
+    return selected
+
+
 def check_baseline(root, manifest, cancelled=None):
-    """Validate managed files; return local runtime records to preserve at apply."""
+    """Validate required runtime files; documents never require matching hashes."""
     if installed_edition(root) != manifest['edition']:
         raise DeltaError('Installed components changed; update edition no longer matches')
     preserved = {}
@@ -216,15 +269,22 @@ def check_baseline(root, manifest, cancelled=None):
         if cancelled and cancelled():
             raise updater.DownloadCancelled('Update cancelled')
         path = safe_path(root, name)
-        actual = file_record(path) if path.is_file() else None
+        if is_document(name):
+            if path.exists() and not path.is_file():
+                raise DeltaError(f'Installed path is not a regular file: {path}')
+            continue
+        actual = _installed_record(path)
         if actual != expected:
-            if (name.lower() == LEGACY_RUNTIME and actual and actual['size'] > 0
-                    and manifest['after'].get(name) == expected):
+            legacy_runtime = name.lower() == LEGACY_RUNTIME and actual and actual['size'] > 0
+            if manifest['after'].get(name) == expected and legacy_runtime:
                 preserved[name] = actual
                 continue
             raise DeltaError(f'Installed file missing or modified; no files replaced: {name}')
     for name in manifest['after'].keys() - manifest['before'].keys():
-        if safe_path(root, name).exists():
+        path = safe_path(root, name)
+        if is_document(name) and (not path.exists() or path.is_file()):
+            continue
+        if path.exists():
             raise DeltaError(f'New release file conflicts with a local file: {name}')
     return preserved
 
@@ -403,6 +463,10 @@ def rollback(root, manifest, touched):
     for name in reversed(touched):
         try:
             destination = safe_path(root, name)
+            if is_document(name) and destination.is_file():
+                actual = file_record(destination)
+                if actual not in (manifest['before'].get(name), manifest['after'].get(name)):
+                    continue  # Preserve notes edited while another file triggered rollback.
             if name in manifest['before']:
                 backup = safe_path(directory, 'backup/' + name)
                 if file_record(backup) != manifest['before'][name]:
@@ -447,23 +511,36 @@ def apply_transaction(root, *, recover=False):
     touched = []
     try:
         preserved = check_baseline(root, manifest)
-        delta = changes(manifest)
-        check_space(root, sum(manifest['before'][p]['size'] for p in delta if p in manifest['before'])
-                    + max((manifest['after'][p]['size'] for p in delta if p in manifest['after']), default=0))
-        for name in delta:
+        # Verify every staged payload, even optional documents we will preserve.
+        for name in changes(manifest):
             if name in manifest['after']:
                 staged = safe_path(directory, 'payload/' + name)
                 if file_record(staged) != manifest['after'][name]:
                     raise DeltaError(f'Staged payload modified: {name}')
+        delta = installation_changes(root, manifest)
+        check_space(root, sum(manifest['before'][p]['size'] for p in delta if p in manifest['before'])
+                    + max((manifest['after'][p]['size'] for p in delta if p in manifest['after']), default=0))
+        backed_up = []
+        for name in delta:
             if name in manifest['before']:
                 backup = safe_path(directory, 'backup/' + name)
                 backup.parent.mkdir(parents=True, exist_ok=True)
-                with safe_path(root, name).open('rb') as source, backup.open('xb') as output:
-                    shutil.copyfileobj(source, output)
-                    output.flush()
-                    os.fsync(output.fileno())
-                if file_record(backup) != manifest['before'][name]:
+                try:
+                    with safe_path(root, name).open('rb') as source, backup.open('xb') as output:
+                        shutil.copyfileobj(source, output)
+                        output.flush()
+                        os.fsync(output.fileno())
+                    matches = file_record(backup) == manifest['before'][name]
+                except OSError:
+                    if is_document(name):
+                        continue
+                    raise
+                if not matches:
+                    if is_document(name):
+                        continue  # Document edited after selection: leave it alone.
                     raise DeltaError(f'Backup verification failed: {name}')
+            backed_up.append(name)
+        delta = backed_up
         write_json(directory / 'journal.json', {'touched': []})
         set_state(root, 'applying')
         for name in delta:
@@ -471,15 +548,20 @@ def apply_transaction(root, *, recover=False):
             touched.append(name)
             write_json(directory / 'journal.json', {'touched': touched})
             destination = safe_path(root, name)
-            if name in manifest['after']:
-                _replace_copy(safe_path(directory, 'payload/' + name), destination,
-                              safe_path(directory, 'scratch'))
-            else:
-                destination.unlink()
+            try:
+                if name in manifest['after']:
+                    _replace_copy(safe_path(directory, 'payload/' + name), destination,
+                                  safe_path(directory, 'scratch'))
+                else:
+                    destination.unlink()
+            except OSError:
+                if not is_document(name):
+                    raise
         for name, expected in manifest['after'].items():
-            # A tolerated runtime is not in delta, so it is never backed up,
-            # overwritten or rolled back. Still verify it stayed unchanged.
-            if file_record(safe_path(root, name)) != preserved.get(name, expected):
+            path = safe_path(root, name)
+            if is_document(name):
+                continue
+            if _installed_record(path) != preserved.get(name, expected):
                 raise DeltaError(f'Installed file verification failed: {name}')
         set_state(root, 'complete', target=manifest['to'])
     except Exception as ex:

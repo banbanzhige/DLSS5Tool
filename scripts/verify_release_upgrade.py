@@ -97,6 +97,7 @@ def verify_upgrade(before, after, asset_path, edition, output, *, resume_ready=F
     if delta.file_record(helper) != manifest['before'][delta.HELPER]:
         raise ValueError('Verification MUST execute the old installed frozen helper')
     helper_record = delta.file_record(helper)
+    applied_changes = delta.installation_changes(install, manifest)
     child_env = dict(os.environ)
     child_env['PATH'] = str(Path(os.environ['SystemRoot']) / 'System32')
     child_env.pop('PYTHONPATH', None)
@@ -117,13 +118,15 @@ def verify_upgrade(before, after, asset_path, edition, output, *, resume_ready=F
     if result.returncode != 0 or not state or state.get('phase') != 'complete':
         raise ValueError(f'Old frozen helper failed: exit={result.returncode}, state={state}')
     for name, expected in manifest['after'].items():
+        if delta.is_document(name):
+            continue
         if delta.file_record(delta.safe_path(install, name)) != expected:
             raise ValueError(f'Installed target differs: {name}')
     for name in manifest['before'].keys() - manifest['after'].keys():
-        if delta.safe_path(install, name).exists():
+        if not delta.is_document(name) and delta.safe_path(install, name).exists():
             raise ValueError(f'Removed official file still exists: {name}')
     backup_count = 0
-    for name in changed:
+    for name in applied_changes:
         if name in manifest['before']:
             backup = delta.safe_path(install / delta.TRANSACTION, 'backup/' + name)
             if delta.file_record(backup) != manifest['before'][name]:
@@ -133,7 +136,8 @@ def verify_upgrade(before, after, asset_path, edition, output, *, resume_ready=F
         if delta.safe_path(install, name).read_bytes() != content:
             raise ValueError(f'User file was not preserved: {name}')
     report = {**overlay, 'old_frozen_helper': helper_record, 'exit_code': result.returncode,
-              'state': state, 'managed_target_files_verified': len(manifest['after']),
+              'state': state, 'managed_target_files_verified': sum(not delta.is_document(n) for n in manifest['after']),
+              'documents_excluded_from_installation_integrity': [n for n in manifest['after'] if delta.is_document(n)],
               'rollback_backup_files_verified': backup_count, 'user_files_preserved': list(user_files),
               'verification_install': str(install), 'clean_machine_verified': False,
               'resumed_ready_transaction': resume_ready,

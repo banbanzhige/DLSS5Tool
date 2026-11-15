@@ -235,17 +235,28 @@ class SharedCudaImage(CudaImage):
         self._leases, self._generation, self._producer_stream = 0, 0, 0
         self._ready, self._closed = False, False
         mapping._image_owners += 1
+        if not hasattr(mapping, '_images'):
+            import weakref
+            mapping._images = weakref.WeakSet()
+        mapping._images.add(self)
+        self._suspended = False
 
     def _check(self):
         super()._check()
+        if self._suspended:
+            raise RuntimeError('Shared CUDA image is being reconfigured')
         if self._mapping.pointer.value != self._pointer:
             raise RuntimeError('Shared CUDA image mapping expired')
 
     def close(self):
         if self._closed:
             return
-        self._check()
+        if self._suspended:
+            self.session._check()
+        else:
+            self._check()
         if self._leases:
             raise RuntimeError('Cannot release shared image held by a consumer')
         self._mapping._image_owners -= 1
+        self._mapping._images.discard(self)
         self._closed, self._pointer = True, 0

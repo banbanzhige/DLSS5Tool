@@ -130,6 +130,15 @@ class ReleaseUpdateWorkflowTests(unittest.TestCase):
             self.plan()
         self.assertFalse((self.new / 'github-assets').exists())
 
+    def test_official_baseline_documents_remain_strictly_verified(self):
+        folder = self.old / 'DLSS5Tool-v2.2.0-win64-lite'
+        readme = folder / 'README.md'
+        readme.write_bytes(b'official baseline documentation')
+        delta.write_json(self.old / 'verification/lite-files.json', builder.inventory(folder, 'lite'))
+        readme.write_bytes(b'edited publisher baseline')
+        with self.assertRaisesRegex(delta.DeltaError, 'missing or modified'):
+            self.plan()
+
     def test_override_relocates_only_declared_version(self):
         relocated = self.root / 'relocated'
         self.old.rename(relocated)

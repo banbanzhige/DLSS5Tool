@@ -133,6 +133,246 @@ class DeltaTests(unittest.TestCase):
             self.prepare()
         self.assertEqual((self.install / 'DLSS5Tool.exe').read_bytes(), b'old exe')
 
+    def test_unchanged_readme_missing_or_modified_allows_lite_and_full_update(self):
+        # Issue #14: the document is in both inventories, but not in payload.
+        states = {'missing': None, 'empty': b'', 'edited': b'my notes',
+                  'crlf': b'instructions\r\n'}
+        for folder in (self.before, self.after):
+            self.put(folder, 'mods/README.md', b'instructions\n')
+        for edition in ('lite', 'full'):
+            if edition == 'full':
+                for folder in (self.before, self.after):
+                    self.put(folder, 'mods/enhancement/guidance_worker.exe', b'worker')
+            package = builder.build(self.before, self.after, self.root / f'docs-{edition}',
+                                    'v3.0.0', 'v3.0.1', edition)
+            self.package = package
+            for state, content in states.items():
+                with self.subTest(edition=edition, state=state):
+                    install = self.root / f'{edition}-{state}'
+                    shutil.copytree(self.before, install)
+                    readme = install / 'mods/README.md'
+                    if content is None:
+                        readme.unlink()
+                    else:
+                        readme.write_bytes(content)
+                    manifest = delta.prepare(install, self.asset(), 'v3.0.0', 'v3.0.1',
+                                             edition, local_file=package)
+                    self.assertNotIn('mods/README.md', delta.changes(manifest))
+                    with delta.transaction_lock(install):
+                        delta.apply_transaction(install)
+                    self.assertEqual(delta.status(install)['phase'], 'complete')
+                    self.assertEqual((install / 'DLSS5Tool.exe').read_bytes(), b'new exe')
+                    self.assertEqual(readme.read_bytes() if readme.exists() else None, content)
+                    self.assertFalse((install / delta.TRANSACTION / 'backup/mods/README.md').exists())
+
+    def test_readme_removed_after_prepare_is_preserved(self):
+        self.prepare()
+        (self.install / 'mods/README.md').unlink()
+        delta.apply_transaction(self.install)
+        self.assertEqual(delta.status(self.install)['phase'], 'complete')
+        self.assertFalse((self.install / 'mods/README.md').exists())
+
+    def test_readme_exception_does_not_allow_directories_or_hardlinks(self):
+        path = self.install / 'mods/README.md'
+        path.unlink()
+        path.mkdir()
+        with self.assertRaises(delta.DeltaError):
+            delta.check_baseline(self.install, self.manifest())
+        path.rmdir()
+        os.link(self.install / 'settings.json', path)
+        with self.assertRaisesRegex(delta.DeltaError, 'Hard-linked'):
+            delta.check_baseline(self.install, self.manifest())
+
+    def test_documents_are_not_baseline_requirements_and_dependencies_stay_strict(self):
+        manifest = self.manifest()
+        manifest['edition'] = 'full'
+        worker = 'mods/enhancement/guidance_worker.exe'
+        self.put(self.install, worker, b'worker')
+        manifest['before'][worker] = manifest['after'][worker] = delta.file_record(self.install / worker)
+        document_record = manifest['before']['mods/README.md']
+        for name in ('README.md', 'README.en.md', 'CHANGELOG.md', 'mods/README.md',
+                     'mods/enhancement/README.md', '_internal/GUIDANCE_PARAMETERS.md',
+                     'licenses/README.md', 'THIRD_PARTY_NOTICES.md', 'LICENSE',
+                     '_internal/realtime/licenses/DLSS5Tool-GPLv3.txt', 'mods/ADDON-INSTALL.txt'):
+            with self.subTest(document=name):
+                manifest['before'][name] = manifest['after'][name] = document_record
+                self.put(self.install, name, b'my notes')
+                self.assertNotIn(name, delta.check_baseline(self.install, manifest))
+        for name in ('_internal/av.dist-info/entry_points.txt', '_internal/settings.txt',
+                     '_internal/README.dll', 'licenses/License.json',
+                     'mods/enhancement/enhancement.json', 'mods/models/official.pth'):
+            with self.subTest(dependency=name):
+                strict = {**manifest, 'before': dict(manifest['before']),
+                          'after': dict(manifest['after'])}
+                strict['before'][name] = strict['after'][name] = document_record
+                self.put(self.install, name, b'changed dependency')
+                with self.assertRaisesRegex(delta.DeltaError, name):
+                    delta.check_baseline(self.install, strict)
+
+    def test_official_readme_can_still_be_updated_and_backed_up(self):
+        self.put(self.after, 'mods/README.md', b'new official instructions')
+        self.package = builder.build(self.before, self.after, self.root / 'new-document',
+                                     'v3.0.0', 'v3.0.1', 'lite')
+        self.prepare()
+        delta.apply_transaction(self.install)
+        self.assertEqual((self.install / 'mods/README.md').read_bytes(), b'new official instructions')
+        self.assertEqual((self.install / delta.TRANSACTION / 'backup/mods/README.md').read_bytes(),
+                         b'instructions')
+
+    def test_modified_readme_does_not_block_changed_or_removed_official_document(self):
+        self.put(self.install, 'mods/README.md', b'my notes')
+        for operation in ('replace', 'remove'):
+            with self.subTest(operation=operation):
+                manifest = self.manifest()
+                if operation == 'replace':
+                    manifest['after']['mods/README.md'] = manifest['after']['DLSS5Tool.exe']
+                else:
+                    del manifest['after']['mods/README.md']
+                delta.check_baseline(self.install, manifest)
+                self.assertNotIn('mods/README.md', delta.installation_changes(self.install, manifest))
+
+    def test_readme_changed_during_apply_does_not_roll_back_application(self):
+        self.put(self.install, 'mods/README.md', b'my notes')
+        self.prepare()
+        original = delta._replace_copy
+
+        def edit_document(source, destination, scratch):
+            original(source, destination, scratch)
+            if destination.name == 'DLSS5Tool.exe' and 'payload' in str(source):
+                self.put(self.install, 'mods/README.md', b'edited during update')
+
+        with mock.patch.object(delta, '_replace_copy', side_effect=edit_document):
+            delta.apply_transaction(self.install)
+        self.assertEqual(delta.status(self.install)['phase'], 'complete')
+        self.assertEqual((self.install / 'DLSS5Tool.exe').read_bytes(), b'new exe')
+        self.assertEqual((self.install / 'mods/README.md').read_bytes(), b'edited during update')
+
+    def test_unchanged_local_document_is_never_hashed_for_install_verification(self):
+        readme = self.install / 'mods/README.md'
+        original = delta.file_record
+
+        def reject_document_check(path):
+            if Path(path) == readme:
+                raise AssertionError('Local README entered mandatory integrity verification')
+            return original(path)
+
+        with mock.patch.object(delta, 'file_record', side_effect=reject_document_check):
+            self.prepare()
+            delta.apply_transaction(self.install)
+        self.assertEqual(delta.status(self.install)['phase'], 'complete')
+
+    def test_changed_and_removed_documents_preserve_local_states_end_to_end(self):
+        self.put(self.after, 'mods/README.md', b'new official instructions')
+        self.put(self.before, 'licenses/obsolete-LICENSE.txt', b'old license')
+        self.put(self.after, 'licenses/new-LICENSE.txt', b'new license')
+        self.package = builder.build(self.before, self.after, self.root / 'changed-documents',
+                                     'v3.0.0', 'v3.0.1', 'lite')
+        for state, content in {'missing': None, 'empty': b'', 'edited': b'my notes',
+                               'crlf': b'instructions\r\n'}.items():
+            with self.subTest(state=state):
+                install = self.root / f'changed-docs-{state}'
+                shutil.copytree(self.before, install)
+                readme = install / 'mods/README.md'
+                if content is None:
+                    readme.unlink()
+                else:
+                    readme.write_bytes(content)
+                self.put(install, 'licenses/obsolete-LICENSE.txt', b'my old license notes')
+                self.put(install, 'licenses/new-LICENSE.txt', b'my colliding document')
+                delta.prepare(install, self.asset(), 'v3.0.0', 'v3.0.1', 'lite', local_file=self.package)
+                delta.apply_transaction(install)
+                self.assertEqual(delta.status(install)['phase'], 'complete')
+                self.assertEqual((install / 'DLSS5Tool.exe').read_bytes(), b'new exe')
+                self.assertEqual(readme.read_bytes() if readme.exists() else None, content)
+                self.assertEqual((install / 'licenses/obsolete-LICENSE.txt').read_bytes(), b'my old license notes')
+                self.assertEqual((install / 'licenses/new-LICENSE.txt').read_bytes(), b'my colliding document')
+
+    def test_corrupt_document_payload_still_fails_before_program_replacement(self):
+        self.put(self.after, 'mods/README.md', b'new official instructions')
+        self.package = builder.build(self.before, self.after, self.root / 'document-payload',
+                                     'v3.0.0', 'v3.0.1', 'lite')
+        self.put(self.install, 'mods/README.md', b'my notes')
+        self.prepare()
+        self.put(self.install / delta.TRANSACTION, 'payload/mods/README.md', b'tampered')
+        with self.assertRaisesRegex(delta.DeltaError, 'Staged payload modified'):
+            delta.apply_transaction(self.install)
+        self.assertEqual((self.install / 'DLSS5Tool.exe').read_bytes(), b'old exe')
+
+    def test_document_classification_never_exempts_dependency_metadata(self):
+        for name in ('_internal/pkg.dist-info/entry_points.txt', '_internal/pkg.dist-info/top_level.txt',
+                     '_internal/config.txt', '_internal/licenses/README.dll',
+                     '_internal/licenses/AUTHORS.py', 'licenses/LICENSE.json',
+                     'mods/models/LICENSE.pth', 'mods/enhancement/README.exe'):
+            with self.subTest(name=name):
+                self.assertFalse(delta.is_document(name))
+
+    def test_changed_document_read_or_write_failure_does_not_stop_core_update(self):
+        self.put(self.after, 'mods/README.md', b'new official instructions')
+        self.package = builder.build(self.before, self.after, self.root / 'locked-document',
+                                     'v3.0.0', 'v3.0.1', 'lite')
+        template = self.install
+        for failure in ('read', 'write'):
+            with self.subTest(failure=failure):
+                self.install = self.root / f'locked-document-{failure}'
+                shutil.copytree(template, self.install)
+                self.prepare()
+                record, replace = delta.file_record, delta._replace_copy
+
+                def locked_read(path):
+                    if Path(path) == self.install / 'mods/README.md':
+                        raise PermissionError('document opened exclusively')
+                    return record(path)
+
+                def locked_write(source, destination, scratch):
+                    if destination == self.install / 'mods/README.md':
+                        raise PermissionError('document is read-only')
+                    return replace(source, destination, scratch)
+
+                with mock.patch.object(delta, 'file_record', side_effect=locked_read if failure == 'read' else record), \
+                     mock.patch.object(delta, '_replace_copy', side_effect=locked_write if failure == 'write' else replace):
+                    delta.apply_transaction(self.install)
+                self.assertEqual(delta.status(self.install)['phase'], 'complete')
+                self.assertEqual((self.install / 'DLSS5Tool.exe').read_bytes(), b'new exe')
+                self.assertEqual((self.install / 'mods/README.md').read_bytes(), b'instructions')
+
+    def test_document_edited_between_selection_and_backup_is_preserved(self):
+        self.put(self.after, 'mods/README.md', b'new official instructions')
+        self.package = builder.build(self.before, self.after, self.root / 'document-race',
+                                     'v3.0.0', 'v3.0.1', 'lite')
+        self.prepare()
+        original = delta.installation_changes
+
+        def select_then_edit(root, manifest):
+            selected = original(root, manifest)
+            self.put(self.install, 'mods/README.md', b'notes edited after selection')
+            return selected
+
+        with mock.patch.object(delta, 'installation_changes', side_effect=select_then_edit):
+            delta.apply_transaction(self.install)
+        self.assertEqual(delta.status(self.install)['phase'], 'complete')
+        self.assertEqual((self.install / 'DLSS5Tool.exe').read_bytes(), b'new exe')
+        self.assertEqual((self.install / 'mods/README.md').read_bytes(), b'notes edited after selection')
+
+    def test_changed_document_recovers_after_process_interruption(self):
+        self.put(self.after, 'mods/README.md', b'new official instructions')
+        self.package = builder.build(self.before, self.after, self.root / 'document-recovery',
+                                     'v3.0.0', 'v3.0.1', 'lite')
+        self.prepare()
+        original = delta._replace_copy
+
+        def interrupted(source, destination, scratch):
+            original(source, destination, scratch)
+            if destination == self.install / 'mods/README.md':
+                raise KeyboardInterrupt('process died after document write')
+
+        with mock.patch.object(delta, '_replace_copy', side_effect=interrupted):
+            with self.assertRaises(KeyboardInterrupt):
+                delta.apply_transaction(self.install)
+        self.assertEqual(delta.status(self.install)['phase'], 'applying')
+        delta.apply_transaction(self.install, recover=True)
+        self.assertEqual(delta.status(self.install)['phase'], 'rolled_back')
+        self.assert_baseline()
+
     def test_legacy_internal_runtime_is_preserved_with_or_without_mods(self):
         for has_mods in (True, False):
             with self.subTest(has_mods=has_mods):

@@ -402,40 +402,61 @@ class Live:
         self.supports_async = self.max_in_flight > 1
 
     def update(self, settings):
-        updated = normalize_public_settings({**self.settings, **settings})
+        self.reconfigure(self._w, self._h, settings)
+
+    def reconfigure(self, w, h, settings=None, *, force=False):
+        """Change frame resources once, retaining the initialized device/NGX core.
+
+        Callers must retire a failed reconfiguration: native resize releases the
+        old feature before creating its replacement and cannot roll it back.
+        """
+        from dlss5tool.super_resolution import validate_dimensions
+        validate_dimensions(w, h, 1)
+        updated = normalize_public_settings({**self.settings, **(settings or {})})
         guidance_client.validate(updated)
         runtime_selection_changed = any(updated.get(key, '') != self.settings.get(key, '')
                                         for key in ('dlss_runtime', 'mods_directory'))
         if runtime_selection_changed and mod_paths.runtime_path(updated) != self.runtime_path:
             raise RuntimeError(i18n.tr_for(updated.get('ui_language'), 'guidance.error.runtime_switch'))
-        if updated.get("render_gpu", RENDER_GPU_AUTO) != self.settings.get(
-            "render_gpu", RENDER_GPU_AUTO,
-        ):
+        requested_gpu = updated.get("render_gpu", RENDER_GPU_AUTO)
+        same_auto_gpu = requested_gpu == RENDER_GPU_AUTO and self.adapter_info.get('preference_index') == 0
+        if requested_gpu != self.settings.get("render_gpu", RENDER_GPU_AUTO) and requested_gpu != self.adapter_info.get('id') and not same_auto_gpu:
             raise RuntimeError("进程内 Live 不支持切换 DLSS 渲染 GPU；请新建会话或使用 ProcessLive。")
+        requested_backend = str(updated.get('host_backend', self._preference))
+        if requested_backend not in {'auto', self.backend}:
+            raise RuntimeError('进程内 Live 不支持切换主机后端；请新建会话或使用 ProcessLive。')
         changed_guidance = guidance_client.contract(updated) != guidance_client.contract(self.settings)
-        if changed_guidance and self.pending:
-            raise RuntimeError(i18n.tr_for(updated.get('ui_language'), 'guidance.error.pending'))
-        if changed_guidance:
-            self.close_guidance()
-            self._allocate_buffers()
-            self._reset_next = True
-        old_preset = self.settings.get('preset')
         old_config = getattr(self, "_config", _host_config(self.settings))
-        old_contract = frame_contract(self.settings)
+        new_config = _host_config(updated)
+        rebuild = (force or (w, h) != (self._w, self._h)
+                   or frame_contract(updated) != frame_contract(self.settings)
+                   or updated.get('preset') != self.settings.get('preset')
+                   or (new_config != old_config and self.backend == 'v2'))
+        if (changed_guidance or rebuild) and self.pending:
+            raise RuntimeError(i18n.tr_for(updated.get('ui_language'), 'guidance.error.pending'))
+        retained_guidance = None
+        if rebuild and not changed_guidance and self._guidance is not None:
+            # Negotiate new analysis buffers before releasing native flow exports.
+            # Old components may decline; only that component is then restarted.
+            self._mv = self._dp = None
+            if self._guidance.resize(w, h):
+                retained_guidance = self._guidance
+        if changed_guidance or rebuild:
+            if retained_guidance is None:
+                self.close_guidance()
+            elif self._gpu_flow is not None:
+                self._gpu_flow.close()
+                self._gpu_flow = None
+            self._reset_next = True
         self.settings.update(updated)
-        requested_backend = str(self.settings.get("host_backend", self._preference))
-        if requested_backend not in {"auto", self.backend}:
-            raise RuntimeError(
-                "进程内 Live 不支持切换主机后端；请新建会话或使用 ProcessLive。"
-            )
-        new_config = _host_config(self.settings)
         _configure_host(self._lib, self.settings)
-        if frame_contract(self.settings) != old_contract:
-            self.resize(self._w, self._h, int(self.settings.get('preset', 1)))
-        elif self.settings.get('preset') != old_preset:
-            self.resize(self._w, self._h, int(self.settings.get('preset', 1)))
-        elif new_config != old_config and self.backend == "v2":
-            self.resize(self._w, self._h, int(self.settings.get('preset', 1)))
+        if rebuild:
+            _set_options(self._lib, self.settings)
+            if not self._lib.dlssnr_resize(w, h, int(self.settings.get('preset', 1))):
+                raise RuntimeError('Feature 18 resize failed.\n' + _read_log_tail(LOG_PATH)[-800:])
+            self._w, self._h = w, h
+        if rebuild or changed_guidance:
+            self._allocate_buffers()
         self._config = new_config
         self._refresh_capabilities()
 
@@ -444,18 +465,7 @@ class Live:
         init (which is one-time per process and crashes if re-initialized)."""
         if preset is None:
             preset = int(self.settings.get('preset', 1))
-        self.close_guidance()
-        self.settings['preset'] = preset
-        _set_options(self._lib, self.settings)
-        if not self._lib.dlssnr_resize(w, h, preset):
-            log = _read_log_tail(LOG_PATH)
-            raise RuntimeError("Feature 18 resize failed.\n" + log[-800:])
-        self._w, self._h = w, h
-        self._config = _host_config(self.settings)
-        self._refresh_capabilities()
-        self._allocate_buffers()
-        self.close_guidance()
-        self._reset_next = True
+        self.reconfigure(w, h, {'preset': preset}, force=True)
 
     def close_guidance(self):
         if self._guidance is not None:
@@ -546,6 +556,18 @@ class Live:
             raise RuntimeError('GPU output requires single-slot, persistent, non-tiled processing')
         return dict(descriptor=dict(producer_pid=os.getpid(),handle=handle.value,allocation=allocation.value,
             size=pitch.value*self._h,producer_luid=luid.value,pitch=pitch.value))
+
+    @property
+    def supports_gpu_reconfigure(self):
+        return hasattr(self._lib, 'dlssnr_gpu_buffers_close')
+
+    def release_gpu_resources(self):
+        if self.pending or not self.supports_gpu_reconfigure:
+            raise RuntimeError('Drain GPU consumers before retiring shared buffers')
+        release = self._lib.dlssnr_gpu_buffers_close
+        release.argtypes, release.restype = [], ctypes.c_int
+        if not release():
+            raise RuntimeError('GPU buffers are still active or their fence failed')
 
     def gpu_input_create(self):
         if self.backend != 'v2' or self.pending or not hasattr(self._lib, 'dlssnr_gpu_input_create'):

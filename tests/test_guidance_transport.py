@@ -66,6 +66,21 @@ class BufferTests(unittest.TestCase):
 @unittest.skipUnless(os.name == 'nt', 'Windows named-pipe component contract')
 @depth_test_case
 class SessionTests(unittest.TestCase):
+    def test_resize_retains_model_process_and_updates_both_transports(self):
+        for transport in ('auto', 'pipe'):
+            session = self.session(transport)
+            process = session._process
+            session.process(np.zeros((6, 8, 4), np.uint8), reset=True)
+            self.assertTrue(session.resize(11, 7))
+            self.assertIs(session._process, process)
+            image = np.full((7, 11, 4), 12, np.uint8)
+            motion, depth, reset = session.process(image, reset=True)
+            self.assertEqual(motion.shape, (7, 11, 2))
+            self.assertEqual(depth.shape, (7, 11))
+            self.assertTrue(reset)
+            self.assertTrue(session.resize(8, 6))
+            session.process(np.zeros((6, 8, 4), np.uint8), reset=True)
+
     def test_old_cache_component_cannot_ignore_shared_budget(self):
         with self.assertRaisesRegex(RuntimeError,'component|组件'):
             self.session(guidance_cache_pool='Local\\DLSS5-cache-fixture')

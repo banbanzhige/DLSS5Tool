@@ -17,3 +17,17 @@ if (-not (Test-Path -LiteralPath $appIcon -PathType Leaf)) { throw 'Missing requ
     --specpath $WorkDirectory --noupx --exclude-module tkinter --exclude-module numpy `
     (Join-Path $projectRoot 'packaging\update_entry.py')
 if ($LASTEXITCODE -ne 0) { throw "Updater build failed: $LASTEXITCODE" }
+
+# Mandatory even when the main build uses -SkipTests. Source-only tests cannot
+# prove that the frozen helper contains the same update compatibility rules.
+$builtHelper = Join-Path $OutputDirectory 'DLSS5Update.exe'
+foreach ($probeCase in @(
+    @{ Edition = 'lite'; Readme = 'missing' },
+    @{ Edition = 'full'; Readme = 'modified' }
+)) {
+    $probeOutput = Join-Path $WorkDirectory ("document-contract-" + $probeCase.Edition + '-' + $probeCase.Readme)
+    & $python -B (Join-Path $projectRoot 'scripts\probe_file_update.py') `
+        --helper $builtHelper --output $probeOutput --legacy-runtime --change-documents `
+        --edition $probeCase.Edition --readme-state $probeCase.Readme
+    if ($LASTEXITCODE -ne 0) { throw "Frozen updater document compatibility failed: $LASTEXITCODE" }
+}

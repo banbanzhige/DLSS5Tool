@@ -82,6 +82,8 @@ def _metadata(live):
         "max_in_flight": int(live.max_in_flight),
         "supports_async": bool(live.supports_async),
         "tiled": bool(getattr(live, "tiled", False)),
+        "supports_reconfigure": callable(getattr(live, 'reconfigure', None)),
+        "supports_gpu_reconfigure": bool(getattr(live, 'supports_gpu_reconfigure', False)),
         "guidance_info": dict(getattr(live, 'guidance_info', {})),
         "guidance_metrics": dict(getattr(live, 'guidance_metrics', {})),
     }
@@ -95,6 +97,7 @@ def _host_worker_main(
     input_memory = None
     output_memory = None
     live = None
+    configuration_generation = 0
     try:
         # Never initialize NGX (or spawn its updater) before the parent has
         # assigned this process to its lifetime job. EOF/stop cancels startup.
@@ -149,6 +152,19 @@ def _host_worker_main(
                 connection.send({
                     "ok": True, "operation": operation, **_metadata(live),
                 })
+            elif operation == 'reconfigure':
+                from dlss5tool.host_reconfigure import worker_candidate
+                candidate = worker_candidate(live, message, configuration_generation)
+                try:
+                    input_frame = output_frame = result = None
+                    input_memory.close()
+                    output_memory.close()
+                    input_memory, output_memory, input_frame, output_frame = candidate.detach()
+                    configuration_generation += 1
+                    connection.send({'ok': True, 'operation': operation,
+                        'generation': configuration_generation, **_metadata(live)})
+                finally:
+                    candidate.close()
             elif operation == "process":
                 result = live.process(input_frame, reset=bool(message.get("reset")))
                 if result is not None:
@@ -160,6 +176,9 @@ def _host_worker_main(
                 })
             elif operation == 'gpu_output_create':
                 connection.send({'ok':True,'operation':operation,**live.gpu_output_create()})
+            elif operation == 'release_gpu_resources':
+                live.release_gpu_resources()
+                connection.send({'ok': True, 'operation': operation})
             elif operation == 'gpu_input_create':
                 connection.send({'ok':True,'operation':operation,**live.gpu_input_create()})
             elif operation == 'process_gpu_input':
@@ -211,6 +230,10 @@ def _host_worker_main(
                 connection.send(_error_payload(operation, exception, log_path))
             except (BrokenPipeError, EOFError, OSError):
                 break
+            if operation == 'reconfigure':
+                # The old feature may already have been released. Never accept
+                # another frame after a partially applied native configuration.
+                break
 
     # Do not call dlssnr_shutdown here.  Some driver/runtime combinations hang or
     # crash on shutdown after evaluation.  Exiting this disposable process lets
@@ -235,6 +258,7 @@ class _HostSession:
 
     def __init__(self, width, height, settings, live_factory=None):
         settings = guidance_client.normalize_public_settings(settings)
+        self._validate_configuration = live_factory is None
         # Fail incompatible guidance before allocating two full-resolution frames
         # or spawning NGX. Keep injected test hosts independent of model files.
         if live_factory is None:
@@ -244,6 +268,9 @@ class _HostSession:
         from dlss5tool.super_resolution import validate_dimensions
         validate_dimensions(self.width, self.height, 1)
         self._closed = False
+        self._reconfigure_failed = False
+        self.configuration_generation = 0
+        self._reconfigure_frames = []
         self._process = None
         self._job = None
         self._connection = None
@@ -256,6 +283,7 @@ class _HostSession:
         self.adapter_info = {}
         self.max_in_flight = 1
         self.supports_async = False
+        self.supports_reconfigure = False
         self.tiled = False
         self.dtype = dlss_engine.frame_dtype(settings)
         self.log_path = os.path.join(
@@ -380,10 +408,14 @@ class _HostSession:
             self.max_in_flight = max(1, int(response.get("max_in_flight", 1)))
             self.supports_async = bool(response.get("supports_async", False))
             self.tiled = bool(response.get("tiled", False))
+            self.supports_reconfigure = bool(response.get('supports_reconfigure', False))
+            self.supports_gpu_reconfigure = bool(response.get('supports_gpu_reconfigure', False))
 
     def request(self, operation, timeout=_COMMAND_TIMEOUT, **payload):
         if self._closed:
             raise HostProcessError("DLSS 工作进程已关闭")
+        if getattr(self, '_reconfigure_failed', False):
+            raise HostProcessError('DLSS reconfiguration failed; retire this worker before reuse')
         if self._process is None or not self._process.is_alive():
             # An idle host may have retired under memory pressure. Preserve its
             # reported reason instead of replacing it with a generic dead PID.
@@ -406,6 +438,10 @@ class _HostSession:
         self._check_response(response)
         self._apply_metadata(response)
         return response
+
+    def reconfigure(self, width, height, settings, *, force=False):
+        from dlss5tool.host_reconfigure import reconfigure_session
+        reconfigure_session(self, width, height, settings, force=force)
 
     def copy_input(self, rgba):
         if rgba.dtype != self.dtype or rgba.shape != self._input_frame.shape:
@@ -443,6 +479,13 @@ class _HostSession:
             self._child_connection = None
         self._input_frame = None
         self._output_frame = None
+        try:
+            for frames in getattr(self, '_reconfigure_frames', []):
+                frames.close()
+        except BaseException:
+            self._closed = False
+            raise
+        self._reconfigure_frames = []
         for memory in (self._input_memory, self._output_memory):
             if memory is None:
                 continue
@@ -687,41 +730,27 @@ class ProcessLive:
 
     def update(self, settings):
         if getattr(self, '_gpu_input_descriptor', None):
-            raise HostProcessError('Retire the mapped GPU input owner before changing settings')
+            from dlss5tool.gpu_reconfigure import managed
+            if not managed(self):
+                raise HostProcessError('Retire unmanaged GPU consumers before changing settings')
         updated = dict(self.settings)
         updated.update(settings or {})
         updated = guidance_client.normalize_public_settings(updated)
-        new_preference = str(updated.get("host_backend", self.preference))
-        bypass_changed = self.bypass_reason != appearance.enhancement_bypass(updated)
-        if bypass_changed and self.pending:
-            raise HostProcessError('Drain pending frames before changing enhancement bypass')
-        if (
-            bypass_changed or self._requires_replacement(new_preference)
-            or dlss_engine.frame_contract(updated) != dlss_engine.frame_contract(self.settings)
-            or guidance_client.contract(updated) != guidance_client.contract(self.settings)
-            or updated.get("dlss_runtime", "") != self.settings.get("dlss_runtime", "")
-            or updated.get("mods_directory", "") != self.settings.get("mods_directory", "")
-            or updated.get("render_gpu", dlss_engine.RENDER_GPU_AUTO)
-                != self.settings.get("render_gpu", dlss_engine.RENDER_GPU_AUTO)
-        ):
-            self._replace(self._w, self._h, updated)
-            return
-        worker_settings = dict(updated)
-        worker_settings["host_backend"] = self.backend
-        self._session.request("update", settings=worker_settings)
-        self.settings = updated
-        self.preference = new_preference
-        self._sync_metadata()
+        from dlss5tool.host_reconfigure import reconfigure_proxy
+        reconfigure_proxy(self, self._w, self._h, updated)
 
     def resize(self, width, height, preset=None, settings=None):
         if getattr(self, '_gpu_input_descriptor', None):
-            raise HostProcessError('Retire the mapped GPU input owner before resizing')
+            from dlss5tool.gpu_reconfigure import managed
+            if not managed(self):
+                raise HostProcessError('Retire unmanaged GPU consumers before resizing')
         updated = dict(self.settings)
         updated.update(settings or {})
         updated = guidance_client.normalize_public_settings(updated)
         if preset is not None:
             updated["preset"] = int(preset)
-        self._replace(int(width), int(height), updated)
+        from dlss5tool.host_reconfigure import reconfigure_proxy
+        reconfigure_proxy(self, int(width), int(height), updated, force=True)
 
     def process(self, rgba, reset=False):
         self._session.copy_input(rgba)
@@ -731,7 +760,21 @@ class ProcessLive:
         return self._session.copy_output() if response["has_output"] else None
 
     def gpu_output_create(self):
-        return self._session.request('gpu_output_create')['descriptor']
+        descriptor = self._session.request('gpu_output_create')['descriptor']
+        self._gpu_output_descriptor = dict(descriptor)
+        return descriptor
+
+    def release_gpu_resources(self):
+        """Acknowledge that external images and importers have been retired."""
+        from dlss5tool.gpu_reconfigure import require_retired
+        require_retired(self)
+        if self.pending:
+            raise HostProcessError('Drain pending frames before releasing GPU resources')
+        if getattr(self._session, 'supports_gpu_reconfigure', False):
+            self._session.request('release_gpu_resources')
+        else:
+            self._replace(self._w, self._h, self.settings)
+        self._gpu_input_descriptor = self._gpu_output_descriptor = None
 
     def gpu_input_create(self):
         descriptor = self._session.request('gpu_input_create')['descriptor']
@@ -797,6 +840,8 @@ class ProcessLive:
     def enqueue(self, rgba, reset=False):
         if not self.supports_async:
             raise RuntimeError("当前主机设置不支持异步帧队列")
+        if getattr(self, '_drained_outputs', None) and self.pending >= self.max_in_flight:
+            return False
         self._session.copy_input(rgba)
         response = self._session.request("enqueue", reset=bool(reset or self._reset_next))
         if response['accepted']:
@@ -805,6 +850,8 @@ class ProcessLive:
         return bool(response["accepted"])
 
     def dequeue(self):
+        if getattr(self, '_drained_outputs', None):
+            return self._drained_outputs.popleft()
         if not self.supports_async:
             raise RuntimeError("当前主机设置不支持异步帧队列")
         response = self._session.request("dequeue")
@@ -812,7 +859,7 @@ class ProcessLive:
 
     @property
     def pending(self):
-        return int(self._session.request("pending")["pending"])
+        return len(getattr(self, '_drained_outputs', ())) + int(self._session.request("pending")["pending"])
 
     @property
     def guidance_info(self):
@@ -843,5 +890,7 @@ class ProcessLive:
                     failure = ErrorSnapshot(error)
             else:
                 self._session = None
+                if getattr(self, '_drained_outputs', None):
+                    self._drained_outputs.clear()
         if failure is not None:
             raise failure.exception()

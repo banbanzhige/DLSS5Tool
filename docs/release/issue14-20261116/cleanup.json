@@ -1,0 +1,47 @@
+{
+  "date": "2026-11-16",
+  "task_root": "F:\\project\\DLSS5Tool\\tmp\\issue14-update-docs-20261116",
+  "targets": [
+    {
+      "Path": "F:\\project\\DLSS5Tool\\tmp\\issue14-update-docs-20261116\\final-pytest",
+      "Bytes": 7669.0
+    },
+    {
+      "Path": "F:\\project\\DLSS5Tool\\tmp\\issue14-update-docs-20261116\\green-pytest",
+      "Bytes": 7669.0
+    },
+    {
+      "Path": "F:\\project\\DLSS5Tool\\tmp\\issue14-update-docs-20261116\\helper",
+      "Bytes": 9516918.0
+    },
+    {
+      "Path": "F:\\project\\DLSS5Tool\\tmp\\issue14-update-docs-20261116\\helper-build",
+      "Bytes": 88939569.0
+    },
+    {
+      "Path": "F:\\project\\DLSS5Tool\\tmp\\issue14-update-docs-20261116\\old-helper-optimized",
+      "Bytes": 38067916.0
+    },
+    {
+      "Path": "F:\\project\\DLSS5Tool\\tmp\\issue14-update-docs-20261116\\old-helper-readme-missing",
+      "Bytes": 38067916.0
+    },
+    {
+      "Path": "F:\\project\\DLSS5Tool\\tmp\\issue14-update-docs-20261116\\optimized-full",
+      "Bytes": 38071698.0
+    },
+    {
+      "Path": "F:\\project\\DLSS5Tool\\tmp\\issue14-update-docs-20261116\\optimized-lite",
+      "Bytes": 38071243.0
+    }
+  ],
+  "logical_deleted_bytes": 250750598.0,
+  "free_before": 113676627968,
+  "free_after": 113927614464,
+  "free_delta_bytes": 250986496,
+  "remaining_task_bytes": 1443,
+  "retention_reason": "TASK.md only; task ownership record, review 2026-11-23",
+  "reparse_points_rejected": true,
+  "evidence_archived": true,
+  "other_tasks_and_release_packages_untouched": true
+}

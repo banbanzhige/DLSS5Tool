@@ -378,6 +378,19 @@ class Models:
                 depth_ms = (time.perf_counter() - depth_start) * 1000
         return flow_ms, depth_ms, bounds
 
+    def reset_geometry(self):
+        """Retire frame-dependent state without unloading immutable weights."""
+        if self.gpu_flow is not None:
+            self.gpu_flow.close()
+            self.gpu_flow = None
+        for stream in (self.flow_stream, self.depth_stream):
+            if stream is not None:
+                stream.synchronize()
+        self.gpu_slot = None
+        self.prev = self.prev_thumb = self.prev_digest = self.depth_range = None
+        self._cached_flow = self._cached_depth = None
+        clear_flow_inputs(self)
+
     def close(self):
         if self._closed:
             return
@@ -433,7 +446,7 @@ def serve(conn, settings, model_factory=Models):
                'cache_limit_bytes': models.raw_cache.limit_bytes if hasattr(models, 'raw_cache') else 0,
                **getattr(models, 'execution_info', execution_contract(settings, getattr(models, 'device', None))),
                'load_ms': (time.perf_counter() - load_start) * 1000,
-               'protocol': 1, 'transport': TRANSPORT if buffers else 'pipe',
+               'protocol': 1, 'resize_protocol': 1, 'transport': TRANSPORT if buffers else 'pipe',
                'output_layout': FLOW_ONLY if flow_only else 'full_v1',
                'gpu_flow_transport': ('cuda_d3d12_flow_v1' if buffers is not None
                    and getattr(models, 'device', None) == 'cuda' and flow_only
@@ -456,6 +469,33 @@ def serve(conn, settings, model_factory=Models):
                 models.raw_cache.trim()
                 if not conn.poll(0.25):continue
             request = json.loads(conn.recv_bytes(65536))
+            if 'reconfigure_geometry' in request:
+                from dlss5tool.super_resolution import validate_dimensions
+                geometry = request['reconfigure_geometry']
+                nw, nh = geometry['width'], geometry['height']
+                validate_dimensions(nw, nh, 1)
+                if request.get('sequence') != sequence:
+                    raise ValueError('Guidance resize sequence mismatch')
+                descriptor = geometry.get('shared_memory')
+                if (descriptor is None) != (buffers is None):
+                    raise ValueError('Guidance resize cannot change transport')
+                if descriptor is not None and descriptor.get('transport') != buffers.descriptor['transport']:
+                    raise ValueError('Guidance resize layout mismatch')
+                candidate = GuidanceBuffers(nw, nh, descriptor) if descriptor is not None else None
+                try:
+                    if hasattr(models, 'reset_geometry'):
+                        models.reset_geometry()
+                    frame = mv = dp = None
+                    if buffers is not None:
+                        buffers.close()
+                    buffers, candidate = candidate, None
+                    w, h = nw, nh
+                    settings.update(width=w, height=h)
+                    reply({'ok': True, 'width': w, 'height': h, 'sequence': sequence})
+                finally:
+                    if candidate is not None:
+                        candidate.close()
+                continue
             if 'configure_gpu_flow' in request:
                 from dlss5tool.gpu_flow import CudaFlow, TRANSPORT as GPU_TRANSPORT
                 if getattr(models, 'gpu_flow', None) is not None:
@@ -479,8 +519,8 @@ def serve(conn, settings, model_factory=Models):
                     or type(slot) is not int or not 0 <= slot < len(models.gpu_flow.mappings)):
                 raise ValueError('Invalid GPU flow frame slot')
             models.gpu_slot = slot
+            sequence += 1
             if buffers is not None:
-                sequence += 1
                 if request.get('sequence') != sequence:
                     raise ValueError('Guidance frame sequence mismatch')
                 frame = buffers.rgba

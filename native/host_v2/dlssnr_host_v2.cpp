@@ -1709,6 +1709,17 @@ extern "C" __declspec(dllexport) int dlssnr_resize(int width, int height, int pr
         static_cast<UINT>(std::max(height, 0)), preset) ? 1 : 0;
 }
 
+// The importer must acknowledge all CUDA/encoder consumers before this call.
+// Keep the device/NGX core; only retire the geometry-dependent shared exports.
+extern "C" __declspec(dllexport) int dlssnr_gpu_buffers_close()
+{
+    if (g_pending_count || gpu_input::active || gpu_output::active || !WaitAll())
+        return 0;
+    gpu_input::Close();
+    gpu_output::Close();
+    return 1;
+}
+
 extern "C" __declspec(dllexport) int dlssnr_enqueue(
     const void *color_rgba8, const void *motion_float2, const void *depth_float, int reset)
 {

@@ -259,6 +259,7 @@ class GuidanceSession:
                 self.info['flow_contract'] = descriptor('cuda')
             self.info['gpu_flow_capability'] = ready.get('gpu_flow_transport')
             self.info['gpu_flow_transport'] = None
+            self.info['resize_protocol'] = ready.get('resize_protocol', 0)
         except Exception as exc:
             self.close()
             detail = str(exc) or i18n.tr_for(self.language, 'guidance.error.connection')
@@ -295,6 +296,46 @@ class GuidanceSession:
             self.info['gpu_flow_fallback_reason'] = reply.get('reason', 'Worker declined GPU flow')
             return False
         self.info['gpu_flow_transport'] = GPU_TRANSPORT
+        return True
+
+    def resize(self, width, height):
+        """Retain model weights while changing negotiated analysis buffers.
+
+        A legacy component declines without any mutation. After a dispatched
+        failure the component is closed before its shared buffers are released.
+        """
+        if self.info.get('resize_protocol') != 1:
+            return False
+        from dlss5tool.super_resolution import validate_dimensions
+        from dlss5tool.memory_budget import memory_allocation
+        validate_dimensions(width, height, 1)
+        candidate = None
+        with memory_allocation(width*height*(12 if self._flow_only else 16), stage='guidance_resize'):
+            if self._buffers is not None:
+                candidate = GuidanceBuffers(width, height, flow_only=self._flow_only)
+            try:
+                self._send({'reconfigure_geometry': {
+                    'width': width, 'height': height,
+                    'shared_memory': candidate.descriptor if candidate else None,
+                }, 'sequence': self._sequence})
+                response = self._reply()
+                if (response.get('width'), response.get('height'), response.get('sequence')) != (width, height, self._sequence):
+                    raise RuntimeError('Guidance resize acknowledgement mismatch')
+            except BaseException:
+                # A lost reply may mean the component already mapped candidate.
+                try:
+                    self.close()
+                finally:
+                    if candidate is not None:
+                        candidate.close()
+                raise
+            previous, self._buffers = self._buffers, candidate
+            self.width, self.height = width, height
+            self._zero_depth = None
+            self.last_metrics = {}
+            self.info['gpu_flow_transport'] = None
+            if previous is not None:
+                previous.close()
         return True
 
     def process(self, rgba, reset=False, *, copy_outputs=True, allow_missing_depth=False, gpu_slot=None):
