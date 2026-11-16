@@ -1,0 +1,483 @@
+{
+  "date": "2026-11-16",
+  "sdk_version": "1.2.161",
+  "sdk_reported_version": "0.0.0",
+  "verified_official_assets": [
+    {
+      "name": "velopack-1.2.161-cp38-abi3-win_amd64.whl",
+      "url": "https://files.pythonhosted.org/packages/ce/4a/1906caadfbada25e987f8f20ec61667221e73ab0d01c1164bbcb33b10e44/velopack-1.2.161-cp38-abi3-win_amd64.whl",
+      "sha256": "3a85b4a39c7644d06dafa44bd197d1e88d429f3f05ead57031552cf17ffcf36e",
+      "size": 1363140
+    },
+    {
+      "name": "vpk.1.2.161.nupkg",
+      "url": "https://github.com/velopack/velopack/releases/download/1.2.161/vpk.1.2.161.nupkg",
+      "sha256": "2b56ce117f803fc70c103cb423bd040e395e40370f6ff6e10818e9ff9c26a323",
+      "size": 146884263
+    }
+  ],
+  "native_cases": {
+    "managed": {
+      "full-delta-report.json": {
+        "case": "full-delta",
+        "edition": "full",
+        "from": "1.0.0",
+        "full_component_files_verified": 3,
+        "implicit_apply_disabled": true,
+        "install": "F:\\project\\DLSS5Tool\\tmp\\velopack-validation-20261116\\managed\\installed",
+        "passed": true,
+        "planned": {
+          "deltas": [
+            {
+              "name": "DLSS5Tool.UpdateProbe-1.0.1-win-full-delta.nupkg",
+              "size": 143578
+            },
+            {
+              "name": "DLSS5Tool.UpdateProbe-1.0.2-win-full-delta.nupkg",
+              "size": 143577
+            }
+          ],
+          "downgrade": false,
+          "full_name": "DLSS5Tool.UpdateProbe-1.0.2-win-full-full.nupkg",
+          "full_size": 12987593,
+          "target_version": "1.0.2"
+        },
+        "reconstructed_archive_matches_publisher": false,
+        "reconstructed_record": {
+          "sha256": "48bda45a036a0dd062528827da101d7a9a44b95950e9e3e99b75d742fb75a2cc",
+          "size": 13325073
+        },
+        "rejected_invalid_source": false,
+        "scope": "Real native SDK/Update.exe, synthetic files, no GPU/production app acceptance",
+        "stable_user_files_verified": 5,
+        "state_and_models_outside_current": true,
+        "target_package_files_verified": 71,
+        "to": "1.0.2"
+      },
+      "full-full-report.json": {
+        "case": "full-full",
+        "edition": "full",
+        "from": "1.0.0",
+        "full_component_files_verified": 3,
+        "implicit_apply_disabled": true,
+        "install": "F:\\project\\DLSS5Tool\\tmp\\velopack-validation-20261116\\managed\\installed",
+        "passed": true,
+        "planned": {
+          "deltas": [],
+          "downgrade": false,
+          "full_name": "DLSS5Tool.UpdateProbe-1.0.2-win-full-full.nupkg",
+          "full_size": 12987593,
+          "target_version": "1.0.2"
+        },
+        "reconstructed_archive_matches_publisher": true,
+        "reconstructed_record": {
+          "sha256": "7c17383ada8480dfa9a413cacb6fd24030b26590759cb99e3bc03dbac0e6f7ab",
+          "size": 12987593
+        },
+        "rejected_invalid_source": false,
+        "scope": "Real native SDK/Update.exe, synthetic files, no GPU/production app acceptance",
+        "stable_user_files_verified": 5,
+        "state_and_models_outside_current": true,
+        "target_package_files_verified": 71,
+        "to": "1.0.2"
+      },
+      "full-wrong-channel-report.json": {
+        "case": "full-wrong-channel",
+        "edition": "full",
+        "from": "1.0.0",
+        "full_component_files_verified": 3,
+        "implicit_apply_disabled": true,
+        "install": "F:\\project\\DLSS5Tool\\tmp\\velopack-validation-20261116\\managed\\installed",
+        "passed": true,
+        "planned": null,
+        "reconstructed_archive_matches_publisher": null,
+        "reconstructed_record": null,
+        "rejected_invalid_source": true,
+        "scope": "Real native SDK/Update.exe, synthetic files, no GPU/production app acceptance",
+        "stable_user_files_verified": 5,
+        "state_and_models_outside_current": true,
+        "target_package_files_verified": 0,
+        "to": "1.0.0"
+      },
+      "lite-corrupt-full-report.json": {
+        "case": "lite-corrupt-full",
+        "edition": "lite",
+        "from": "1.0.0",
+        "full_component_files_verified": 0,
+        "implicit_apply_disabled": true,
+        "install": "F:\\project\\DLSS5Tool\\tmp\\velopack-validation-20261116\\managed\\installed",
+        "passed": true,
+        "planned": null,
+        "reconstructed_archive_matches_publisher": null,
+        "reconstructed_record": null,
+        "rejected_invalid_source": true,
+        "scope": "Real native SDK/Update.exe, synthetic files, no GPU/production app acceptance",
+        "stable_user_files_verified": 5,
+        "state_and_models_outside_current": true,
+        "target_package_files_verified": 0,
+        "to": "1.0.0"
+      },
+      "lite-delta-report.json": {
+        "case": "lite-delta",
+        "edition": "lite",
+        "from": "1.0.0",
+        "full_component_files_verified": 0,
+        "implicit_apply_disabled": true,
+        "install": "F:\\project\\DLSS5Tool\\tmp\\velopack-validation-20261116\\managed\\installed",
+        "passed": true,
+        "planned": {
+          "deltas": [
+            {
+              "name": "DLSS5Tool.UpdateProbe-1.0.1-win-lite-delta.nupkg",
+              "size": 143577
+            },
+            {
+              "name": "DLSS5Tool.UpdateProbe-1.0.2-win-lite-delta.nupkg",
+              "size": 143577
+            }
+          ],
+          "downgrade": false,
+          "full_name": "DLSS5Tool.UpdateProbe-1.0.2-win-lite-full.nupkg",
+          "full_size": 12987592,
+          "target_version": "1.0.2"
+        },
+        "reconstructed_archive_matches_publisher": false,
+        "reconstructed_record": {
+          "sha256": "789c04fb96738f50c3b2869088ec7fbd2fea7e0368aa6fa334890d55ccc8ec19",
+          "size": 13325069
+        },
+        "rejected_invalid_source": false,
+        "scope": "Real native SDK/Update.exe, synthetic files, no GPU/production app acceptance",
+        "stable_user_files_verified": 5,
+        "state_and_models_outside_current": true,
+        "target_package_files_verified": 71,
+        "to": "1.0.2"
+      },
+      "lite-full-report.json": {
+        "case": "lite-full",
+        "edition": "lite",
+        "from": "1.0.0",
+        "full_component_files_verified": 0,
+        "implicit_apply_disabled": true,
+        "install": "F:\\project\\DLSS5Tool\\tmp\\velopack-validation-20261116\\managed\\installed",
+        "passed": true,
+        "planned": {
+          "deltas": [],
+          "downgrade": false,
+          "full_name": "DLSS5Tool.UpdateProbe-1.0.2-win-lite-full.nupkg",
+          "full_size": 12987592,
+          "target_version": "1.0.2"
+        },
+        "rejected_invalid_source": false,
+        "scope": "Real native SDK/Update.exe, synthetic files, no GPU/production app acceptance",
+        "stable_user_files_verified": 5,
+        "state_and_models_outside_current": true,
+        "to": "1.0.2"
+      },
+      "lite-missing-hop-report.json": {
+        "case": "lite-missing-hop",
+        "edition": "lite",
+        "from": "1.0.0",
+        "full_component_files_verified": 0,
+        "implicit_apply_disabled": true,
+        "install": "F:\\project\\DLSS5Tool\\tmp\\velopack-validation-20261116\\managed\\installed",
+        "passed": true,
+        "planned": {
+          "deltas": [
+            {
+              "name": "DLSS5Tool.UpdateProbe-1.0.2-win-lite-delta.nupkg",
+              "size": 143577
+            }
+          ],
+          "downgrade": false,
+          "full_name": "DLSS5Tool.UpdateProbe-1.0.2-win-lite-full.nupkg",
+          "full_size": 12987592,
+          "target_version": "1.0.2"
+        },
+        "reconstructed_archive_matches_publisher": false,
+        "reconstructed_record": {
+          "sha256": "789c04fb96738f50c3b2869088ec7fbd2fea7e0368aa6fa334890d55ccc8ec19",
+          "size": 13325069
+        },
+        "rejected_invalid_source": false,
+        "scope": "Real native SDK/Update.exe, synthetic files, no GPU/production app acceptance",
+        "stable_user_files_verified": 5,
+        "state_and_models_outside_current": true,
+        "target_package_files_verified": 71,
+        "to": "1.0.2"
+      }
+    },
+    "wrapped": {
+      "full-delta-report.json": {
+        "case": "full-delta",
+        "edition": "full",
+        "from": "1.0.0",
+        "full_component_files_verified": 3,
+        "implicit_apply_disabled": true,
+        "install": "F:\\project\\DLSS5Tool\\tmp\\velopack-validation-20261116\\wrapped\\installed",
+        "passed": true,
+        "planned": {
+          "deltas": [
+            {
+              "name": "DLSS5Tool.UpdateProbe-1.0.1-win-full-delta.nupkg",
+              "size": 143624
+            },
+            {
+              "name": "DLSS5Tool.UpdateProbe-1.0.2-win-full-delta.nupkg",
+              "size": 143623
+            }
+          ],
+          "downgrade": false,
+          "full_name": "DLSS5Tool.UpdateProbe-1.0.2-win-full-full.nupkg",
+          "full_size": 12999080,
+          "target_version": "1.0.2"
+        },
+        "production_adapter": true,
+        "reconstructed_archive_matches_publisher": false,
+        "reconstructed_record": {
+          "sha256": "6fdb6d012eeb8ad76181b78c80441f6489e23c621d0c4854ce2f98b70053bac0",
+          "size": 13336387
+        },
+        "rejected_invalid_source": false,
+        "scope": "Real native SDK/Update.exe, synthetic files, no GPU/production app acceptance",
+        "stable_user_files_verified": 5,
+        "state_and_models_outside_current": true,
+        "target_package_files_verified": 71,
+        "to": "1.0.2"
+      },
+      "full-full-report.json": {
+        "case": "full-full",
+        "edition": "full",
+        "from": "1.0.0",
+        "full_component_files_verified": 3,
+        "implicit_apply_disabled": true,
+        "install": "F:\\project\\DLSS5Tool\\tmp\\velopack-validation-20261116\\wrapped\\installed",
+        "passed": true,
+        "planned": {
+          "deltas": [],
+          "downgrade": false,
+          "full_name": "DLSS5Tool.UpdateProbe-1.0.2-win-full-full.nupkg",
+          "full_size": 12999080,
+          "target_version": "1.0.2"
+        },
+        "production_adapter": true,
+        "reconstructed_archive_matches_publisher": true,
+        "reconstructed_record": {
+          "sha256": "17966acd25317eb56599dd165c161bceebeabd18b4516efa020dfdccde89d769",
+          "size": 12999080
+        },
+        "rejected_invalid_source": false,
+        "scope": "Real native SDK/Update.exe, synthetic files, no GPU/production app acceptance",
+        "stable_user_files_verified": 5,
+        "state_and_models_outside_current": true,
+        "target_package_files_verified": 71,
+        "to": "1.0.2"
+      },
+      "lite-broken-delta-report.json": {
+        "case": "lite-broken-delta",
+        "edition": "lite",
+        "from": "1.0.0",
+        "full_component_files_verified": 0,
+        "implicit_apply_disabled": true,
+        "install": "F:\\project\\DLSS5Tool\\tmp\\velopack-validation-20261116\\wrapped\\installed",
+        "passed": true,
+        "planned": {
+          "deltas": [
+            {
+              "name": "DLSS5Tool.UpdateProbe-1.0.1-win-lite-delta.nupkg",
+              "size": 143625
+            },
+            {
+              "name": "DLSS5Tool.UpdateProbe-1.0.2-win-lite-delta.nupkg",
+              "size": 143621
+            }
+          ],
+          "downgrade": false,
+          "full_name": "DLSS5Tool.UpdateProbe-1.0.2-win-lite-full.nupkg",
+          "full_size": 12999079,
+          "target_version": "1.0.2"
+        },
+        "production_adapter": true,
+        "reconstructed_archive_matches_publisher": true,
+        "reconstructed_record": {
+          "sha256": "670fde606d14e062f4b04f5c7772cc846d1bc7bd46cf22bba0152f8e8e22f7e7",
+          "size": 12999079
+        },
+        "rejected_invalid_source": false,
+        "scope": "Real native SDK/Update.exe, synthetic files, no GPU/production app acceptance",
+        "stable_user_files_verified": 5,
+        "state_and_models_outside_current": true,
+        "target_package_files_verified": 71,
+        "to": "1.0.2"
+      },
+      "lite-delta-report.json": {
+        "case": "lite-delta",
+        "edition": "lite",
+        "from": "1.0.0",
+        "full_component_files_verified": 0,
+        "implicit_apply_disabled": true,
+        "install": "F:\\project\\DLSS5Tool\\tmp\\velopack-validation-20261116\\wrapped\\installed",
+        "passed": true,
+        "planned": {
+          "deltas": [
+            {
+              "name": "DLSS5Tool.UpdateProbe-1.0.1-win-lite-delta.nupkg",
+              "size": 143625
+            },
+            {
+              "name": "DLSS5Tool.UpdateProbe-1.0.2-win-lite-delta.nupkg",
+              "size": 143621
+            }
+          ],
+          "downgrade": false,
+          "full_name": "DLSS5Tool.UpdateProbe-1.0.2-win-lite-full.nupkg",
+          "full_size": 12999079,
+          "target_version": "1.0.2"
+        },
+        "production_adapter": true,
+        "reconstructed_archive_matches_publisher": false,
+        "reconstructed_record": {
+          "sha256": "233cf4c2907478d7320935fea2a13d054f79ad3a8969cd971b8825e1b277f71d",
+          "size": 13336383
+        },
+        "rejected_invalid_source": false,
+        "scope": "Real native SDK/Update.exe, synthetic files, no GPU/production app acceptance",
+        "stable_user_files_verified": 5,
+        "state_and_models_outside_current": true,
+        "target_package_files_verified": 71,
+        "to": "1.0.2"
+      },
+      "lite-full-report.json": {
+        "case": "lite-full",
+        "edition": "lite",
+        "from": "1.0.0",
+        "full_component_files_verified": 0,
+        "implicit_apply_disabled": true,
+        "install": "F:\\project\\DLSS5Tool\\tmp\\velopack-validation-20261116\\wrapped\\installed",
+        "passed": true,
+        "planned": {
+          "deltas": [],
+          "downgrade": false,
+          "full_name": "DLSS5Tool.UpdateProbe-1.0.2-win-lite-full.nupkg",
+          "full_size": 12999079,
+          "target_version": "1.0.2"
+        },
+        "production_adapter": true,
+        "reconstructed_archive_matches_publisher": true,
+        "reconstructed_record": {
+          "sha256": "670fde606d14e062f4b04f5c7772cc846d1bc7bd46cf22bba0152f8e8e22f7e7",
+          "size": 12999079
+        },
+        "rejected_invalid_source": false,
+        "scope": "Real native SDK/Update.exe, synthetic files, no GPU/production app acceptance",
+        "stable_user_files_verified": 5,
+        "state_and_models_outside_current": true,
+        "target_package_files_verified": 71,
+        "to": "1.0.2"
+      }
+    }
+  },
+  "experimental_core_report": {
+    "core_only": true,
+    "edition": "full",
+    "existing_release_workflow_replaced": false,
+    "experimental": true,
+    "full": {
+      "sha256": "17966acd25317eb56599dd165c161bceebeabd18b4516efa020dfdccde89d769",
+      "size": 12999080
+    },
+    "limitations": [
+      "External component provisioning and legacy bridge need independent acceptance",
+      "Production signed delivery has not been certified"
+    ],
+    "manifest": "DLSS5Tool-v1.0.2-win-full.manifest.json",
+    "sdk_version": "1.2.161",
+    "uploaded": false,
+    "version": "v1.0.2"
+  },
+  "source_fingerprints": {
+    "dlss5tool/portable_layout.py": {
+      "size": 4256,
+      "sha256": "27739f409fc53994a4cae5336e9d0edb5f025d77c97f2922be1f7fd7f4266603"
+    },
+    "dlss5tool/managed_update.py": {
+      "size": 12224,
+      "sha256": "5b8ddd7579eee768790f7382fa5ade5ff719bdd46c4ffb1f5b6a97df10feeb39"
+    },
+    "dlss5tool/managed_update_ui.py": {
+      "size": 5426,
+      "sha256": "372eb4a5a494c427f3590ab8b2e79fc7154f4a66f115ab59efc86e04201d67c6"
+    },
+    "dlss5tool/paths.py": {
+      "size": 1801,
+      "sha256": "f500e2658c0ee014fad9e2ff7add26235d7050b770f7f8c2dc1ee4714775c39f"
+    },
+    "dlss5tool/mod_paths.py": {
+      "size": 11094,
+      "sha256": "397342b05fbff9989c8a524baafe325f2bab91e1cbbc929ddd04b706ef1a76df"
+    },
+    "dlss5tool/gui.py": {
+      "size": 520273,
+      "sha256": "1556a24f1f647495d23026a3fe939d35ca92b9172625b86fcbe8819b81400033"
+    },
+    "gui.py": {
+      "size": 2500,
+      "sha256": "4d56dad7b70078fb71ae7e2b052658f35b37584a9edc5003ee90642e5a723e0b"
+    },
+    "packaging/DLSS5Tool.spec": {
+      "size": 13293,
+      "sha256": "7103355ebb316db2622e922dc21c0ee155890a0a222b1802a060e3c04b540c73"
+    },
+    "scripts/probe_velopack.py": {
+      "size": 13846,
+      "sha256": "39a1b7e5c0541f10d343a713db041664c4119450bf266a492f260e29923ae325"
+    },
+    "scripts/velopack_probe_app.py": {
+      "size": 6995,
+      "sha256": "6d659e94cfa15e5f40381fcb26126251d27b842f63892810fc498a6b29440168"
+    },
+    "scripts/package_managed_core.py": {
+      "size": 5891,
+      "sha256": "1fef9e144fae82b70283e8049bc5ec86912684a53e05e24a368962309e02eb9b"
+    },
+    "tests/test_managed_update.py": {
+      "size": 13079,
+      "sha256": "3837531e86bf620b62f995c75e31c19c4cd1898b5cd2dde48ea7b657f3f169bf"
+    },
+    "tests/test_portable_layout.py": {
+      "size": 6853,
+      "sha256": "6e95ff1233b1a4602efa75c34c587faffa897f37faced13e9bc0484939fec4ad"
+    }
+  },
+  "tests": {
+    "integration": {
+      "passed": 112,
+      "subtests_passed": 87
+    },
+    "targeted_paths": {
+      "passed": 27,
+      "subtests_passed": 15,
+      "overlaps_integration": true
+    },
+    "final_manifest_validation": {
+      "passed": 15,
+      "subtests_passed": 12,
+      "overlaps_integration": true
+    },
+    "full_regression": false,
+    "baseline_layout_failures": 2
+  },
+  "limitations": [
+    "Synthetic native fixtures only, no production GPU package acceptance",
+    "Legacy ZIP migration bridge is not implemented",
+    "Compatible external full components preserved; independent component upgrade not implemented",
+    "Current release workflow/assets are not switched",
+    "No independent release signing/key lifecycle implemented",
+    "Cancel prevents installation preparation; SDK transport lacks immediate cancellation token"
+  ],
+  "global_environment_modified": false,
+  "formal_packages_modified": false,
+  "post_verification_polish": [
+    "Frozen startup now reports explicit layout/SDK failures before exiting; syntax verified"
+  ]
+}

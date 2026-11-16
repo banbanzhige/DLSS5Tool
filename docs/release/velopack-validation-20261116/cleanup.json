@@ -1,0 +1,97 @@
+{
+  "date": "2026-11-16",
+  "task_root": "F:\\project\\DLSS5Tool\\tmp\\velopack-validation-20261116",
+  "observed_task_bytes_before_cleanup": 1121023586.0,
+  "targets": [
+    {
+      "path": "F:\\project\\DLSS5Tool\\tmp\\velopack-validation-20261116\\build",
+      "bytes": 29361460.0
+    },
+    {
+      "path": "F:\\project\\DLSS5Tool\\tmp\\velopack-validation-20261116\\downloads",
+      "bytes": 148247990.0
+    },
+    {
+      "path": "F:\\project\\DLSS5Tool\\tmp\\velopack-validation-20261116\\experimental-core",
+      "bytes": 25890806.0
+    },
+    {
+      "path": "F:\\project\\DLSS5Tool\\tmp\\velopack-validation-20261116\\managed",
+      "bytes": 254248807.0
+    },
+    {
+      "path": "F:\\project\\DLSS5Tool\\tmp\\velopack-validation-20261116\\NuGetScratch",
+      "bytes": null
+    },
+    {
+      "path": "F:\\project\\DLSS5Tool\\tmp\\velopack-validation-20261116\\releases",
+      "bytes": 51030446.0
+    },
+    {
+      "path": "F:\\project\\DLSS5Tool\\tmp\\velopack-validation-20261116\\sdk",
+      "bytes": 2962817.0
+    },
+    {
+      "path": "F:\\project\\DLSS5Tool\\tmp\\velopack-validation-20261116\\tool",
+      "bytes": 354993300.0
+    },
+    {
+      "path": "F:\\project\\DLSS5Tool\\tmp\\velopack-validation-20261116\\velopack",
+      "bytes": null
+    },
+    {
+      "path": "F:\\project\\DLSS5Tool\\tmp\\velopack-validation-20261116\\wrapped",
+      "bytes": 241661095.0
+    },
+    {
+      "path": "F:\\project\\DLSS5Tool\\tmp\\velopack-validation-20261116\\after-legacy.json",
+      "bytes": 1038
+    },
+    {
+      "path": "F:\\project\\DLSS5Tool\\tmp\\velopack-validation-20261116\\after-stable.json",
+      "bytes": 1019
+    },
+    {
+      "path": "F:\\project\\DLSS5Tool\\tmp\\velopack-validation-20261116\\apply-full.json",
+      "bytes": 1262
+    },
+    {
+      "path": "F:\\project\\DLSS5Tool\\tmp\\velopack-validation-20261116\\baseline-failures.txt",
+      "bytes": 2095
+    },
+    {
+      "path": "F:\\project\\DLSS5Tool\\tmp\\velopack-validation-20261116\\before-legacy.json",
+      "bytes": 1028
+    },
+    {
+      "path": "F:\\project\\DLSS5Tool\\tmp\\velopack-validation-20261116\\before-stable.json",
+      "bytes": 1019
+    },
+    {
+      "path": "F:\\project\\DLSS5Tool\\tmp\\velopack-validation-20261116\\full-manifest-recheck.json",
+      "bytes": 10427
+    },
+    {
+      "path": "F:\\project\\DLSS5Tool\\tmp\\velopack-validation-20261116\\lite-manifest-recheck.json",
+      "bytes": 10427
+    },
+    {
+      "path": "F:\\project\\DLSS5Tool\\tmp\\velopack-validation-20261116\\planned-update.json",
+      "bytes": 1284
+    },
+    {
+      "path": "F:\\project\\DLSS5Tool\\tmp\\velopack-validation-20261116\\seed-portable.zip",
+      "bytes": 12596227
+    }
+  ],
+  "logical_deleted_bytes": 1121022547.0,
+  "free_before": 112806760448,
+  "free_after": 113929523200,
+  "free_delta_bytes": 1122762752,
+  "remaining_task_bytes": 1362.0,
+  "retention_reason": "TASK.md; task ownership/rebuild record; review 2026-11-23",
+  "reparse_points_rejected": true,
+  "native_processes_retired": true,
+  "evidence_archived": true,
+  "formal_packages_and_global_dependencies_untouched": true
+}

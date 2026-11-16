@@ -8,7 +8,7 @@ from dlss5tool.guidance_public import normalize_public_settings
 
 
 def app_root():
-    return paths.app_root()
+    return paths.portable_root()
 
 
 def mods_root(settings=None):

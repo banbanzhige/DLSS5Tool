@@ -29,6 +29,24 @@ hiddenimports = ['dlss5tool.cuda_frame', 'dlss5tool.cuda_vsr', 'dlss5tool.cuda_v
                  'dlss5tool.cuda_analysis', 'dlss5tool.analysis_quantization',
                  'dlss5tool.cuda_hdr_pack', 'dlss5tool.cuda_p010', 'dlss5tool.device_sr_plan']
 
+# Explicit alternative distribution only. Existing releases do not load or
+# bundle the SDK, and cannot silently switch their portable user-data layout.
+managed_layout = os.environ.get('DLSS5_MANAGED_LAYOUT', '')
+managed_sdk = os.environ.get('DLSS5_VELOPACK_SDK', '')
+if bool(managed_layout) != bool(managed_sdk):
+    raise SystemExit('Managed distribution requires both layout metadata and the verified SDK path')
+if managed_layout:
+    from pathlib import Path
+    from dlss5tool.portable_layout import LAYOUT_FILE
+    if Path(managed_layout).name != LAYOUT_FILE or not Path(managed_layout).is_file():
+        raise SystemExit('Missing explicit managed portable layout marker')
+    if not (Path(managed_sdk) / 'velopack/velopack.pyd').is_file():
+        raise SystemExit('Missing isolated, verified Velopack Python SDK')
+    sys.path.insert(0, os.path.abspath(managed_sdk))
+    datas.append((os.path.abspath(managed_layout), '.'))
+    datas.append((os.path.join(project_root, 'licenses', 'Velopack-LICENSE.txt'), 'licenses'))
+    hiddenimports.append('velopack')
+
 # A source checkout with realtime must build and include it, or fail loudly.
 # GPL/proprietary combination clearance is independent of local GPU verification.
 from scripts.realtime_packaging import validate_runtime
@@ -248,6 +266,7 @@ coll = COLLECT(
 
 # COLLECT puts DATA under _internal in onedir builds. This user-facing directory
 # must instead sit beside the executable; copy only our instruction file.
-release_mods = os.path.join(coll.name, "mods")
-os.makedirs(release_mods, exist_ok=True)
-shutil.copy2(os.path.join(project_root, "mods", "README.md"), os.path.join(release_mods, "README.md"))
+if not managed_layout:
+    release_mods = os.path.join(coll.name, "mods")
+    os.makedirs(release_mods, exist_ok=True)
+    shutil.copy2(os.path.join(project_root, "mods", "README.md"), os.path.join(release_mods, "README.md"))

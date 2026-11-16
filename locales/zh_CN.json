@@ -1716,5 +1716,10 @@
   "export.preflight.long_advice": "建议先用同一素材的短片段试导，观察实际速度和内存变化，再决定是否自行分割后逐段处理。缓存预算不是程序总内存上限，无需缓存整段视频。分段边界效果可能有差异；当前版本没有自动分段和断点续导。",
   "export.preflight.continue": "以上为风险提示，不能保证本次导出一定成功或失败。是否继续导出？",
   "label.decode_cpu_fallback": "允许 CPU 解码兜底（较慢）",
-  "tooltip.decode_cpu_fallback": "默认关闭。开启后，GPU 无法开始解码时可改用 CPU；增强和超分仍由 GPU 处理。CPU 解码可能较慢。关闭时会提示先转码。运行中的任务使用开始时的设置。"
+  "tooltip.decode_cpu_fallback": "默认关闭。开启后，GPU 无法开始解码时可改用 CPU；增强和超分仍由 GPU 处理。CPU 解码可能较慢。关闭时会提示先转码。运行中的任务使用开始时的设置。",
+  "update.managed_offer": "发现 {version}（{edition}）。\n\n下载并准备更新？会优先使用增量，不可用时改用完整程序包。设置、队列和外置模型将保留。",
+  "update.managed_cancel_wait": "已取消安装准备，正在等待当前下载结束；不会自动安装。",
+  "update.managed_background": "放到后台",
+  "update.managed_ready": "{version} 已下载并校验完成，可在检查更新中选择重启安装。",
+  "update.managed_install": "更新已准备好。现在关闭程序、安装并重新启动？\n\n也可以稍后在“检查更新”中继续。"
 }

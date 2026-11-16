@@ -70,6 +70,7 @@ from dlss5tool import updater
 from dlss5tool import delta_update
 from dlss5tool import update_helper
 from dlss5tool import paths
+from dlss5tool.managed_update_ui import ManagedUpdateUI
 from dlss5tool.host_queue import MAX_IN_FLIGHT, clamp_in_flight
 from dlss5tool import performance_profiles
 from dlss5tool.preview_decoder import PreviewDecoder
@@ -756,7 +757,7 @@ def compose_preview_frame(original, processed, output_view=0, output_mix=1.0, *,
 
 
 
-class App(ExportMemoryUI, QueueMemoryRecovery, GpuResourceGuard, SharedRenderPreview, LocalPreviewComposition, PreviewComparison, GuidanceExportUI):
+class App(ManagedUpdateUI, ExportMemoryUI, QueueMemoryRecovery, GpuResourceGuard, SharedRenderPreview, LocalPreviewComposition, PreviewComparison, GuidanceExportUI):
     def __init__(self, root):
         self.root = root
         self._saved_settings = app_settings.startup_settings(app_settings.load())
@@ -6192,6 +6193,8 @@ class App(ExportMemoryUI, QueueMemoryRecovery, GpuResourceGuard, SharedRenderPre
         except Exception as error:
             self.set_status(str(error))
             return
+        if not self._schedule_managed_apply_after_cleanup():
+            return
         if self._detached_preview_window is not None:
             ui_theme.release_app_icon(self._detached_preview_window)
         ui_theme.release_app_icon(self.root)
@@ -9179,6 +9182,10 @@ class App(ExportMemoryUI, QueueMemoryRecovery, GpuResourceGuard, SharedRenderPre
 
     def check_for_updates(self, manual=True):
         """Check GitHub without blocking Tk; startup failures stay unobtrusive."""
+        if (manual and getattr(self, '_managed_update_session', None) is not None
+                and not self._update_downloading):
+            self._offer_managed_install()
+            return
         if self._update_checking or self._update_downloading:
             if manual:
                 messagebox.showinfo(
@@ -9242,6 +9249,8 @@ class App(ExportMemoryUI, QueueMemoryRecovery, GpuResourceGuard, SharedRenderPre
 
     def _prompt_for_update(self, release):
         try:
+            if self._try_managed_update(release):
+                return
             edition = delta_update.installed_edition(paths.app_root(), self._collect_host_settings())
             delta_asset = delta_update.select_asset(release, APP_VERSION, edition)
             if (delta_asset is not None and getattr(sys, 'frozen', False)

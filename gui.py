@@ -6,6 +6,16 @@ import sys
 if __name__ == '__main__':
     # Worker dispatch must happen before the portable GUI installation mutex.
     multiprocessing.freeze_support()
+    # The optional managed distribution disables implicit apply on startup.
+    # A downloaded update may only install after explicit user action.
+    if getattr(sys, 'frozen', False):
+        from dlss5tool.managed_update import startup as managed_update_startup
+        try:
+            managed_update_startup()
+        except Exception as error:
+            from dlss5tool.update_helper import notify
+            notify(str(error), error=True)
+            raise SystemExit(1)
     from dlss5tool.adapter_probe import dispatch as dispatch_adapter_probe
     if dispatch_adapter_probe():
         raise SystemExit(0)

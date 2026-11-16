@@ -12,6 +12,16 @@ def app_root():
     return Path(sys.executable).resolve().parent if getattr(sys, 'frozen', False) else project_root()
 
 
+def portable_root():
+    """Stable user-data root; existing portable packages keep their current path."""
+    if not getattr(sys, 'frozen', False):
+        return project_root()
+    from dlss5tool.portable_layout import load_portable_layout
+    layout = load_portable_layout(Path(sys.executable).absolute().parent,
+                                  resource_root(), Path(sys.executable).name)
+    return layout.root if layout is not None else app_root()
+
+
 def resource_root():
     if getattr(sys, 'frozen', False):
         return Path(getattr(sys, '_MEIPASS', app_root()))
@@ -29,7 +39,7 @@ def state_path(filename):
     are handled by their callers before reaching this function.
     """
     if getattr(sys, 'frozen', False):
-        return app_root() / filename
+        return portable_root() / filename
     root = project_root()
     directory = root / 'var'
     directory.mkdir(parents=True, exist_ok=True)

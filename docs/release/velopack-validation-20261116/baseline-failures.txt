@@ -1,0 +1,28 @@
+test_documentation_links_resolve (tests.test_layout.LayoutTests.test_documentation_links_resolve) ... FAIL
+test_packaging_source_paths_exist_in_reorganized_layout (tests.test_layout.LayoutTests.test_packaging_source_paths_exist_in_reorganized_layout) ... ERROR
+
+======================================================================
+ERROR: test_packaging_source_paths_exist_in_reorganized_layout (tests.test_layout.LayoutTests.test_packaging_source_paths_exist_in_reorganized_layout)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "F:\project\DLSS5Tool\tests\test_layout.py", line 164, in test_packaging_source_paths_exist_in_reorganized_layout
+    exec(compile(ast.Module(body=prefix, type_ignores=[]), str(recipe), 'exec'), namespace)
+    ~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "F:\project\DLSS5Tool\packaging\DLSS5Tool.spec", line 97, in <module>
+    with open(cuda_vsr_manifest, encoding='utf-8') as source:
+         ~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: 'C:\\Users\\PC\\AppData\\Local\\Temp\\tmp4ic9ugf4\\runtime\\vsr-cuda\\manifest.json'
+
+======================================================================
+FAIL: test_documentation_links_resolve (tests.test_layout.LayoutTests.test_documentation_links_resolve)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "F:\project\DLSS5Tool\tests\test_layout.py", line 186, in test_documentation_links_resolve
+    self.assertTrue((file.parent / relative).exists(), f'{file.relative_to(ROOT)}: {target}')
+    ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: False is not true : docs\development\sr-hdr-20261026\notes\SR_HDR_IMPLEMENTATION_20261026.md: sr-hdr-20261026/archive-manifest.json
+
+----------------------------------------------------------------------
+Ran 2 tests in 0.764s
+
+FAILED (failures=1, errors=1)

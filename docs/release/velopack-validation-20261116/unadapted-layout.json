@@ -1,0 +1,243 @@
+{
+  "sdk_artifacts": [
+    {
+      "name": "velopack-1.2.161-cp38-abi3-win_amd64.whl",
+      "url": "https://files.pythonhosted.org/packages/ce/4a/1906caadfbada25e987f8f20ec61667221e73ab0d01c1164bbcb33b10e44/velopack-1.2.161-cp38-abi3-win_amd64.whl",
+      "sha256": "3a85b4a39c7644d06dafa44bd197d1e88d429f3f05ead57031552cf17ffcf36e",
+      "size": 1363140
+    },
+    {
+      "name": "vpk.1.2.161.nupkg",
+      "url": "https://github.com/velopack/velopack/releases/download/1.2.161/vpk.1.2.161.nupkg",
+      "sha256": "2b56ce117f803fc70c103cb423bd040e395e40370f6ff6e10818e9ff9c26a323",
+      "size": 146884263
+    }
+  ],
+  "phase": "unadapted layout negative control",
+  "fixture_executable": {
+    "size": 1955063,
+    "sha256": "922e59628ccf2d1b837733aec574b5c5c1af0230c02b79d4efc26866e3cefcfc"
+  },
+  "reports": {
+    "before-legacy": {
+      "sdk_version": "0.0.0",
+      "executable": "F:\\project\\DLSS5Tool\\tmp\\velopack-validation-20261116\\installed\\current\\DLSS5ToolProbe.exe",
+      "binary_root": "F:\\project\\DLSS5Tool\\tmp\\velopack-validation-20261116\\installed\\current",
+      "data_root": "F:\\project\\DLSS5Tool\\tmp\\velopack-validation-20261116\\installed\\current",
+      "runtime_root": "F:\\project\\DLSS5Tool\\tmp\\velopack-validation-20261116\\installed\\current\\_internal",
+      "version_marker": "1.0.0",
+      "markers": {
+        "dlss5_settings.json": {
+          "exists": true,
+          "matches": true
+        },
+        "dlss5_queue.json": {
+          "exists": true,
+          "matches": true
+        },
+        "mods/nvngx_dlssnr.dll": {
+          "exists": true,
+          "matches": true
+        },
+        "mods/models/custom.pth": {
+          "exists": true,
+          "matches": true
+        },
+        "mods/enhancement/custom.txt": {
+          "exists": true,
+          "matches": true
+        }
+      },
+      "current_version": "1.0.0",
+      "app_id": "DLSS5Tool.UpdateProbe",
+      "portable": true
+    },
+    "before-stable": {
+      "sdk_version": "0.0.0",
+      "executable": "F:\\project\\DLSS5Tool\\tmp\\velopack-validation-20261116\\installed\\current\\DLSS5ToolProbe.exe",
+      "binary_root": "F:\\project\\DLSS5Tool\\tmp\\velopack-validation-20261116\\installed\\current",
+      "data_root": "F:\\project\\DLSS5Tool\\tmp\\velopack-validation-20261116\\installed",
+      "runtime_root": "F:\\project\\DLSS5Tool\\tmp\\velopack-validation-20261116\\installed\\current\\_internal",
+      "version_marker": "1.0.0",
+      "markers": {
+        "dlss5_settings.json": {
+          "exists": true,
+          "matches": true
+        },
+        "dlss5_queue.json": {
+          "exists": true,
+          "matches": true
+        },
+        "mods/nvngx_dlssnr.dll": {
+          "exists": true,
+          "matches": true
+        },
+        "mods/models/custom.pth": {
+          "exists": true,
+          "matches": true
+        },
+        "mods/enhancement/custom.txt": {
+          "exists": true,
+          "matches": true
+        }
+      },
+      "current_version": "1.0.0",
+      "app_id": "DLSS5Tool.UpdateProbe",
+      "portable": true
+    },
+    "planned-update": {
+      "sdk_version": "0.0.0",
+      "executable": "F:\\project\\DLSS5Tool\\tmp\\velopack-validation-20261116\\installed\\current\\DLSS5ToolProbe.exe",
+      "binary_root": "F:\\project\\DLSS5Tool\\tmp\\velopack-validation-20261116\\installed\\current",
+      "data_root": "F:\\project\\DLSS5Tool\\tmp\\velopack-validation-20261116\\installed",
+      "runtime_root": "F:\\project\\DLSS5Tool\\tmp\\velopack-validation-20261116\\installed\\current\\_internal",
+      "version_marker": "1.0.0",
+      "markers": {
+        "dlss5_settings.json": {
+          "exists": true,
+          "matches": true
+        },
+        "dlss5_queue.json": {
+          "exists": true,
+          "matches": true
+        },
+        "mods/nvngx_dlssnr.dll": {
+          "exists": true,
+          "matches": true
+        },
+        "mods/models/custom.pth": {
+          "exists": true,
+          "matches": true
+        },
+        "mods/enhancement/custom.txt": {
+          "exists": true,
+          "matches": true
+        }
+      },
+      "current_version": "1.0.0",
+      "app_id": "DLSS5Tool.UpdateProbe",
+      "portable": true,
+      "update": {
+        "target_version": "1.0.2",
+        "full_size": 12715928,
+        "full_name": "DLSS5Tool.UpdateProbe-1.0.2-full.nupkg",
+        "deltas": [],
+        "downgrade": false
+      },
+      "download_progress": [
+        50,
+        100
+      ],
+      "pending_version": "1.0.2"
+    },
+    "apply-full": {
+      "sdk_version": "0.0.0",
+      "executable": "F:\\project\\DLSS5Tool\\tmp\\velopack-validation-20261116\\installed\\current\\DLSS5ToolProbe.exe",
+      "binary_root": "F:\\project\\DLSS5Tool\\tmp\\velopack-validation-20261116\\installed\\current",
+      "data_root": "F:\\project\\DLSS5Tool\\tmp\\velopack-validation-20261116\\installed",
+      "runtime_root": "F:\\project\\DLSS5Tool\\tmp\\velopack-validation-20261116\\installed\\current\\_internal",
+      "version_marker": "1.0.0",
+      "markers": {
+        "dlss5_settings.json": {
+          "exists": true,
+          "matches": true
+        },
+        "dlss5_queue.json": {
+          "exists": true,
+          "matches": true
+        },
+        "mods/nvngx_dlssnr.dll": {
+          "exists": true,
+          "matches": true
+        },
+        "mods/models/custom.pth": {
+          "exists": true,
+          "matches": true
+        },
+        "mods/enhancement/custom.txt": {
+          "exists": true,
+          "matches": true
+        }
+      },
+      "current_version": "1.0.0",
+      "app_id": "DLSS5Tool.UpdateProbe",
+      "portable": true,
+      "update": {
+        "target_version": "1.0.2",
+        "full_size": 12715928,
+        "full_name": "DLSS5Tool.UpdateProbe-1.0.2-full.nupkg",
+        "deltas": [],
+        "downgrade": false
+      },
+      "download_progress": [],
+      "pending_version": "1.0.2"
+    },
+    "after-legacy": {
+      "sdk_version": "0.0.0",
+      "executable": "F:\\project\\DLSS5Tool\\tmp\\velopack-validation-20261116\\installed\\current\\DLSS5ToolProbe.exe",
+      "binary_root": "F:\\project\\DLSS5Tool\\tmp\\velopack-validation-20261116\\installed\\current",
+      "data_root": "F:\\project\\DLSS5Tool\\tmp\\velopack-validation-20261116\\installed\\current",
+      "runtime_root": "F:\\project\\DLSS5Tool\\tmp\\velopack-validation-20261116\\installed\\current\\_internal",
+      "version_marker": "1.0.2",
+      "markers": {
+        "dlss5_settings.json": {
+          "exists": false,
+          "matches": false
+        },
+        "dlss5_queue.json": {
+          "exists": false,
+          "matches": false
+        },
+        "mods/nvngx_dlssnr.dll": {
+          "exists": false,
+          "matches": false
+        },
+        "mods/models/custom.pth": {
+          "exists": false,
+          "matches": false
+        },
+        "mods/enhancement/custom.txt": {
+          "exists": false,
+          "matches": false
+        }
+      },
+      "current_version": "1.0.2",
+      "app_id": "DLSS5Tool.UpdateProbe",
+      "portable": true
+    },
+    "after-stable": {
+      "sdk_version": "0.0.0",
+      "executable": "F:\\project\\DLSS5Tool\\tmp\\velopack-validation-20261116\\installed\\current\\DLSS5ToolProbe.exe",
+      "binary_root": "F:\\project\\DLSS5Tool\\tmp\\velopack-validation-20261116\\installed\\current",
+      "data_root": "F:\\project\\DLSS5Tool\\tmp\\velopack-validation-20261116\\installed",
+      "runtime_root": "F:\\project\\DLSS5Tool\\tmp\\velopack-validation-20261116\\installed\\current\\_internal",
+      "version_marker": "1.0.2",
+      "markers": {
+        "dlss5_settings.json": {
+          "exists": true,
+          "matches": true
+        },
+        "dlss5_queue.json": {
+          "exists": true,
+          "matches": true
+        },
+        "mods/nvngx_dlssnr.dll": {
+          "exists": true,
+          "matches": true
+        },
+        "mods/models/custom.pth": {
+          "exists": true,
+          "matches": true
+        },
+        "mods/enhancement/custom.txt": {
+          "exists": true,
+          "matches": true
+        }
+      },
+      "current_version": "1.0.2",
+      "app_id": "DLSS5Tool.UpdateProbe",
+      "portable": true
+    }
+  },
+  "result": "Native 1.0.0 -> 1.0.2 passed. All five current/ markers absent after update; all five stable-root markers preserved. Synthetic input only."
+}
