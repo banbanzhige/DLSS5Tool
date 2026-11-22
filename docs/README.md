@@ -69,7 +69,7 @@
 
 - 仓库维护：[卫生守则与空间预算](development/REPOSITORY_HYGIENE.md)、[2026-09-11 临时目录盘点](development/TMP_AUDIT_20260911.md)
 
-- 当前候选：[v3.1.5 更新说明](release/RELEASE_NOTES_v3.1.5.md)、[本地打包与发布状态](release/PACKAGING_INDEX.md)。本轮改善窗口恢复时的黑屏或黑块、优化内存压力等待，并增加导出失败后的缓存清理与重试入口；增量仅支持 v3.1.3 到 v3.1.5 的 lite/full 两种形态。公开下载状态以 GitHub Releases 为准，分发许可审查仍待完成。
+- 当前候选：[v3.1.6 更新说明](release/RELEASE_NOTES_v3.1.6.md)、[本地打包与发布状态](release/PACKAGING_INDEX.md)。本轮加固导出与缓存收尾的显存清理重试、连续切换尺寸时的共享缓冲防护，以及增量更新回滚对本地占用文档的容错；增量仅支持 v3.1.5 到 v3.1.6 的 lite/full 两种形态。公开下载状态以 GitHub Releases 为准，分发许可审查仍待完成。
 - 既有功能与历史验证：[NVOFA 集成验证](experiments/NVOFA_INTEGRATION.md)、[深度下线状态](experiments/DEPTH_REFERENCE_STATUS.md)、[实施核对](development/IMPLEMENTATION_READINESS.md)
 
 - 用户指南：[简体中文](USER_GUIDE.md)、[English](USER_GUIDE.en.md)

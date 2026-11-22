@@ -15,13 +15,13 @@
 </p>
 
 <p align="center">
-  <a href="CHANGELOG.md"><img src="https://img.shields.io/badge/source-v3.1.5-0E7490?style=flat&amp;labelColor=475569" alt="Source version v3.1.5" height="20"></a>
+  <a href="CHANGELOG.md"><img src="https://img.shields.io/badge/source-v3.1.6-0E7490?style=flat&amp;labelColor=475569" alt="Source version v3.1.6" height="20"></a>
   <a href="#quick-start"><img src="https://img.shields.io/badge/platform-Windows_x64-0369A1?style=flat&amp;labelColor=475569" alt="Platform: Windows x64" height="20"></a>
   <a href="#2-select-the-runtime-for-your-gpu"><img src="https://img.shields.io/badge/GPU-NVIDIA_RTX-0E7490?style=flat&amp;labelColor=475569" alt="GPU: NVIDIA RTX; select the runtime for your GPU generation" height="20"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-GPLv3-0369A1?style=flat&amp;labelColor=475569" alt="Combined source licensed under GPLv3" height="20"></a>
 </p>
 
-This README describes the **v3.1.5** candidate, speeding up mixed-size image processing and configuration changes, and allowing future updates to preserve locally edited or missing documentation. Check the actual Release assets for public availability. See the [v3.1.5 release notes](docs/release/RELEASE_NOTES_v3.1.5.md) and the [redistribution restrictions](#license).
+This README describes the **v3.1.6** candidate, hardening GPU memory cleanup retries on export teardown, resize buffer guards during repeated geometry switches, and locked-document tolerance during delta update rollbacks. Check the actual Release assets for public availability. See the [v3.1.6 release notes](docs/release/RELEASE_NOTES_v3.1.6.md) and the [redistribution restrictions](#license).
 
 ## Features
 
@@ -208,9 +208,9 @@ Lower playback quality, try smaller media or 2× scaling, and temporarily disabl
 
 **How do I update?**
 
-Use **About → Check for updates**, or download a Release. This build prepares lite/full incremental updates from v3.1.4 to v3.1.5; they become available through Releases and the updater only after official publication. Earlier versions should use complete archives; updates are not automatically chained across versions.
+Use **About → Check for updates**, or download a Release. This build prepares lite/full incremental updates from v3.1.5 to v3.1.6; they become available through Releases and the updater only after official publication. Earlier versions should use complete archives; updates are not automatically chained across versions.
 
-Choose `lite` for Lite, or `full` when inference components are installed. Do not replace only the EXE or mix old components into v3.1.5. The [historical component-reuse guide](docs/release/UPGRADE_v2.3.1.md) applies only to the versions it lists.
+Choose `lite` for Lite, or `full` when inference components are installed. Do not replace only the EXE or mix old components into v3.1.6. The [historical component-reuse guide](docs/release/UPGRADE_v2.3.1.md) applies only to the versions it lists.
 
 When a matching payload exists, the updater downloads changed files for the installed edition, verifies them, then asks again before exiting for the standalone helper to install it. Without a matching payload, Lite offers its complete archive; Full directs you to the release page for Full or Lite plus the matching add-on. Versions without the update helper must be upgraded by fully extracting the new release into a new folder. Incremental updates require the matching assets on the release page. See the [update guide](docs/USER_GUIDE.en.md).
 
