@@ -333,7 +333,15 @@ def test_real_spawn_handoff_reuses_capacity_grows_and_changes_pixel_format():
 @pytest.mark.parametrize('setting', ['fixture_native_failure', 'fixture_lost_ack'])
 def test_dispatched_failure_retires_worker_before_releasing_candidate(setting):
     owner = ProtocolOwner()
-    names = []
+    names = [owner._input_memory.name, owner._output_memory.name]
+    original_request = owner.request
+
+    def record_request(operation, **payload):
+        if operation == 'reconfigure':
+            names.extend((payload['input_name'], payload['output_name']))
+        return original_request(operation, **payload)
+
+    owner.request = record_request
     try:
         with pytest.raises((RuntimeError, EOFError)):
             reconfigure_session(owner, 13, 9, {setting: True})
@@ -344,6 +352,7 @@ def test_dispatched_failure_retires_worker_before_releasing_candidate(setting):
         assert not owner._reconfigure_frames
     finally:
         owner.close()
+    assert len(names) == 4 and len(set(names)) == 4
     for name in names:
         with pytest.raises(FileNotFoundError):
             shared_memory.SharedMemory(name=name)

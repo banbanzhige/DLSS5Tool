@@ -1693,7 +1693,7 @@ extern "C" __declspec(dllexport) int dlssnr_init(
 
 extern "C" __declspec(dllexport) int dlssnr_create_feature(int width, int height, int preset)
 {
-    if (gpu_input::buffer) return 0;
+    if (gpu_input::buffer || gpu_output::buffer) return 0;
     Log("=== create Feature 18 v2 w=%d h=%d preset=%d ===", width, height, preset);
     return CreateFeatureResources(
         static_cast<UINT>(std::max(width, 0)),
@@ -1702,7 +1702,7 @@ extern "C" __declspec(dllexport) int dlssnr_create_feature(int width, int height
 
 extern "C" __declspec(dllexport) int dlssnr_resize(int width, int height, int preset)
 {
-    if (gpu_input::buffer) return 0;
+    if (gpu_input::buffer || gpu_output::buffer) return 0;
     Log("=== resize Feature 18 v2 w=%d h=%d preset=%d ===", width, height, preset);
     return CreateFeatureResources(
         static_cast<UINT>(std::max(width, 0)),
