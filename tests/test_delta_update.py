@@ -373,6 +373,47 @@ class DeltaTests(unittest.TestCase):
         self.assertEqual(delta.status(self.install)['phase'], 'rolled_back')
         self.assert_baseline()
 
+    def test_locked_document_during_rollback_does_not_block_runtime_recovery(self):
+        self.put(self.before, 'README.md', b'old readme')
+        self.put(self.after, 'README.md', b'new readme')
+        self.put(self.install, 'README.md', b'old readme')
+        self.package = builder.build(self.before, self.after, self.root / 'locked-rollback-doc',
+                                     'v3.0.0', 'v3.0.1', 'lite')
+        template = self.install
+        for failure in ('read', 'write'):
+            with self.subTest(failure=failure):
+                self.install = self.root / f'locked-rollback-{failure}'
+                shutil.copytree(template, self.install)
+                self.prepare()
+                original_replace = delta._replace_copy
+                original_record = delta.file_record
+                in_rollback = [False]
+                hit_doc_failure = [False]
+
+                def fail_after_doc(source, destination, scratch):
+                    if not in_rollback[0] and destination == self.install / '_internal/change.dll':
+                        in_rollback[0] = True
+                        raise PermissionError('runtime locked')
+                    if in_rollback[0] and failure == 'write' and destination == self.install / 'README.md':
+                        hit_doc_failure[0] = True
+                        raise PermissionError('document locked during rollback')
+                    return original_replace(source, destination, scratch)
+
+                def fail_doc_read(path):
+                    if in_rollback[0] and failure == 'read' and Path(path) == self.install / 'README.md':
+                        hit_doc_failure[0] = True
+                        raise PermissionError('document unreadable during rollback')
+                    return original_record(path)
+
+                with mock.patch.object(delta, '_replace_copy', side_effect=fail_after_doc), \
+                     mock.patch.object(delta, 'file_record', side_effect=fail_doc_read):
+                    with self.assertRaises(PermissionError):
+                        delta.apply_transaction(self.install)
+                self.assertTrue(hit_doc_failure[0])
+                self.assertEqual(delta.status(self.install)['phase'], 'rolled_back')
+                self.assertEqual((self.install / 'DLSS5Tool.exe').read_bytes(), b'old exe')
+                self.assertEqual((self.install / '_internal/change.dll').read_bytes(), b'old dll')
+
     def test_legacy_internal_runtime_is_preserved_with_or_without_mods(self):
         for has_mods in (True, False):
             with self.subTest(has_mods=has_mods):

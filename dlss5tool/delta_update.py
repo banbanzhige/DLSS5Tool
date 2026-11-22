@@ -463,22 +463,37 @@ def rollback(root, manifest, touched):
     for name in reversed(touched):
         try:
             destination = safe_path(root, name)
-            if is_document(name) and destination.is_file():
-                actual = file_record(destination)
-                if actual not in (manifest['before'].get(name), manifest['after'].get(name)):
-                    continue  # Preserve notes edited while another file triggered rollback.
+            document = is_document(name)
+            if document:
+                try:
+                    if destination.is_file():
+                        actual = file_record(destination)
+                        if actual not in (manifest['before'].get(name), manifest['after'].get(name)):
+                            continue  # Preserve notes edited while another file triggered rollback.
+                except OSError:
+                    continue
             if name in manifest['before']:
                 backup = safe_path(directory, 'backup/' + name)
                 if file_record(backup) != manifest['before'][name]:
                     raise DeltaError('Rollback backup failed integrity check')
-                if destination.is_file() and file_record(destination) == manifest['before'][name]:
-                    continue  # Failed replacement may have left the old, locked file intact.
-                _replace_copy(backup, destination, safe_path(directory, 'scratch'))
+                try:
+                    if destination.is_file() and file_record(destination) == manifest['before'][name]:
+                        continue  # Failed replacement may have left the old, locked file intact.
+                    _replace_copy(backup, destination, safe_path(directory, 'scratch'))
+                except OSError:
+                    if document:
+                        continue
+                    raise
             elif destination.exists():
-                # Never delete a file another process/user changed after apply.
-                if file_record(destination) != manifest['after'][name]:
-                    raise DeltaError('New file changed after installation; manual recovery required')
-                destination.unlink()
+                try:
+                    # Never delete a file another process/user changed after apply.
+                    if file_record(destination) != manifest['after'][name]:
+                        raise DeltaError('New file changed after installation; manual recovery required')
+                    destination.unlink()
+                except OSError:
+                    if document:
+                        continue
+                    raise
         except Exception as ex:
             errors.append(f'{name}: {ex}')
     if errors:
