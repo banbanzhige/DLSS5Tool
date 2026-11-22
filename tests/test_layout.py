@@ -1,5 +1,6 @@
 """Source layout contracts; no native loading, GPU or PyInstaller build."""
 import ast
+import contextlib
 import hashlib
 import json
 import os
@@ -15,6 +16,23 @@ from dlss5tool import app_settings, export_queue, paths, mod_paths
 
 
 ROOT = Path(__file__).resolve().parents[1]
+
+
+@contextlib.contextmanager
+def _temporary_environ(**updates):
+    """Mutate only specific keys so Windows empty-string env vars stay intact."""
+    sentinel = object()
+    previous = {key: os.environ.get(key, sentinel) for key in updates}
+    try:
+        for key, value in updates.items():
+            os.environ[key] = value
+        yield
+    finally:
+        for key, value in previous.items():
+            if value is sentinel:
+                os.environ.pop(key, None)
+            else:
+                os.environ[key] = value
 
 
 class LayoutTests(unittest.TestCase):
@@ -40,7 +58,8 @@ class LayoutTests(unittest.TestCase):
                 self.assertEqual(old.read_bytes(), b'original state')
 
     def test_explicit_state_overrides_do_not_trigger_migration(self):
-        with mock.patch.dict(os.environ, {'DLSS5TOOL_SETTINGS_PATH': 'custom-settings.json', 'DLSS5TOOL_QUEUE_PATH': 'custom-queue.json'}), \
+        with _temporary_environ(DLSS5TOOL_SETTINGS_PATH='custom-settings.json',
+                                DLSS5TOOL_QUEUE_PATH='custom-queue.json'), \
                 mock.patch.object(paths, 'state_path', side_effect=AssertionError('must not migrate')):
             self.assertEqual(app_settings.settings_path(), os.path.abspath('custom-settings.json'))
             self.assertEqual(export_queue.queue_path(), os.path.abspath('custom-queue.json'))
@@ -156,7 +175,7 @@ class LayoutTests(unittest.TestCase):
                     return real_file_digest(handle, algorithm)
                 with mock.patch.object(sys, 'path', list(sys.path)), \
                         mock.patch.object(hashlib, 'file_digest', side_effect=fixture_digest), \
-                        mock.patch.dict(os.environ, {'DLSS5_DEPTH_SOURCE': str(root / 'depth'), 'DLSS5_LOCAL_CANDIDATE': '1'}), \
+                        _temporary_environ(DLSS5_DEPTH_SOURCE=str(root / 'depth'), DLSS5_LOCAL_CANDIDATE='1'), \
                         mock.patch('dlss5tool.gpu_export_runtime.load_components', return_value=None), \
                         mock.patch('dlss5tool.cuda_vsr_runtime.load_components', return_value=None), \
                         mock.patch('dlss5tool.resident_sr_runtime.load_components', return_value=None), \
@@ -180,24 +199,70 @@ class LayoutTests(unittest.TestCase):
                     self.assertNotIn('dlss5tool.guidance_worker', call.kwargs['excludes'])
                     self.assertIn('guidance_worker', call.kwargs['excludes'])
 
-    def test_documentation_links_resolve(self):
-        files = [*ROOT.glob('*.md'), *(ROOT / 'docs').rglob('*.md'), ROOT / 'mods/README.md']
-        if (ROOT / '.git').exists():
-            # Check tracked and new unignored docs without failing on local-only
-            # archive notes excluded by .gitignore (such as docs/development/*).
+    @staticmethod
+    def _doc_markdown_files(root=ROOT):
+        top_level = [file for file in root.glob('*.md') if file.is_file()]
+        docs = [file for file in (root / 'docs').rglob('*.md') if file.is_file()]
+        if (root / '.git').exists():
+            # Use -z (NUL-separated raw UTF-8 paths) so non-ASCII filenames are
+            # never quoted/escaped by core.quotePath while still skipping ignored
+            # local-only notes under docs/development/.
             listed = subprocess.run(
-                ['git', 'ls-files', '--cached', '--others', '--exclude-standard', '--', 'docs'],
-                cwd=ROOT, capture_output=True, text=True, encoding='utf-8', timeout=20,
+                ['git', 'ls-files', '-z', '--cached', '--others', '--exclude-standard', '--', 'docs'],
+                cwd=root, capture_output=True, text=True, encoding='utf-8', timeout=20,
                 creationflags=getattr(subprocess, 'CREATE_NO_WINDOW', 0),
             )
             if listed.returncode == 0:
-                docs = [ROOT / line for line in listed.stdout.splitlines()
-                        if line.lower().endswith('.md') and (ROOT / line).is_file()]
-                files = [*ROOT.glob('*.md'), *docs, ROOT / 'mods/README.md']
-        self.assertTrue(files)
-        for file in files:
+                docs = [root / entry for entry in listed.stdout.split('\0')
+                        if entry and entry.lower().endswith('.md') and (root / entry).is_file()]
+        return [*top_level, *docs, root / 'mods/README.md']
+
+    @classmethod
+    def _broken_doc_links(cls, root=ROOT):
+        broken = []
+        for file in cls._doc_markdown_files(root):
             for target in re.findall(r'\]\(([^\s)]+)\)', file.read_text(encoding='utf-8')):
                 if re.match(r'^(?:[a-z]+:|#|/)', target, re.I):
                     continue
                 relative = target.split('#', 1)[0]
-                self.assertTrue((file.parent / relative).exists(), f'{file.relative_to(ROOT)}: {target}')
+                if not (file.parent / relative).exists():
+                    broken.append(f'{file.relative_to(root)}: {target}')
+        return broken
+
+    def test_documentation_links_resolve(self):
+        self.assertTrue((ROOT / 'mods/README.md').is_file(), 'Required packaging doc mods/README.md is missing')
+        files = self._doc_markdown_files()
+        self.assertTrue(files)
+        self.assertEqual(self._broken_doc_links(), [])
+
+    def test_documentation_link_discovery_handles_non_ascii_filenames_under_quotepath(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / 'docs/development').mkdir(parents=True)
+            (root / 'mods').mkdir()
+            (root / '.gitignore').write_text('docs/development/\n', encoding='utf-8')
+            (root / 'mods/README.md').write_text('# mods\n', encoding='utf-8')
+            tracked = root / 'docs/中文说明.md'
+            tracked.write_text('[bad](missing-tracked.md)\n', encoding='utf-8')
+            untracked = root / 'docs/新增指南.md'
+            untracked.write_text('[bad](missing-untracked.md)\n', encoding='utf-8')
+            ignored = root / 'docs/development/本地草稿.md'
+            ignored.write_text('[ignored](missing-ignored.md)\n', encoding='utf-8')
+            subprocess.run(['git', 'init'], cwd=root, check=True, capture_output=True,
+                           creationflags=getattr(subprocess, 'CREATE_NO_WINDOW', 0))
+            subprocess.run(['git', 'config', 'core.quotePath', 'true'], cwd=root, check=True,
+                           capture_output=True, creationflags=getattr(subprocess, 'CREATE_NO_WINDOW', 0))
+            subprocess.run(['git', 'add', 'docs/中文说明.md'], cwd=root, check=True,
+                           capture_output=True, creationflags=getattr(subprocess, 'CREATE_NO_WINDOW', 0))
+            discovered = self._doc_markdown_files(root)
+            self.assertIn(tracked, discovered)
+            self.assertIn(untracked, discovered)
+            self.assertNotIn(ignored, discovered)
+            broken = self._broken_doc_links(root)
+            self.assertEqual(len(broken), 2)
+            self.assertTrue(any('中文说明.md: missing-tracked.md' in item for item in broken))
+            self.assertTrue(any('新增指南.md: missing-untracked.md' in item for item in broken))
+            (root / 'mods/README.md').unlink()
+            self.assertIn(root / 'mods/README.md', self._doc_markdown_files(root))
+            with self.assertRaises(FileNotFoundError):
+                self._broken_doc_links(root)
