@@ -60,21 +60,40 @@ def test_only_ready_unchanged_probe_can_resume_after_bootloader_failure(tmp_path
 
 def test_release_verifier_separates_documents_from_required_installation_integrity(tmp_path):
     before, after, _ = endpoints(tmp_path)
-    (before / 'README.md').write_bytes(b'old official readme')
-    (after / 'README.md').write_bytes(b'new official readme')
+    for directory, revision in ((before, b'old'), (after, b'new')):
+        (directory / 'README.md').write_bytes(revision + b' official readme')
+        (directory / 'mods').mkdir()
+        (directory / 'mods/README.md').write_bytes(revision + b' mod instructions')
     asset = build(before, after, tmp_path / 'document-payload', 'v3.0.1', 'v3.0.2', 'lite')
-    prepare = delta.prepare
-
-    def prepare_used_install(root, *args, **kwargs):
-        (root / 'README.md').write_bytes(b'my local notes')
-        return prepare(root, *args, **kwargs)
-
-    with patch('scripts.verify_release_upgrade.delta.prepare', side_effect=prepare_used_install), \
-         patch('scripts.verify_release_upgrade.subprocess.Popen', return_value=Mock(pid=123)), \
+    output = tmp_path / 'used-install'
+    with patch('scripts.verify_release_upgrade.subprocess.Popen', return_value=Mock(pid=123)), \
          patch('scripts.verify_release_upgrade.subprocess.run', side_effect=simulated_helper):
-        report = verify_upgrade(before, after, asset, 'lite', tmp_path / 'used-install')
+        report = verify_upgrade(before, after, asset, 'lite', output, case='used-install')
     assert report['state']['phase'] == 'complete'
     assert report['managed_target_files_verified'] == 3
     assert report['rollback_backup_files_verified'] == 2
-    assert report['documents_excluded_from_installation_integrity'] == ['README.md']
-    assert (tmp_path / 'used-install/installed/README.md').read_bytes() == b'my local notes'
+    assert report['local_documents_preserved'] == {'mods/README.md': 'missing', 'README.md': 'modified'}
+    assert (output / 'installed/README.md').read_bytes() == b'local verification notes\n'
+    assert not (output / 'installed/mods/README.md').exists()
+
+
+def test_release_verifier_requires_a_recorded_executable_rejection(tmp_path):
+    before, after, asset = endpoints(tmp_path)
+
+    def rejected_helper(command, **kwargs):
+        with pytest.raises(delta.DeltaError, match=r'no files replaced: DLSS5Tool\.exe'):
+            simulated_helper(command, **kwargs)
+        return SimpleNamespace(returncode=1)
+
+    with patch('scripts.verify_release_upgrade.subprocess.Popen', return_value=Mock(pid=123)), \
+         patch('scripts.verify_release_upgrade.subprocess.run', side_effect=rejected_helper):
+        report = verify_upgrade(before, after, asset, 'lite', tmp_path / 'damaged', case='damaged-executable')
+    assert report['state']['phase'] == 'failed'
+    assert report['source_files_verified_unchanged'] == 3
+    assert not report['replacement_journal_created'] and not report['rollback_backup_created']
+    assert (before / 'DLSS5Tool.exe').read_bytes() == b'old'
+
+    with patch('scripts.verify_release_upgrade.subprocess.Popen', return_value=Mock(pid=123)), \
+         patch('scripts.verify_release_upgrade.subprocess.run', return_value=SimpleNamespace(returncode=1)):
+        with pytest.raises(ValueError, match='Expected old helper to reject the damaged executable'):
+            verify_upgrade(before, after, asset, 'lite', tmp_path / 'unreported', case='damaged-executable')
