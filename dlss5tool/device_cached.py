@@ -19,6 +19,28 @@ def adapter_for(settings, components):
     return adapter
 
 
+def _rollback_close(owner, original_error, *, attempts=3):
+    """Retry teardown during failed construction while preserving original_error."""
+    first_error = None
+    for attempt in range(1, attempts + 1):
+        try:
+            owner.close()
+        except Exception as cleanup:
+            if first_error is None:
+                first_error = str(cleanup)
+            if attempt == attempts and hasattr(original_error, 'add_note'):
+                detail = str(cleanup)
+                note = (first_error if detail == first_error
+                        else f'{first_error} (final attempt {attempt}: {detail})')
+                original_error.add_note(f'Init rollback cleanup failed: {note}')
+        else:
+            if first_error is not None and hasattr(original_error, 'add_note'):
+                original_error.add_note(
+                    f'Init rollback cleanup failed: {first_error} (recovered on retry {attempt - 1})'
+                )
+            break
+
+
 class DeviceEnhancement:
     def __init__(self,width,height,settings,components,adapter):
         from dlss5tool.dlss_host_process import ProcessLive
@@ -42,8 +64,8 @@ class DeviceEnhancement:
             values=dict(self.nr.gpu_output_create());pitch=values.pop('pitch')
             mapping=SharedCudaBuffer(self.cuda,**values);self.mappings.append(mapping)
             self.output=SharedCudaImage(mapping,width,height,pitch,layout=layout,color_profile=profile)
-        except BaseException:
-            self.close();raise
+        except BaseException as error:
+            _rollback_close(self, error);raise
 
     def process(self,rgba,reset=False):
         if self._closed or self._failed:raise RuntimeError('Cached enhancement closed or failed')
@@ -103,8 +125,8 @@ class DeviceFrameGeneration:
             self.mapping=SharedCudaBuffer(self.cuda,**self.native.shared_descriptor)
             self.output=SharedCudaImage(self.mapping,width,height,self.native.shared_pitch,
                 layout=layout,color_profile=profile)
-        except BaseException:
-            self.close();raise
+        except BaseException as error:
+            _rollback_close(self, error);raise
 
     def process_cached(self,rgba,reset,consume):
         """Consume one generated lease at a time before the native reuse ACK."""

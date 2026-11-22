@@ -138,7 +138,13 @@ class NativeGpuVideoWriter:
                         self._cuda=None
                     else:
                         if self._upload is not None:
-                            self._cuda.free(self._upload)
+                            owned=getattr(self._cuda,'_buffers',None)
+                            try:
+                                self._cuda.free(self._upload)
+                            except Exception:
+                                if owned is not None and self._upload not in owned:
+                                    self._upload=None
+                                raise
                             self._upload=None
                         self._cuda=None
                 except Exception as error:

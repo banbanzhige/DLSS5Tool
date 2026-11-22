@@ -25,7 +25,7 @@ class SharedCudaBuffer:
     def __init__(self,session,producer_pid,handle,allocation,size,producer_luid):
         self.session=session;self.pointer=C.c_uint64();self.external=C.c_void_p();self.size=0
         self.producer_pid,self.handle=None,None
-        self._image_owners=0;self._failed=False
+        self._image_owners=0;self._failed=False;self._closing=False
         self._images=weakref.WeakSet()
         self._free=bind(session.cuda,'cuMemFree_v2',[C.c_uint64])
         self._destroy=bind(session.cuda,'cuDestroyExternalMemory',[C.c_void_p])
@@ -91,7 +91,8 @@ class SharedCudaBuffer:
 
     def check_reconfigure(self):
         self.session._check()
-        if self._failed or not self.pointer.value:
+        if (getattr(self, '_closing', False) or self._failed
+                or not self.pointer.value or not getattr(self.external, 'value', None)):
             raise RuntimeError('Shared GPU mapping is unavailable')
         images = list(self._images)
         if len(images) != self._image_owners or any(image._leases for image in images):
@@ -118,6 +119,8 @@ class SharedCudaBuffer:
 
     def resume_reconfigure(self, descriptor, width, height, layout, profile):
         from dlss5tool.gpu_reconfigure import register, unregister
+        if getattr(self, '_closing', False):
+            raise RuntimeError('Shared GPU mapping is closing')
         if self.pointer.value or self.external.value:
             raise RuntimeError('Old GPU mapping was not retired')
         values = dict(descriptor)
@@ -141,7 +144,8 @@ class SharedCudaBuffer:
         if not isinstance(frame,ReadyCudaFrame):raise TypeError('Completed CUDA frame lease required')
         frame._check()
         row_bytes=frame.width*(8 if frame.layout=='rgba16f' else 4)
-        if (self._failed or not self.pointer.value or frame.session is not self.session
+        if (getattr(self,'_closing',False) or self._failed or not self.pointer.value
+                or not getattr(self.external,'value',None) or frame.session is not self.session
                 or type(destination_pitch) is not int or destination_pitch<row_bytes
                 or destination_pitch*frame.height>self.size):
             raise ValueError('Shared input owner, pitch or allocation mismatch')
@@ -159,19 +163,38 @@ class SharedCudaBuffer:
     def close(self):
         errors=[]
         if self._image_owners:raise RuntimeError('Shared GPU buffer still has image owners')
-        if not self.pointer.value and not self.external.value:
-            from dlss5tool.gpu_reconfigure import unregister
+        has_handles=bool(self.pointer.value or self.external.value)
+        if has_handles or not getattr(self,'_closing',False):
+            # Validate owning thread and active session before mutating closing
+            # state so a wrong-thread close() cannot poison a live mapping.
+            self.session._check()
+        # Once closing begins on the owner, reject all future consumption, leasing
+        # or rebinding, while keeping registry tracking until both handles release.
+        self._closing=True
+        self._failed=True
+        from dlss5tool.gpu_reconfigure import unregister
+        if not has_handles:
             unregister(self)
             return
-        with self.session.current():
-            if self.pointer.value:
-                status=self._free(self.pointer)
-                errors.append(status)
-                if not status:self.pointer=C.c_uint64()
-            if self.external.value:
-                status=self._destroy(self.external)
-                errors.append(status)
-                if not status:self.external=C.c_void_p()
-        if any(errors):raise RuntimeError(f'Shared GPU buffer cleanup failed: {errors}')
-        from dlss5tool.gpu_reconfigure import unregister
-        unregister(self)
+        pop_error=None
+        try:
+            with self.session.current():
+                if self.pointer.value:
+                    status=self._free(self.pointer)
+                    errors.append(status)
+                    if not status:self.pointer=C.c_uint64()
+                if self.external.value:
+                    status=self._destroy(self.external)
+                    errors.append(status)
+                    if not status:self.external=C.c_void_p()
+        except Exception as error:
+            pop_error=error
+        if not self.pointer.value and not self.external.value:
+            unregister(self)
+        if any(errors):
+            err=RuntimeError(f'Shared GPU buffer cleanup failed: {errors}')
+            if pop_error is not None and hasattr(err,'add_note'):
+                err.add_note(str(pop_error))
+            raise err
+        if pop_error is not None:
+            raise pop_error

@@ -820,10 +820,23 @@ def export_video(source, output, *, multiplier=2, scale=1, enhance=False, settin
             if item is not None:
                 actions.append(item.close if hasattr(item, 'close') else item.release)
         for action in actions:
-            try:
-                action()
-            except Exception as cleanup:
-                cleanup_errors.append(str(cleanup))
+            first_error = None
+            for attempt in range(1, 4):
+                try:
+                    action()
+                except Exception as cleanup:
+                    if first_error is None:
+                        first_error = str(cleanup)
+                    if attempt == 3:
+                        detail = str(cleanup)
+                        cleanup_errors.append(
+                            first_error if detail == first_error
+                            else f'{first_error} (final attempt {attempt}: {detail})'
+                        )
+                else:
+                    if first_error is not None:
+                        cleanup_errors.append(f'{first_error} (recovered on retry {attempt - 1})')
+                    break
         if staging is not None and staging.exists():
             try:
                 staging.unlink()

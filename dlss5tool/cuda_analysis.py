@@ -129,23 +129,30 @@ class CudaAnalysis:
         if self._closed: return
         if self._gray and self._gray._leases: raise RuntimeError('Analysis gray output still leased')
         if self._rgba and self._rgba._leases: raise RuntimeError('Analysis RGB output still leased')
-        with self.session.current():
-            if self._stream.value:
-                check(self._sync(self._stream),'Analysis final completion')
-                check(self._destroy(self._stream),'Analysis stream destroy')
-                self._stream=C.c_void_p()
-            if self._module.value:
-                check(self._unload(self._module),'Analysis module unload')
-                self._module=C.c_void_p()
-        for image in (self._gray,self._rgba):
-            if image: image.close()
+        if self._stream.value or self._module.value:
+            with self.session.current():
+                if self._stream.value:
+                    check(self._sync(self._stream),'Analysis final completion')
+                    check(self._destroy(self._stream),'Analysis stream destroy')
+                    self._stream=C.c_void_p()
+                if self._module.value:
+                    check(self._unload(self._module),'Analysis module unload')
+                    self._module=C.c_void_p()
+        owned = getattr(self.session, '_buffers', None)
         remaining, errors = [], []
+        for image in (self._gray,self._rgba):
+            if image:
+                try:
+                    image.close()
+                except Exception as error:
+                    errors.append(error)
         for pointer in self._buffers:
             try:
                 self.session.free(pointer)
             except Exception as error:
                 errors.append(error)
-                remaining.append(pointer)
+                if owned is None or pointer in owned:
+                    remaining.append(pointer)
         self._buffers = remaining
         if errors:
             for extra in errors[1:]:

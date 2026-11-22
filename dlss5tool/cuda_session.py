@@ -49,25 +49,37 @@ class CudaSession:
     @contextlib.contextmanager
     def current(self):
         self._check();check(self._push(self.context),'CUDA push')
+        body_error=None
         try:yield
+        except BaseException as error:
+            body_error=error
+            raise
         finally:
-            popped=C.c_void_p();check(self._pop(C.byref(popped)),'CUDA pop')
+            popped=C.c_void_p()
+            status=self._pop(C.byref(popped))
+            if status:
+                if body_error is not None:
+                    if hasattr(body_error,'add_note'):
+                        body_error.add_note(f'CUDA pop: CUDA error {status}')
+                else:
+                    check(status,'CUDA pop')
 
     def allocate(self,size):
         if type(size) is not int or size<=0:raise ValueError('Positive allocation required')
         with self.current():
             pointer=C.c_uint64();check(self._alloc(C.byref(pointer),size),'CUDA allocate')
-        self._buffers.add(pointer.value)
-        self._buffer_sizes[pointer.value]=size
+            self._buffers.add(pointer.value)
+            self._buffer_sizes[pointer.value]=size
         return pointer.value
 
     def free(self,pointer):
         """Release only a buffer allocated by this session, on its owner thread."""
         self._check()
         if pointer not in self._buffers:raise ValueError('CUDA buffer is not owned by this session')
-        with self.current():check(self._free(pointer),'CUDA free')
-        self._buffers.remove(pointer)
-        self._buffer_sizes.pop(pointer,None)
+        with self.current():
+            check(self._free(pointer),'CUDA free')
+            self._buffers.remove(pointer)
+            self._buffer_sizes.pop(pointer,None)
 
     def upload(self,pointer,array):
         with self.current():check(self._upload(pointer,array.ctypes.data,array.nbytes),'CUDA upload')
@@ -85,28 +97,39 @@ class CudaSession:
         if self._closed:return
         self._check();errors=[]
         retained=self.__dict__.setdefault('_retained_external',[])
-        with self.current():
-            for pointer in list(self._buffers):
-                status=self._free(pointer)
-                if status:errors.append(status)
-                else:
-                    self._buffers.discard(pointer)
-                    self._buffer_sizes.pop(pointer,None)
-            still_retained=[]
-            for entry in retained:
-                pointer,external,free_fn,destroy_fn=entry
-                if getattr(pointer,'value',0):
-                    status=free_fn(pointer)
-                    if status:errors.append(status)
-                    else:entry[0]=C.c_uint64()
-                if getattr(external,'value',None):
-                    status=destroy_fn(external)
-                    if status:errors.append(status)
-                    else:entry[1]=C.c_void_p()
-                if getattr(entry[0],'value',0) or getattr(entry[1],'value',None):
-                    still_retained.append(entry)
-            retained[:]=still_retained
-        if errors:raise RuntimeError(f'CUDA session cleanup failed: {errors}')
+        if self._buffers or retained:
+            pop_error=None
+            try:
+                with self.current():
+                    for pointer in list(self._buffers):
+                        status=self._free(pointer)
+                        if status:errors.append(status)
+                        else:
+                            self._buffers.discard(pointer)
+                            self._buffer_sizes.pop(pointer,None)
+                    still_retained=[]
+                    for entry in retained:
+                        pointer,external,free_fn,destroy_fn=entry
+                        if getattr(pointer,'value',0):
+                            status=free_fn(pointer)
+                            if status:errors.append(status)
+                            else:entry[0]=C.c_uint64()
+                        if getattr(external,'value',None):
+                            status=destroy_fn(external)
+                            if status:errors.append(status)
+                            else:entry[1]=C.c_void_p()
+                        if getattr(entry[0],'value',0) or getattr(entry[1],'value',None):
+                            still_retained.append(entry)
+                    retained[:]=still_retained
+            except Exception as error:
+                pop_error=error
+            if errors:
+                err=RuntimeError(f'CUDA session cleanup failed: {errors}')
+                if pop_error is not None and hasattr(err,'add_note'):
+                    err.add_note(str(pop_error))
+                raise err
+            if pop_error is not None:
+                raise pop_error
         status=self._release(self.device)
         if status:raise RuntimeError(f'CUDA session cleanup failed: {[status]}')
         self._closed=True

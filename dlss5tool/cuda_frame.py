@@ -206,7 +206,14 @@ class CudaImage:
         self._check()
         if self._leases:
             raise RuntimeError('Cannot free a CUDA image held by a consumer')
-        self.session.free(self._pointer)
+        owned = getattr(self.session, '_buffers', None)
+        try:
+            self.session.free(self._pointer)
+        except Exception:
+            if owned is not None and self._pointer not in owned:
+                self._pointer = 0
+                self._closed = True
+            raise
         self._pointer = 0
         self._closed = True
 
@@ -218,6 +225,9 @@ class SharedCudaImage(CudaImage):
     """Lease owner for a mapped D3D buffer; mapping outlives this image owner."""
     @staticmethod
     def _validated_geometry(mapping, width, height, row_pitch, layout, color_profile):
+        if (getattr(mapping, '_closing', False) or getattr(mapping, '_failed', False)
+                or not getattr(mapping.external, 'value', None)):
+            raise RuntimeError('Shared CUDA mapping is closed or failed')
         if (layout, color_profile) not in (('rgba8', 'srgb'), ('rgba16f', 'hdr10_pq'), ('rgba16f', 'hdr10_hlg')):
             raise ValueError('Unsupported shared image color contract')
         dtype = np.dtype(np.float16 if layout == 'rgba16f' else np.uint8)
@@ -267,13 +277,18 @@ class SharedCudaImage(CudaImage):
         super()._check()
         if self._suspended:
             raise RuntimeError('Shared CUDA image is being reconfigured')
+        if (getattr(self._mapping, '_closing', False) or getattr(self._mapping, '_failed', False)
+                or not getattr(self._mapping.external, 'value', None)):
+            raise RuntimeError('Shared CUDA image mapping is closed or failed')
         if self._mapping.pointer.value != self._pointer:
             raise RuntimeError('Shared CUDA image mapping expired')
 
     def close(self):
         if self._closed:
             return
-        if self._suspended:
+        if (self._suspended or getattr(self._mapping, '_closing', False)
+                or getattr(self._mapping, '_failed', False)
+                or not getattr(self._mapping.external, 'value', None)):
             self.session._check()
         else:
             self._check()
