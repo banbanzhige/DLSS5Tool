@@ -157,6 +157,10 @@ class LayoutTests(unittest.TestCase):
                 with mock.patch.object(sys, 'path', list(sys.path)), \
                         mock.patch.object(hashlib, 'file_digest', side_effect=fixture_digest), \
                         mock.patch.dict(os.environ, {'DLSS5_DEPTH_SOURCE': str(root / 'depth'), 'DLSS5_LOCAL_CANDIDATE': '1'}), \
+                        mock.patch('dlss5tool.gpu_export_runtime.load_components', return_value=None), \
+                        mock.patch('dlss5tool.cuda_vsr_runtime.load_components', return_value=None), \
+                        mock.patch('dlss5tool.resident_sr_runtime.load_components', return_value=None), \
+                        mock.patch('dlss5tool.resident_hdr_runtime.load_components', return_value=None), \
                         mock.patch('dlss5tool.frame_generation.runtime_files', return_value=(root/'runtime/dlssg_video_worker.exe', root/'runtime/nvngx_dlssg.dll')), \
                         mock.patch('dlss5tool.frame_generation.PINNED_RUNTIME', __import__('hashlib').sha256(b'').hexdigest()), \
                         mock.patch('dlss5tool.video_export.find_ffmpeg', return_value=str(root/'media/bin/ffmpeg.exe')), \
@@ -178,6 +182,19 @@ class LayoutTests(unittest.TestCase):
 
     def test_documentation_links_resolve(self):
         files = [*ROOT.glob('*.md'), *(ROOT / 'docs').rglob('*.md'), ROOT / 'mods/README.md']
+        if (ROOT / '.git').exists():
+            # Check tracked and new unignored docs without failing on local-only
+            # archive notes excluded by .gitignore (such as docs/development/*).
+            listed = subprocess.run(
+                ['git', 'ls-files', '--cached', '--others', '--exclude-standard', '--', 'docs'],
+                cwd=ROOT, capture_output=True, text=True, encoding='utf-8', timeout=20,
+                creationflags=getattr(subprocess, 'CREATE_NO_WINDOW', 0),
+            )
+            if listed.returncode == 0:
+                docs = [ROOT / line for line in listed.stdout.splitlines()
+                        if line.lower().endswith('.md') and (ROOT / line).is_file()]
+                files = [*ROOT.glob('*.md'), *docs, ROOT / 'mods/README.md']
+        self.assertTrue(files)
         for file in files:
             for target in re.findall(r'\]\(([^\s)]+)\)', file.read_text(encoding='utf-8')):
                 if re.match(r'^(?:[a-z]+:|#|/)', target, re.I):
