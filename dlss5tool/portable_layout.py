@@ -49,6 +49,20 @@ def _read_metadata(path):
     return raw
 
 
+def validate_layout_config(config):
+    """Validate explicit managed portable layout metadata."""
+    if (not isinstance(config, dict)
+            or set(config) != {'schema', 'provider', 'package_id', 'edition', 'channel'}
+            or type(config['schema']) is not int or config['schema'] != 1
+            or config['provider'] != 'velopack-portable'
+            or not isinstance(config['package_id'], str)
+            or not re.fullmatch(r'DLSS5Tool(?:\.[A-Za-z0-9_-]+)*', config['package_id'])
+            or config['edition'] not in ('lite', 'full')
+            or config['channel'] != 'win-' + config['edition']):
+        raise LayoutError('Invalid managed portable layout marker')
+    return config
+
+
 def load_portable_layout(binary_root, resource_root, executable_name):
     """Return None for existing packages; an invalid explicit marker fails closed.
 
@@ -66,15 +80,7 @@ def load_portable_layout(binary_root, resource_root, executable_name):
             raise LayoutError('Managed portable application is missing its layout marker')
         return None
     try:
-        config = json.loads(_read_metadata(marker))
-        if (not isinstance(config, dict) or set(config) != {'schema', 'provider', 'package_id', 'edition', 'channel'}
-                or type(config['schema']) is not int or config['schema'] != 1
-                or config['provider'] != 'velopack-portable'
-                or not isinstance(config['package_id'], str)
-                or not re.fullmatch(r'DLSS5Tool(?:\.[A-Za-z0-9_-]+)*', config['package_id'])
-                or config['edition'] not in ('lite', 'full')
-                or config['channel'] != 'win-' + config['edition']):
-            raise LayoutError('Invalid managed portable layout marker')
+        config = validate_layout_config(json.loads(_read_metadata(marker)))
         if binary_root.name.lower() != 'current' or resource_root != binary_root / '_internal':
             raise LayoutError('Managed portable binary/resource directories do not match')
         root = binary_root.parent

@@ -8,7 +8,6 @@ next case. Run --stage once, then --case with the same --output directory.
 from __future__ import annotations
 
 import argparse
-import hashlib
 import json
 import os
 from pathlib import Path
@@ -21,6 +20,7 @@ import zipfile
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 from dlss5tool import delta_update as delta
+from dlss5tool.managed_update import package_inventory
 
 PACKAGE_ID = 'DLSS5Tool.UpdateProbe'
 APP = 'DLSS5Tool.exe'
@@ -52,21 +52,6 @@ def unpack(archive, destination):
             path.parent.mkdir(parents=True, exist_ok=True)
             with bundle.open(item) as source, path.open('xb') as target:
                 shutil.copyfileobj(source, target)
-
-
-def package_inventory(path):
-    """Audit reconstructed payload bytes independently of ZIP recompression."""
-    inventory = {}
-    with zipfile.ZipFile(path) as bundle:
-        for item in bundle.infolist():
-            if item.is_dir():
-                continue
-            if item.filename in inventory:
-                raise RuntimeError('Duplicate package entry')
-            with bundle.open(item) as source:
-                digest = hashlib.file_digest(source, 'sha256').hexdigest()
-            inventory[item.filename] = {'size': item.file_size, 'sha256': digest}
-    return inventory
 
 
 def native_updater_idle(install):

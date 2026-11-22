@@ -7,7 +7,6 @@ import argparse
 import json
 import os
 from pathlib import Path
-import re
 import shutil
 import subprocess
 import sys
@@ -17,7 +16,7 @@ sys.path.insert(0, str(ROOT))
 from dlss5tool import delta_update as delta
 from dlss5tool.managed_update import SDK_VERSION, manifest_name, package_inventory, validate_target_manifest
 from dlss5tool.mod_paths import GUIDANCE_PROTOCOL
-from dlss5tool.portable_layout import LAYOUT_FILE, PortableLayout
+from dlss5tool.portable_layout import LAYOUT_FILE, LayoutError, PortableLayout, validate_layout_config
 
 
 def write_manifest(package, version, edition, package_id, destination):
@@ -62,12 +61,9 @@ def main():
             parser.error('Use a registered tmp task')
     elif not output.is_relative_to(Path('E:/dist/DLSS5Tool') / args.version):
         parser.error('Deliverables must stay under E:/dist/DLSS5Tool/<version>/')
-    config = delta.read_json(delta.safe_path(base, '_internal/' + LAYOUT_FILE))
-    if (config.get('provider') != 'velopack-portable' or config.get('edition') not in ('lite', 'full')
-            or config.get('channel') != 'win-' + config['edition']
-            or type(config.get('schema')) is not int or config.get('schema') != 1
-            or not isinstance(config.get('package_id'), str)
-            or not re.fullmatch(r'DLSS5Tool(?:\.[A-Za-z0-9_-]+)*', config['package_id'])):
+    try:
+        config = validate_layout_config(delta.read_json(delta.safe_path(base, '_internal/' + LAYOUT_FILE)))
+    except (LayoutError, OSError, ValueError):
         parser.error('Input needs explicit managed portable layout metadata')
     for path in base.rglob('*'):
         delta.safe_path(base, path.relative_to(base))
