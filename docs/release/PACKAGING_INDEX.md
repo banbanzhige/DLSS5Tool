@@ -3,7 +3,7 @@
 ## v3.1.6 — 2026-11-22 · 已验收并上传 GitHub 草稿，未公开发布
 
 - 构建提交 `9714c60` 已按维护者授权推送至 `origin/main`；GitHub 草稿 ID `454597953`（7 个必需附件，合计 7,337,157,270 字节）已全部上传，远端大小/SHA256、正文与构建提交核验通过，保留草稿（本地候选分发声明保持不变）。
-- 输出 `E:/dist/DLSS5Tool/v3.1.6/editions/`，`--check-upload` 通过；已重编 `native/host_v2/dlssnr_host_v2.cpp` 为新版 `runtime/dlssnr_host_v2.dll`（SHA256 `c37ce9ba…`，旧版已备份）并在 RTX 4070 SUPER 通过 4 阶段热切与输出缓冲守卫复核；复用已验证只读光流组件。
+- 输出 `<release_root>/v3.1.6/editions/`，`--check-upload` 通过；已重编 `native/host_v2/dlssnr_host_v2.cpp` 为新版 `runtime/dlssnr_host_v2.dll`（SHA256 `c37ce9ba…`，旧版已备份）并在 RTX 4070 SUPER 通过 4 阶段热切与输出缓冲守卫复核；复用已验证只读光流组件。
 - 正式 `v3.1.5` 线上 7 个附件摘要与本地基线逐字节一致；`v3.1.5 → v3.1.6` lite（24,596,488 B）/ full（24,846,884 B）均由 `v3.1.5` 旧冻结更新助手在临时副本中真实升级至 `complete`。两版的冻结 EXE 实机通过 `--selftest`，lite 另通过 `--vsr-selftest`。
 - 2026-11-23 补验。lite 和 full 的旧助手均保留本地说明的删改状态，并在发现主程序完整性不符时安全拒绝。四份真实事务报告归档在本版 `evidence/`。
 - 三形态 CRC、分卷重组、`full = lite + addon` 精确叠加与三份更新说明一致；新基线已登记至 `packaging/update-policy.json`，可重建构建中间产物与升级副本已安全清理。详见 [v3.1.6 打包记录](V316_PACKAGING_20261122.md)。
