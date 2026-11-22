@@ -21,32 +21,6 @@ class ReconfigurableLive(FakeLive):
         self.update(settings)
 
 
-class ProtocolProxy(ProcessLive):
-    """Exercise orchestration before enabling it in the public proxy."""
-    def update(self, settings):
-        from dlss5tool.host_reconfigure import reconfigure_proxy
-        from dlss5tool.guidance_client import normalize_public_settings
-        reconfigure_proxy(self, self._w, self._h, normalize_public_settings({**self.settings, **settings}))
-
-    def resize(self, width, height, preset=None, settings=None):
-        from dlss5tool.host_reconfigure import reconfigure_proxy
-        from dlss5tool.guidance_client import normalize_public_settings
-        updated = {**self.settings, **(settings or {})}
-        if preset is not None:
-            updated['preset'] = preset
-        reconfigure_proxy(self, width, height, normalize_public_settings(updated), force=True)
-
-    def dequeue(self):
-        from dlss5tool.host_reconfigure import retained_outputs
-        outputs = retained_outputs(self)
-        return outputs.popleft() if outputs else super().dequeue()
-
-    @property
-    def pending(self):
-        from dlss5tool.host_reconfigure import retained_outputs
-        return len(retained_outputs(self))+super().pending
-
-
 def make_live(**settings):
     return ProcessLive(8, 6, dict(host_backend='v2', **settings), _live_factory=ReconfigurableLive)
 

@@ -78,11 +78,35 @@ def test_foreign_gray_context_rejected_before_optical_flow_driver_call():
     flow._current.assert_not_called()
 
 
-@pytest.mark.parametrize('operation',[lambda live:live.update({}),lambda live:live.resize(16,8)])
-def test_mapped_enhancement_owner_requires_retirement_before_reconfiguration(operation):
+def _unmanaged_gpu_live(descriptor_field):
     live=ProcessLive.__new__(ProcessLive)
-    live._gpu_input_descriptor={'handle':9}
+    live._w,live._h=8,4
+    live.settings={'host_backend':'v2','preset':1,'intensity':1.0,'frame_format':'rgba8','color_profile':'srgb'}
+    live.backend=live.preference='v2'
+    live.adapter_info={}
+    live.runtime_path=''
+    live._live_factory=None
+    live._session=mock.Mock(backend='v2',adapter_info={},runtime_path='',max_in_flight=1,
+                            supports_async=False,tiled=False,_validate_configuration=False,reason=None)
+    setattr(live,descriptor_field,{'handle':9})
+    return live
+
+
+@pytest.mark.parametrize('descriptor_field',['_gpu_input_descriptor','_gpu_output_descriptor'])
+@pytest.mark.parametrize('operation',[lambda live:live.update({'preset':2}),lambda live:live.resize(16,8)])
+def test_mapped_enhancement_owner_requires_retirement_before_reconfiguration(descriptor_field,operation):
+    live=_unmanaged_gpu_live(descriptor_field)
     with pytest.raises(HostProcessError,match='Retire'):operation(live)
+    live._session.request.assert_not_called()
+
+
+@pytest.mark.parametrize('descriptor_field',['_gpu_input_descriptor','_gpu_output_descriptor'])
+def test_unmanaged_gpu_owner_still_allows_appearance_only_update(descriptor_field):
+    live=_unmanaged_gpu_live(descriptor_field)
+    live.update({'intensity':0.5})
+    live._session.request.assert_called_once()
+    assert live._session.request.call_args.args[0]=='update'
+    assert live.settings['intensity']==0.5
 
 
 def test_failed_consumer_cannot_advance_temporal_history_again():

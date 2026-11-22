@@ -729,10 +729,6 @@ class ProcessLive:
         self._retry_retiring()
 
     def update(self, settings):
-        if getattr(self, '_gpu_input_descriptor', None):
-            from dlss5tool.gpu_reconfigure import managed
-            if not managed(self):
-                raise HostProcessError('Retire unmanaged GPU consumers before changing settings')
         updated = dict(self.settings)
         updated.update(settings or {})
         updated = guidance_client.normalize_public_settings(updated)
@@ -740,10 +736,6 @@ class ProcessLive:
         reconfigure_proxy(self, self._w, self._h, updated)
 
     def resize(self, width, height, preset=None, settings=None):
-        if getattr(self, '_gpu_input_descriptor', None):
-            from dlss5tool.gpu_reconfigure import managed
-            if not managed(self):
-                raise HostProcessError('Retire unmanaged GPU consumers before resizing')
         updated = dict(self.settings)
         updated.update(settings or {})
         updated = guidance_client.normalize_public_settings(updated)

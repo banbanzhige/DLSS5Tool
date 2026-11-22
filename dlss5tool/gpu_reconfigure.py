@@ -23,14 +23,6 @@ def unregister(mapping):
             _mappings.pop(key, None)
 
 
-def managed(owner):
-    for kind in ('input', 'output'):
-        descriptor = getattr(owner, '_gpu_'+kind+'_descriptor', None)
-        if descriptor and not _mappings.get((descriptor.get('producer_pid'), descriptor.get('handle'))):
-            return False
-    return True
-
-
 def require_retired(owner):
     for kind in ('input', 'output'):
         descriptor = getattr(owner, '_gpu_'+kind+'_descriptor', None)
