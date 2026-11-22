@@ -61,10 +61,13 @@ class DeviceEnhancement:
     def close(self):
         if self._closed:return
         errors=[]
-        for item in (self.nr,self.output,*reversed(self.mappings),self.input,self.cuda):
+        for item in (self.nr,self.output,*reversed(self.mappings),self.input):
             if item:
                 try:item.close()
                 except Exception as error:errors.append(str(error))
+        if not errors and self.cuda:
+            try:self.cuda.close()
+            except Exception as error:errors.append(str(error))
         if errors:raise RuntimeError('Cached enhancement cleanup failed: '+'; '.join(errors))
         self._closed=True
 
@@ -127,9 +130,12 @@ class DeviceFrameGeneration:
         if self.previous_gray:self.previous_gray.close();self.previous_gray=None
         errors=[]
         for item in (self.native,self.output,self.mapping,self.flow,self.analyzer,self.validator,
-                     self.previous_image,self.input,self.cuda):
+                     self.previous_image,self.input):
             if item:
                 try:item.close()
                 except Exception as error:errors.append(str(error))
+        if not errors and self.cuda:
+            try:self.cuda.close()
+            except Exception as error:errors.append(str(error))
         if errors:raise RuntimeError('Cached FG cleanup failed: '+'; '.join(errors))
         self._closed=True

@@ -23,17 +23,31 @@ class _BufferDesc(C.Structure):
 
 class SharedCudaBuffer:
     def __init__(self,session,producer_pid,handle,allocation,size,producer_luid):
-        if producer_luid!=session.luid:raise ValueError('D3D12/CUDA physical GPU mismatch')
-        if any(type(v) is not int or v<=0 for v in (producer_pid,handle,allocation,size)) or size>allocation:
-            raise ValueError('Invalid shared buffer descriptor')
-        self.session=session;self.pointer=C.c_uint64();self.external=C.c_void_p();self.size=size
-        self.producer_pid,self.handle=producer_pid,handle
+        self.session=session;self.pointer=C.c_uint64();self.external=C.c_void_p();self.size=0
+        self.producer_pid,self.handle=None,None
         self._image_owners=0;self._failed=False
         self._images=weakref.WeakSet()
         self._free=bind(session.cuda,'cuMemFree_v2',[C.c_uint64])
         self._destroy=bind(session.cuda,'cuDestroyExternalMemory',[C.c_void_p])
-        imp=bind(session.cuda,'cuImportExternalMemory',[C.POINTER(C.c_void_p),C.POINTER(_MemoryDesc)])
-        mapping=bind(session.cuda,'cuExternalMemoryGetMappedBuffer',[C.POINTER(C.c_uint64),C.c_void_p,C.POINTER(_BufferDesc)])
+        try:
+            pointer,external=self._import_external_memory(producer_pid,handle,allocation,size,producer_luid)
+        except BaseException:
+            if (self.pointer.value or self.external.value) and hasattr(self.session,'retain_external_cleanup'):
+                self.session.retain_external_cleanup(self.pointer,self.external,self._free,self._destroy)
+                self.pointer,self.external=C.c_uint64(),C.c_void_p()
+            raise
+        self.pointer,self.external=pointer,external
+        self.size,self.producer_pid,self.handle=size,producer_pid,handle
+        from dlss5tool.gpu_reconfigure import register
+        register(self)
+
+    def _import_external_memory(self,producer_pid,handle,allocation,size,producer_luid):
+        if producer_luid!=self.session.luid:raise ValueError('D3D12/CUDA physical GPU mismatch')
+        if any(type(v) is not int or v<=0 for v in (producer_pid,handle,allocation,size)) or size>allocation:
+            raise ValueError('Invalid shared buffer descriptor')
+        pointer,external=C.c_uint64(),C.c_void_p()
+        imp=bind(self.session.cuda,'cuImportExternalMemory',[C.POINTER(C.c_void_p),C.POINTER(_MemoryDesc)])
+        mapping=bind(self.session.cuda,'cuExternalMemoryGetMappedBuffer',[C.POINTER(C.c_uint64),C.c_void_p,C.POINTER(_BufferDesc)])
         kernel=C.WinDLL('kernel32',use_last_error=True)
         op=bind(kernel,'OpenProcess',[C.c_uint,C.c_int,C.c_uint],C.c_void_p)
         close=bind(kernel,'CloseHandle',[C.c_void_p])
@@ -43,18 +57,37 @@ class SharedCudaBuffer:
         if not process:raise C.WinError(C.get_last_error())
         try:
             if not dup(process,handle,current,C.byref(copied),0,0,2):raise C.WinError(C.get_last_error())
-            with session.current():
+            with self.session.current():
                 descriptor=_MemoryDesc(type=5,size=allocation,flags=1)
                 descriptor.handle.win32.handle=copied.value
-                check(imp(C.byref(self.external),C.byref(descriptor)),'CUDA import D3D12')
-                check(mapping(C.byref(self.pointer),self.external,C.byref(_BufferDesc(size=size))),'CUDA map D3D12')
-        except BaseException:
-            self.close();raise
+                check(imp(C.byref(external),C.byref(descriptor)),'CUDA import D3D12')
+                check(mapping(C.byref(pointer),external,C.byref(_BufferDesc(size=size))),'CUDA map D3D12')
+            return pointer,external
+        except BaseException as error:
+            if pointer.value or external.value:
+                cleanup_errors=[]
+                try:
+                    with self.session.current():
+                        if pointer.value:
+                            status=self._free(pointer)
+                            if status:cleanup_errors.append(f'cuMemFree_v2={status}')
+                            else:pointer=C.c_uint64()
+                        if external.value:
+                            status=self._destroy(external)
+                            if status:cleanup_errors.append(f'cuDestroyExternalMemory={status}')
+                            else:external=C.c_void_p()
+                except BaseException as cleanup:
+                    cleanup_errors.append(str(cleanup) or repr(cleanup))
+                if pointer.value or external.value:
+                    self._failed=True
+                    if pointer.value and not self.pointer.value:self.pointer=pointer
+                    if external.value and not self.external.value:self.external=external
+                if cleanup_errors and hasattr(error,'add_note'):
+                    error.add_note('CUDA import cleanup failed: '+', '.join(cleanup_errors))
+            raise
         finally:
             if copied:close(copied)
             close(process)
-        from dlss5tool.gpu_reconfigure import register
-        register(self)
 
     def check_reconfigure(self):
         self.session._check()
@@ -89,23 +122,16 @@ class SharedCudaBuffer:
             raise RuntimeError('Old GPU mapping was not retired')
         values = dict(descriptor)
         pitch = values.pop('pitch')
-        replacement = SharedCudaBuffer(self.session, **values)
-        images, count = self._images, self._image_owners
+        pointer, external = self._import_external_memory(**values)
         unregister(self)
-        unregister(replacement)
-        self.__dict__.update(replacement.__dict__)
-        self._images, self._image_owners = images, count
-        replacement.pointer, replacement.external = C.c_uint64(), C.c_void_p()
+        self.pointer, self.external = pointer, external
+        self.size = values['size']
+        self.producer_pid = values['producer_pid']
+        self.handle = values['handle']
+        self._failed = False
         register(self)
-        for image in list(images):
-            generation = image._generation+1
-            self._image_owners -= 1
-            try:
-                image.__init__(self, width, height, pitch, layout=layout, color_profile=profile)
-            except BaseException:
-                self._image_owners += 1
-                raise
-            image._generation = generation
+        for image in list(self._images):
+            image.rebind(width, height, pitch, layout=layout, color_profile=profile)
 
     def copy_from(self,frame,destination_pitch):
         """Complete one D2D upload before the D3D input owner is called."""
@@ -139,9 +165,13 @@ class SharedCudaBuffer:
             return
         with self.session.current():
             if self.pointer.value:
-                errors.append(self._free(self.pointer));self.pointer=C.c_uint64()
+                status=self._free(self.pointer)
+                errors.append(status)
+                if not status:self.pointer=C.c_uint64()
             if self.external.value:
-                errors.append(self._destroy(self.external));self.external=C.c_void_p()
+                status=self._destroy(self.external)
+                errors.append(status)
+                if not status:self.external=C.c_void_p()
         if any(errors):raise RuntimeError(f'Shared GPU buffer cleanup failed: {errors}')
         from dlss5tool.gpu_reconfigure import unregister
         unregister(self)

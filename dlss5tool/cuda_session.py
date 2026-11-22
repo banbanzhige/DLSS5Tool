@@ -34,6 +34,14 @@ class CudaSession:
         check(bind(self.cuda,'cuDevicePrimaryCtxRetain',[C.POINTER(p),i])(C.byref(self.context),self.device),'CUDA retain')
         self._buffers=set()
         self._buffer_sizes={}
+        self._retained_external=[]
+
+    def retain_external_cleanup(self,pointer,external,free_fn,destroy_fn):
+        """Adopt unreleased external handles from a failed initial import for retry."""
+        if getattr(pointer,'value',0) or getattr(external,'value',None):
+            self.__dict__.setdefault('_retained_external',[]).append(
+                [pointer,external,free_fn,destroy_fn],
+            )
 
     def _check(self):
         if self._closed or threading.get_ident()!=self._thread:raise RuntimeError('CUDA session closed or accessed from wrong thread')
@@ -76,11 +84,32 @@ class CudaSession:
     def close(self):
         if self._closed:return
         self._check();errors=[]
+        retained=self.__dict__.setdefault('_retained_external',[])
         with self.current():
-            for pointer in self._buffers:errors.append(self._free(pointer))
-        self._buffers.clear();errors.append(self._release(self.device));self._closed=True
-        self._buffer_sizes.clear()
-        if any(errors):raise RuntimeError(f'CUDA session cleanup failed: {errors}')
+            for pointer in list(self._buffers):
+                status=self._free(pointer)
+                if status:errors.append(status)
+                else:
+                    self._buffers.discard(pointer)
+                    self._buffer_sizes.pop(pointer,None)
+            still_retained=[]
+            for entry in retained:
+                pointer,external,free_fn,destroy_fn=entry
+                if getattr(pointer,'value',0):
+                    status=free_fn(pointer)
+                    if status:errors.append(status)
+                    else:entry[0]=C.c_uint64()
+                if getattr(external,'value',None):
+                    status=destroy_fn(external)
+                    if status:errors.append(status)
+                    else:entry[1]=C.c_void_p()
+                if getattr(entry[0],'value',0) or getattr(entry[1],'value',None):
+                    still_retained.append(entry)
+            retained[:]=still_retained
+        if errors:raise RuntimeError(f'CUDA session cleanup failed: {errors}')
+        status=self._release(self.device)
+        if status:raise RuntimeError(f'CUDA session cleanup failed: {[status]}')
+        self._closed=True
 
     def __enter__(self):return self
     def __exit__(self,*_):self.close()

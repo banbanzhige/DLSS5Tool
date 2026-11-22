@@ -110,22 +110,39 @@ class NativeGpuVideoWriter:
     def _close_gpu(self):
         errors=[]
         if self._cuda:
+            remaining=[]
             for shared in self._interop:
                 try:shared.close()
-                except Exception as error:errors.append(error)
-            self._interop.clear()
-            with self._cuda.current():
-                for item in (self._encoder,self._converter):
-                    if item:
-                        try:item.close()
-                        except Exception as error:errors.append(error)
-            self._encoder=self._converter=None
-            try:
-                if getattr(self,'_owns_cuda',True):self._cuda.close()
-                elif self._upload is not None:self._cuda.free(self._upload)
-            except Exception as error:errors.append(error)
-            self._upload=None
-            self._cuda=None
+                except Exception as error:
+                    errors.append(error)
+                    remaining.append(shared)
+            self._interop=remaining
+            if self._encoder or self._converter:
+                try:
+                    with self._cuda.current():
+                        for attr in ('_encoder','_converter'):
+                            item=getattr(self,attr)
+                            if item:
+                                try:
+                                    item.close()
+                                    setattr(self,attr,None)
+                                except Exception as error:
+                                    errors.append(error)
+                except Exception as error:
+                    errors.append(error)
+            if not errors:
+                try:
+                    if getattr(self,'_owns_cuda',True):
+                        self._cuda.close()
+                        self._upload=None
+                        self._cuda=None
+                    else:
+                        if self._upload is not None:
+                            self._cuda.free(self._upload)
+                            self._upload=None
+                        self._cuda=None
+                except Exception as error:
+                    errors.append(error)
         if errors:raise RuntimeError(f'GPU export cleanup failed: {errors}')
 
     def finish(self):

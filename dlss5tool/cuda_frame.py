@@ -216,7 +216,8 @@ class CudaImage:
 
 class SharedCudaImage(CudaImage):
     """Lease owner for a mapped D3D buffer; mapping outlives this image owner."""
-    def __init__(self, mapping, width, height, row_pitch, *, layout='rgba8', color_profile='srgb'):
+    @staticmethod
+    def _validated_geometry(mapping, width, height, row_pitch, layout, color_profile):
         if (layout, color_profile) not in (('rgba8', 'srgb'), ('rgba16f', 'hdr10_pq'), ('rgba16f', 'hdr10_hlg')):
             raise ValueError('Unsupported shared image color contract')
         dtype = np.dtype(np.float16 if layout == 'rgba16f' else np.uint8)
@@ -224,6 +225,10 @@ class SharedCudaImage(CudaImage):
                 or type(row_pitch) is not int or row_pitch < width*4*dtype.itemsize
                 or row_pitch % dtype.itemsize or row_pitch*height > mapping.size or not mapping.pointer.value):
             raise ValueError('Shared image exceeds its pitched mapping')
+        return dtype
+
+    def __init__(self, mapping, width, height, row_pitch, *, layout='rgba8', color_profile='srgb'):
+        dtype = self._validated_geometry(mapping, width, height, row_pitch, layout, color_profile)
         mapping.session._check()
         self._mapping, self.session = mapping, mapping.session
         self.width, self.height, self.row_pitch, self.nbytes = width, height, row_pitch, row_pitch*height
@@ -239,6 +244,23 @@ class SharedCudaImage(CudaImage):
             import weakref
             mapping._images = weakref.WeakSet()
         mapping._images.add(self)
+        self._suspended = False
+
+    def rebind(self, width, height, row_pitch, *, layout='rgba8', color_profile='srgb'):
+        """Publish a remapped pointer and geometry without reconstructing this owner."""
+        if self._closed:
+            raise RuntimeError('Shared CUDA image is closed')
+        if self._leases:
+            raise RuntimeError('Cannot rebind shared image held by a consumer')
+        dtype = self._validated_geometry(self._mapping, width, height, row_pitch, layout, color_profile)
+        self.session._check()
+        self.width, self.height, self.row_pitch, self.nbytes = width, height, row_pitch, row_pitch*height
+        self.layout, self.color_profile, self.dtype = layout, color_profile, dtype
+        self.pixel_bytes = 4*dtype.itemsize
+        self._pointer = self._mapping.pointer.value
+        self._generation += 1
+        self._producer_stream = 0
+        self._ready = False
         self._suspended = False
 
     def _check(self):

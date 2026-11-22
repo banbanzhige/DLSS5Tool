@@ -139,6 +139,17 @@ class CudaAnalysis:
                 self._module=C.c_void_p()
         for image in (self._gray,self._rgba):
             if image: image.close()
-        for pointer in self._buffers: self.session.free(pointer)
-        self._buffers.clear()
+        remaining, errors = [], []
+        for pointer in self._buffers:
+            try:
+                self.session.free(pointer)
+            except Exception as error:
+                errors.append(error)
+                remaining.append(pointer)
+        self._buffers = remaining
+        if errors:
+            for extra in errors[1:]:
+                if hasattr(errors[0], 'add_note'):
+                    errors[0].add_note(str(extra))
+            raise errors[0]
         self._closed=True

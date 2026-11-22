@@ -63,12 +63,25 @@ class CudaHdrPacking:
             if self._module.value:
                 check(self._unload(self._module), 'HDR pack module unload')
                 self._module = C.c_void_p()
+        remaining, errors = [], []
         for pointer in self._buffers:
-            self.session.free(pointer)
+            try:
+                self.session.free(pointer)
+            except Exception as error:
+                errors.append(error)
+                remaining.append(pointer)
+        self._buffers = remaining
         if self._validation:
-            self.session.free(self._validation[1])
-            self._validation = None
-        self._buffers.clear()
+            try:
+                self.session.free(self._validation[1])
+                self._validation = None
+            except Exception as error:
+                errors.append(error)
+        if errors:
+            for extra in errors[1:]:
+                if hasattr(errors[0], 'add_note'):
+                    errors[0].add_note(str(extra))
+            raise errors[0]
         self._closed = True
 
     def validate(self, frame):
