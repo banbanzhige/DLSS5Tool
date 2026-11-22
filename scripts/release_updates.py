@@ -10,8 +10,41 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 from dlss5tool import delta_update as delta, updater
 from scripts import build_file_update
+from scripts.release_paths import release_paths
 
 DEFAULT_POLICY = ROOT / 'packaging/update-policy.json'
+LOCAL_POLICY = ROOT / 'packaging/update-policy.local.json'
+RELEASE_ROOT_TOKEN = '{release_root}'
+
+
+def _load_local_baseline_paths(policy_path, local_policy_path=None):
+    using_default = Path(policy_path).resolve() == DEFAULT_POLICY.resolve()
+    local_file = LOCAL_POLICY if (local_policy_path is None and using_default) else local_policy_path
+    if local_file is None or not Path(local_file).is_file():
+        return {}
+    data = delta.read_json(Path(local_file))
+    if not isinstance(data, dict) or data.get('schema') != 1 or not isinstance(data.get('baselines'), dict):
+        raise delta.DeltaError('Invalid local update-policy override schema')
+    overrides = {}
+    for version, raw in data['baselines'].items():
+        valid_version = delta.version(version)
+        if not isinstance(raw, str) or not raw.strip():
+            raise delta.DeltaError('Local baseline override requires a non-empty path')
+        overrides[valid_version] = raw
+    return overrides
+
+
+def resolve_baseline_path(raw_path, version, *, policy_path=DEFAULT_POLICY, local_policy_path=None):
+    """Resolve a declared baseline path using optional local overrides or {release_root}."""
+    local_overrides = _load_local_baseline_paths(policy_path, local_policy_path=local_policy_path)
+    effective = local_overrides.get(version, raw_path)
+    if not isinstance(effective, str) or not effective:
+        raise delta.DeltaError('Baseline needs an explicit package directory')
+    if effective == RELEASE_ROOT_TOKEN or effective.startswith(RELEASE_ROOT_TOKEN + '/'):
+        project_root = Path(release_paths(version)['project'])
+        suffix = effective[len(RELEASE_ROOT_TOKEN):].lstrip('/')
+        return (project_root / suffix).absolute() if suffix else project_root.absolute()
+    return (ROOT / effective).absolute()
 
 
 def supported_baselines(policy, target):
@@ -45,7 +78,7 @@ def supported_baselines(policy, target):
     return [latest]
 
 
-def plan_updates(target, *, initial=False, overrides=(), policy_path=DEFAULT_POLICY):
+def plan_updates(target, *, initial=False, overrides=(), policy_path=DEFAULT_POLICY, local_policy_path=None):
     """Run before copying/compressing release inputs. Never guess a baseline."""
     delta.version(target)
     policy = delta.read_json(policy_path)
@@ -69,7 +102,9 @@ def plan_updates(target, *, initial=False, overrides=(), policy_path=DEFAULT_POL
         path = item.get('packages')
         if not isinstance(path, str) or not path:
             raise delta.DeltaError('Baseline needs an explicit package directory')
-        required[old] = (ROOT / path).absolute()
+        required[old] = resolve_baseline_path(
+            path, old, policy_path=policy_path, local_policy_path=local_policy_path,
+        )
     for override in overrides:
         # CLI relocation replaces a configured version, never drops another one.
         path = Path(override).absolute()

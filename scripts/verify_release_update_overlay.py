@@ -9,7 +9,7 @@ import zipfile
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 from dlss5tool import delta_update as delta
-from scripts.release_updates import verify_upload_updates
+from scripts.release_updates import resolve_baseline_path, verify_upload_updates
 
 
 def main():
@@ -26,7 +26,7 @@ def main():
     for record in updates['assets']:
         old, new, edition = record['from'], record['to'], record['edition']
         baseline = next(p for p in policy['baselines'] if p['version'] == old)
-        old_dir = ROOT/baseline['packages']/f'DLSS5Tool-{old}-win64-{edition}'
+        old_dir = resolve_baseline_path(baseline['packages'], old)/f'DLSS5Tool-{old}-win64-{edition}'
         target_inventory = json.loads((args.packages/f'verification/{edition}-files.json').read_text(encoding='utf-8'))
         with zipfile.ZipFile(assets/record['name']) as bundle:
             manifest = delta.validate_manifest(json.loads(bundle.read('manifest.json')), old, new, edition)

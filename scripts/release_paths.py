@@ -2,17 +2,39 @@
 import argparse
 from datetime import datetime, timedelta, timezone
 import json
+import os
 from pathlib import Path, PureWindowsPath
 import re
 
 ROOT = Path(__file__).resolve().parents[1]
 POLICY = ROOT / 'packaging/release-output.json'
+LOCAL_POLICY = ROOT / 'packaging/release-output.local.json'
+ENV_RELEASE_ROOT = 'DLSS5_RELEASE_ROOT'
 
 
-def release_paths(version, *, policy_path=POLICY, day=None):
+def _load_policy(policy_path, local_policy_path):
     data = json.loads(Path(policy_path).read_text(encoding='utf-8'))
-    if data.get('schema') != 1:
+    if not isinstance(data, dict) or data.get('schema') != 1:
         raise ValueError('Unsupported release output policy')
+    merged = dict(data)
+    using_default = Path(policy_path).resolve() == POLICY.resolve()
+    local_file = LOCAL_POLICY if (local_policy_path is None and using_default) else local_policy_path
+    if local_file is not None and Path(local_file).is_file():
+        local_data = json.loads(Path(local_file).read_text(encoding='utf-8'))
+        if not isinstance(local_data, dict) or local_data.get('schema') != 1:
+            raise ValueError('Unsupported local release output policy')
+        for key in ('release_root', 'project_folder'):
+            if key in local_data:
+                merged[key] = local_data[key]
+    if using_default and local_policy_path is None:
+        env_root = os.environ.get(ENV_RELEASE_ROOT, '').strip()
+        if env_root:
+            merged['release_root'] = env_root
+    return merged
+
+
+def release_paths(version, *, policy_path=POLICY, local_policy_path=None, day=None):
+    data = _load_policy(policy_path, local_policy_path)
     root = PureWindowsPath(data['release_root'])
     project = data['project_folder']
     if not root.is_absolute() or root == PureWindowsPath(root.anchor):

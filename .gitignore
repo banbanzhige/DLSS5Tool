@@ -78,3 +78,7 @@ Desktop.ini
 /docs/design/COMFYUI_NODES_V1_DESIGN.md
 /docs/design/COMFYUI_NODES_V1_BOUNDARIES.md
 /docs/design/COMFYUI_PROJECT_HANDOFF.md
+
+# Local release root and baseline path overrides (keep machine paths out of Git)
+/packaging/release-output.local.json
+/packaging/update-policy.local.json

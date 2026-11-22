@@ -271,6 +271,33 @@ class ReleaseUpdateWorkflowTests(unittest.TestCase):
         self.assertEqual(report['version'], 'v2.2.1')
         self.assertFalse(report['published'])
 
+    def test_baseline_path_supports_release_root_token_and_local_override(self):
+        policy = self.root / 'token-policy.json'
+        policy.write_text(json.dumps({
+            'schema': 1, 'first_updater_version': 'v2.2.0', 'support': 'previous-release',
+            'baselines': [{'version': 'v2.2.0', 'packages': '{release_root}/v2.2.0/editions'}],
+        }), encoding='utf-8')
+        local = self.root / 'update-policy.local.json'
+        local.write_text(json.dumps({
+            'schema': 1, 'baselines': {'v2.2.0': str(self.old)},
+        }), encoding='utf-8')
+        plan = workflow.plan_updates('v2.2.1', policy_path=policy, local_policy_path=local)
+        self.assertEqual([b['version'] for b in plan['baselines']], ['v2.2.0'])
+
+        fake_project = self.root / 'shared/DLSS5Tool'
+        with mock.patch.object(workflow, 'release_paths',
+                               return_value={'project': str(fake_project)}):
+            resolved = workflow.resolve_baseline_path(
+                '{release_root}/v2.2.0/editions', 'v2.2.0',
+                policy_path=policy, local_policy_path=self.root / 'absent.json',
+            )
+        self.assertEqual(resolved, (fake_project / 'v2.2.0/editions').absolute())
+
+        bad_local = self.root / 'bad-local.json'
+        bad_local.write_text(json.dumps({'schema': 2, 'baselines': {}}), encoding='utf-8')
+        with self.assertRaises(delta.DeltaError):
+            workflow.plan_updates('v2.2.1', policy_path=policy, local_policy_path=bad_local)
+
 
 if __name__ == '__main__':
     unittest.main()

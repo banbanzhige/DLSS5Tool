@@ -34,3 +34,20 @@ def test_packaging_default_reads_policy_and_preserves_explicit_override():
     assert 'release_paths.py' in build and '$releasePaths.base' in build
     assert '$releasePaths.work' in build and 'if ($OutputDirectory)' in build
     assert 'managed_output' in editions and 'args.allow_external_output' in editions
+
+
+def test_local_policy_and_env_override_release_root(tmp_path, monkeypatch):
+    local = tmp_path / 'release-output.local.json'
+    local.write_text(json.dumps(dict(schema=1, release_root='D:/local-dist')), encoding='utf-8')
+    paths = release_paths('v3.1.6', local_policy_path=local, day='20261122')
+    assert paths['project'] == 'D:/local-dist/DLSS5Tool'
+    assert paths['editions'] == 'D:/local-dist/DLSS5Tool/v3.1.6/editions'
+
+    monkeypatch.setenv('DLSS5_RELEASE_ROOT', 'Z:/custom-dist')
+    env_paths = release_paths('v3.1.6', day='20261122')
+    assert env_paths['project'] == 'Z:/custom-dist/DLSS5Tool'
+    assert env_paths['editions'] == 'Z:/custom-dist/DLSS5Tool/v3.1.6/editions'
+
+    monkeypatch.setenv('DLSS5_RELEASE_ROOT', 'Z:/')
+    with pytest.raises(ValueError):
+        release_paths('v3.1.6', day='20261122')
