@@ -6,10 +6,12 @@ an SDK-prepared package can be installed. User components live outside current/.
 """
 from __future__ import annotations
 
+import hashlib
 import importlib
 import json
 from pathlib import Path
 import shutil
+import stat
 import sys
 import zipfile
 
@@ -19,6 +21,71 @@ from dlss5tool.portable_layout import load_portable_layout
 STATE_DIRECTORY = '.dlss5-managed'
 MAX_PACKAGE_BYTES = 2 * 1024**3
 SDK_VERSION = '1.2.161'
+SPACE_MARGIN_BY_EDITION = {
+    'lite': 1 * 1024**3,
+    'full': 2 * 1024**3,
+}
+HEADLESS_FLAGS = (
+    '--adapter-probe',
+    '--resident-sr-worker',
+    '--nvofa-selftest',
+    '--nvofa-worker',
+    '--diagnostic-worker',
+    '--parallel-worker',
+    '--selftest',
+    '--vsr-selftest',
+    '--frame-generation-check',
+)
+
+
+def is_headless_argv(argv=None):
+    args = sys.argv[1:] if argv is None else list(argv)
+    return any(flag in args for flag in HEADLESS_FLAGS)
+
+
+def report_startup_error(error, argv=None):
+    """Headless workers must fail fast to stderr, never block on a modal dialog."""
+    if is_headless_argv(argv):
+        stream = getattr(sys, 'stderr', None)
+        if stream is not None:
+            try:
+                stream.write(f'{error}\n')
+                stream.flush()
+            except OSError:
+                pass
+        return
+    from dlss5tool.update_helper import notify
+    notify(str(error), error=True)
+
+
+def required_free_bytes(full_size, unpacked_size, edition, *, cached=False):
+    if edition not in SPACE_MARGIN_BY_EDITION:
+        raise updater.UpdateError('Invalid managed update edition')
+    # Both stages share the same install/rollback budget (unpacked_size * 2 + margin).
+    # Uncached preparation adds download/cache room (full_size * 2) so a passing
+    # prepare() will not immediately fail ready() after writing the cached package.
+    install_bytes = unpacked_size * 2 + SPACE_MARGIN_BY_EDITION[edition]
+    return install_bytes if cached else (full_size * 2 + install_bytes)
+
+
+def has_prepared_update(layout, release):
+    """Fast local check for a persisted ready marker matching this target."""
+    if layout is None:
+        return False
+    try:
+        directory = delta.safe_path(layout.root, STATE_DIRECTORY)
+        ready_path = delta.safe_path(directory, 'ready.json')
+        if not ready_path.is_file():
+            return False
+        record = delta.read_json(ready_path)
+    except (OSError, ValueError, updater.UpdateError):
+        return False
+    return (isinstance(record, dict)
+            and type(record.get('schema')) is int and record.get('schema') == 1
+            and record.get('phase') == 'ready'
+            and record.get('target') == release.tag
+            and record.get('edition') == layout.edition
+            and record.get('package_id') == layout.package_id)
 
 
 def current_layout():
@@ -70,12 +137,10 @@ def package_inventory(path):
             if name.casefold() in seen or item.flag_bits & 1:
                 raise updater.UpdateError('Duplicate or encrypted managed package entry')
             seen.add(name.casefold())
-            import stat
             if stat.S_ISLNK(item.external_attr >> 16):
                 raise updater.UpdateError('Managed package contains a symbolic link')
             if item.file_size > delta.MAX_UNPACKED:
                 raise updater.UpdateError('Managed package entry is too large')
-            import hashlib
             with bundle.open(item) as source:
                 digest = hashlib.file_digest(source, 'sha256').hexdigest()
             files[name] = {'size': item.file_size, 'sha256': digest}
@@ -142,6 +207,30 @@ class Session:
         if self.metadata_asset.size > delta.MAX_MANIFEST:
             raise updater.UpdateError('Managed update manifest is too large')
 
+    def _verify_install_prerequisites(self, manifest, *, cached=False):
+        if self.layout.edition == 'full':
+            component = delta.safe_path(self.layout.root, 'mods/enhancement/enhancement.json')
+            try:
+                contract = delta.read_json(component)
+            except (OSError, ValueError) as error:
+                raise updater.UpdateError(
+                    'The external full component requires an update before this app version'
+                ) from error
+            if (not isinstance(contract, dict)
+                    or contract.get('id') != 'dlss5-guidance'
+                    or type(contract.get('protocol')) is not int
+                    or contract['protocol'] != manifest.get('guidance_protocol')):
+                raise updater.UpdateError('The external full component requires an update before this app version')
+        full_asset = trusted_asset(self.release, manifest.get('full_asset'))
+        full_record = {'size': full_asset.size, 'sha256': updater._expected_sha256(full_asset.digest)}
+        if manifest.get('full_record') != full_record:
+            raise updater.UpdateError('Target package differs from official release digest')
+        unpacked_size = sum(r['size'] for r in manifest['files'].values())
+        if shutil.disk_usage(self.layout.root).free < required_free_bytes(
+                full_asset.size, unpacked_size, self.layout.edition, cached=cached):
+            raise updater.UpdateError('Insufficient space for update, candidate and rollback')
+        return full_asset, full_record
+
     def prepare(self, progress=None, cancelled=None):
         self.directory.mkdir(exist_ok=True)
         metadata_path = delta.safe_path(self.directory, self.metadata_asset.name)
@@ -150,20 +239,7 @@ class Session:
                 'sha256': updater._expected_sha256(self.metadata_asset.digest)}:
             updater.download_asset(self.metadata_asset, str(metadata_path), cancelled=cancelled)
         value = validate_target_manifest(delta.read_json(metadata_path), self.release, self.layout)
-        if self.layout.edition == 'full':
-            component = delta.safe_path(self.layout.root, 'mods/enhancement/enhancement.json')
-            contract = delta.read_json(component)
-            if (contract.get('id') != 'dlss5-guidance'
-                    or type(contract.get('protocol')) is not int
-                    or contract['protocol'] != value.get('guidance_protocol')):
-                raise updater.UpdateError('The external full component requires an update before this app version')
-        full_asset = trusted_asset(self.release, value.get('full_asset'))
-        delta_asset_record = {'size': full_asset.size, 'sha256': updater._expected_sha256(full_asset.digest)}
-        if value.get('full_record') != delta_asset_record:
-            raise updater.UpdateError('Target package differs from official release digest')
-        required = full_asset.size * 2 + sum(r['size'] for r in value['files'].values())
-        if shutil.disk_usage(self.layout.root).free < required + 15 * 1024**3:
-            raise updater.UpdateError('Insufficient space for update, candidate and rollback')
+        full_asset, delta_asset_record = self._verify_install_prerequisites(value, cached=False)
         update = self.manager.check_for_updates()
         target = None if update is None else update.TargetFullRelease
         if (target is None or update.IsDowngrade or target.PackageId != self.layout.package_id
@@ -202,6 +278,7 @@ class Session:
                                                'sha256': updater._expected_sha256(self.metadata_asset.digest)}:
             raise updater.UpdateError('Prepared release manifest changed')
         manifest = validate_target_manifest(delta.read_json(metadata_path), self.release, self.layout)
+        self._verify_install_prerequisites(manifest, cached=True)
         package = delta.safe_path(self.layout.root / 'packages', manifest['full_asset'])
         if package.name != record['package'] or delta.file_record(package) != record['cached_record']:
             raise updater.UpdateError('Prepared update package changed')

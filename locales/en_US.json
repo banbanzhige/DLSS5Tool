@@ -1721,5 +1721,7 @@
   "update.managed_cancel_wait": "Installation preparation canceled. Waiting for the current download to finish; nothing will install automatically.",
   "update.managed_background": "Run in background",
   "update.managed_ready": "{version} is downloaded and verified. Choose Check updates when ready to restart and install.",
-  "update.managed_install": "The update is ready. Close the app, install and restart now?\n\nYou can also continue later from Check updates."
+  "update.managed_install": "The update is ready. Close the app, install and restart now?\n\nYou can also continue later from Check updates.",
+  "update.managed_verifying": "Verifying the downloaded update package...",
+  "update.managed_scheduling": "Preparing to restart and install the update..."
 }

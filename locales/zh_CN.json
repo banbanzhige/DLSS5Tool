@@ -1721,5 +1721,7 @@
   "update.managed_cancel_wait": "已取消安装准备，正在等待当前下载结束；不会自动安装。",
   "update.managed_background": "放到后台",
   "update.managed_ready": "{version} 已下载并校验完成，可在检查更新中选择重启安装。",
-  "update.managed_install": "更新已准备好。现在关闭程序、安装并重新启动？\n\n也可以稍后在“检查更新”中继续。"
+  "update.managed_install": "更新已准备好。现在关闭程序、安装并重新启动？\n\n也可以稍后在“检查更新”中继续。",
+  "update.managed_verifying": "正在验证已下载的更新包…",
+  "update.managed_scheduling": "正在准备重启并安装更新…"
 }

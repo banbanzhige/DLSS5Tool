@@ -55,6 +55,8 @@ class GpuResourceGuard:
             items.append(Occupancy('release', 'releasing'))
         if getattr(self, '_queue_cleanup_pending', False):
             items.append(Occupancy('release', 'releasing'))
+        if getattr(self, '_app_closing', False) or getattr(self, '_managed_schedule_started', False):
+            items.append(Occupancy('release', 'releasing'))
         for flag, owner in (('_exporting', 'export'), ('_queue_running', 'queue'),
                             ('_deep_diagnosing', 'diagnostics'), ('_switching_backend', 'backend'),
                             ('_module_reload_thread', 'backend'), ('_clear_preview_pending', 'release')):
@@ -77,6 +79,8 @@ class GpuResourceGuard:
         return conflict(operation, self._gpu_occupancy())
 
     def _gpu_admit(self, operation, *, notify=True):
+        if getattr(self, '_app_closing', False) or getattr(self, '_managed_schedule_started', False):
+            return False
         item = self._gpu_conflict(operation)
         if item is None:
             return True

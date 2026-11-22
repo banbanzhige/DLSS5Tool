@@ -815,6 +815,11 @@ class App(ManagedUpdateUI, ExportMemoryUI, QueueMemoryRecovery, GpuResourceGuard
         self._update_progress_percent = None
         self._update_thread = None
         self._update_cancel_event = threading.Event()
+        self._managed_update_session = None
+        self._managed_apply_on_close = False
+        self._managed_schedule_started = False
+        self._managed_verifying = False
+        self._app_closing = False
         self._live = None
         self._shared_cache_pool = None
         self._live_cache = None
@@ -3292,7 +3297,9 @@ class App(ManagedUpdateUI, ExportMemoryUI, QueueMemoryRecovery, GpuResourceGuard
         return changed
 
     def start_export_queue(self):
-        if getattr(self, '_switching_backend', False):
+        if (getattr(self, '_switching_backend', False)
+                or getattr(self, '_app_closing', False)
+                or getattr(self, '_managed_schedule_started', False)):
             return
         if self._queue_running or self._exporting:
             return
@@ -6072,7 +6079,13 @@ class App(ManagedUpdateUI, ExportMemoryUI, QueueMemoryRecovery, GpuResourceGuard
     def _open_realtime(self):
         self._select_workbench_mode('realtime')
 
+    def _abort_app_close(self):
+        self._app_closing = False
+        self._cancel_managed_apply_on_close()
+
     def _on_close(self):
+        if getattr(self, '_managed_schedule_started', False):
+            return
         self._cancel_export_memory_retry()
         if self._gpu_thread_alive(getattr(self, '_gpu_release_thread', None)):
             self.root.after(50, self._on_close)
@@ -6086,11 +6099,13 @@ class App(ManagedUpdateUI, ExportMemoryUI, QueueMemoryRecovery, GpuResourceGuard
             self.set_status(tr('guidance.closing'))
             return
         if self._diagnosing:
+            self._abort_app_close()
             messagebox.showinfo(
                 tr("dialog.diagnosing"), tr("message.wait_diagnostics_close")
             )
             return
         if self._exporting or self._queue_running:
+            self._abort_app_close()
             messagebox.showinfo(
                 tr("dialog.exporting"), tr("message.wait_export_close"),
             )
@@ -6098,19 +6113,23 @@ class App(ManagedUpdateUI, ExportMemoryUI, QueueMemoryRecovery, GpuResourceGuard
         try:
             self._cleanup_video_export()
         except Exception as error:
+            self._abort_app_close()
             self.set_status(str(error))
             return
         if self._update_downloading:
             if not messagebox.askyesno(
                 tr("dialog.downloading_update"), tr("message.cancel_download_exit"),
             ):
+                self._abort_app_close()
                 return
             self._update_cancel_event.set()
+        self._app_closing = True
         self._render_gpu_scan_closing = True
         self._render_gpu_scan_generation = time.monotonic_ns()
         try:
             dlss_engine.close_adapter_probe()
         except Exception as error:
+            self._abort_app_close()
             self.set_status(str(error))
             return
         scan = getattr(self, '_render_gpu_scan_thread', None)
@@ -6129,6 +6148,7 @@ class App(ManagedUpdateUI, ExportMemoryUI, QueueMemoryRecovery, GpuResourceGuard
             return
         if getattr(self, '_shared_retire_pending', None):
             self._shared_closing = False
+            self._abort_app_close()
             self.set_status(self._shared_retire_error)
             return
         preview_jobs = [getattr(self, name, None) for name in
@@ -6191,10 +6211,14 @@ class App(ManagedUpdateUI, ExportMemoryUI, QueueMemoryRecovery, GpuResourceGuard
                 self._shared_cache_pool.close()
                 self._shared_cache_pool = None
         except Exception as error:
+            self._abort_app_close()
             self.set_status(str(error))
             return
         if not self._schedule_managed_apply_after_cleanup():
             return
+        self._finalize_window_close()
+
+    def _finalize_window_close(self):
         if self._detached_preview_window is not None:
             ui_theme.release_app_icon(self._detached_preview_window)
         ui_theme.release_app_icon(self.root)
@@ -9182,11 +9206,14 @@ class App(ManagedUpdateUI, ExportMemoryUI, QueueMemoryRecovery, GpuResourceGuard
 
     def check_for_updates(self, manual=True):
         """Check GitHub without blocking Tk; startup failures stay unobtrusive."""
+        if getattr(self, '_app_closing', False) or getattr(self, '_managed_schedule_started', False):
+            return
         if (manual and getattr(self, '_managed_update_session', None) is not None
                 and not self._update_downloading):
             self._offer_managed_install()
             return
-        if self._update_checking or self._update_downloading:
+        if (self._update_checking or self._update_downloading
+                or getattr(self, '_managed_verifying', False)):
             if manual:
                 messagebox.showinfo(
                     tr("dialog.check_updates"), tr("message.update_in_progress")
@@ -9302,6 +9329,8 @@ class App(ManagedUpdateUI, ExportMemoryUI, QueueMemoryRecovery, GpuResourceGuard
             self._open_release_page(release.page_url)
 
     def import_local_update(self):
+        if getattr(self, '_app_closing', False) or getattr(self, '_managed_schedule_started', False):
+            return
         if self._update_checking or self._update_downloading:
             messagebox.showinfo(tr('dialog.check_updates'), tr('message.update_in_progress'))
             return
@@ -9547,7 +9576,8 @@ class App(ManagedUpdateUI, ExportMemoryUI, QueueMemoryRecovery, GpuResourceGuard
 
     def export_diagnostics(self, *, deep=False):
         """Default to an inexpensive snapshot; probes require explicit consent."""
-        if self._diagnosing:
+        if (self._diagnosing or getattr(self, '_app_closing', False)
+                or getattr(self, '_managed_schedule_started', False)):
             return
         if deep and not self._gpu_admit('diagnostics'):
             return
@@ -10851,6 +10881,8 @@ class App(ManagedUpdateUI, ExportMemoryUI, QueueMemoryRecovery, GpuResourceGuard
             self._cleanup_video_export(actions, error=sys.exc_info()[1])
 
     def export_dlss(self):
+        if getattr(self, '_app_closing', False) or getattr(self, '_managed_schedule_started', False):
+            return
         if not self._gpu_admit('export'):
             return
         if not self._validate_adjustment_draft():
