@@ -603,7 +603,8 @@ def _large_image_host_settings(width, height, settings):
     if width <= 0 or height <= 0:
         return result
     memory = cached_gpu_memory() or {}
-    total_gib = memory.get('total_bytes', 0) / 1024 ** 3
+    total_bytes = memory.get('total_bytes')
+    total_gib = (total_bytes / 1024 ** 3) if isinstance(total_bytes, (int, float)) and total_bytes > 0 else 0.0
     tile_width, tile_height = LARGE_IMAGE_TILE_WIDTH, LARGE_IMAGE_TILE_HEIGHT
     threshold = LARGE_IMAGE_TILE_THRESHOLD_PIXELS
     if 0 < total_gib <= 6:
@@ -6269,6 +6270,18 @@ class App(ManagedUpdateUI, ExportMemoryUI, QueueMemoryRecovery, GpuResourceGuard
             width, height, self._super_resolution_scale(),
         )
 
+    @staticmethod
+    def _super_resolution_usable(live):
+        if live is None or getattr(live, '_closed', False) is True or getattr(live, '_failed', False) is True:
+            return False
+        if isinstance(ProcessSuperResolution, type) and isinstance(live, ProcessSuperResolution):
+            return (
+                getattr(live, '_process', None) is not None
+                and getattr(live, '_input_frame', None) is not None
+                and getattr(live, '_output_frame', None) is not None
+            )
+        return True
+
     def _ensure_super_resolution(self, width, height, scale, is_hdr=False):
         scale = normalize_scale(scale)
         if scale == 1:
@@ -6276,7 +6289,24 @@ class App(ManagedUpdateUI, ExportMemoryUI, QueueMemoryRecovery, GpuResourceGuard
         render_gpu = getattr(self, '_host_settings', {}).get('render_gpu_selected_id', 'auto')
         key = (int(width), int(height), scale, bool(is_hdr), render_gpu)
         with self._super_resolution_lock:
-            if self._super_resolution_live is not None and self._super_resolution_key != key:
+            live = self._super_resolution_live
+            if live is not None and not self._super_resolution_usable(live):
+                self._close_super_resolution()
+                live = None
+            if live is not None and self._super_resolution_key != key:
+                same_gpu = (
+                    self._super_resolution_key is not None
+                    and self._super_resolution_key[4] == render_gpu
+                )
+                if same_gpu and hasattr(live, 'reconfigure'):
+                    try:
+                        live.reconfigure(width, height, scale, is_hdr=is_hdr)
+                        self._super_resolution_key = key
+                        return live
+                    except Exception:
+                        if not self._super_resolution_usable(live):
+                            self._close_super_resolution()
+                        raise
                 self._close_super_resolution()
             if self._super_resolution_live is None:
                 self._super_resolution_live = ProcessSuperResolution(

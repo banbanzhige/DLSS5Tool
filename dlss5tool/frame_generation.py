@@ -458,16 +458,75 @@ def export_video(source, output, *, multiplier=2, scale=1, enhance=False, settin
         disk_need = source_bytes(source)*multiplier*scale*scale*3
         if not render_only and shutil.disk_usage(output.parent).free < disk_need + 15*1024**3:
             raise ValueError('输出盘余量不足预计峰值＋15 GiB，请选择其他输出目录')
-        from dlss5tool.super_resolution import query_gpu_memory
-        memory = query_gpu_memory(cache_seconds=0)
-        if memory and memory['free_bytes'] < estimate + 1024**3:
-            raise ValueError('当前显存余量不足此配置，请关闭其他 GPU 任务或自行更改配置；未自动降级')
         hdr = bool(meta['is_hdr'] and config.get('hdr_mode', True))
         from dlss5tool import appearance
         appearance.preflight(config, hdr=hdr)
         bypass = appearance.enhancement_bypass(config) if enhance else None
         needs_nr = bool(enhance and bypass is None)
         creates_nr = needs_nr and (input_session is None or config.get('_render_stage') == 'base')
+        uses_sr = bool(scale > 1 and input_session is None)
+        uses_fg = bool(multiplier > 1)
+        uses_render_gpu = bool(uses_sr or creates_nr)
+        from dlss5tool.super_resolution import query_gpu_memory
+        render_gpu = str(config.get('render_gpu') or 'auto')
+        checks_selected_gpu = bool(uses_render_gpu and render_gpu != 'auto')
+        checks_default_gpu = bool(uses_fg or not uses_render_gpu or (creates_nr and render_gpu == 'auto'))
+        checks_vsr_auto_gpu = bool(uses_sr and render_gpu == 'auto')
+        adapters = None
+        if checks_selected_gpu or uses_fg or uses_render_gpu:
+            try:
+                from dlss5tool.dlss_engine import available_render_adapters
+                adapters = list(available_render_adapters() or ())
+            except Exception:
+                adapters = []
+        preflight_targets = []
+        seen_target_ids = set()
+        has_fallback_target = False
+        def _add_preflight_target(adapter):
+            nonlocal has_fallback_target
+            if adapter is None:
+                if not has_fallback_target:
+                    preflight_targets.append(None)
+                    has_fallback_target = True
+                return
+            target_id = adapter.get('id')
+            if target_id is not None and target_id in seen_target_ids:
+                return
+            preflight_targets.append(adapter)
+            if target_id is not None:
+                seen_target_ids.add(target_id)
+        if checks_default_gpu:
+            default_adapter = next((record for record in (adapters or ()) if isinstance(record, dict)), None)
+            _add_preflight_target(default_adapter)
+        if checks_vsr_auto_gpu:
+            if adapters:
+                # vsr_host CreateDevice() strictly requires D3D_FEATURE_LEVEL_12_0.
+                vsr_adapter = next(
+                    (record for record in adapters
+                     if isinstance(record, dict) and (record.get('d3d12_feature_level') or '12_0') == '12_0'),
+                    None,
+                )
+                if vsr_adapter is not None:
+                    _add_preflight_target(vsr_adapter)
+            else:
+                _add_preflight_target(None)
+        if checks_selected_gpu:
+            selected_adapter = next(
+                (record for record in (adapters or ())
+                 if isinstance(record, dict) and record.get('id') == render_gpu),
+                None,
+            )
+            _add_preflight_target(selected_adapter if isinstance(selected_adapter, dict) else {'id': render_gpu})
+        for target_adapter in preflight_targets:
+            if target_adapter is None:
+                memory = query_gpu_memory(cache_seconds=0)
+            else:
+                try:
+                    memory = query_gpu_memory(cache_seconds=0, adapter_info=target_adapter)
+                except TypeError:
+                    memory = query_gpu_memory(cache_seconds=0)
+            if memory and memory['free_bytes'] < estimate + 1024**3:
+                raise ValueError('当前显存余量不足此配置，请关闭其他 GPU 任务或自行更改配置；未自动降级')
         from dlss5tool.memory_budget import require_memory_headroom
         from dlss5tool.super_resolution import estimate_resources
         plan = estimate_resources(w, h, 1 if input_session else scale, hdr, in_flight=1,
