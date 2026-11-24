@@ -56,6 +56,8 @@ unsigned int g_quality = 4;
 FILE *g_log = nullptr;
 bool g_adapter_requested = false;
 LUID g_requested_adapter = {};
+bool g_commands_submitted = false;
+bool g_gpu_abandoned = false;
 
 template <typename T>
 void Release(T *&value)
@@ -170,6 +172,7 @@ bool ExecuteAndWait()
     if (FAILED(g_list->Close()))
         return false;
     ID3D12CommandList *lists[] = {g_list};
+    g_commands_submitted = true;
     g_queue->ExecuteCommandLists(1, lists);
     const UINT64 value = ++g_fence_value;
     if (FAILED(g_queue->Signal(g_fence, value)))
@@ -182,6 +185,7 @@ bool ExecuteAndWait()
         if (WaitForSingleObject(g_fence_event, INFINITE) != WAIT_OBJECT_0)
             return false;
     }
+    g_commands_submitted = false;
     return true;
 }
 
@@ -385,16 +389,150 @@ bool CreateDevice()
     return true;
 }
 
+bool WaitIdle()
+{
+    if (g_queue == nullptr || g_fence == nullptr || g_fence_event == nullptr)
+        return !g_commands_submitted;
+    const UINT64 value = ++g_fence_value;
+    if (FAILED(g_queue->Signal(g_fence, value)))
+        return false;
+    if (g_fence->GetCompletedValue() < value)
+    {
+        ResetEvent(g_fence_event);
+        if (FAILED(g_fence->SetEventOnCompletion(value, g_fence_event)))
+            return false;
+        if (WaitForSingleObject(g_fence_event, 10000) != WAIT_OBJECT_0)
+            return false;
+    }
+    g_commands_submitted = false;
+    return true;
+}
+
+void ReleaseFrameResources()
+{
+    if (g_upload != nullptr && g_upload_map != nullptr)
+        g_upload->Unmap(0, nullptr);
+    if (g_readback != nullptr && g_readback_map != nullptr)
+        g_readback->Unmap(0, nullptr);
+    g_hdr_conversion.CloseBuffers();
+    g_hdr_gpu = false;
+    g_upload_map = nullptr;
+    g_readback_map = nullptr;
+    Release(g_upload);
+    Release(g_readback);
+    Release(g_input);
+    Release(g_output);
+    g_input_footprint = {};
+    g_output_footprint = {};
+    g_input_staging_size = 0;
+    g_output_staging_size = 0;
+    g_input_width = 0;
+    g_input_height = 0;
+    g_output_width = 0;
+    g_output_height = 0;
+}
+
+bool AllocateFrameResources(UINT input_width, UINT input_height, UINT scale, unsigned int quality, bool hdr)
+{
+    const UINT output_width = input_width * scale;
+    const UINT output_height = input_height * scale;
+    if (input_width == 0 || input_height == 0 || (scale != 2 && scale != 4) ||
+        output_width / scale != input_width || output_height / scale != input_height ||
+        output_width > 16384u || output_height > 16384u)
+        return false;
+    ReleaseFrameResources();
+    const DXGI_FORMAT format = hdr ? DXGI_FORMAT_R10G10B10A2_UNORM : DXGI_FORMAT_R8G8B8A8_UNORM;
+    g_input = CreateTexture(input_width, input_height, format, D3D12_RESOURCE_FLAG_NONE);
+    g_output = CreateTexture(output_width, output_height, format,
+                             D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS);
+    if (g_input == nullptr || g_output == nullptr)
+    {
+        Log("texture allocation failed");
+        ReleaseFrameResources();
+        return false;
+    }
+    const UINT64 hdr_pixels = UINT64(output_width) * output_height;
+    g_hdr_gpu = hdr && hdr_pixels >= 1920ull * 1080 && hdr_pixels <= 3840ull * 2160 &&
+        g_hdr_conversion.Initialize(g_device, g_input, g_output);
+    Log("HDR conversion: %s", g_hdr_gpu ? "GPU RGBA16F/RGB10A2" : "CPU compatibility");
+    // Choose one conversion route before the first frame. An active GPU route
+    // never switches implementation after a failed submission/evaluation.
+    if (!g_hdr_gpu && (
+        !CreateStaging(g_input, D3D12_HEAP_TYPE_UPLOAD, &g_upload, &g_input_footprint,
+                       &g_input_staging_size, &g_upload_map) ||
+        !CreateStaging(g_output, D3D12_HEAP_TYPE_READBACK, &g_readback, &g_output_footprint,
+                       &g_output_staging_size, &g_readback_map)))
+    {
+        Log("texture/staging allocation failed");
+        ReleaseFrameResources();
+        return false;
+    }
+    g_input_width = input_width;
+    g_input_height = input_height;
+    g_output_width = output_width;
+    g_output_height = output_height;
+    g_hdr = hdr;
+    g_quality = quality;
+    return true;
+}
+
+bool CreateVSRFeature()
+{
+    if (!BeginCommands())
+        return false;
+    NVSDK_NGX_Feature_Create_Params create_parameters = {};
+    const NVSDK_NGX_Result result = NGX_D3D12_CREATE_VSR_EXT(
+        g_list, 1, 1, &g_feature, g_parameters, &create_parameters);
+    Log("Create VSR -> 0x%08X feature=%p", result, static_cast<void *>(g_feature));
+    if (NVSDK_NGX_FAILED(result) || g_feature == nullptr)
+        return false;
+    // Leave any created feature intact if ExecuteAndWait fails so Shutdown()
+    // can WaitIdle() before releasing it.
+    return ExecuteAndWait();
+}
+
 void Shutdown()
 {
-    if (g_queue != nullptr && g_fence != nullptr)
+    if (g_gpu_abandoned)
     {
-        const UINT64 value = ++g_fence_value;
-        if (SUCCEEDED(g_queue->Signal(g_fence, value)) && g_fence->GetCompletedValue() < value)
+        if (g_log != nullptr)
         {
-            g_fence->SetEventOnCompletion(value, g_fence_event);
-            WaitForSingleObject(g_fence_event, 10000);
+            fclose(g_log);
+            g_log = nullptr;
         }
+        SetDllDirectoryW(nullptr);
+        return;
+    }
+    if (g_queue != nullptr && !WaitIdle())
+    {
+        // Do not release D3D12/NGX resources while GPU commands may still be in flight.
+        // The disposable worker exits immediately and the OS reclaims GPU state safely.
+        Log("WaitIdle failed during Shutdown; abandoning in-flight GPU resources until process exit");
+        g_gpu_abandoned = true;
+        g_hdr_conversion.Abandon();
+        g_hdr_gpu = false;
+        g_feature = nullptr;
+        g_parameters = nullptr;
+        g_upload_map = nullptr;
+        g_readback_map = nullptr;
+        g_upload = nullptr;
+        g_readback = nullptr;
+        g_input = nullptr;
+        g_output = nullptr;
+        g_list = nullptr;
+        g_allocator = nullptr;
+        g_queue = nullptr;
+        g_fence = nullptr;
+        g_device = nullptr;
+        g_fence_event = nullptr;
+        g_input_width = g_input_height = g_output_width = g_output_height = 0;
+        if (g_log != nullptr)
+        {
+            fclose(g_log);
+            g_log = nullptr;
+        }
+        SetDllDirectoryW(nullptr);
+        return;
     }
     if (g_feature != nullptr)
     {
@@ -409,18 +547,8 @@ void Shutdown()
     if (g_device != nullptr)
         NVSDK_NGX_D3D12_Shutdown1(g_device);
 
-    if (g_upload != nullptr && g_upload_map != nullptr)
-        g_upload->Unmap(0, nullptr);
-    if (g_readback != nullptr && g_readback_map != nullptr)
-        g_readback->Unmap(0, nullptr);
+    ReleaseFrameResources();
     g_hdr_conversion.Close();
-    g_hdr_gpu = false;
-    g_upload_map = nullptr;
-    g_readback_map = nullptr;
-    Release(g_upload);
-    Release(g_readback);
-    Release(g_input);
-    Release(g_output);
     Release(g_list);
     Release(g_allocator);
     Release(g_queue);
@@ -438,6 +566,7 @@ void Shutdown()
     }
     SetDllDirectoryW(nullptr);
     g_fence_value = 0;
+    g_commands_submitted = false;
 }
 }
 
@@ -445,26 +574,30 @@ int InitializeVSR(
     int input_width, int input_height, int scale, int quality, int hdr,
     const wchar_t *runtime_directory, const wchar_t *log_path, const LUID *adapter)
 {
+    if (g_gpu_abandoned)
+        return 0;
     Shutdown();
+    if (g_gpu_abandoned)
+        return 0;
     g_adapter_requested = adapter != nullptr;
     g_requested_adapter = adapter ? *adapter : LUID{};
     if (log_path != nullptr)
         _wfopen_s(&g_log, log_path, L"w");
     if (input_width <= 0 || input_height <= 0 || (scale != 2 && scale != 4))
         return 0;
-    g_input_width = static_cast<UINT>(input_width);
-    g_input_height = static_cast<UINT>(input_height);
-    g_output_width = g_input_width * static_cast<UINT>(scale);
-    g_output_height = g_input_height * static_cast<UINT>(scale);
-    if (g_output_width / static_cast<UINT>(scale) != g_input_width ||
-        g_output_height / static_cast<UINT>(scale) != g_input_height)
+    const UINT iw = static_cast<UINT>(input_width);
+    const UINT ih = static_cast<UINT>(input_height);
+    const UINT sc = static_cast<UINT>(scale);
+    const UINT ow = iw * sc;
+    const UINT oh = ih * sc;
+    if (ow / sc != iw || oh / sc != ih || ow > 16384u || oh > 16384u)
         return 0;
-    g_hdr = hdr != 0;
-    g_quality = static_cast<unsigned int>(std::clamp(quality, 1, 4));
+    const bool is_hdr = hdr != 0;
+    const unsigned int clamped_quality = static_cast<unsigned int>(std::clamp(quality, 1, 4));
     if (runtime_directory != nullptr && *runtime_directory != L'\0')
         SetDllDirectoryW(runtime_directory);
-    Log("VSR init input=%ux%u output=%ux%u hdr=%d quality=%u", g_input_width,
-        g_input_height, g_output_width, g_output_height, g_hdr ? 1 : 0, g_quality);
+    Log("VSR init input=%ux%u output=%ux%u hdr=%d quality=%u", iw,
+        ih, ow, oh, is_hdr ? 1 : 0, clamped_quality);
 
     if (!CreateDevice())
     {
@@ -472,26 +605,8 @@ int InitializeVSR(
         Shutdown();
         return 0;
     }
-    const DXGI_FORMAT format = g_hdr ? DXGI_FORMAT_R10G10B10A2_UNORM : DXGI_FORMAT_R8G8B8A8_UNORM;
-    g_input = CreateTexture(g_input_width, g_input_height, format, D3D12_RESOURCE_FLAG_NONE);
-    g_output = CreateTexture(g_output_width, g_output_height, format,
-                             D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS);
-    if (g_input == nullptr || g_output == nullptr) {
-        Log("texture allocation failed"); Shutdown(); return 0;
-    }
-    const UINT64 hdr_pixels = UINT64(g_output_width)*g_output_height;
-    g_hdr_gpu = g_hdr && hdr_pixels >= 1920ull*1080 && hdr_pixels <= 3840ull*2160 &&
-        g_hdr_conversion.Initialize(g_device,g_input,g_output);
-    Log("HDR conversion: %s", g_hdr_gpu ? "GPU RGBA16F/RGB10A2" : "CPU compatibility");
-    // Choose one conversion route before the first frame. An active GPU route
-    // never switches implementation after a failed submission/evaluation.
-    if (!g_hdr_gpu && (
-        !CreateStaging(g_input, D3D12_HEAP_TYPE_UPLOAD, &g_upload, &g_input_footprint,
-                       &g_input_staging_size, &g_upload_map) ||
-        !CreateStaging(g_output, D3D12_HEAP_TYPE_READBACK, &g_readback, &g_output_footprint,
-                       &g_output_staging_size, &g_readback_map)))
+    if (!AllocateFrameResources(iw, ih, sc, clamped_quality, is_hdr))
     {
-        Log("texture/staging allocation failed");
         Shutdown();
         return 0;
     }
@@ -523,16 +638,7 @@ int InitializeVSR(
         Shutdown();
         return 0;
     }
-    if (!BeginCommands())
-    {
-        Shutdown();
-        return 0;
-    }
-    NVSDK_NGX_Feature_Create_Params create_parameters = {};
-    result = NGX_D3D12_CREATE_VSR_EXT(
-        g_list, 1, 1, &g_feature, g_parameters, &create_parameters);
-    Log("Create VSR -> 0x%08X feature=%p", result, static_cast<void *>(g_feature));
-    if (NVSDK_NGX_FAILED(result) || g_feature == nullptr || !ExecuteAndWait())
+    if (!CreateVSRFeature())
     {
         Shutdown();
         return 0;
@@ -564,9 +670,38 @@ extern "C" __declspec(dllexport) int vsr_adapter_luid(int32_t *high, uint32_t *l
     return 1;
 }
 
+extern "C" __declspec(dllexport) int vsr_resize(
+    int input_width, int input_height, int scale, int quality, int hdr)
+{
+    if (g_gpu_abandoned || g_device == nullptr || g_queue == nullptr || g_allocator == nullptr ||
+        g_list == nullptr || g_fence == nullptr || g_fence_event == nullptr ||
+        g_feature == nullptr || g_parameters == nullptr)
+        return 0;
+    if (input_width <= 0 || input_height <= 0 || (scale != 2 && scale != 4))
+        return 0;
+    const UINT iw = static_cast<UINT>(input_width);
+    const UINT ih = static_cast<UINT>(input_height);
+    const UINT sc = static_cast<UINT>(scale);
+    const UINT ow = iw * sc;
+    const UINT oh = ih * sc;
+    if (ow / sc != iw || oh / sc != ih || ow > 16384u || oh > 16384u)
+        return 0;
+    if (!WaitIdle())
+        return 0;
+    const unsigned int clamped_quality = static_cast<unsigned int>(std::clamp(quality, 1, 4));
+    const bool is_hdr = hdr != 0;
+    Log("VSR resize input=%ux%u output=%ux%u hdr=%d quality=%u",
+        iw, ih, ow, oh, is_hdr ? 1 : 0, clamped_quality);
+    if (!AllocateFrameResources(iw, ih, sc, clamped_quality, is_hdr))
+        return 0;
+    return 1;
+}
+
 extern "C" __declspec(dllexport) int vsr_process(const void *input_rgba, void *output_rgba)
 {
-    if (g_feature == nullptr || input_rgba == nullptr || output_rgba == nullptr)
+    if (g_gpu_abandoned || g_feature == nullptr || g_input == nullptr || g_output == nullptr ||
+        input_rgba == nullptr || output_rgba == nullptr ||
+        (!g_hdr_gpu && (g_upload_map == nullptr || g_readback_map == nullptr)))
         return 0;
     CopyInput(input_rgba);
     if (!BeginCommands())

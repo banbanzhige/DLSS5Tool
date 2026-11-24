@@ -68,6 +68,7 @@ uint quantize(uint bits) {
 
 class Conversion {
     std::string error_;
+    ID3D12Device *device_ = nullptr;
     ID3D12Resource *upload_ = nullptr, *input_ = nullptr, *packedInput_ = nullptr;
     ID3D12Resource *packedOutput_ = nullptr, *output_ = nullptr, *readback_ = nullptr;
     ID3D12RootSignature *root_ = nullptr;
@@ -125,8 +126,10 @@ public:
     Conversion &operator=(const Conversion &) = delete;
     ~Conversion() { Close(); }
     bool Initialize(ID3D12Device *device, ID3D12Resource *inputTexture, ID3D12Resource *outputTexture) {
-        Close();
+        if (device != device_) Close();
+        else CloseBuffers();
         error_.clear();
+        if (!device || !inputTexture || !outputTexture) return false;
         const auto in = inputTexture->GetDesc(), out = outputTexture->GetDesc();
         if (!in.Width || !in.Height || !out.Width || !out.Height || out.Width*out.Height > 3840ull*2160 ||
             in.Format != DXGI_FORMAT_R10G10B10A2_UNORM || out.Format != DXGI_FORMAT_R10G10B10A2_UNORM) return false;
@@ -136,29 +139,32 @@ public:
         UINT rows; UINT64 rowBytes;
         device->GetCopyableFootprints(&in,0,1,0,&inputFootprint_,&rows,&rowBytes,&packedInputBytes_);
         device->GetCopyableFootprints(&out,0,1,0,&outputFootprint_,&rows,&rowBytes,&packedOutputBytes_);
-        D3D12_ROOT_PARAMETER parameters[3] = {};
-        parameters[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_SRV;
-        parameters[1].ParameterType = D3D12_ROOT_PARAMETER_TYPE_UAV;
-        parameters[2].ParameterType = D3D12_ROOT_PARAMETER_TYPE_32BIT_CONSTANTS;
-        parameters[2].Constants.Num32BitValues = 4;
-        D3D12_ROOT_SIGNATURE_DESC root = {}; root.NumParameters = 3; root.pParameters = parameters;
-        ID3DBlob *blob = nullptr, *error = nullptr;
-        HRESULT hr = D3D12SerializeRootSignature(&root,D3D_ROOT_SIGNATURE_VERSION_1,&blob,&error);
-        Release(error);
-        if (FAILED(hr)) { Release(blob); Close(); return false; }
-        hr = device->CreateRootSignature(0,blob->GetBufferPointer(),blob->GetBufferSize(),IID_PPV_ARGS(&root_));
-        Release(blob);
-        if (FAILED(hr) || !Pipeline(device,"packHDR",&pack_) || !Pipeline(device,"unpackHDR",&unpack_)) { Close(); return false; }
+        if (!root_ || !pack_ || !unpack_) {
+            D3D12_ROOT_PARAMETER parameters[3] = {};
+            parameters[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_SRV;
+            parameters[1].ParameterType = D3D12_ROOT_PARAMETER_TYPE_UAV;
+            parameters[2].ParameterType = D3D12_ROOT_PARAMETER_TYPE_32BIT_CONSTANTS;
+            parameters[2].Constants.Num32BitValues = 4;
+            D3D12_ROOT_SIGNATURE_DESC root = {}; root.NumParameters = 3; root.pParameters = parameters;
+            ID3DBlob *blob = nullptr, *error = nullptr;
+            HRESULT hr = D3D12SerializeRootSignature(&root,D3D_ROOT_SIGNATURE_VERSION_1,&blob,&error);
+            Release(error);
+            if (FAILED(hr)) { Release(blob); Close(); return false; }
+            hr = device->CreateRootSignature(0,blob->GetBufferPointer(),blob->GetBufferSize(),IID_PPV_ARGS(&root_));
+            Release(blob);
+            if (FAILED(hr) || !Pipeline(device,"packHDR",&pack_) || !Pipeline(device,"unpackHDR",&unpack_)) { Close(); return false; }
+            device_ = device;
+        }
         upload_ = Buffer(device,inputBytes_,D3D12_HEAP_TYPE_UPLOAD,D3D12_RESOURCE_STATE_GENERIC_READ);
         input_ = Buffer(device,inputBytes_,D3D12_HEAP_TYPE_DEFAULT,D3D12_RESOURCE_STATE_COMMON);
         packedInput_ = Buffer(device,packedInputBytes_,D3D12_HEAP_TYPE_DEFAULT,D3D12_RESOURCE_STATE_COMMON,D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS);
         packedOutput_ = Buffer(device,packedOutputBytes_,D3D12_HEAP_TYPE_DEFAULT,D3D12_RESOURCE_STATE_COMMON);
         output_ = Buffer(device,outputBytes_,D3D12_HEAP_TYPE_DEFAULT,D3D12_RESOURCE_STATE_COMMON,D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS);
         readback_ = Buffer(device,outputBytes_,D3D12_HEAP_TYPE_READBACK,D3D12_RESOURCE_STATE_COPY_DEST);
-        if (!upload_ || !input_ || !packedInput_ || !packedOutput_ || !output_ || !readback_) { Close(); return false; }
+        if (!upload_ || !input_ || !packedInput_ || !packedOutput_ || !output_ || !readback_) { CloseBuffers(); return false; }
         D3D12_RANGE none = {0,0}, read = {0,SIZE_T(outputBytes_)};
         if (FAILED(upload_->Map(0,&none,reinterpret_cast<void **>(&uploadMap_))) ||
-            FAILED(readback_->Map(0,&read,reinterpret_cast<void **>(&readbackMap_)))) { Close(); return false; }
+            FAILED(readback_->Map(0,&read,reinterpret_cast<void **>(&readbackMap_)))) { CloseBuffers(); return false; }
         return true;
     }
     void CopyInput(const void *source) {
@@ -205,12 +211,31 @@ public:
     const char *Error() const { return error_.c_str(); }
     UINT64 PackedInputBytes() const { return packedInputBytes_; }
     const D3D12_PLACED_SUBRESOURCE_FOOTPRINT &InputFootprint() const { return inputFootprint_; }
-    void Close() {
+    void CloseBuffers() {
         if (upload_ && uploadMap_) upload_->Unmap(0,nullptr);
         if (readback_ && readbackMap_) readback_->Unmap(0,nullptr);
         uploadMap_ = readbackMap_ = nullptr;
         Release(upload_); Release(input_); Release(packedInput_); Release(packedOutput_); Release(output_); Release(readback_);
+        iw_ = ih_ = ow_ = oh_ = inputPitch_ = outputPitch_ = 0;
+        inputBytes_ = outputBytes_ = packedInputBytes_ = packedOutputBytes_ = 0;
+        inputFootprint_ = {}; outputFootprint_ = {};
+    }
+    void Close() {
+        CloseBuffers();
         Release(pack_); Release(unpack_); Release(root_);
+        device_ = nullptr;
+    }
+    // Used when GPU synchronization fails during Shutdown so process teardown
+    // reclaims in-flight D3D12 allocations instead of freeing them under the GPU.
+    void Abandon() {
+        uploadMap_ = readbackMap_ = nullptr;
+        upload_ = input_ = packedInput_ = packedOutput_ = output_ = readback_ = nullptr;
+        pack_ = unpack_ = nullptr;
+        root_ = nullptr;
+        device_ = nullptr;
+        iw_ = ih_ = ow_ = oh_ = inputPitch_ = outputPitch_ = 0;
+        inputBytes_ = outputBytes_ = packedInputBytes_ = packedOutputBytes_ = 0;
+        inputFootprint_ = {}; outputFootprint_ = {};
     }
 };
 } // namespace vsr_hdr
