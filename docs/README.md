@@ -28,7 +28,8 @@
 ```powershell
 .\run.bat
 
-# 普通单元测试，无需 GPU / SDK
+# 普通单元测试，无需 GPU / SDK（日常改动优先跑定向模块，必要时再跑全量）
+.\.venv\Scripts\python.exe -B -m unittest <测试模块或路径>
 .\.venv\Scripts\python.exe -B -m unittest discover -v
 
 # 主应用和独立 AMD 开发验证包
@@ -77,7 +78,7 @@
 - 引导与增强：[参数说明](guidance/GUIDANCE_PARAMETERS.md)、[激活验证](guidance/GUIDANCE_ACTIVATION.md)、[增强组件](guidance/ENHANCEMENT_PACK.md)、[GPU 引导](guidance/GPU_GUIDANCE.md)
 - 缓存与传输：[缓存](guidance/GUIDANCE_CACHE.md)、[共享缓存](guidance/GUIDANCE_SHARED_CACHE.md)、[进程传输](guidance/GUIDANCE_TRANSPORT.md)
 - 实验记录：[首轮优化](experiments/FIRST_PASS_OPTIMIZATION.md)、[光流质量](experiments/FLOW_QUALITY_TEST.md)、[实时路径](experiments/REALTIME_ROUTES.md)、[原生上传](experiments/NATIVE_UPLOAD_OPTIMIZATION.md)
-- 开发与发行：[AMD 验证](development/AMD_DEVTEST.md)、[打包索引](release/PACKAGING_INDEX.md)、[历史发行说明](release/RELEASE_NOTES_v2.1.1.md)、[v2.1.2 待办：暂时下线深度引导](development/TODO_v2.1.2.md)、[NVOFA 接入待办](development/TODO_NVOFA.md)
+- 开发与发行：[打包与发布规程](release/RELEASE_PLAYBOOK.md)、[发布说明模板](release/RELEASE_NOTES_TEMPLATE.md)、[AMD 验证](development/AMD_DEVTEST.md)、[打包索引](release/PACKAGING_INDEX.md)、[历史发行说明](release/RELEASE_NOTES_v2.1.1.md)、[v2.1.2 待办：暂时下线深度引导](development/TODO_v2.1.2.md)、[NVOFA 接入待办](development/TODO_NVOFA.md)
 
 实验记录中的历史部署路径和哈希描述当时的验证环境，不代表当前文件仍位于旧目录。
 
